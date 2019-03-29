@@ -53,6 +53,8 @@ extern qboolean Sys_IsHidden;
 extern qboolean Sys_Hide();
 extern qboolean Sys_Unhide();
 
+// CGTableCount was removed from CGDirectDisplay.h
+typedef uint32_t        CGTableCount;
 typedef struct {
     CGDirectDisplayID     display;
     CGTableCount          tableSize;

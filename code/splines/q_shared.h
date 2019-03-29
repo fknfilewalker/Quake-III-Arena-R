@@ -117,7 +117,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 
 //======================= MAC OS X SERVER DEFINES =====================
-
+/*
 #if defined(__MACH__) && defined(__APPLE__)
 
 #define MAC_STATIC
@@ -154,10 +154,10 @@ void osxFreeMemory(void *pointer);
 #endif
 
 #endif
-
+*/
 //======================= MAC DEFINES =================================
 
-#ifdef __MACOS__
+#ifdef __APPLE__
 
 #define	MAC_STATIC static
 

@@ -21,6 +21,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #import <ApplicationServices/ApplicationServices.h>
 
+// CGMouseDelta was removed from CGDirectDisplay.h
+typedef int32_t     CGMouseDelta;
+
 extern void CGFix_Initialize();
 
 extern void CGFix_GetLastMouseDelta(CGMouseDelta *dx, CGMouseDelta *dy);

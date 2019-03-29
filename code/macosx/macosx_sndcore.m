@@ -27,7 +27,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <CoreServices/CoreServices.h>
 #include <CoreAudio/AudioHardware.h>
-#include <QuickTime/QuickTime.h>
+//#include <QuickTime/QuickTime.h>
 
 // For 'ri'
 #include "../renderer/tr_local.h"

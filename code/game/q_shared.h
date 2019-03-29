@@ -162,8 +162,8 @@ static ID_INLINE float BigFloat(const float *l) { FloatSwap(l); }
 #endif
 
 //======================= MAC OS X DEFINES =====================
-
-#if defined(MACOS_X)
+/*
+#if defined(__APPLE__)
 
 #define MAC_STATIC
 #define __cdecl
@@ -214,10 +214,10 @@ static inline int LittleLong (int l) { return LongSwap(l); }
 static inline float LittleFloat (const float l) { return FloatSwap(&l); }
 
 #endif
-
+*/
 //======================= MAC DEFINES =================================
-
-#ifdef __MACOS__
+/*
+#ifdef __APPLE__
 
 #include <MacTypes.h>
 #define	MAC_STATIC
@@ -226,6 +226,33 @@ static inline float LittleFloat (const float l) { return FloatSwap(&l); }
 #define	CPUSTRING	"MacOS-PPC"
 
 #define	PATH_SEP ':'
+
+void Sys_PumpEvents( void );
+
+#define BigShort
+static inline short LittleShort(short l) { return ShortSwap(l); }
+#define BigLong
+static inline int LittleLong (int l) { return LongSwap(l); }
+#define BigFloat
+static inline float LittleFloat (const float l) { return FloatSwap(&l); }
+
+#endif
+*/
+
+//======================= MACOS DEFINES =================================
+
+#ifdef __APPLE__
+
+#include <MacTypes.h>
+#define MAC_STATIC
+#define __cdecl
+#define __declspec(x)
+#define stricmp strcasecmp
+#define ID_INLINE inline
+
+#define    CPUSTRING    "MacOS-PPC"
+
+#define    PATH_SEP ':'
 
 void Sys_PumpEvents( void );
 

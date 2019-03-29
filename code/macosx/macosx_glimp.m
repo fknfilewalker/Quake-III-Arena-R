@@ -53,7 +53,7 @@ OTStampList glThreadStampList;
 @interface NSOpenGLContext (CGLContextAccess)
 - (CGLContextObj) cglContext;
 @end
-
+/*
 @implementation NSOpenGLContext (CGLContextAccess)
 - (CGLContextObj) cglContext;
 {
@@ -61,6 +61,10 @@ OTStampList glThreadStampList;
 }
 @end
 
+CGLContextObj QZ_GetCGLContextObj(NSOpenGLContext *nsctx)
+{
+    return (CGLContextObj) [nsctx CGLContextObj];
+}*/
 /*
 ============
 CheckErrors
