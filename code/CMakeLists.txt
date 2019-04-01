@@ -11,4 +11,5 @@ add_subdirectory(renderer)
 add_subdirectory(cgame)
 add_subdirectory(game)
 
-add_subdirectory(macosx)
+#add_subdirectory(macosx)
+add_subdirectory(win32)

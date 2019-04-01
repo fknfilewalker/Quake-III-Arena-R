@@ -10,13 +10,14 @@ cmake_minimum_required(VERSION 3.10.1)
 project(Quake_III_Arena)
 
 set(APP_MACOS macos)
+set(APP_WIN32 quake3)
 set(LIB_RENDERER renderer)
-set(LIB_GAME game)
-set(LIB_CGAME cgame)
+set(LIB_GAME qagamex86)
+set(LIB_CGAME cgamex86)
 set(LIB_BOTLIB botlib)
-set(LIB_SPLINES splines)
-set(LIB_UI ui)
-set(LIB_Q3UI q3ui)
+set(LIB_SPLINES Splines)
+set(LIB_UI uix86_new)
+set(LIB_Q3UI uix86)
 
 # disable ZERO_CHECK target
 set(CMAKE_SUPPRESS_REGENERATION true)
@@ -24,10 +25,10 @@ set(CMAKE_SUPPRESS_REGENERATION true)
 if(WIN32)
 	IF(MSVC)
 		message(STATUS "Setting MSVC flags")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHc /std:c++latest")
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /EHc /std:clatest")
 	ENDIF(MSVC)
 	
-	add_definitions(-DVK_USE_PLATFORM_WIN32_KHR)
+	#add_definitions(-DVK_USE_PLATFORM_WIN32_KHR)
 elseif(APPLE)
 	find_package(OpenGL REQUIRED)
 	if (OpenGL_FOUND)
@@ -47,6 +48,8 @@ else(UNIX)
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif()
 
+# OpenGL
+find_package(OpenGL REQUIRED)
 
 # cmake dirs
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")

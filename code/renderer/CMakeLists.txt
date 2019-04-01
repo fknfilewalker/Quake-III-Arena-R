@@ -29,6 +29,7 @@ include_directories(${CMAKE_SOURCE_DIR}/code/macosx)
 
 # LIB
 add_library(${LIB_RENDERER} STATIC ${SOURCES})
+target_link_libraries(${LIB_RENDERER} opengl32)
 
 set_target_properties(${LIB_RENDERER} PROPERTIES LINKER_LANGUAGE C)
 

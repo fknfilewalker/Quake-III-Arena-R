@@ -105,6 +105,8 @@ typedef struct image_s {
 	qboolean	allowPicmip;
 	int			wrapClampMode;		// GL_CLAMP or GL_REPEAT
 
+	int         index; // this image == tr.images[index]
+
 	struct image_s*	next;
 } image_t;
 
