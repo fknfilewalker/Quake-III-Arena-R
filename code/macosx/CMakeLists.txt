@@ -40,7 +40,12 @@ include_directories(${CMAKE_SOURCE_DIR}/code/qcommon)
 include_directories(${CMAKE_SOURCE_DIR}/code/client)
 
 # EXECUTABLE
+set(CMAKE_XCODE_GENERATE_SCHEME TRUE)
 add_executable(${APP_MACOS} MACOSX_BUNDLE ${SOURCES})
+set_target_properties(${APP_MACOS} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/code/macosx/plist.in)
+#set_target_properties(${APP_MACOS} PROPERTIES XCODE_SCHEME_ARGUMENTS "+set fs_basePath \\\"Volumes/data_mac/Games/GOG Games/Quake III\\\"")
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY XCODE_STARTUP_PROJECT ${APP_MACOS})
+
 # +set fs_basePath \"Volumes/data_mac/Games/GOG Games/Quake III\"
 FIND_LIBRARY(OpenGL_LIBRARY OpenGL)
 target_link_libraries(${APP_MACOS} ${OpenGL_LIBRARY})
