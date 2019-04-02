@@ -2,7 +2,7 @@
 # add all src files and create file hierarchy for IDE
 file(GLOB_RECURSE SOURCES *.cpp *.c *.m *.mm *.hpp *.h)
 foreach(FILE ${SOURCES})
-    if("${FILE}" MATCHES "g_rankings.c" OR "${FILE}" MATCHES "bg_lib.c" OR "${FILE}" MATCHES "bg_lib.h")
+    if("${FILE}" MATCHES "bg_lib.c" OR "${FILE}" MATCHES "bg_lib.h")
         #message( ${FILE} )
         list(REMOVE_ITEM SOURCES "${FILE}")
         continue()

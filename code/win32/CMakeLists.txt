@@ -10,7 +10,7 @@ list(APPEND SOURCES "../game/q_shared.h")
 list(APPEND SOURCES "../ui/ui_syscalls.c")
 
 foreach(FILE ${SOURCES}) 
-    if("${FILE}" MATCHES "vm_ppc.c" OR "${FILE}" MATCHES "vm_ppc_new.c")
+    if("${FILE}" MATCHES "vm_ppc.c" OR "${FILE}" MATCHES "vm_ppc_new.c" OR "${FILE}" MATCHES "vm_x86.c")
         #message( ${FILE} )
         list(REMOVE_ITEM SOURCES "${FILE}")
         continue()
@@ -50,8 +50,9 @@ target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/botlib.lib")
 target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/renderer.lib")
 target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/Splines.lib")
 
-
+# +set fs_basePath "C:\GOG Games\Quake III" +set developer 1
 set_target_properties(${APP_WIN32} PROPERTIES LINKER_LANGUAGE C)
+set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${APP_WIN32})
 
  #target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_ENGINE}d.lib")
     #target_link_libraries(${APP_NAME_DESKTOP} "${CMAKE_SOURCE_DIR}/bin/Debug/glfw3dll.lib")

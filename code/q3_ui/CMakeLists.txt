@@ -9,12 +9,6 @@ list(APPEND SOURCES "../game/q_shared.h")
 list(APPEND SOURCES "../ui/ui_syscalls.c")
 
 foreach(FILE ${SOURCES}) 
-    if("${FILE}" MATCHES "ui_rankings.c" OR "${FILE}" MATCHES "ui_signup.c" OR "${FILE}" MATCHES "ui_rankstatus.c" OR "${FILE}" MATCHES "ui_login.c" OR "${FILE}" MATCHES "ui_specifyleague.c")
-        #message( ${FILE} )
-        list(REMOVE_ITEM SOURCES "${FILE}")
-        continue()
-    endif()
-
     # Get the directory of the source file
     get_filename_component(PARENT_DIR "${FILE}" DIRECTORY)
 

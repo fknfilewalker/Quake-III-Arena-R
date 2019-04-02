@@ -1,11 +1,6 @@
 # cmake -H. -B_project -G Xcode
 # cmake -H. -B_project -G  "Visual Studio 15 2017 Win64"
 
-# !!XCODE!!
-	# set following env variable
-	# 1: VK_ICD_FILENAMES 	/Users/Luke/vulkansdk-macos-1.1.85.0/macOS/etc/vulkan/icd.d/MoltenVK_icd.json
-	# 2: VK_LAYER_PATH 		/Users/luke/vulkansdk-macos-1.1.85.0/macOS/etc/vulkan/explicit_layer.d
-
 cmake_minimum_required(VERSION 3.10.1)
 project(Quake_III_Arena)
 
