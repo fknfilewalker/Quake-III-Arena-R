@@ -1,7 +1,7 @@
 # cmake -H. -B_project -G Xcode
 # cmake -H. -B_project -G  "Visual Studio 15 2017 Win64"
 
-cmake_minimum_required(VERSION 3.10.1)
+cmake_minimum_required(VERSION 3.14.0)
 project(Quake_III_Arena)
 
 set(APP_MACOS macos)

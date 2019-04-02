@@ -41,7 +41,6 @@ include_directories(${CMAKE_SOURCE_DIR}/code/renderer)
 include_directories(${CMAKE_SOURCE_DIR}/code/qcommon)
 include_directories(${CMAKE_SOURCE_DIR}/code/client)
 include_directories(${CMAKE_SOURCE_DIR}/code/botlib)
-#include_directories(${CMAKE_SOURCE_DIR}/code/jpeg-6)
 
 # EXECUTABLE
 add_executable(${APP_WIN32} WIN32 ${SOURCES})
@@ -50,17 +49,11 @@ target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/botlib.lib")
 target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/renderer.lib")
 target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/Splines.lib")
 
-# +set fs_basePath "C:\GOG Games\Quake III" +set developer 1
+# when Quake III Arena was installed with GOG
+# +set fs_basePath "C:\GOG Games\Quake III"
 set_target_properties(${APP_WIN32} PROPERTIES LINKER_LANGUAGE C)
-set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${APP_WIN32})
-
- #target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_ENGINE}d.lib")
-    #target_link_libraries(${APP_NAME_DESKTOP} "${CMAKE_SOURCE_DIR}/bin/Debug/glfw3dll.lib")
-
-    #target_compile_definitions(${APP_NAME_DESKTOP} PRIVATE _LUKIENGINE_DLL)
-
-    #set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${APP_NAME_DESKTOP})
-    #set_target_properties(${APP_NAME_DESKTOP} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_CFG_INTDIR}")
+set_target_properties(${APP_WIN32} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS "+set fs_basePath \"C:\\GOG Games\\Quake III\" +set developer 1")
+set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${APP_WIN32})    
 
 # LIBS
 if(WIN32)
