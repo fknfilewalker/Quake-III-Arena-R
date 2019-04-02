@@ -7,6 +7,11 @@ list(APPEND SOURCES "../game/bg_slidemove.c")
 list(APPEND SOURCES "../game/q_shared.c")
 list(APPEND SOURCES "../game/q_math.c")
 foreach(FILE ${SOURCES})
+    if("${FILE}" MATCHES "cg_newdraw.c")
+        #message( ${FILE} )
+        list(REMOVE_ITEM SOURCES "${FILE}")
+        continue()
+    endif()
     # Get the directory of the source file
     get_filename_component(PARENT_DIR "${FILE}" DIRECTORY)
 
