@@ -26,26 +26,6 @@ foreach(FILE ${SOURCES})
     source_group("${GROUP}" FILES "${FILE}")
 endforeach()
 
-
-# HEADER
-#include_directories(${CMAKE_SOURCE_DIR}/code/macosx)
-#include_directories(${CMAKE_SOURCE_DIR}/code/game)
-#include_directories(${CMAKE_SOURCE_DIR}/code/splines)
-
 # LIB
 add_library(${LIB_CGAME} SHARED ${SOURCES})
-
-# DEPENDENCIES
-add_dependencies(${LIB_CGAME} ${LIB_RENDERER} ${LIB_SPLINES})
-
 set_target_properties(${LIB_CGAME} PROPERTIES LINKER_LANGUAGE C)
-
-# LIBS
-if(WIN32)
-
-elseif(APPLE)
-    target_link_libraries(${LIB_CGAME} "${CMAKE_SOURCE_DIR}/bin/Debug/libsplines.a")
-
-else(UNIX)
-
-endif()

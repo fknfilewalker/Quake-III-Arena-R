@@ -1,15 +1,19 @@
 
-add_subdirectory(q3_ui)
-add_subdirectory(splines)
-
-
-# NO DEP
+# STATIC LIB
 add_subdirectory(botlib)
 add_subdirectory(renderer)
+add_subdirectory(splines)
 
-# DEP
+# DYNAMIC LIB
 add_subdirectory(cgame)
 add_subdirectory(game)
+add_subdirectory(q3_ui)
 
-#add_subdirectory(macosx)
-add_subdirectory(win32)
+# EXECUTABLE
+if(WIN32)
+	add_subdirectory(win32)
+elseif(APPLE)
+	add_subdirectory(macosx)
+else(UNIX)
+
+endif()

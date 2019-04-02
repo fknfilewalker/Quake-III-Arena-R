@@ -22,22 +22,7 @@ foreach(FILE ${SOURCES})
     source_group("${GROUP}" FILES "${FILE}")
 endforeach()
 
-# HEADER
-include_directories(${CMAKE_SOURCE_DIR}/code/macosx)
-#include_directories(${CMAKE_SOURCE_DIR}/code/game)
-#include_directories(${CMAKE_SOURCE_DIR}/code/splines)
-
 # LIB
 add_library(${LIB_RENDERER} STATIC ${SOURCES})
 target_link_libraries(${LIB_RENDERER} opengl32)
-
 set_target_properties(${LIB_RENDERER} PROPERTIES LINKER_LANGUAGE C)
-
-# LIBS
-if(WIN32)
-
-elseif(APPLE)
-
-else(UNIX)
-
-endif()

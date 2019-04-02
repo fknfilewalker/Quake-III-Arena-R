@@ -21,20 +21,6 @@ foreach(FILE ${SOURCES})
     source_group("${GROUP}" FILES "${FILE}")
 endforeach()
 
-# HEADER
-#include_directories(${CMAKE_SOURCE_DIR}/code/macosx)
-
-
 # LIB
 add_library(${LIB_SPLINES} STATIC ${SOURCES})
-
 set_target_properties(${LIB_SPLINES} PROPERTIES LINKER_LANGUAGE C)
-
-# LIBS
-if(WIN32)
-
-elseif(APPLE)
-
-else(UNIX)
-
-endif()

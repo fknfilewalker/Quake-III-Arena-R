@@ -21,23 +21,9 @@ foreach(FILE ${SOURCES})
     source_group("${GROUP}" FILES "${FILE}")
 endforeach()
 
-# HEADER
-#include_directories(${CMAKE_SOURCE_DIR}/code/macosx)
-
-
 # LIB
 add_library(${LIB_BOTLIB} STATIC ${SOURCES})
-
-# PRECOMPILER DEFS}
-add_compile_definitions(BOTLIB)
-
 set_target_properties(${LIB_BOTLIB} PROPERTIES LINKER_LANGUAGE C)
 
-# LIBS
-if(WIN32)
-
-elseif(APPLE)
-
-else(UNIX)
-
-endif()
+# PRECOMPILER DEFINITIONS
+add_compile_definitions(BOTLIB) # see l_struct.c Ln 32 for example

@@ -33,25 +33,6 @@ foreach(FILE ${SOURCES})
     source_group("${GROUP}" FILES "${FILE}")
 endforeach()
 
-
-# HEADER
-#include_directories(${CMAKE_SOURCE_DIR}/code/macosx)
-#include_directories(${CMAKE_SOURCE_DIR}/code/game)
-#include_directories(${CMAKE_SOURCE_DIR}/code/splines)
-
 # LIB
 add_library(${LIB_GAME} SHARED ${SOURCES})
-
-# DEPENDENCIES
-# add_dependencies(${LIB_GAME} ${LIB_RENDERER})
-
 set_target_properties(${LIB_GAME} PROPERTIES LINKER_LANGUAGE C)
-
-# LIBS
-if(WIN32)
-
-elseif(APPLE)
-
-else(UNIX)
-
-endif()

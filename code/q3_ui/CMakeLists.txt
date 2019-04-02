@@ -30,22 +30,7 @@ endforeach()
 
 # HEADER
 include_directories(${CMAKE_SOURCE_DIR}/code/game)
-#include_directories(${CMAKE_SOURCE_DIR}/code/game)
-#include_directories(${CMAKE_SOURCE_DIR}/code/splines)
 
 # LIB
 add_library(${LIB_Q3UI} SHARED ${SOURCES})
-
-# DEPENDENCIES
-#add_dependencies(${LIB_UI} ${LIB_SPLINES})
-
 set_target_properties(${LIB_Q3UI} PROPERTIES LINKER_LANGUAGE C)
-
-# LIBS
-if(WIN32)
-
-elseif(APPLE)
-    #target_link_libraries(${LIB_UI} "${CMAKE_SOURCE_DIR}/bin/Debug/libsplines.a")
-else(UNIX)
-
-endif()

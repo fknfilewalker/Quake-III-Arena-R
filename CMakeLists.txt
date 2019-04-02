@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 3.14.0)
 project(Quake_III_Arena)
 
-set(APP_MACOS macos)
+set(APP_MACOS quake3)
 set(APP_WIN32 quake3)
 set(LIB_RENDERER renderer)
 set(LIB_GAME qagamex86)
