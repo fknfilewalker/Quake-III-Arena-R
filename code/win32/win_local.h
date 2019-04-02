@@ -64,7 +64,7 @@ void	IN_Activate (qboolean active);
 void	IN_Frame (void);
 
 // window procedure
-LONG WINAPI MainWndProc (
+LRESULT WINAPI MainWndProc (
     HWND    hWnd,
     UINT    uMsg,
     WPARAM  wParam,

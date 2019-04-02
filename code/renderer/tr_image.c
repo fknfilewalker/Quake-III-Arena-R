@@ -651,7 +651,7 @@ static int upload_gl_image(const struct Image_Upload_Data *upload_data, int text
 		internal_format = has_alpha ? GL_RGBA4 : GL_RGB5;
 	}
 
-	auto buffer = upload_data->buffer;
+	byte* buffer = upload_data->buffer;
 	for (int i = 0; i < upload_data->mip_levels; i++) {
 		qglTexImage2D(GL_TEXTURE_2D, i, internal_format, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 		buffer += w * h * 4;

@@ -75,7 +75,7 @@ void Spk_Printf (const char *text, ...)
 
   va_start (argptr,text);
   vsprintf (buf, text, argptr);
-  write(fh, buf, strlen(buf));
+  write(fh, buf, (int)strlen(buf));
   _commit(fh);
   va_end (argptr);
 
@@ -266,8 +266,8 @@ void Sys_ListFilteredFiles( const char *basedir, char *subdirs, char *filter, ch
 static qboolean strgtr(const char *s0, const char *s1) {
 	int l0, l1, i;
 
-	l0 = strlen(s0);
-	l1 = strlen(s1);
+	l0 = (int)strlen(s0);
+	l1 = (int)strlen(s1);
 
 	if (l1<l0) {
 		l0 = l1;
@@ -290,7 +290,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, char *filter
 	char		**listCopy;
 	char		*list[MAX_FOUND_FILES];
 	struct _finddata_t findinfo;
-	int			findhandle;
+	intptr_t			findhandle;
 	int			flag;
 	int			i;
 
@@ -305,7 +305,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, char *filter
 		if (!nfiles)
 			return NULL;
 
-		listCopy = Z_Malloc( ( nfiles + 1 ) * sizeof( *listCopy ) );
+		listCopy = (char**) Z_Malloc( ( nfiles + 1 ) * sizeof( *listCopy ) );
 		for ( i = 0 ; i < nfiles ; i++ ) {
 			listCopy[i] = list[i];
 		}
@@ -358,7 +358,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, char *filter
 		return NULL;
 	}
 
-	listCopy = Z_Malloc( ( nfiles + 1 ) * sizeof( *listCopy ) );
+	listCopy = (char**) Z_Malloc( ( nfiles + 1 ) * sizeof( *listCopy ) );
 	for ( i = 0 ; i < nfiles ; i++ ) {
 		listCopy[i] = list[i];
 	}
@@ -475,8 +475,8 @@ char *Sys_GetClipboardData( void ) {
 		HANDLE hClipboardData;
 
 		if ( ( hClipboardData = GetClipboardData( CF_TEXT ) ) != 0 ) {
-			if ( ( cliptext = GlobalLock( hClipboardData ) ) != 0 ) {
-				data = Z_Malloc( GlobalSize( hClipboardData ) + 1 );
+			if ( ( cliptext = (char*) GlobalLock( hClipboardData ) ) != 0 ) {
+				data = (char*) Z_Malloc( GlobalSize( hClipboardData ) + 1 );
 				Q_strncpyz( data, cliptext, GlobalSize( hClipboardData ) );
 				GlobalUnlock( hClipboardData );
 				
@@ -507,7 +507,7 @@ void Sys_UnloadDll( void *dllHandle ) {
 	if ( !dllHandle ) {
 		return;
 	}
-	if ( !FreeLibrary( dllHandle ) ) {
+	if ( !FreeLibrary((HMODULE) dllHandle ) ) {
 		Com_Error (ERR_FATAL, "Sys_UnloadDll FreeLibrary failed");
 	}
 }
@@ -526,11 +526,11 @@ extern char		*FS_BuildOSPath( const char *base, const char *game, const char *qp
 // fqpath param added 7/20/02 by T.Ray - Sys_LoadDll is only called in vm.c at this time
 // fqpath will be empty if dll not loaded, otherwise will hold fully qualified path of dll module loaded
 // fqpath buffersize must be at least MAX_QPATH+1 bytes long
-void * QDECL Sys_LoadDll( const char *name, char *fqpath , int (QDECL **entryPoint)(int, ...),
-				  int (QDECL *systemcalls)(int, ...) ) {
+void * QDECL Sys_LoadDll( const char *name, char *fqpath , intptr_t(QDECL **entryPoint)(int, ...),
+	intptr_t(QDECL *systemcalls)(int, ...) ) {
 	static int	lastWarning = 0;
 	HINSTANCE	libHandle;
-	void	(QDECL *dllEntry)( int (QDECL *syscallptr)(int, ...) );
+	void	(QDECL *dllEntry)(intptr_t(QDECL *syscallptr)(intptr_t, ...) );
 	char	*basepath;
 	char	*cdpath;
 	char	*gamedir;
@@ -543,7 +543,7 @@ void * QDECL Sys_LoadDll( const char *name, char *fqpath , int (QDECL **entryPoi
 
 	*fqpath = 0 ;		// added 7/20/02 by T.Ray
 
-	Com_sprintf( filename, sizeof( filename ), "%sx86.dll", name );
+	Com_sprintf( filename, sizeof( filename ), "%s.dll", name );
 
 #ifdef NDEBUG
 	timestamp = Sys_Milliseconds();
@@ -606,8 +606,8 @@ void * QDECL Sys_LoadDll( const char *name, char *fqpath , int (QDECL **entryPoi
 	}
 #endif
 
-	dllEntry = ( void (QDECL *)( int (QDECL *)( int, ... ) ) )GetProcAddress( libHandle, "dllEntry" ); 
-	*entryPoint = (int (QDECL *)(int,...))GetProcAddress( libHandle, "vmMain" );
+	dllEntry = ( void (QDECL *)(intptr_t(QDECL *)(intptr_t, ... ) ) )GetProcAddress( libHandle, "dllEntry" );
+	*entryPoint = (intptr_t(QDECL *)(int,...))GetProcAddress( libHandle, "vmMain" );
 	if ( !*entryPoint || !dllEntry ) {
 		FreeLibrary( libHandle );
 		return NULL;
@@ -971,8 +971,8 @@ sysEvent_t Sys_GetEvent( void ) {
 		char	*b;
 		int		len;
 
-		len = strlen( s ) + 1;
-		b = Z_Malloc( len );
+		len = (int)strlen( s ) + 1;
+		b = (char*)Z_Malloc( len );
 		Q_strncpyz( b, s, len-1 );
 		Sys_QueEvent( 0, SE_CONSOLE, 0, 0, len, b );
 	}
@@ -986,7 +986,7 @@ sysEvent_t Sys_GetEvent( void ) {
 		// copy out to a seperate buffer for qeueing
 		// the readcount stepahead is for SOCKS support
 		len = sizeof( netadr_t ) + netmsg.cursize - netmsg.readcount;
-		buf = Z_Malloc( len );
+		buf = (netadr_t*) Z_Malloc( len );
 		*buf = adr;
 		memcpy( buf+1, &netmsg.data[netmsg.readcount], netmsg.cursize - netmsg.readcount );
 		Sys_QueEvent( 0, SE_PACKET, 0, 0, len, buf );
@@ -1090,7 +1090,7 @@ void Sys_Init( void ) {
 
 	// save out a couple things in rom cvars for the renderer to access
 	Cvar_Get( "win_hinstance", va("%i", (int)g_wv.hInstance), CVAR_ROM );
-	Cvar_Get( "win_wndproc", va("%i", (int)MainWndProc), CVAR_ROM );
+	Cvar_Get( "win_wndproc", va("%p", MainWndProc), CVAR_ROM );
 
 	//
 	// figure out our CPU
@@ -1107,24 +1107,6 @@ void Sys_Init( void ) {
 		case CPUID_GENERIC:
 			Cvar_Set( "sys_cpustring", "generic" );
 			break;
-		case CPUID_INTEL_UNSUPPORTED:
-			Cvar_Set( "sys_cpustring", "x86 (pre-Pentium)" );
-			break;
-		case CPUID_INTEL_PENTIUM:
-			Cvar_Set( "sys_cpustring", "x86 (P5/PPro, non-MMX)" );
-			break;
-		case CPUID_INTEL_MMX:
-			Cvar_Set( "sys_cpustring", "x86 (P5/Pentium2, MMX)" );
-			break;
-		case CPUID_INTEL_KATMAI:
-			Cvar_Set( "sys_cpustring", "Intel Pentium III" );
-			break;
-		case CPUID_AMD_3DNOW:
-			Cvar_Set( "sys_cpustring", "AMD w/ 3DNow!" );
-			break;
-		case CPUID_AXP:
-			Cvar_Set( "sys_cpustring", "Alpha AXP" );
-			break;
 		default:
 			Com_Error( ERR_FATAL, "Unknown cpu type %d\n", cpuid );
 			break;
@@ -1136,26 +1118,6 @@ void Sys_Init( void ) {
 		if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "generic" ) )
 		{
 			cpuid = CPUID_GENERIC;
-		}
-		else if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "x87" ) )
-		{
-			cpuid = CPUID_INTEL_PENTIUM;
-		}
-		else if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "mmx" ) )
-		{
-			cpuid = CPUID_INTEL_MMX;
-		}
-		else if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "3dnow" ) )
-		{
-			cpuid = CPUID_AMD_3DNOW;
-		}
-		else if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "PentiumIII" ) )
-		{
-			cpuid = CPUID_INTEL_KATMAI;
-		}
-		else if ( !Q_stricmp( Cvar_VariableString( "sys_cpustring" ), "axp" ) )
-		{
-			cpuid = CPUID_AXP;
 		}
 		else
 		{

@@ -224,19 +224,19 @@ R_TransformClipToWindow
 
 ==========================
 */
-void R_TransformClipToWindow( const vec4_t clip, const viewParms_t *view, vec4_t normalized, vec4_t window ) {
-	normalized[0] = clip[0] / clip[3];
-	normalized[1] = clip[1] / clip[3];
-	normalized[2] = ( clip[2] + clip[3] ) / ( 2 * clip[3] );
+void R_TransformClipToWindow(const vec4_t clip, const viewParms_t *view, vec4_t normalized, vec4_t window) {
+		normalized[0] = clip[0] / clip[3];
+		normalized[1] = clip[1] / clip[3];
+		normalized[2] = (clip[2] + clip[3]) / (2 * clip[3]);
 
-	window[0] = 0.5f * ( 1.0f + normalized[0] ) * view->viewportWidth;
-	window[1] = 0.5f * ( 1.0f + normalized[1] ) * view->viewportHeight;
-	window[2] = normalized[2];
+		window[0] = 0.5f * (1.0f + normalized[0]) * view->viewportWidth;
+		window[1] = 0.5f * (1.0f + normalized[1]) * view->viewportHeight;
+		window[2] = normalized[2];
 
-	window[0] = (int) ( window[0] + 0.5 );
-	window[1] = (int) ( window[1] + 0.5 );
+		window[0] = (int)(window[0] + 0.5);
+		window[1] = (int)(window[1] + 0.5);
+
 }
-
 
 /*
 ==========================
@@ -244,6 +244,10 @@ myGlMultMatrix
 
 ==========================
 */
+//
+// NOTE; out = b * a,
+// a, b and c are specified in column-major order
+//
 void myGlMultMatrix( const float *a, const float *b, float *out ) {
 	int		i, j;
 
@@ -850,6 +854,7 @@ static qboolean SurfIsOffscreen( const drawSurf_t *drawSurf, vec4_t clipDest[128
 	// trivially reject
 	if ( pointAnd )
 	{
+        tess.numIndexes = 0;
 		return qtrue;
 	}
 
@@ -879,6 +884,7 @@ static qboolean SurfIsOffscreen( const drawSurf_t *drawSurf, vec4_t clipDest[128
 			numTriangles--;
 		}
 	}
+    tess.numIndexes = 0;
 	if ( !numTriangles )
 	{
 		return qtrue;
@@ -1003,7 +1009,13 @@ qsort replacement
 
 =================
 */
-#define	SWAP_DRAW_SURF(a,b) temp=((int *)a)[0];((int *)a)[0]=((int *)b)[0];((int *)b)[0]=temp; temp=((int *)a)[1];((int *)a)[1]=((int *)b)[1];((int *)b)[1]=temp;
+ID_INLINE void SWAP_DRAW_SURF(void* a, void* b) {
+    char buf[sizeof(drawSurf_t)];
+    Com_Memcpy(buf, a, sizeof(drawSurf_t));
+    Com_Memcpy(a, b, sizeof(drawSurf_t));
+    Com_Memcpy(b, buf, sizeof(drawSurf_t));
+}
+
 
 /* this parameter defines the cutoff between using quick sort and
    insertion sort for arrays; arrays with lengths shorter or equal to the
@@ -1013,7 +1025,6 @@ qsort replacement
 
 static void shortsort( drawSurf_t *lo, drawSurf_t *hi ) {
     drawSurf_t	*p, *max;
-	int			temp;
 
     while (hi > lo) {
         max = lo;
@@ -1044,11 +1055,6 @@ void qsortFast (
     unsigned size;              /* size of the sub-array */
     char *lostk[30], *histk[30];
     int stkptr;                 /* stack for saving sub-array to be processed */
-	int	temp;
-
-	if ( sizeof(drawSurf_t) != 8 ) {
-		ri.Error( ERR_DROP, "change SWAP_DRAW_SURF macro" );
-	}
 
     /* Note: the number of stack entries required is no more than
        1 + log2(size), so 30 is sufficient for any array */
@@ -1058,7 +1064,7 @@ void qsortFast (
 
     stkptr = 0;                 /* initialize stack */
 
-    lo = base;
+    lo = (char*) base;
     hi = (char *)base + width * (num-1);        /* initialize limits */
 
     /* this entry point is for pseudo-recursion calling: setting
@@ -1397,15 +1403,13 @@ R_DebugPolygon
 ================
 */
 void R_DebugPolygon( int color, int numPoints, float *points ) {
-	int		i;
-
 	GL_State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
 
 	// draw solid shade
 
 	qglColor3f( color&1, (color>>1)&1, (color>>2)&1 );
 	qglBegin( GL_POLYGON );
-	for ( i = 0 ; i < numPoints ; i++ ) {
+	for (int i = 0 ; i < numPoints ; i++ ) {
 		qglVertex3fv( points + i * 3 );
 	}
 	qglEnd();
@@ -1415,11 +1419,13 @@ void R_DebugPolygon( int color, int numPoints, float *points ) {
 	qglDepthRange( 0, 0 );
 	qglColor3f( 1, 1, 1 );
 	qglBegin( GL_POLYGON );
-	for ( i = 0 ; i < numPoints ; i++ ) {
+	for (int i = 0 ; i < numPoints ; i++ ) {
 		qglVertex3fv( points + i * 3 );
 	}
 	qglEnd();
 	qglDepthRange( 0, 1 );
+
+	
 }
 
 /*
@@ -1461,7 +1467,6 @@ void R_RenderView (viewParms_t *parms) {
 	tr.viewCount++;
 
 	tr.viewParms = *parms;
-	tr.viewParms.frameSceneNum = tr.frameSceneNum;
 	tr.viewParms.frameCount = tr.frameCount;
 
 	firstDrawSurf = tr.refdef.numDrawSurfs;
