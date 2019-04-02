@@ -318,7 +318,7 @@ void	VM_Free( vm_t *vm );
 void	VM_Clear(void);
 vm_t	*VM_Restart( vm_t *vm );
 
-int		QDECL VM_Call( vm_t *vm, int callNum, ... );
+intptr_t		QDECL VM_Call( vm_t *vm, int callNum, ... );
 
 void	VM_Debug( int level );
 
