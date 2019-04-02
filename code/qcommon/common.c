@@ -27,7 +27,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifdef __linux__
 #include <netinet/in.h>
 #else
-#if defined(MACOS_X)
+#if defined(__APPLE__)
 #include <netinet/in.h>
 #else
 #include <winsock.h>
@@ -41,7 +41,7 @@ int demo_protocols[] =
 
 #define MIN_DEDICATED_COMHUNKMEGS 1
 #define MIN_COMHUNKMEGS 56
-#ifdef MACOS_X
+#ifdef __APPLE__
 #define DEF_COMHUNKMEGS "64"
 #define DEF_COMZONEMEGS "24"
 #else

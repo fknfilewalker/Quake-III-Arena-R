@@ -32,7 +32,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #import "macosx_timers.h"
 #import "macosx_display.h" // For Sys_SetScreenFade
 
-#import <drivers/event_status_driver.h>
+//#import <drivers/event_status_driver.h>
+#import <IOKit/IOKitKeys.h>
+typedef mach_port_t NXEventHandle;
+// CGMouseDelta was removed from CGDirectDisplay.h
+typedef int32_t     CGMouseDelta;
 #import <sys/types.h>
 #import <sys/time.h>
 #import <unistd.h>
@@ -204,13 +208,14 @@ static void Sys_StartMouseInput()
     // Turn off mouse scaling
     if (in_disableOSMouseScaling->integer==0 && (eventStatus = NXOpenEventStatus())) {
         NXMouseScaling newScaling;
-
+/*
         NXGetMouseScaling(eventStatus, &originalScaling);
         newScaling.numScaleLevels = 1;
         newScaling.scaleThresholds[0] = 1;
         newScaling.scaleFactors[0] = -1;
         NXSetMouseScaling(eventStatus, &newScaling);
         NXCloseEventStatus(eventStatus);
+ */
     }
     
     [NSCursor hide];
@@ -228,8 +233,8 @@ static void Sys_StopMouseInput()
     
     // Restore mouse scaling
     if (in_disableOSMouseScaling->integer == 0 && (eventStatus = NXOpenEventStatus())) {
-        NXSetMouseScaling(eventStatus, &originalScaling);
-        NXCloseEventStatus(eventStatus);
+        //NXSetMouseScaling(eventStatus, &originalScaling);
+        //NXCloseEventStatus(eventStatus);
     }
 
     mouseactive = qfalse;

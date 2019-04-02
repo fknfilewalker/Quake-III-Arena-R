@@ -643,7 +643,7 @@ static unsigned short yuv_to_rgb( long y, long u, long v )
 * Description:	
 *
 ******************************************************************************/
-#if defined(MACOS_X)
+#ifdef __APPLE__
 
 static inline unsigned int yuv_to_rgb24( long y, long u, long v )
 { 
@@ -1068,7 +1068,7 @@ static void readQuadInfo( byte *qData )
 			Com_Printf("HACK: approxmimating cinematic for Rage Pro or Voodoo\n");
 		}
 	}
-#if defined(MACOS_X)
+#ifdef __APPLE__
 	cinTable[currentHandle].drawX = 256;
 	cinTable[currentHandle].drawX = 256;
 #endif

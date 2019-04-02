@@ -254,9 +254,13 @@ static inline float LittleFloat (const float l) { return FloatSwap(&l); }
 #define stricmp strcasecmp
 #define ID_INLINE inline
 
-#define    CPUSTRING    "MacOS-PPC"
+#if defined __i386__
+#define CPUSTRING    "MacOSXS-i386"
+#else
+#define CPUSTRING    "MacOSXS-other"
+#endif
 
-#define    PATH_SEP ':'
+#define    PATH_SEP '/'
 
 void Sys_PumpEvents( void );
 
@@ -268,6 +272,7 @@ static inline int LittleLong (int l) { return LongSwap(l); }
 static inline float LittleFloat (const float l) { return FloatSwap(&l); }
 
 #endif
+
 
 //======================= LINUX DEFINES =================================
 

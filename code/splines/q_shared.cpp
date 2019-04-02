@@ -29,7 +29,7 @@ GROWLISTS
 
 ============================================================================
 */
-
+/*
 // malloc / free all in one place for debugging
 extern "C" void *Com_Allocate( int bytes );
 extern "C" void Com_Dealloc( void *ptr );
@@ -109,12 +109,13 @@ float Com_Clamp( float min, float max, float value ) {
 	}
 	return value;
 }
-
+*/
 /*
 ============
 Com_StringContains
 ============
 */
+/*
 const char *Com_StringContains( const char *str1, const char *str2, int casesensitive) {
 	int len, i, j;
 
@@ -138,12 +139,13 @@ const char *Com_StringContains( const char *str1, const char *str2, int casesens
 	}
 	return NULL;
 }
-
+*/
 /*
 ============
 Com_Filter
 ============
 */
+/*
 int Com_Filter( const char *filter, const char *name, int casesensitive)
 {
 	char buf[MAX_TOKEN_CHARS];
@@ -218,7 +220,7 @@ int Com_Filter( const char *filter, const char *name, int casesensitive)
 	}
 	return qtrue;
 }
-
+*/
 
 /*
 ================

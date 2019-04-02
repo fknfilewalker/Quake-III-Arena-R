@@ -1,7 +1,18 @@
 # SOURCE AND HEADER FILES
 # add all src files and create file hierarchy for IDE
-file(GLOB_RECURSE SOURCES *.cpp *.c *.m *.mm *.hpp *.h)
+file(GLOB_RECURSE SOURCES *.cpp *.c *.m *.mm *.hpp *.h ../qcommon/*.cpp ../qcommon/*.c ../qcommon/*.m ../qcommon/*.mm ../qcommon/*.hpp ../qcommon/*.h ../client/*.cpp ../client/*.c ../client/*.m ../client/*.mm ../client/*.hpp ../client/*.h ../server/*.cpp ../server/*.c ../server/*.m ../server/*.mm ../server/*.hpp ../server/*.h)
+
+
+list(APPEND SOURCES "../unix/unix_shared.c")
+list(APPEND SOURCES "../unix/unix_net.c")
+
 foreach(FILE ${SOURCES}) 
+    if("${FILE}" MATCHES "macosx_glsmp_mutex.m" OR "${FILE}" MATCHES "macosx_glsmp_null.m" OR "${FILE}" MATCHES "macosx_snddma.m" OR "${FILE}" MATCHES "vm_x86.c" OR "${FILE}" MATCHES "vm_ppc.c" OR "${FILE}" MATCHES "vm_ppc_new.c")
+        # "${FILE}" MATCHES "macosx_snddma.m" OR "${FILE}" MATCHES "macosx_sndcore.m" OR 
+        #message( ${FILE} )
+        list(REMOVE_ITEM SOURCES "${FILE}")
+        continue()
+    endif()
     # Get the directory of the source file
     get_filename_component(PARENT_DIR "${FILE}" DIRECTORY)
 
@@ -29,19 +40,18 @@ include_directories(${CMAKE_SOURCE_DIR}/code/qcommon)
 include_directories(${CMAKE_SOURCE_DIR}/code/client)
 
 # EXECUTABLE
-add_executable(${APP_MACOS} ${SOURCES})
+add_executable(${APP_MACOS} MACOSX_BUNDLE ${SOURCES})
+# +set fs_basePath \"Volumes/data_mac/Games/GOG Games/Quake III\"
+FIND_LIBRARY(OpenGL_LIBRARY OpenGL)
+target_link_libraries(${APP_MACOS} ${OpenGL_LIBRARY})
+target_link_libraries(${APP_MACOS} "-framework AppKit")
+target_link_libraries(${APP_MACOS} "-framework IOKit")
+target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_BOTLIB}.a")
+target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_RENDERER}.a")
+target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_SPLINES}.a")
+target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_GAME}.dylib")
+target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_CGAME}.dylib")
 
-# LIBS
-if(WIN32)
-
-elseif(APPLE)
-    target_link_libraries(${APP_MACOS} OpenGL)
-    target_link_libraries(${APP_MACOS} "-framework AppKit")
-    target_link_libraries(${APP_MACOS} "-framework IOKit")
-
-else(UNIX)
-
-endif()
 
 # DEPENDENCIES
-add_dependencies(${APP_MACOS} ${LIB_RENDERER} )
+add_dependencies(${APP_MACOS} ${LIB_RENDERER} ${LIB_BOTLIB} ${LIB_SPLINES} ${LIB_GAME} ${LIB_CGAME} ${LIB_Q3UI})

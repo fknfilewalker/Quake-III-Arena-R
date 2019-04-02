@@ -159,31 +159,37 @@ void osxFreeMemory(void *pointer);
 
 #ifdef __APPLE__
 
-#define	MAC_STATIC static
+    #define	MAC_STATIC static
 
-#define	CPUSTRING	"MacOS-PPC"
+    #if defined __i386__
+        #define CPUSTRING    "MacOSXS-i386"
+    #else
+        #define CPUSTRING    "MacOSXS-other"
+    #endif
 
-#define	PATH_SEP ':'
+    #define	PATH_SEP '/'
 
-void Sys_PumpEvents( void );
+    #define    GAME_HARD_LINKED
+    #define    CGAME_HARD_LINKED
+    #define    UI_HARD_LINKED
+    #define _alloca alloca
+
+    void Sys_PumpEvents( void );
+
+    #ifdef __cplusplus
+        extern "C" {
+    #endif
+        
+        void *osxAllocateMemory(long size);
+        void osxFreeMemory(void *pointer);
+        
+    #ifdef __cplusplus
+        }
+    #endif
 
 #endif
 
-#ifdef __MRC__
 
-#define	MAC_STATIC
-
-#define	CPUSTRING	"MacOS-PPC"
-
-#define	PATH_SEP ':'
-
-void Sys_PumpEvents( void );
-
-#undef QDECL
-#define	QDECL	__cdecl
-
-#define _alloca alloca
-#endif
 
 //======================= LINUX DEFINES =================================
 

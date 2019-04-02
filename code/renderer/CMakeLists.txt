@@ -1,7 +1,6 @@
 # SOURCE AND HEADER FILES
 # add all src files and create file hierarchy for IDE
 file(GLOB_RECURSE SOURCES *.cpp *.c *.m *.mm *.hpp *.h)
-list(APPEND SOURCES "../macosx/macosx_glimp.h")
 foreach(FILE ${SOURCES}) 
     # Get the directory of the source file
     get_filename_component(PARENT_DIR "${FILE}" DIRECTORY)
@@ -21,6 +20,12 @@ foreach(FILE ${SOURCES})
 
     source_group("${GROUP}" FILES "${FILE}")
 endforeach()
+
+if(APPLE)
+    include_directories(${CMAKE_SOURCE_DIR}/code/macosx)
+else(UNIX)
+
+endif()
 
 # LIB
 add_library(${LIB_RENDERER} STATIC ${SOURCES})
