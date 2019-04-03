@@ -1009,7 +1009,7 @@ qsort replacement
 
 =================
 */
-ID_INLINE void SWAP_DRAW_SURF(void* a, void* b) {
+static void SWAP_DRAW_SURF(void* a, void* b) {
     char buf[sizeof(drawSurf_t)];
     Com_Memcpy(buf, a, sizeof(drawSurf_t));
     Com_Memcpy(a, b, sizeof(drawSurf_t));

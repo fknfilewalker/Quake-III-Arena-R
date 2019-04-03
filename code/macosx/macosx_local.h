@@ -91,7 +91,7 @@ extern glwstate_t glw_state;
 do { \
     NSOpenGLContext *_context = (context); \
     glw_state._ctx = _context; \
-    glw_state._cgl_ctx = [_context cglContext]; \
+    glw_state._cgl_ctx = [_context CGLContextObj]; \
 } while (0)
 
 #define OSX_GetNSGLContext() glw_state._ctx

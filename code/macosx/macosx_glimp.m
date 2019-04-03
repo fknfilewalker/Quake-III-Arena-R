@@ -359,6 +359,9 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
         // the event system will filter them out.
         [glw_state.window setAcceptsMouseMovedEvents: YES];
         
+        // Hider cursor
+        [NSCursor hide];
+        
         // Direct the context to draw in this window
         [OSX_GetNSGLContext() setView: [glw_state.window contentView]];
 
@@ -948,7 +951,7 @@ static unsigned long Sys_QueryVideoMemory()
     }
     
     //Com_Printf("rendererInfoCount = %d\n", rendererInfoCount);
-    for (rendererInfoIndex = 0; rendererInfoIndex < rendererInfoCount && totalRenderers < rendererInfoCount; rendererInfoIndex++) {
+    for (rendererInfoIndex = 0; rendererInfoIndex < rendererInfoCount-1/* && totalRenderers < rendererInfoCount*/; rendererInfoIndex++) {
         rendererInfo = rendererInfos[rendererInfoIndex];
         //Com_Printf("rendererInfo: 0x%08x\n", rendererInfo);
         
@@ -960,7 +963,7 @@ static unsigned long Sys_QueryVideoMemory()
         }
         //Com_Printf("  rendererCount: %d\n", rendererCount);
 
-        for (rendererIndex = 0; rendererIndex < rendererCount; rendererIndex++) {
+        
             totalRenderers++;
             //Com_Printf("  rendererIndex: %d\n", rendererIndex);
             
@@ -993,7 +996,7 @@ static unsigned long Sys_QueryVideoMemory()
             // presumably we'll be running on the best card, so we'll take the max of the vrams
             if (vram > maxVRAM)
                 maxVRAM = vram;
-        }
+        
         
 #if 0
         err = CGLDestroyRendererInfo(rendererInfo);

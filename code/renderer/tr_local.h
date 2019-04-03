@@ -1291,7 +1291,7 @@ typedef struct shaderCommands_s
 	int			numPasses;
 	void		(*currentStageIteratorFunc)( void );
 	shaderStage_t	**xstages;
-} shaderCommands_t;
+} shaderCommands_t __attribute__((__aligned__(16)));
 
 extern	shaderCommands_t	tess;
 

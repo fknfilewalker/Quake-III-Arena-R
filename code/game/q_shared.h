@@ -264,12 +264,12 @@ static inline float LittleFloat (const float l) { return FloatSwap(&l); }
 
 void Sys_PumpEvents( void );
 
-#define BigShort
-static inline short LittleShort(short l) { return ShortSwap(l); }
-#define BigLong
-static inline int LittleLong (int l) { return LongSwap(l); }
-#define BigFloat
-static inline float LittleFloat (const float l) { return FloatSwap(&l); }
+static ID_INLINE short BigShort( short l) { return ShortSwap(l); }
+#define LittleShort
+static ID_INLINE int BigLong(int l) { LongSwap(l); }
+#define LittleLong
+static ID_INLINE float BigFloat(const float *l) { FloatSwap(l); }
+#define LittleFloat
 
 #endif
 
@@ -321,7 +321,7 @@ inline static float LittleFloat (const float *l) { return FloatSwap(l); }
 #endif
 
 #endif
-
+/*
 //======================= FreeBSD DEFINES =====================
 #ifdef __FreeBSD__ // rb010123
 
@@ -359,7 +359,7 @@ static float LittleFloat (const float *l) { return FloatSwap(l); }
 #endif
 
 #endif
-
+*/
 //=============================================================
 
 typedef unsigned char 		byte;
