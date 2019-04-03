@@ -1116,23 +1116,16 @@ char PS_NextWhiteSpaceChar(script_t *script)
 //============================================================================
 void StripDoubleQuotes(char *string)
 {
-    if (strstr(string, "\"") != NULL) {
-        if (string[strlen(string)-1] == '\"')
-        {
-            string[strlen(string)-1] = '\0';
-        }
-    }
-
-    /*
-	if (*string == '\"')
-	{
-		strcpy(string, string+1);
-	} //end if
-	if (string[strlen(string)-1] == '\"')
-	{
-		string[strlen(string)-1] = '\0';
-	} //end if
-    */
+    if (*string == '\"')
+    {
+        memmove(string, string+1, strlen(string));
+        if (strstr(string, "\"") != NULL) {
+            if (string[strlen(string)-1] == '\"')
+            {
+                string[strlen(string)-1] = '\0';
+            }
+        } //end if
+    } //end if
 } //end of the function StripDoubleQuotes
 //============================================================================
 //
