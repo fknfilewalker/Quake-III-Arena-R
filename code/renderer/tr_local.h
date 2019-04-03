@@ -1265,6 +1265,13 @@ typedef struct stageVars
 	vec2_t		texcoords[NUM_TEXTURE_BUNDLES][SHADER_MAX_VERTEXES];
 } stageVars_t;
 
+#ifdef __APPLE__
+	#define ATTRIBUTE_ALIGNED_16 __attribute__((__aligned__(16)))
+#else
+	#define ATTRIBUTE_ALIGNED_16
+#endif
+
+
 typedef struct shaderCommands_s 
 {
 	glIndex_t	indexes[SHADER_MAX_INDEXES];
@@ -1291,7 +1298,7 @@ typedef struct shaderCommands_s
 	int			numPasses;
 	void		(*currentStageIteratorFunc)( void );
 	shaderStage_t	**xstages;
-} shaderCommands_t __attribute__((__aligned__(16)));
+} shaderCommands_t ATTRIBUTE_ALIGNED_16;
 
 extern	shaderCommands_t	tess;
 
