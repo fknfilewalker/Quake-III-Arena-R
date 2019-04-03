@@ -13,7 +13,7 @@ add_subdirectory(q3_ui)
 if(WIN32)
 	add_subdirectory(win32)
 elseif(APPLE)
-	add_subdirectory(macosx)
+	add_subdirectory(macos)
 else(UNIX)
 
 endif()

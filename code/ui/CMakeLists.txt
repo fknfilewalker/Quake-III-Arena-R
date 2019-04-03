@@ -29,7 +29,7 @@ endforeach()
 
 # HEADER
 include_directories("../splines")
-#include_directories(${CMAKE_SOURCE_DIR}/code/macosx)
+#include_directories(${CMAKE_SOURCE_DIR}/code/macos)
 #include_directories(${CMAKE_SOURCE_DIR}/code/game)
 #include_directories(${CMAKE_SOURCE_DIR}/code/splines)
 

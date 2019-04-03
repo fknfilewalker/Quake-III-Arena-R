@@ -22,7 +22,7 @@ foreach(FILE ${SOURCES})
 endforeach()
 
 if(APPLE)
-    include_directories(${CMAKE_SOURCE_DIR}/code/macosx)
+    include_directories(${CMAKE_SOURCE_DIR}/code/macos)
 else(UNIX)
 
 endif()
