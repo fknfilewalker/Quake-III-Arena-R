@@ -37,6 +37,8 @@
   <true/>
   <key>NSHumanReadableCopyright</key>
   <string>${MACOSX_BUNDLE_COPYRIGHT}</string>
+  <key>CFBundleIconFile</key>
+  <string>Quake3.icns</string>
   <key>LSMinimumSystemVersion</key>
   <string>${MACOSX_DEPLOYMENT_TARGET}</string>
   <key>NSMainNibFile</key>

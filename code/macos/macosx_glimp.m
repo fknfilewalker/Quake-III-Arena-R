@@ -635,7 +635,8 @@ void GLimp_Shutdown( void )
     }
 
     if (glw_state.window) {
-        [glw_state.window release];
+        //[glw_state.window release];
+        [glw_state.window close];
         glw_state.window = nil;
     }
 
