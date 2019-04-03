@@ -27,13 +27,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <CoreServices/CoreServices.h>
 #include <CoreAudio/AudioHardware.h>
-//#include <QuickTime/QuickTime.h>
 
 // For 'ri'
 #include "../renderer/tr_local.h"
 
 #import <Foundation/NSData.h>
 #import <Foundation/NSString.h>
+
 
 static unsigned int  submissionChunk;
 static unsigned int  maxMixedSamples;
@@ -166,7 +166,9 @@ qboolean SNDDMA_Init(void)
 
     // Get the output device
     propertySize = sizeof(outputDeviceID);
-    //status = AudioHardwareGetProperty(kAudioHardwarePropertyDefaultOutputDevice, &propertySize, &outputDeviceID);
+
+   
+    status = AudioHardwareGetProperty(kAudioHardwarePropertyDefaultOutputDevice, &propertySize, &outputDeviceID);
     if (status) {
         Com_Printf("AudioHardwareGetProperty returned %d\n", status);
         return qfalse;
@@ -180,14 +182,14 @@ qboolean SNDDMA_Init(void)
     // Configure the output device	
     propertySize = sizeof(bufferByteCount);
     bufferByteCount = chunkSize->integer * sizeof(float);
-    //status = AudioDeviceSetProperty(outputDeviceID, NULL, 0, NO, kAudioDevicePropertyBufferSize, propertySize, &bufferByteCount);
+    status = AudioDeviceSetProperty(outputDeviceID, NULL, 0, NO, kAudioDevicePropertyBufferSize, propertySize, &bufferByteCount);
     if (status) {
         Com_Printf("AudioDeviceSetProperty: returned %d when setting kAudioDevicePropertyBufferSize to %d\n", status, chunkSize->integer);
         return qfalse;
     }
     
     propertySize = sizeof(bufferByteCount);
-    //status = AudioDeviceGetProperty(outputDeviceID, 0, NO, kAudioDevicePropertyBufferSize, &propertySize, &bufferByteCount);
+    status = AudioDeviceGetProperty(outputDeviceID, 0, NO, kAudioDevicePropertyBufferSize, &propertySize, &bufferByteCount);
     if (status) {
         Com_Printf("AudioDeviceGetProperty: returned %d when setting kAudioDevicePropertyBufferSize\n", status);
         return qfalse;
@@ -195,7 +197,7 @@ qboolean SNDDMA_Init(void)
 
     // Print out the device status
     propertySize = sizeof(outputStreamBasicDescription);
-    //status = AudioDeviceGetProperty(outputDeviceID, 0, NO, kAudioDevicePropertyStreamFormat, &propertySize, &outputStreamBasicDescription);
+    status = AudioDeviceGetProperty(outputDeviceID, 0, NO, kAudioDevicePropertyStreamFormat, &propertySize, &outputStreamBasicDescription);
     if (status) {
         Com_Printf("AudioDeviceGetProperty: returned %d when getting kAudioDevicePropertyStreamFormat\n", status);
         return qfalse;
@@ -220,7 +222,7 @@ qboolean SNDDMA_Init(void)
     }
     
     // Start sound running
-    //status = AudioDeviceAddIOProc(outputDeviceID, audioDeviceIOProc, NULL);
+    status = AudioDeviceAddIOProc(outputDeviceID, audioDeviceIOProc, NULL);
     if (status) {
         Com_Printf("AudioDeviceAddIOProc: returned %d\n", status);
         return qfalse;
@@ -245,7 +247,7 @@ qboolean SNDDMA_Init(void)
     // We haven't enqueued anything yet
     s_chunkCount = 0;
 
-    //status = AudioDeviceStart(outputDeviceID, audioDeviceIOProc);
+    status = AudioDeviceStart(outputDeviceID, audioDeviceIOProc);
     if (status) {
         Com_Printf("AudioDeviceStart: returned %d\n", status);
         return qfalse;
@@ -288,7 +290,7 @@ void SNDDMA_Shutdown(void)
     if (!s_isRunning)
         return;
         
-    //status = AudioDeviceStop(outputDeviceID, audioDeviceIOProc);
+    status = AudioDeviceStop(outputDeviceID, audioDeviceIOProc);
     if (status) {
         Com_Printf("AudioDeviceStop: returned %d\n", status);
         return;
@@ -296,7 +298,7 @@ void SNDDMA_Shutdown(void)
     
     s_isRunning = qfalse;
     
-    //status = AudioDeviceRemoveIOProc(outputDeviceID, audioDeviceIOProc);
+    status = AudioDeviceRemoveIOProc(outputDeviceID, audioDeviceIOProc);
     if (status) {
         Com_Printf("AudioDeviceRemoveIOProc: returned %d\n", status);
         return;
