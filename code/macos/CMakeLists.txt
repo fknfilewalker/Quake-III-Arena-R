@@ -44,7 +44,9 @@ set(CMAKE_XCODE_GENERATE_SCHEME TRUE)
 add_executable(${APP_MACOS} MACOSX_BUNDLE ${SOURCES} Quake3.icns)
 set_target_properties(${APP_MACOS} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/code/macos/plist.in)
 set_source_files_properties(Quake3.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-#set_target_properties(${APP_MACOS} PROPERTIES XCODE_SCHEME_ARGUMENTS "+set fs_basePath \\\"Volumes/data_mac/Games/GOG Games/Quake III\\\"")
+IF(BASEQ3_DIR)
+    set_target_properties(${APP_MACOS} PROPERTIES XCODE_SCHEME_ARGUMENTS ${BASEQ3_DIR})
+endif()
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY XCODE_STARTUP_PROJECT ${APP_MACOS})
 
 # +set fs_basePath \"Volumes/data_mac/Games/GOG Games/Quake III\"

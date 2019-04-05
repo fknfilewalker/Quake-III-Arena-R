@@ -14,6 +14,14 @@ set(LIB_SPLINES Splines)
 set(LIB_UI ui_new)
 set(LIB_Q3UI ui)
 
+# set path to baseq3
+if(WIN32)
+	set(BASEQ3_DIR "+set fs_basePath \"C:\\GOG Games\\Quake III\"")
+elseif(APPLE)
+	#set(BASEQ3_DIR "+set fs_basePath \\\"/dir/to/Quake III\\\"")
+else(UNIX)
+
+endif()
 # disable ZERO_CHECK target
 set(CMAKE_SUPPRESS_REGENERATION true)
 
