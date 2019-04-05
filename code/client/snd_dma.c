@@ -1553,6 +1553,8 @@ void S_UpdateBackgroundTrack( void ) {
 		// decide how much data needs to be read from the file
 		fileSamples = bufferSamples * s_backgroundInfo.rate / dma.speed;
 
+        if (!fileSamples) return;
+        
 		// don't try and read past the end of the file
 		if ( fileSamples > s_backgroundSamples ) {
 			fileSamples = s_backgroundSamples;

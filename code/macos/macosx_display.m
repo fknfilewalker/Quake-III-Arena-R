@@ -70,7 +70,7 @@ NSDictionary *Sys_GetMatchingDisplayMode(qboolean allowStretchedModes)
     // Default to the current desktop mode
     bestModeIndex = 0xFFFFFFFF;
     
-    for ( modeIndex = 0; modeIndex < modeCount; ++modeIndex ) {
+    for ( modeIndex = 0; modeIndex < modeCount-1; modeIndex++ ) {
         id object;
         int refresh;
         
