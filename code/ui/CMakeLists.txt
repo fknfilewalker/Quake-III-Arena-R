@@ -3,10 +3,10 @@
 file(GLOB_RECURSE SOURCES *.cpp *.c *.m *.mm *.hpp *.h)
 # angle mod
 list(APPEND SOURCES "../game/q_math.c")
-# Com_Parseext
-#list(APPEND SOURCES "../splines/q_parse.cpp")
-#list(APPEND SOURCES "../splines/q_shared.c")
-#list(APPEND SOURCES "../splines/q_shared.h")
+list(APPEND SOURCES "../game/bg_misc.c")
+list(APPEND SOURCES "../game/q_shared.c")
+list(APPEND SOURCES "../game/q_shared.h")
+list(APPEND SOURCES "../ui/ui_syscalls.c")
 foreach(FILE ${SOURCES}) 
     # Get the directory of the source file
     get_filename_component(PARENT_DIR "${FILE}" DIRECTORY)
@@ -35,17 +35,4 @@ include_directories("../splines")
 
 # LIB
 add_library(${LIB_UI} SHARED ${SOURCES})
-
-# DEPENDENCIES
-#add_dependencies(${LIB_UI} ${LIB_SPLINES})
-
 set_target_properties(${LIB_UI} PROPERTIES LINKER_LANGUAGE C)
-
-# LIBS
-if(WIN32)
-
-elseif(APPLE)
-    #target_link_libraries(${LIB_UI} "${CMAKE_SOURCE_DIR}/bin/Debug/libsplines.a")
-else(UNIX)
-
-endif()

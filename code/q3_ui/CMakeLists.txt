@@ -31,6 +31,8 @@ endforeach()
 # HEADER
 include_directories(${CMAKE_SOURCE_DIR}/code/game)
 
+set(CMAKE_C_FLAGS "-Wl,--export-dynamic")
 # LIB
 add_library(${LIB_Q3UI} SHARED ${SOURCES})
 set_target_properties(${LIB_Q3UI} PROPERTIES LINKER_LANGUAGE C)
+

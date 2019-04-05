@@ -93,14 +93,19 @@ void	* QDECL Sys_LoadDll( const char *name, char *fqpath , int (QDECL **entryPoi
 	/*
     bundlePath = [[NSBundle mainBundle] pathForResource: [NSString stringWithCString: name] ofType: @"bundle"];
     libraryPath = [NSString stringWithFormat: @"%@/Contents/MacOS/%s", bundlePath, name];
-	*/	
-	libraryPath = [NSString stringWithFormat: @"%s.bundle/Contents/MacOS/%s", name, name];
-    if (!libraryPath)
-        return NULL;
+	*/
+    // /Volumes/data_macOS/Programming/Quake-III-Arena-R/bin/Debug
+	//libraryPath = [NSString stringWithFormat: @"%s.bundle/Contents/MacOS/%s", name, name];
+    //if (!libraryPath)
+    //    return NULL;
     
+    NSString *appParentDirectory = [[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent];
+    libraryPath = [NSString stringWithFormat:@"%@/lib%@.dylib", appParentDirectory, [NSString stringWithUTF8String:name]];
+    //path = "/Volumes/data_macOS/Programming/Quake-III-Arena-R/bin/Debug/libq3ui.dylib";
     path = [libraryPath cString];
     Com_Printf("Loading '%s'.\n", path);
     libHandle = dlopen( [libraryPath cString], RTLD_LAZY );
+    //libHandle = dlopen( "/Volumes/data_macOS/Programming/Quake-III-Arena-R/bin/Debug/libq3ui.dylib", RTLD_LAZY );
     if (!libHandle) {
         libHandle = dlopen( name, RTLD_LAZY );
         if (!libHandle) {
@@ -109,14 +114,14 @@ void	* QDECL Sys_LoadDll( const char *name, char *fqpath , int (QDECL **entryPoi
         }
     }
 
-    dllEntry = dlsym( libHandle, "_dllEntry" );
+    dllEntry = dlsym( libHandle, "dllEntry" );
     if (!dllEntry) {
         Com_Printf("Error loading dll:  No dllEntry symbol.\n");
         dlclose(libHandle);
         return NULL;
     }
     
-    *entryPoint = dlsym( libHandle, "_vmMain" );
+    *entryPoint = dlsym( libHandle, "vmMain" );
     if (!*entryPoint) {
         Com_Printf("Error loading dll:  No vmMain symbol.\n");
         dlclose(libHandle);

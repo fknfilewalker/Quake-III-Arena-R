@@ -60,6 +60,7 @@ target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_RENDE
 target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_SPLINES}.a")
 target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_GAME}.dylib")
 target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_CGAME}.dylib")
+target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_Q3UI}.dylib")
 
 
 # DEPENDENCIES

@@ -8,6 +8,7 @@ add_subdirectory(splines)
 add_subdirectory(cgame)
 add_subdirectory(game)
 add_subdirectory(q3_ui)
+add_subdirectory(ui)
 
 # EXECUTABLE
 if(WIN32)

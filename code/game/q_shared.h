@@ -247,10 +247,13 @@ static inline float LittleFloat (const float l) { return FloatSwap(&l); }
 
 #ifdef __APPLE__
 
+#undef QDECL
+#define    QDECL    __cdecl
+
 #include <MacTypes.h>
 #define MAC_STATIC
-#define __cdecl
-#define __declspec(x)
+//#define __cdecl
+//#define __declspec(x)
 #define stricmp strcasecmp
 #define ID_INLINE inline
 
