@@ -47,6 +47,9 @@ target_link_libraries(${APP_WIN32} wsock32 ws2_32 winmm opengl32)
 target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_BOTLIB}.lib")
 target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_RENDERER}.lib")
 target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_SPLINES}.lib")
+#target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_GAME}.dll")
+#target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_CGAME}.dll")
+#target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_Q3UI}.dll")
 
 # when Quake III Arena was installed with GOG
 # +set fs_basePath "C:\GOG Games\Quake III"
@@ -57,4 +60,4 @@ endif()
 set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${APP_WIN32})    
 
 # DEPENDENCIES
-add_dependencies(${APP_WIN32} ${LIB_RENDERER} ${LIB_BOTLIB} ${LIB_SPLINES})
+add_dependencies(${APP_WIN32} ${LIB_RENDERER} ${LIB_BOTLIB} ${LIB_SPLINES} ${LIB_GAME} ${LIB_CGAME} ${LIB_Q3UI})

@@ -90,12 +90,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #endif
 
-#ifdef _WIN32
-
-//#pragma intrinsic( memset, memcpy )
-
-#endif
-
 
 // this is the define for determining if we have an asm version of a C function
 #if (defined _M_IX86 || defined __i386__) && !defined __sun__  && !defined __LCC__
@@ -127,6 +121,8 @@ float	FloatSwap (const float *f);
 //======================= WIN32 DEFINES =================================
 
 #ifdef WIN32
+
+#define QDLLEXPORT __declspec(dllexport)
 
 #define	MAC_STATIC
 
@@ -247,6 +243,8 @@ static inline float LittleFloat (const float l) { return FloatSwap(&l); }
 
 #ifdef __APPLE__
 
+#define QDLLEXPORT
+
 #undef QDECL
 #define    QDECL    __cdecl
 
@@ -282,6 +280,8 @@ static ID_INLINE float BigFloat(const float *l) { FloatSwap(l); }
 // the mac compiler can't handle >32k of locals, so we
 // just waste space and make big arrays static...
 #ifdef __linux__
+
+#define QDLLEXPORT
 
 // bk001205 - from Makefile
 #define stricmp strcasecmp
