@@ -38,6 +38,7 @@ include_directories(${CMAKE_SOURCE_DIR}/code/renderer)
 include_directories(${CMAKE_SOURCE_DIR}/code/macos)
 include_directories(${CMAKE_SOURCE_DIR}/code/qcommon)
 include_directories(${CMAKE_SOURCE_DIR}/code/client)
+include_directories(${CMAKE_SOURCE_DIR}/code/server)
 
 # EXECUTABLE
 set(CMAKE_XCODE_GENERATE_SCHEME TRUE)

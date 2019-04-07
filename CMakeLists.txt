@@ -18,7 +18,8 @@ set(LIB_Q3UI ui)
 if(WIN32)
 	set(BASEQ3_DIR "+set fs_basePath \"C:\\GOG Games\\Quake III\"")
 elseif(APPLE)
-	#set(BASEQ3_DIR "+set vm_game 0 +set vm_cgame 0 +set vm_ui 0")
+	# +set vm_game 0 +set vm_cgame 0 +set vm_ui 0
+	set(BASEQ3_DIR "+set vm_ui 0")
 	#set(BASEQ3_DIR "+set fs_basePath \\\"/dir/to/Quake III\\\"")
 else(UNIX)
 

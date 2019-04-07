@@ -721,8 +721,9 @@ void GraphicsOptions_MenuInit( void )
 {
 	static const char *s_driver_names[] =
 	{
-		"Default",
-		"Voodoo",
+		"OpenGL 1",
+		"OpenGL 3",
+        "Vulkan",
 		0
 	};
 
@@ -773,6 +774,10 @@ void GraphicsOptions_MenuInit( void )
 		"1600x1200",
 		"2048x1536",
 		"856x480 wide screen",
+        "1280x720 wide screen",
+        "1600x900 wide screen",
+        "1920x1080 wide screen",
+        "2560x1440 wide screen",
 		0
 	};
 	static const char *filter_names[] =
@@ -881,7 +886,7 @@ void GraphicsOptions_MenuInit( void )
 	y += 2 * ( BIGCHAR_HEIGHT + 2 );
 
 	s_graphicsoptions.driver.generic.type  = MTYPE_SPINCONTROL;
-	s_graphicsoptions.driver.generic.name  = "GL Driver:";
+	s_graphicsoptions.driver.generic.name  = "Backend:";
 	s_graphicsoptions.driver.generic.flags = QMF_PULSEIFFOCUS|QMF_SMALLFONT;
 	s_graphicsoptions.driver.generic.x     = 400;
 	s_graphicsoptions.driver.generic.y     = y;

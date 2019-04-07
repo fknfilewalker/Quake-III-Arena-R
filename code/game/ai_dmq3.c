@@ -1488,7 +1488,9 @@ char *EasyClientName(int client, char *buf, int size) {
 	char *str1, *str2, *ptr, c;
 	char name[128];
 
-	strcpy(name, ClientName(client, name, sizeof(name)));
+    char *clname = ClientName(client, name, sizeof(name));
+	memmove(name, clname, strlen(clname)+1);
+    //strcpy(name, a);
 	for (i = 0; name[i]; i++) name[i] &= 127;
 	//remove all spaces
 	for (ptr = strstr(name, " "); ptr; ptr = strstr(name, " ")) {
