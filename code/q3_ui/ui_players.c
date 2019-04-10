@@ -708,7 +708,7 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 
 	dp_realtime = time;
 
-	if ( pi->pendingWeapon != -1 && dp_realtime > pi->weaponTimer ) {
+	if ( pi->pendingWeapon != WP_NONE /*-1*/ && dp_realtime > pi->weaponTimer ) {
 		pi->weapon = pi->pendingWeapon;
 		pi->lastWeapon = pi->pendingWeapon;
 		pi->pendingWeapon = -1;
@@ -1162,7 +1162,7 @@ void UI_PlayerInfo_SetInfo( playerInfo_t *pi, int legsAnim, int torsoAnim, vec3_
 		pi->torso.yawAngle = viewAngles[YAW];
 		pi->torso.yawing = qfalse;
 
-		if ( weaponNumber != -1 ) {
+		if ( weaponNumber != WP_NONE /*-1*/ ) {
 			pi->weapon = weaponNumber;
 			pi->currentWeapon = weaponNumber;
 			pi->lastWeapon = weaponNumber;
@@ -1175,7 +1175,7 @@ void UI_PlayerInfo_SetInfo( playerInfo_t *pi, int legsAnim, int torsoAnim, vec3_
 	}
 
 	// weapon
-	if ( weaponNumber == -1 ) {
+	if ( weaponNumber == WP_NONE /*-1*/  ) {
 		pi->pendingWeapon = -1;
 		pi->weaponTimer = 0;
 	}

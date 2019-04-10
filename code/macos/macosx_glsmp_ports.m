@@ -195,7 +195,7 @@ static /*inline*/ void _WaitMsg(MsgPort *port, unsigned int *msgCode, void **msg
         fprintf(stderr,"SendMsg: mach_msg_receive returned %d: %s\n", rc, mach_error_string(rc));
     }
 
-    *msgData = (void *)msg.header.msgh_id;
+    *msgData = (void *)(uintptr_t)msg.header.msgh_id;
     //printf("WaitMsg: %s %s got %08lx\n",functionName, portName, *msgData);
 #else   
     //printf("WaitMsg: %s %s\n",functionName, portName);

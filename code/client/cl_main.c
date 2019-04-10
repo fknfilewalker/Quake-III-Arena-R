@@ -1543,7 +1543,7 @@ void CL_CheckForResend( void ) {
 		data[10+i] = 0;
 
     // NOTE TTimo don't forget to set the right data length!
-		NET_OutOfBandData( NS_CLIENT, clc.serverAddress, &data[0], i+10 );
+		NET_OutOfBandData( NS_CLIENT, clc.serverAddress, (byte *) &data[0], i+10 );
 		// the most current userinfo has been sent, so watch for any
 		// newer changes to userinfo variables
 		cvar_modifiedFlags &= ~CVAR_USERINFO;
@@ -2606,7 +2606,7 @@ void CL_ServerInfoPacket( netadr_t from, msg_t *msg ) {
 	Q_strncpyz( info, MSG_ReadString( msg ), MAX_INFO_STRING );
 	if (strlen(info)) {
 		if (info[strlen(info)-1] != '\n') {
-			strncat(info, "\n", sizeof(info));
+            strncat(info, "\n", MAX_INFO_STRING * sizeof(char));//sizeof(info));
 		}
 		Com_Printf( "%s: %s", NET_AdrToString( from ), info );
 	}

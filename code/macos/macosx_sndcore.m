@@ -242,7 +242,7 @@ qboolean SNDDMA_Init(void)
     dma.samplebits = 16;
     dma.buffer = (byte *)s_mixedSamples;
     dma.channels = outputStreamBasicDescription.mChannelsPerFrame;
-    dma.speed = (unsigned long)outputStreamBasicDescription.mSampleRate;
+    dma.speed = 22050;//(unsigned long)outputStreamBasicDescription.mSampleRate;
 
     // We haven't enqueued anything yet
     s_chunkCount = 0;

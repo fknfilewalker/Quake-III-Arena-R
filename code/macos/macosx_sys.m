@@ -81,9 +81,9 @@ Used to load a development dll instead of a virtual machine
 extern char		*FS_BuildOSPath( const char *base, const char *game, const char *qpath );
 
 void	* QDECL Sys_LoadDll( const char *name, char *fqpath , int (QDECL **entryPoint)(int, ...),
-				  int (QDECL *systemcalls)(int, ...) ) {
+				  intptr_t (QDECL *systemcalls)(intptr_t, ...) ) {
     void *libHandle;
-    void	(*dllEntry)( int (*syscallptr)(int, ...) );
+    void	(*dllEntry)( intptr_t (*syscallptr)(intptr_t, ...) );
     NSString *bundlePath, *libraryPath;
     const char *path;
     
@@ -235,7 +235,7 @@ void Sys_Error(const char *error, ...)
     va_end(argptr);
 
     NSLog(@"Sys_Error: %@", formattedString);
-    NSRunAlertPanel(@"Quake 3 Error", formattedString, nil, nil, nil);
+    NSRunAlertPanel(@"Quake 3 Error", @"%@", formattedString, nil, nil, nil);
 
     Sys_Quit();
 }
@@ -328,7 +328,7 @@ qboolean Sys_ObjectIsCDRomDevice(io_object_t object)
     io_iterator_t parentIterator;
     io_object_t parent;
     
-    krc = IORegistryEntryCreateCFProperties(object, &properties, kCFAllocatorDefault, (IOOptionBits)0);
+    krc = IORegistryEntryCreateCFProperties(object, (CFMutableDictionaryRef *) &properties, kCFAllocatorDefault, (IOOptionBits)0);
     if (krc != KERN_SUCCESS) {
         fprintf(stderr, "IORegistryEntryCreateCFProperties returned 0x%08x -- %s\n", krc, mach_error_string(krc));
         return qfalse;

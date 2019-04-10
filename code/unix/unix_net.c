@@ -176,7 +176,7 @@ qboolean	Sys_GetPacket (netadr_t *net_from, msg_t *net_message)
 
 		fromlen = sizeof(from);
 		ret = recvfrom (net_socket, net_message->data, net_message->maxsize
-			, 0, (struct sockaddr *)&from, &fromlen);
+			, 0, (struct sockaddr *)&from, (socklen_t *) &fromlen);
 
 		SockadrToNetadr (&from, net_from);
 		// bk000305: was missing

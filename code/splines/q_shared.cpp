@@ -742,7 +742,7 @@ char *Info_ValueForKey( const char *s, const char *key ) {
 	char	*o;
 	
 	if ( !s || !key ) {
-		return "";
+		return (char *) "";
 	}
 
 	if ( strlen( s ) >= MAX_INFO_STRING ) {
@@ -758,7 +758,7 @@ char *Info_ValueForKey( const char *s, const char *key ) {
 		while (*s != '\\')
 		{
 			if (!*s)
-				return "";
+				return (char *) "";
 			*o++ = *s++;
 		}
 		*o = 0;
@@ -780,7 +780,7 @@ char *Info_ValueForKey( const char *s, const char *key ) {
 		s++;
 	}
 
-	return "";
+	return (char *) "";
 }
 
 

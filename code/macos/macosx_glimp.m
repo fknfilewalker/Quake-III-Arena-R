@@ -39,7 +39,7 @@ cvar_t  *r_appleTransformHint;          // Enable Apple transform hint
 
 static void GLW_InitExtensions( void );
 static qboolean CreateGameWindow( qboolean isSecondTry );
-static unsigned long Sys_QueryVideoMemory();
+static GLint Sys_QueryVideoMemory();
 static CGDisplayErr Sys_CaptureActiveDisplays(void);
 
 
@@ -389,9 +389,9 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
 #endif
 
     // Store off the pixel format attributes that we actually got
-    [pixelFormat getValues: (long *) &glConfig.colorBits forAttribute: NSOpenGLPFAColorSize forVirtualScreen: 0];
-    [pixelFormat getValues: (long *) &glConfig.depthBits forAttribute: NSOpenGLPFADepthSize forVirtualScreen: 0];
-    [pixelFormat getValues: (long *) &glConfig.stencilBits forAttribute: NSOpenGLPFAStencilSize forVirtualScreen: 0];
+    [pixelFormat getValues: (GLint *) &glConfig.colorBits forAttribute: NSOpenGLPFAColorSize forVirtualScreen: 0];
+    [pixelFormat getValues: (GLint *) &glConfig.depthBits forAttribute: NSOpenGLPFADepthSize forVirtualScreen: 0];
+    [pixelFormat getValues: (GLint *) &glConfig.stencilBits forAttribute: NSOpenGLPFAStencilSize forVirtualScreen: 0];
 
     glConfig.displayFrequency = [[glw_state.gameMode objectForKey: (id)kCGDisplayRefreshRate] intValue];
     
@@ -550,7 +550,7 @@ void GLimp_EndFrame (void)
         r_swapInterval->modified = qfalse;
 
         if ( !glConfig.stereoEnabled ) {	// why?
-            [[NSOpenGLContext currentContext] setValues: (long *)&r_swapInterval->integer
+            [[NSOpenGLContext currentContext] setValues: (GLint *)&r_swapInterval->integer
             forParameter: NSOpenGLCPSwapInterval];
         }
     }
@@ -934,16 +934,16 @@ static void GLW_InitExtensions( void )
 #define MAX_RENDERER_INFO_COUNT 128
 
 // Returns zero if there are no hardware renderers.  Otherwise, returns the max memory across all renderers (on the presumption that the screen that we'll use has the most memory).
-static unsigned long Sys_QueryVideoMemory()
+static GLint Sys_QueryVideoMemory()
 {
     CGLError err;
     CGLRendererInfoObj rendererInfo, rendererInfos[MAX_RENDERER_INFO_COUNT];
-    long rendererInfoIndex, rendererInfoCount = MAX_RENDERER_INFO_COUNT;
-    long rendererIndex, rendererCount;
-    long maxVRAM = 0, vram;
-    long accelerated;
-    long rendererID;
-    long totalRenderers = 0;
+    GLint rendererInfoIndex, rendererInfoCount = MAX_RENDERER_INFO_COUNT;
+    GLint rendererIndex = 0, rendererCount;
+    GLint maxVRAM = 0, vram = 0;
+    GLint accelerated;
+    GLint rendererID;
+    GLint totalRenderers = 0;
     
     err = CGLQueryRendererInfo(CGDisplayIDToOpenGLDisplayMask(Sys_DisplayToUse()), rendererInfos, &rendererInfoCount);
     if (err) {
