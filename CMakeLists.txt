@@ -14,12 +14,12 @@ set(LIB_SPLINES Splines)
 set(LIB_UI ui_new)
 set(LIB_Q3UI ui)
 
-# set path to baseq3
+# Arguments for IDE
+set(Q3_ARGUMENTS "+set sv_pure 0 +set vm_game 0 +set vm_cgame 0 +set vm_ui 0")
+# Set path to baseq3 folder
 if(WIN32)
-	set(BASEQ3_DIR "+set fs_basePath \"C:\\GOG Games\\Quake III\" +set vm_game 0 +set vm_cgame 0 +set vm_ui 0")
+	set(BASEQ3_DIR "+set fs_basePath \"C:\\GOG Games\\Quake III\"")
 elseif(APPLE)
-	# +set vm_game 0 +set vm_cgame 0 +set vm_ui 0
-	set(BASEQ3_DIR "+set vm_game 0 +set vm_cgame 0 +set vm_ui 0")
 	#set(BASEQ3_DIR "+set fs_basePath \\\"/dir/to/Quake III\\\"")
 else(UNIX)
 

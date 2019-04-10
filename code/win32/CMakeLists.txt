@@ -47,13 +47,14 @@ target_link_libraries(${APP_WIN32} wsock32 ws2_32 winmm opengl32)
 target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_BOTLIB}.lib")
 target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_RENDERER}.lib")
 target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_SPLINES}.lib")
-#target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_GAME}.dll")
-#target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_CGAME}.dll")
-#target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_Q3UI}.dll")
 
+# PROPERTIES
 # when Quake III Arena was installed with GOG
 # +set fs_basePath "C:\GOG Games\Quake III"
 set_target_properties(${APP_WIN32} PROPERTIES LINKER_LANGUAGE C)
+IF(Q3_ARGUMENTS)
+    set_target_properties(${APP_WIN32} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS ${Q3_ARGUMENTS})
+endif()
 IF(BASEQ3_DIR)
     set_target_properties(${APP_WIN32} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS ${BASEQ3_DIR})
 endif()

@@ -45,13 +45,6 @@ include_directories(${CMAKE_SOURCE_DIR}/code/server)
 # EXECUTABLE
 set(CMAKE_XCODE_GENERATE_SCHEME TRUE)
 add_executable(${APP_MACOS} MACOSX_BUNDLE ${SOURCES} Quake3.icns)
-set_target_properties(${APP_MACOS} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/code/macos/plist.in)
-set_source_files_properties(Quake3.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-IF(BASEQ3_DIR)
-    set_target_properties(${APP_MACOS} PROPERTIES XCODE_SCHEME_ARGUMENTS ${BASEQ3_DIR})
-endif()
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY XCODE_STARTUP_PROJECT ${APP_MACOS})
-
 # +set fs_basePath \"Volumes/data_mac/Games/GOG Games/Quake III\"
 FIND_LIBRARY(OpenGL_LIBRARY OpenGL)
 target_link_libraries(${APP_MACOS} ${OpenGL_LIBRARY})
@@ -61,10 +54,18 @@ target_link_libraries(${APP_MACOS} "-framework CoreAudio")
 target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_BOTLIB}.a")
 target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_RENDERER}.a")
 target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_SPLINES}.a")
-#target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_GAME}.dylib")
-#target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_CGAME}.dylib")
-#target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_Q3UI}.dylib")
 
+# PROPERTIES
+set_target_properties(${APP_MACOS} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/code/macos/plist.in)
+set_source_files_properties(Quake3.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+IF(Q3_ARGUMENTS)
+    set_target_properties(${APP_MACOS} PROPERTIES XCODE_SCHEME_ARGUMENTS ${Q3_ARGUMENTS})
+endif()
+IF(BASEQ3_DIR)
+    set_target_properties(${APP_MACOS} PROPERTIES XCODE_SCHEME_ARGUMENTS ${BASEQ3_DIR})
+endif()
+# still waiting for support :(
+set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY XCODE_STARTUP_PROJECT ${APP_MACOS})
 
 # DEPENDENCIES
 add_dependencies(${APP_MACOS} ${LIB_RENDERER} ${LIB_BOTLIB} ${LIB_SPLINES} ${LIB_GAME} ${LIB_CGAME} ${LIB_Q3UI})
