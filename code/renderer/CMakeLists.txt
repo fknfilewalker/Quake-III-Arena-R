@@ -1,6 +1,9 @@
 # SOURCE AND HEADER FILES
 # add all src files and create file hierarchy for IDE
 file(GLOB_RECURSE SOURCES *.cpp *.c *.m *.mm *.hpp *.h)
+
+list(APPEND SOURCES "../game/q_math.c")
+
 foreach(FILE ${SOURCES}) 
     # Get the directory of the source file
     get_filename_component(PARENT_DIR "${FILE}" DIRECTORY)

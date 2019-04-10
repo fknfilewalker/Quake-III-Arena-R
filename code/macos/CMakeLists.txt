@@ -5,6 +5,8 @@ file(GLOB_RECURSE SOURCES *.cpp *.c *.m *.mm *.hpp *.h ../qcommon/*.cpp ../qcomm
 
 list(APPEND SOURCES "../unix/unix_shared.c")
 list(APPEND SOURCES "../unix/unix_net.c")
+list(APPEND SOURCES "../game/q_math.c")
+list(APPEND SOURCES "../game/q_shared.c")
 
 foreach(FILE ${SOURCES}) 
     if("${FILE}" MATCHES "macosx_glsmp_mutex.m" OR "${FILE}" MATCHES "macosx_glsmp_null.m" OR "${FILE}" MATCHES "macosx_snddma.m" OR "${FILE}" MATCHES "vm_x86.c" OR "${FILE}" MATCHES "vm_ppc.c" OR "${FILE}" MATCHES "vm_ppc_new.c")
@@ -59,9 +61,9 @@ target_link_libraries(${APP_MACOS} "-framework CoreAudio")
 target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_BOTLIB}.a")
 target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_RENDERER}.a")
 target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_SPLINES}.a")
-target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_GAME}.dylib")
-target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_CGAME}.dylib")
-target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_Q3UI}.dylib")
+#target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_GAME}.dylib")
+#target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_CGAME}.dylib")
+#target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_Q3UI}.dylib")
 
 
 # DEPENDENCIES
