@@ -9,7 +9,7 @@ list(APPEND SOURCES "../game/q_math.c")
 list(APPEND SOURCES "../game/q_shared.c")
 
 foreach(FILE ${SOURCES}) 
-    if("${FILE}" MATCHES "macosx_glsmp_mutex.m" OR "${FILE}" MATCHES "macosx_glsmp_null.m" OR "${FILE}" MATCHES "macosx_snddma.m" OR "${FILE}" MATCHES "vm_x86.c" OR "${FILE}" MATCHES "vm_ppc.c" OR "${FILE}" MATCHES "vm_ppc_new.c")
+    if("${FILE}" MATCHES "macosx_glsmp_mutex.m" OR "${FILE}" MATCHES "macosx_glsmp_null.m" OR "${FILE}" MATCHES "macosx_snddma.m")
         # "${FILE}" MATCHES "macosx_snddma.m" OR "${FILE}" MATCHES "macosx_sndcore.m" OR 
         #message( ${FILE} )
         list(REMOVE_ITEM SOURCES "${FILE}")

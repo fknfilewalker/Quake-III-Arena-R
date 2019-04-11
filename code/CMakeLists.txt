@@ -16,5 +16,5 @@ if(WIN32)
 elseif(APPLE)
 	add_subdirectory(macos)
 else(UNIX)
-
+	add_subdirectory(unix)
 endif()

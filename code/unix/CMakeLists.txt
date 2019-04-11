@@ -28,6 +28,9 @@ foreach(FILE ${SOURCES})
     source_group("${GROUP}" FILES "${FILE}")
 endforeach()
 
+find_package(OpenGL REQUIRED)
+#find_package(GLEW REQUIRED)
+
 # INCLUDE
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/code/renderer)
@@ -36,23 +39,23 @@ include_directories(${CMAKE_SOURCE_DIR}/code/client)
 include_directories(${CMAKE_SOURCE_DIR}/code/botlib)
 
 # EXECUTABLE
-add_executable(${APP_WIN32} WIN32 ${SOURCES})
-target_link_libraries(${APP_WIN32} wsock32 ws2_32 winmm opengl32)
-target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_BOTLIB}.lib")
-target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_RENDERER}.lib")
-target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_SPLINES}.lib")
+add_executable(${APP_UNIX} ${SOURCES})
+target_link_libraries(${APP_UNIX} "${OPENGL_LIBRARIES}")
+target_link_libraries(${APP_UNIX} "-lGLU")
+target_link_libraries(${APP_UNIX} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_BOTLIB}.so")
+target_link_libraries(${APP_UNIX} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_RENDERER}.so")
+target_link_libraries(${APP_UNIX} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_SPLINES}.so")
 
 # PROPERTIES
 # when Quake III Arena was installed with GOG
 # +set fs_basePath "C:\GOG Games\Quake III"
-set_target_properties(${APP_WIN32} PROPERTIES LINKER_LANGUAGE C)
+set_target_properties(${APP_UNIX} PROPERTIES LINKER_LANGUAGE C)
 IF(Q3_ARGUMENTS)
-    set_target_properties(${APP_WIN32} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS ${Q3_ARGUMENTS})
+    #set_target_properties(${APP_WIN32} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS ${Q3_ARGUMENTS})
 endif()
 IF(BASEQ3_DIR)
-    set_target_properties(${APP_WIN32} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS ${BASEQ3_DIR})
-endif()
-set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${APP_WIN32})    
+    #set_target_properties(${APP_WIN32} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS ${BASEQ3_DIR})
+endif()  
 
 # DEPENDENCIES
-add_dependencies(${APP_WIN32} ${LIB_RENDERER} ${LIB_BOTLIB} ${LIB_SPLINES} ${LIB_GAME} ${LIB_CGAME} ${LIB_Q3UI})
+add_dependencies(${APP_UNIX} ${LIB_RENDERER} ${LIB_BOTLIB} ${LIB_SPLINES} ${LIB_GAME} ${LIB_CGAME} ${LIB_Q3UI})
