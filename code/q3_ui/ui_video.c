@@ -773,7 +773,7 @@ void GraphicsOptions_MenuInit( void )
 		"1280x1024",
 		"1600x1200",
 		"2048x1536",
-		"856x480 wide screen",
+		"1024x576 wide screen",
         "1280x720 wide screen",
         "1600x900 wide screen",
         "1920x1080 wide screen",

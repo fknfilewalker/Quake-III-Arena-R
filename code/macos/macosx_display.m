@@ -231,6 +231,7 @@ void Sys_SetScreenFade(glwgamma_t *table, float fraction)
 #define FADE_DURATION 0.5
 void Sys_FadeScreens()
 {
+    
     CGDisplayCount displayIndex;
     int stepIndex;
     glwgamma_t *table;

@@ -48,12 +48,12 @@ qboolean stdin_active = qfalse;
 int main(int argc, const char *argv[]) {
 
     Q3Controller *controller;
-    
+
     stdin_active = qtrue;
     controller = [[Q3Controller alloc] init];
     [controller quakeMain];
     return 0;
-
+    //return NSApplicationMain(argc, argv);
 }
 
 //===========================================================================

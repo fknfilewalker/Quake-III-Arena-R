@@ -276,38 +276,16 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
     }
     ri.Printf( PRINT_ALL, " %d %d %s\n", glConfig.vidWidth, glConfig.vidHeight, windowed[glConfig.isFullscreen] );
 
+    glw_state.gameMode = glw_state.desktopMode;
+    
     if (glConfig.isFullscreen) {
-        
-        // We'll set up the screen resolution first in case that effects the list of pixel
-        // formats that are available (for example, a smaller frame buffer might mean more
-        // bits for depth/stencil buffers).  Allow stretched video modes if we are in fallback mode.
-        glw_state.gameMode = Sys_GetMatchingDisplayMode(isSecondTry);
-        if (!glw_state.gameMode) {
-            ri.Printf( PRINT_ALL, "Unable to find requested display mode.\n");
-            return qfalse;
-        }
-
-        // Fade all screens to black
-        Sys_FadeScreens();
-        
-        err = Sys_CaptureActiveDisplays();
-        if ( err != CGDisplayNoErr ) {
-            CGDisplayRestoreColorSyncSettings();
-            ri.Printf( PRINT_ALL, " Unable to capture displays err = %d\n", err );
-            return qfalse;
-        }
-
-        err = CGDisplaySwitchToMode(glw_state.display, (CFDictionaryRef)glw_state.gameMode);
-        if ( err != CGDisplayNoErr ) {
-            CGDisplayRestoreColorSyncSettings();
-            ReleaseAllDisplays();
-            ri.Printf( PRINT_ALL, " Unable to set display mode, err = %d\n", err );
-            return qfalse;
-        }
-    } else {
-        glw_state.gameMode = glw_state.desktopMode;
+        err = CGDisplaySwitchToMode(glw_state.display, CGDisplayBestModeForParameters (kCGDirectMainDisplay,
+                                                                                       32, glConfig.vidWidth, glConfig.vidHeight, NULL) );//(CFDictionaryRef)glw_state.gameMode);
     }
-
+    else {
+        err = CGDisplaySwitchToMode(glw_state.display, (CFDictionaryRef)glw_state.desktopMode);
+        
+    }
     
     // Get the GL pixel format
     pixelAttributes = GetPixelAttributes();
@@ -332,10 +310,10 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
         return qfalse;
     }
 
-    if (!glConfig.isFullscreen) {
+    //if (!glConfig.isFullscreen) {
         cvar_t		*vid_xpos;
         cvar_t		*vid_ypos;
-        NSRect           windowRect;
+        CGRect           windowRect;
         
         vid_xpos = ri.Cvar_Get( "vid_xpos", "100", CVAR_ARCHIVE );
         vid_ypos = ri.Cvar_Get( "vid_ypos", "100", CVAR_ARCHIVE );
@@ -345,12 +323,27 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
         windowRect.origin.y = vid_ypos->integer;
         windowRect.size.width = glConfig.vidWidth;
         windowRect.size.height = glConfig.vidHeight;
-        
+        //windowRect.size.width = 2560;
+        //windowRect.size.height = 1440;
+    // 1024 x 576
+    
+    
         glw_state.window = [[NSWindow alloc] initWithContentRect:windowRect
-                                                       styleMask:NSTitledWindowMask
+                                                       styleMask: (glConfig.isFullscreen ? nil : NSTitledWindowMask)
                                                          backing:NSBackingStoreRetained
                                                            defer:NO];
-                                                           
+    
+        if (glConfig.isFullscreen) {
+
+            if ( err != CGDisplayNoErr ) {
+                ri.Printf( PRINT_ALL, " Unable to set display mode, err = %d\n", err );
+                return qfalse;
+            }
+            
+            [glw_state.window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
+            [glw_state.window toggleFullScreen:nil];
+        }
+        
         [glw_state.window setTitle: @"Quake3"];
 
         [glw_state.window orderFront: nil];
@@ -361,26 +354,27 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
         
         // Hider cursor
         [NSCursor hide];
+        //[NSMenu setMenuBarVisible:NO];
         
         // Direct the context to draw in this window
         [OSX_GetNSGLContext() setView: [glw_state.window contentView]];
 
         // Sync input rect with where the window actually is...
         Sys_UpdateWindowMouseInputRect();
-    } else {
-        CGLError err;
-        
-        err = CGLSetFullScreen(OSX_GetCGLContext());
-        if (err) {
-            CGDisplayRestoreColorSyncSettings();
-            CGDisplaySwitchToMode(glw_state.display, (CFDictionaryRef)glw_state.desktopMode);
-            ReleaseAllDisplays();
-            Com_Printf("CGLSetFullScreen -> %d (%s)\n", err, CGLErrorString(err));
-            return qfalse;
-        }
-        
-        Sys_SetMouseInputRect(CGDisplayBounds(glw_state.display));
-    }
+//    } else {
+//        CGLError err;
+//
+//        err = CGLSetFullScreen(OSX_GetCGLContext());
+//        if (err) {
+//            CGDisplayRestoreColorSyncSettings();
+//            CGDisplaySwitchToMode(glw_state.display, (CFDictionaryRef)glw_state.desktopMode);
+//            ReleaseAllDisplays();
+//            Com_Printf("CGLSetFullScreen -> %d (%s)\n", err, CGLErrorString(err));
+//            return qfalse;
+//        }
+//
+//        Sys_SetMouseInputRect(CGDisplayBounds(glw_state.display));
+//    }
 
 
 #ifndef USE_CGLMACROS
@@ -420,15 +414,7 @@ void Sys_ResumeGL ()
     if (glw_state.glPauseCount) {
         glw_state.glPauseCount--;
         if (!glw_state.glPauseCount) {
-            if (!glConfig.isFullscreen) {
-                [OSX_GetNSGLContext() setView: [glw_state.window contentView]];
-            } else {
-                CGLError err;
-                
-                err = CGLSetFullScreen(OSX_GetCGLContext());
-                if (err)
-                    Com_Printf("CGLSetFullScreen -> %d (%s)\n", err, CGLErrorString(err));
-            }
+            [OSX_GetNSGLContext() setView: [glw_state.window contentView]];
         }
     }
 }
@@ -476,7 +462,7 @@ void GLimp_Init( void )
     memset( &glConfig, 0, sizeof( glConfig ) );
 
     // We only allow changing the gamma if we are full screen
-    glConfig.deviceSupportsGamma = (r_fullscreen->integer != 0);
+    glConfig.deviceSupportsGamma = false;//(r_fullscreen->integer != 0);
     if (glConfig.deviceSupportsGamma) {
         Sys_StoreGammaTables();
     }
@@ -591,17 +577,7 @@ void GLimp_EndFrame (void)
 static void _GLimp_RestoreOriginalVideoSettings()
 {
     CGDisplayErr err;
-    
-    // CGDisplayCurrentMode lies because we've captured the display and thus we won't
-    // get any notifications about what the current display mode really is.  For now,
-    // we just always force it back to what mode we remember the desktop being in.
-    if (glConfig.isFullscreen) {
-        err = CGDisplaySwitchToMode(glw_state.display, (CFDictionaryRef)glw_state.desktopMode);
-        if ( err != CGDisplayNoErr )
-            ri.Printf( PRINT_ALL, " Unable to restore display mode!\n" );
-
-        ReleaseAllDisplays();
-    }
+    err = CGDisplaySwitchToMode(glw_state.display, (CFDictionaryRef)glw_state.desktopMode);
 }
 
 void GLimp_Shutdown( void )
