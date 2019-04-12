@@ -721,8 +721,9 @@ void Q_strncpyz( char *dest, const char *src, int destsize ) {
 	}
 
     //strncpy( dest, src, destsize-1 );
-    memmove(dest, src, destsize-1);
-    dest[destsize-1] = 0;
+	int srcsize = strlen(src);
+    memmove(dest, src, srcsize);
+    dest[srcsize] = 0;
 }
                  
 int Q_stricmpn (const char *s1, const char *s2, int n) {
