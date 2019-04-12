@@ -761,7 +761,6 @@ static void Sys_SendKeyEvents(int currentTime)
                 if ((currentTime - lastEventTime > 1 * 1000) && lastEventTimeValid) {
                     //Com_Printf("Restoring monitor gamma after being idle for %f seconds.\n", (currentTime - lastEventTime) / 1000.0);
                     [NSCursor hide];
-                    Sys_SetScreenFade(&glw_state.inGameTable, 1.0);
                 }
                 lastEventTime = [event timestamp] * 1000.0;	//currentTime;
                 lastEventTimeValid = YES;

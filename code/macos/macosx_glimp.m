@@ -37,6 +37,8 @@ cvar_t	*r_allowSoftwareGL;		// don't abort out if the pixelformat claims softwar
 cvar_t  *r_enablerender;                // Enable actual rendering
 cvar_t  *r_appleTransformHint;          // Enable Apple transform hint
 
+NSWindow *_window; // keep window handle so we don't need to recreate a window all the time
+
 static void GLW_InitExtensions( void );
 static qboolean CreateGameWindow( qboolean isSecondTry );
 static GLint Sys_QueryVideoMemory();
@@ -130,9 +132,7 @@ qboolean GLimp_SetMode( qboolean isSecondTry )
         qglClear( GL_COLOR_BUFFER_BIT );
         GLimp_EndFrame();
     }
-
-    Sys_UnfadeScreen(Sys_DisplayToUse(), NULL);
-    
+   
     CheckErrors();
 
     return qtrue;
@@ -278,14 +278,7 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
 
     glw_state.gameMode = glw_state.desktopMode;
     
-    if (glConfig.isFullscreen) {
-        err = CGDisplaySwitchToMode(glw_state.display, CGDisplayBestModeForParameters (kCGDirectMainDisplay,
-                                                                                       32, glConfig.vidWidth, glConfig.vidHeight, NULL) );//(CFDictionaryRef)glw_state.gameMode);
-    }
-    else {
-        err = CGDisplaySwitchToMode(glw_state.display, (CFDictionaryRef)glw_state.desktopMode);
-        
-    }
+    
     
     // Get the GL pixel format
     pixelAttributes = GetPixelAttributes();
@@ -311,70 +304,76 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
     }
 
     //if (!glConfig.isFullscreen) {
-        cvar_t		*vid_xpos;
-        cvar_t		*vid_ypos;
-        CGRect           windowRect;
-        
-        vid_xpos = ri.Cvar_Get( "vid_xpos", "100", CVAR_ARCHIVE );
-        vid_ypos = ri.Cvar_Get( "vid_ypos", "100", CVAR_ARCHIVE );
-
-        // Create a window of the desired size
-        windowRect.origin.x = vid_xpos->integer;
-        windowRect.origin.y = vid_ypos->integer;
-        windowRect.size.width = glConfig.vidWidth;
-        windowRect.size.height = glConfig.vidHeight;
-        //windowRect.size.width = 2560;
-        //windowRect.size.height = 1440;
-    // 1024 x 576
+    cvar_t		*vid_xpos;
+    cvar_t		*vid_ypos;
+    CGRect           windowRect;
     
+    vid_xpos = ri.Cvar_Get( "vid_xpos", "100", CVAR_ARCHIVE );
+    vid_ypos = ri.Cvar_Get( "vid_ypos", "100", CVAR_ARCHIVE );
+
+    // Create a window of the desired size
+    windowRect.origin.x = vid_xpos->integer;
+    windowRect.origin.y = vid_ypos->integer;
+    windowRect.size.width = glConfig.vidWidth;
+    windowRect.size.height = glConfig.vidHeight;
+
+    if(_window == nil) _window = [[NSWindow alloc] initWithContentRect:windowRect
+                                                   styleMask: (glConfig.isFullscreen ? NSTitledWindowMask : NSTitledWindowMask)
+                                                     backing:NSBackingStoreRetained
+                                                       defer:NO];
+
+    glw_state.window = _window;
+    NSUInteger masks = [glw_state.window styleMask];
+    qboolean isFullscreen = qfalse;
+    if ( masks & NSFullScreenWindowMask) {
+        isFullscreen = qtrue;
+    }
     
-        glw_state.window = [[NSWindow alloc] initWithContentRect:windowRect
-                                                       styleMask: (glConfig.isFullscreen ? nil : NSTitledWindowMask)
-                                                         backing:NSBackingStoreRetained
-                                                           defer:NO];
+    if (glConfig.isFullscreen) {
+        glw_state.gameMode = CGDisplayBestModeForParameters (kCGDirectMainDisplay, 32, glConfig.vidWidth, glConfig.vidHeight, NULL);
+        err = CGDisplaySwitchToMode(glw_state.display, glw_state.gameMode);//(CFDictionaryRef)glw_state.gameMode);
+
+        [glw_state.window toggleFullScreen:nil];
+        [glw_state.window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
+        [glw_state.window setFrame:windowRect display:YES];
+    } else {
+        
+        err = CGDisplaySwitchToMode(glw_state.display, (CFDictionaryRef)glw_state.desktopMode);
+        
+        NSSize size;
+        size.height = glConfig.vidHeight;
+        size.width = glConfig.vidWidth;
+        
+        if(isFullscreen) [glw_state.window toggleFullScreen:nil];
+        [glw_state.window setContentSize:size];
+        [glw_state.window setCollectionBehavior:NSWindowCollectionBehaviorDefault];
+        //[glw_state.window setFrame:windowRect display:YES];
+    }
     
-        if (glConfig.isFullscreen) {
+    glw_state.window.styleMask &= ~NSWindowStyleMaskResizable;
+    
+    if ( err != CGDisplayNoErr ) {
+        ri.Printf( PRINT_ALL, " Unable to set display mode, err = %d\n", err );
+        return qfalse;
+    }
+    
+    [glw_state.window setTitle: @"Quake3"];
 
-            if ( err != CGDisplayNoErr ) {
-                ri.Printf( PRINT_ALL, " Unable to set display mode, err = %d\n", err );
-                return qfalse;
-            }
-            
-            [glw_state.window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
-            [glw_state.window toggleFullScreen:nil];
-        }
-        
-        [glw_state.window setTitle: @"Quake3"];
+    [glw_state.window orderFront: nil];
 
-        [glw_state.window orderFront: nil];
+    // Always get mouse moved events (if mouse support is turned off (rare)
+    // the event system will filter them out.
+    [glw_state.window setAcceptsMouseMovedEvents: YES];
+    
+    // Hider cursor
+    [NSCursor hide];
+    //[NSMenu setMenuBarVisible:NO];
+    
+    // Direct the context to draw in this window
+    [OSX_GetNSGLContext() setView: [glw_state.window contentView]];
 
-        // Always get mouse moved events (if mouse support is turned off (rare)
-        // the event system will filter them out.
-        [glw_state.window setAcceptsMouseMovedEvents: YES];
-        
-        // Hider cursor
-        [NSCursor hide];
-        //[NSMenu setMenuBarVisible:NO];
-        
-        // Direct the context to draw in this window
-        [OSX_GetNSGLContext() setView: [glw_state.window contentView]];
-
-        // Sync input rect with where the window actually is...
-        Sys_UpdateWindowMouseInputRect();
-//    } else {
-//        CGLError err;
-//
-//        err = CGLSetFullScreen(OSX_GetCGLContext());
-//        if (err) {
-//            CGDisplayRestoreColorSyncSettings();
-//            CGDisplaySwitchToMode(glw_state.display, (CFDictionaryRef)glw_state.desktopMode);
-//            ReleaseAllDisplays();
-//            Com_Printf("CGLSetFullScreen -> %d (%s)\n", err, CGLErrorString(err));
-//            return qfalse;
-//        }
-//
-//        Sys_SetMouseInputRect(CGDisplayBounds(glw_state.display));
-//    }
+    // Sync input rect with where the window actually is...
+    Sys_UpdateWindowMouseInputRect();
 
 
 #ifndef USE_CGLMACROS
@@ -392,6 +391,10 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
     
     ri.Printf(PRINT_ALL, "ok\n" );
 
+    if (glConfig.isFullscreen) {
+        [glw_state.window toggleFullScreen:nil];
+        
+    }
     return qtrue;
 }
 
@@ -463,9 +466,6 @@ void GLimp_Init( void )
 
     // We only allow changing the gamma if we are full screen
     glConfig.deviceSupportsGamma = false;//(r_fullscreen->integer != 0);
-    if (glConfig.deviceSupportsGamma) {
-        Sys_StoreGammaTables();
-    }
     
     r_allowSoftwareGL = ri.Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
     r_enablerender = ri.Cvar_Get("r_enablerender", "1", 0 );
@@ -586,7 +586,7 @@ void GLimp_Shutdown( void )
 
     Com_Printf("----- Shutting down GL -----\n");
 
-    Sys_FadeScreen(Sys_DisplayToUse());
+
     
     if (OSX_GetNSGLContext()) {
 #ifndef USE_CGLMACROS
@@ -602,7 +602,7 @@ void GLimp_Shutdown( void )
 
     _GLimp_RestoreOriginalVideoSettings();
     
-    Sys_UnfadeScreens();
+
 
     // Restore the original gamma if needed.
     if (glConfig.deviceSupportsGamma) {
@@ -612,8 +612,8 @@ void GLimp_Shutdown( void )
 
     if (glw_state.window) {
         //[glw_state.window release];
-        [glw_state.window close];
-        glw_state.window = nil;
+        //[glw_state.window close];
+        //glw_state.window = nil;
     }
 
     if (glw_state.log_fp) {
@@ -655,36 +655,16 @@ void	GLimp_LogComment( char *comment ) {
         }
 
 /*
-===============
-GLimp_SetGamma
-
-===============
-*/
+ ===============
+ GLimp_SetGamma
+ 
+ ===============
+ */
 void GLimp_SetGamma(unsigned char red[256],
                     unsigned char green[256],
                     unsigned char blue[256])
 {
-    CGGammaValue redGamma[256], greenGamma[256], blueGamma[256];
-    CGTableCount i;
-    CGDisplayErr err;
-    
-    if (!glConfig.deviceSupportsGamma)
-        return;
-        
-    for (i = 0; i < 256; i++) {
-        redGamma[i]   = red[i]   / 255.0;
-        greenGamma[i] = green[i] / 255.0;
-        blueGamma[i]  = blue[i]  / 255.0;
-    }
-    
-    err = CGSetDisplayTransferByTable(glw_state.display, 256, redGamma, greenGamma, blueGamma);
-    if (err != CGDisplayNoErr) {
-        Com_Printf("GLimp_SetGamma: CGSetDisplayTransferByByteTable returned %d.\n", err);
-    }
-    
-    // Store the gamma table that we ended up using so we can reapply it later when unhiding or to work around the bug where if you leave the game sitting and the monitor sleeps, when it wakes, the gamma isn't reset.
-    glw_state.inGameTable.display = glw_state.display;
-    Sys_GetGammaTable(&glw_state.inGameTable);
+
 }
 
 qboolean GLimp_ChangeMode( int mode )
@@ -1000,10 +980,6 @@ qboolean Sys_Hide()
     
     Sys_IsHidden = qtrue;
 
-    // Don't need to store the current gamma since we always keep it around in glw_state.inGameTable.
-
-    Sys_FadeScreen(Sys_DisplayToUse());
-
     // Disassociate the GL context from the screen
     // Have to call both to actually deallocate kernel resources and free the NSSurface
     CGLClearDrawable(OSX_GetCGLContext());
@@ -1020,8 +996,7 @@ qboolean Sys_Hide()
     // Release the screen(s)
     ReleaseAllDisplays();
     
-    Sys_UnfadeScreens();
-    
+
     // Shut down the input system so the mouse and keyboard settings are restore to normal
     Sys_ShutdownInput();
     
@@ -1053,13 +1028,10 @@ qboolean Sys_Unhide()
     if (!Sys_IsHidden)
         // Eh?
         return qfalse;
-        
-    Sys_FadeScreens();
-
+    
     // Capture the screen(s)
     err = Sys_CaptureActiveDisplays();
     if (err != CGDisplayNoErr) {
-        Sys_UnfadeScreens();
         ri.Printf( PRINT_ALL, "Unhide failed -- cannot capture the display again.\n" );
         return qfalse;
     }
@@ -1068,7 +1040,6 @@ qboolean Sys_Unhide()
     err = CGDisplaySwitchToMode(glw_state.display, (CFDictionaryRef)glw_state.gameMode);
     if ( err != CGDisplayNoErr ) {
         ReleaseAllDisplays();
-        Sys_UnfadeScreens();
         ri.Printf( PRINT_ALL, "Unhide failed -- Unable to set display mode\n" );
         return qfalse;
     }
@@ -1077,16 +1048,12 @@ qboolean Sys_Unhide()
     glErr = CGLSetFullScreen(OSX_GetCGLContext());
     if (err) {
         ReleaseAllDisplays();
-        Sys_UnfadeScreens();
         ri.Printf( PRINT_ALL, "Unhide failed: CGLSetFullScreen -> %d (%s)\n", err, CGLErrorString(err));
         return qfalse;
     }
 
     // Restore the current context
     [OSX_GetNSGLContext() makeCurrentContext];
-    
-    // Restore the gamma that the game had set
-    Sys_UnfadeScreen(Sys_DisplayToUse(), &glw_state.inGameTable);
     
     // Restore the input system (last so if something goes wrong we don't eat the mouse)
     Sys_InitInput();

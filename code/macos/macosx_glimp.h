@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // the current context.
 //#define USE_CGLMACROS
 
+
 #ifdef USE_CGLMACROS
 #include "macosx_local.h"
 #define cgl_ctx glw_state._cgl_ctx
