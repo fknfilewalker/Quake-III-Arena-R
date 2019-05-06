@@ -281,6 +281,8 @@ static ID_INLINE float BigFloat(const float *l) { return FloatSwap(l); }
 // just waste space and make big arrays static...
 #ifdef __linux__
 
+typedef long int intptr_t;
+
 #define QDLLEXPORT
 
 // bk001205 - from Makefile

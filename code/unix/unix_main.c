@@ -701,12 +701,11 @@ changed the load procedure to match VFS logic, and allow developer use
 */
 extern char   *FS_BuildOSPath( const char *base, const char *game, const char *qpath );
 
-void *Sys_LoadDll( const char *name, char *fqpath ,
-                   int (**entryPoint)(int, ...),
-                   int (*systemcalls)(int, ...) ) 
+void  * QDECL Sys_LoadDll( const char *name, char *fqpath , int (QDECL **entryPoint)(int, ...),
+          intptr_t (QDECL *systemcalls)(intptr_t, ...) )
 {
   void *libHandle;
-  void  (*dllEntry)( int (*syscallptr)(int, ...) );
+  void  (QDECL *dllEntry)(intptr_t(QDECL *syscallptr)(intptr_t, ...) );
   char  curpath[MAX_OSPATH];
   char  fname[MAX_OSPATH];
   char  *basepath;
@@ -731,7 +730,7 @@ void *Sys_LoadDll( const char *name, char *fqpath ,
 #elif defined __mips__
   snprintf (fname, sizeof(fname), "%smips.so", name);
 #else
-#error Unknown arch
+//#error Unknown arch
 #endif
 
 // bk001129 - was RTLD_LAZY 

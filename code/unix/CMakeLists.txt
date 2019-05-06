@@ -28,11 +28,12 @@ foreach(FILE ${SOURCES})
     source_group("${GROUP}" FILES "${FILE}")
 endforeach()
 
-find_package(OpenGL REQUIRED)
+#find_package(OpenGL REQUIRED)
 #find_package(GLEW REQUIRED)
 
 # INCLUDE
 include_directories(${OPENGL_INCLUDE_DIR})
+include_directories(${X11_INCLUDE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/code/renderer)
 include_directories(${CMAKE_SOURCE_DIR}/code/qcommon)
 include_directories(${CMAKE_SOURCE_DIR}/code/client)
@@ -41,14 +42,17 @@ include_directories(${CMAKE_SOURCE_DIR}/code/botlib)
 # EXECUTABLE
 add_executable(${APP_UNIX} ${SOURCES})
 target_link_libraries(${APP_UNIX} "${OPENGL_LIBRARIES}")
-target_link_libraries(${APP_UNIX} "-lGLU")
-target_link_libraries(${APP_UNIX} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_BOTLIB}.so")
-target_link_libraries(${APP_UNIX} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_RENDERER}.so")
-target_link_libraries(${APP_UNIX} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_SPLINES}.so")
+target_link_libraries(${APP_UNIX} "${X11_LIBRARIES}")
+target_link_libraries(${APP_UNIX} "${CMAKE_DL_LIBS}")
+#target_link_libraries(${APP_UNIX} "/usr/lib64/libxf86dga.so")
+target_link_libraries(${APP_UNIX} "/usr/lib64/libXxf86dga.so")
+target_link_libraries(${APP_UNIX} "-lm -lXxf86vm -lXext -lX11")
+target_link_libraries(${APP_UNIX} "${CMAKE_SOURCE_DIR}/bin/lib${LIB_BOTLIB}.a")
+target_link_libraries(${APP_UNIX} "${CMAKE_SOURCE_DIR}/bin/lib${LIB_RENDERER}.a")
+target_link_libraries(${APP_UNIX} "${CMAKE_SOURCE_DIR}/bin/lib${LIB_SPLINES}.a")
 
 # PROPERTIES
 # when Quake III Arena was installed with GOG
-# +set fs_basePath "C:\GOG Games\Quake III"
 set_target_properties(${APP_UNIX} PROPERTIES LINKER_LANGUAGE C)
 IF(Q3_ARGUMENTS)
     #set_target_properties(${APP_WIN32} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS ${Q3_ARGUMENTS})

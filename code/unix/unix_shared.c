@@ -156,6 +156,13 @@ void Sys_SnapVector( float *v ) { // bk001213 - see win32/win_shared.c
 }
 #endif
 
+void Sys_SnapVector( float *v )
+{
+	v[0] = (int)v[0];
+	v[1] = (int)v[1];
+	v[2] = (int)v[2];
+}
+
 
 void	Sys_Mkdir( const char *path )
 {
