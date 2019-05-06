@@ -96,7 +96,7 @@ static int hist_current = -1, hist_count = 0;
 // General routines
 // =======================================================================
 
-// bk001207 
+// bk001207
 #define MEM_THRESHOLD 96*1024*1024
 
 /*
@@ -148,7 +148,7 @@ Sys_In_Restart_f
 Restart the input subsystem
 =================
 */
-void Sys_In_Restart_f( void ) 
+void Sys_In_Restart_f( void )
 {
   IN_Shutdown();
   IN_Init();
@@ -323,7 +323,7 @@ void Sys_Exit( int ex ) {
 
 #ifdef NDEBUG // regular behavior
 
-  // We can't do this 
+  // We can't do this
   //  as long as GL DLL's keep installing with atexit...
   //exit(ex);
   _exit(ex);
@@ -391,7 +391,7 @@ void Sys_Init(void)
 }
 
 void  Sys_Error( const char *error, ...)
-{ 
+{
   va_list     argptr;
   char        string[1024];
 
@@ -413,10 +413,10 @@ void  Sys_Error( const char *error, ...)
   fprintf(stderr, "Sys_Error: %s\n", string);
 
   Sys_Exit( 1 ); // bk010104 - use single exit point.
-} 
+}
 
 void Sys_Warn (char *warning, ...)
-{ 
+{
   va_list     argptr;
   char        string[1024];
 
@@ -435,7 +435,7 @@ void Sys_Warn (char *warning, ...)
   {
     tty_Show();
   }
-} 
+}
 
 /*
 ============
@@ -464,7 +464,7 @@ void Sys_ConsoleInputInit()
 {
   struct termios tc;
 
-  // TTimo 
+  // TTimo
   // https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=390
   // ttycon 0 or 1, if the process is backgrounded (running non interactively)
   // then SIGTTIN or SIGTOU is emitted, if not catched, turns into a SIGSTP
@@ -494,9 +494,9 @@ void Sys_ConsoleInputInit()
               characters  EOF,  EOL,  EOL2, ERASE, KILL, REPRINT,
               STATUS, and WERASE, and buffers by lines.
      ISIG: when any of the characters  INTR,  QUIT,  SUSP,  or
-              DSUSP are received, generate the corresponding sig­
+              DSUSP are received, generate the corresponding sig?
               nal
-    */              
+    */
     tc.c_lflag &= ~(ECHO | ICANON);
     /*
      ISTRIP strip off bit 8
@@ -505,7 +505,7 @@ void Sys_ConsoleInputInit()
     tc.c_iflag &= ~(ISTRIP | INPCK);
     tc.c_cc[VMIN] = 1;
     tc.c_cc[VTIME] = 0;
-    tcsetattr (0, TCSADRAIN, &tc);    
+    tcsetattr (0, TCSADRAIN, &tc);
     ttycon_on = qtrue;
   } else
     ttycon_on = qfalse;
@@ -712,37 +712,47 @@ void  * QDECL Sys_LoadDll( const char *name, char *fqpath , int (QDECL **entryPo
   char  *homepath;
   char  *pwdpath;
   char  *gamedir;
+  char  *cdpath;
   char  *fn;
   const char*  err = NULL;
-	
-	*fqpath = 0;
+
+    *fqpath = 0;
 
   // bk001206 - let's have some paranoia
   assert( name );
 
   getcwd(curpath, sizeof(curpath));
-#if defined __i386__
-  snprintf (fname, sizeof(fname), "%si386.so", name);
-#elif defined __powerpc__   //rcg010207 - PPC support.
-  snprintf (fname, sizeof(fname), "%sppc.so", name);
-#elif defined __axp__
-  snprintf (fname, sizeof(fname), "%saxp.so", name);
-#elif defined __mips__
-  snprintf (fname, sizeof(fname), "%smips.so", name);
+
+#if defined __linux__
+  snprintf (fname, sizeof(fname), "lib%s.so", name);
 #else
-//#error Unknown arch
+    #error Unknown arch
 #endif
 
-// bk001129 - was RTLD_LAZY 
+// bk001129 - was RTLD_LAZY
 #define Q_RTLD    RTLD_NOW
 
   pwdpath = Sys_Cwd();
   basepath = Cvar_VariableString( "fs_basepath" );
   homepath = Cvar_VariableString( "fs_homepath" );
   gamedir = Cvar_VariableString( "fs_game" );
+  cdpath = Cvar_VariableString( "fs_cdpath" );
 
   // pwdpath
-  fn = FS_BuildOSPath( pwdpath, gamedir, fname );
+  char path_to_lib[1000];
+  path_to_lib[0] = '\0';
+  strcat(path_to_lib,cdpath);
+
+  char *ptr;
+  ptr = strrchr(path_to_lib, '/');
+  if (ptr != NULL) {
+      *ptr = '\0';
+  }
+
+  strcat(path_to_lib,"/");
+  strcat(path_to_lib,fname);
+  fn = &path_to_lib;
+  //fn = FS_BuildOSPath( pwdpath, gamedir, fname );
   Com_Printf( "Sys_LoadDll(%s)... \n", fn );
   libHandle = dlopen( fn, Q_RTLD );
 
@@ -775,9 +785,9 @@ void  * QDECL Sys_LoadDll( const char *name, char *fqpath , int (QDECL **entryPo
     } else
       Com_Printf ( "Sys_LoadDll(%s): succeeded ...\n", fn );
   } else
-    Com_Printf ( "Sys_LoadDll(%s): succeeded ...\n", fn ); 
+    Com_Printf ( "Sys_LoadDll(%s): succeeded ...\n", fn );
 
-  dllEntry = dlsym( libHandle, "dllEntry" ); 
+  dllEntry = dlsym( libHandle, "dllEntry" );
   *entryPoint = dlsym( libHandle, "vmMain" );
   if ( !*entryPoint || !dllEntry )
   {
@@ -851,7 +861,7 @@ Sys_StreamThread
 A thread will be sitting in this loop forever
 ================
 */
-void Sys_StreamThread( void ) 
+void Sys_StreamThread( void )
 {
   int   buffer;
   int   count;
@@ -883,7 +893,7 @@ Sys_InitStreamThread
 
 ================
 */
-void Sys_InitStreamThread( void ) 
+void Sys_InitStreamThread( void )
 {
 }
 
@@ -893,7 +903,7 @@ Sys_ShutdownStreamThread
 
 ================
 */
-void Sys_ShutdownStreamThread( void ) 
+void Sys_ShutdownStreamThread( void )
 {
 }
 
@@ -904,7 +914,7 @@ Sys_BeginStreamedFile
 
 ================
 */
-void Sys_BeginStreamedFile( fileHandle_t f, int readAhead ) 
+void Sys_BeginStreamedFile( fileHandle_t f, int readAhead )
 {
   if ( stream.file )
   {
@@ -925,7 +935,7 @@ Sys_EndStreamedFile
 
 ================
 */
-void Sys_EndStreamedFile( fileHandle_t f ) 
+void Sys_EndStreamedFile( fileHandle_t f )
 {
   if ( f != stream.file )
   {
@@ -943,7 +953,7 @@ Sys_StreamedRead
 
 ================
 */
-int Sys_StreamedRead( void *buffer, int size, int count, fileHandle_t f ) 
+int Sys_StreamedRead( void *buffer, int size, int count, fileHandle_t f )
 {
   int   available;
   int   remaining;
@@ -1185,7 +1195,7 @@ void    Sys_ConfigureFPU() { // bk001213 - divide by zero
   static int fpu_word = _FPU_DEFAULT;
   _FPU_SETCW( fpu_word );
 #endif // NDEBUG
-#endif // __i386 
+#endif // __i386
 #endif // __linux
 }
 
@@ -1195,9 +1205,9 @@ void Sys_PrintBinVersion( const char* name ) {
   char* sep = "==============================================================";
   fprintf( stdout, "\n\n%s\n", sep );
 #ifdef DEDICATED
-  fprintf( stdout, "Linux Quake3 Dedicated Server [%s %s]\n", date, time );  
+  fprintf( stdout, "Linux Quake3 Dedicated Server [%s %s]\n", date, time );
 #else
-  fprintf( stdout, "Linux Quake3 Full Executable  [%s %s]\n", date, time );  
+  fprintf( stdout, "Linux Quake3 Full Executable  [%s %s]\n", date, time );
 #endif
   fprintf( stdout, " local install: %s\n", name );
   fprintf( stdout, "%s\n\n", sep );
@@ -1247,7 +1257,7 @@ int main ( int argc, char* argv[] )
   }
 
   // bk000306 - clear queues
-  memset( &eventQue[0], 0, MAX_QUED_EVENTS*sizeof(sysEvent_t) ); 
+  memset( &eventQue[0], 0, MAX_QUED_EVENTS*sizeof(sysEvent_t) );
   memset( &sys_packetReceived[0], 0, MAX_MSGLEN*sizeof(byte) );
 
   Com_Init(cmdline);
@@ -1256,10 +1266,10 @@ int main ( int argc, char* argv[] )
   Sys_ConsoleInputInit();
 
   fcntl(0, F_SETFL, fcntl (0, F_GETFL, 0) | FNDELAY);
-	
+
 #ifdef DEDICATED
-	// init here for dedicated, as we don't have GLimp_Init
-	InitSig();
+    // init here for dedicated, as we don't have GLimp_Init
+    InitSig();
 #endif
 
   while (1)
