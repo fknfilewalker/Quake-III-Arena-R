@@ -34,5 +34,5 @@ endif()
 
 # LIB
 add_library(${LIB_RENDERER} STATIC ${SOURCES})
-target_link_libraries(${LIB_RENDERER} opengl32)
+target_link_libraries(${LIB_RENDERER} "${OPENGL_LIBRARIES}")
 set_target_properties(${LIB_RENDERER} PROPERTIES LINKER_LANGUAGE C)

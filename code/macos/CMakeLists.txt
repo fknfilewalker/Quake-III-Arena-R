@@ -51,9 +51,9 @@ target_link_libraries(${APP_MACOS} ${OpenGL_LIBRARY})
 target_link_libraries(${APP_MACOS} "-framework AppKit")
 target_link_libraries(${APP_MACOS} "-framework IOKit")
 target_link_libraries(${APP_MACOS} "-framework CoreAudio")
-target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_BOTLIB}.a")
-target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_RENDERER}.a")
-target_link_libraries(${APP_MACOS} "${CMAKE_SOURCE_DIR}/bin/Debug/lib${LIB_SPLINES}.a")
+target_link_libraries(${APP_MACOS} ${LIB_BOTLIB})
+target_link_libraries(${APP_MACOS} ${LIB_RENDERER})
+target_link_libraries(${APP_MACOS} ${LIB_SPLINES})
 
 # PROPERTIES
 set_target_properties(${APP_MACOS} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/code/macos/plist.in)

@@ -44,12 +44,11 @@ add_executable(${APP_UNIX} ${SOURCES})
 target_link_libraries(${APP_UNIX} "${OPENGL_LIBRARIES}")
 target_link_libraries(${APP_UNIX} "${X11_LIBRARIES}")
 target_link_libraries(${APP_UNIX} "${CMAKE_DL_LIBS}")
-#target_link_libraries(${APP_UNIX} "/usr/lib64/libxf86dga.so")
 target_link_libraries(${APP_UNIX} "/usr/lib64/libXxf86dga.so")
 target_link_libraries(${APP_UNIX} "-lm -lXxf86vm -lXext -lX11")
-target_link_libraries(${APP_UNIX} "${CMAKE_SOURCE_DIR}/bin/lib${LIB_BOTLIB}.a")
-target_link_libraries(${APP_UNIX} "${CMAKE_SOURCE_DIR}/bin/lib${LIB_RENDERER}.a")
-target_link_libraries(${APP_UNIX} "${CMAKE_SOURCE_DIR}/bin/lib${LIB_SPLINES}.a")
+target_link_libraries(${APP_UNIX} ${LIB_BOTLIB})
+target_link_libraries(${APP_UNIX} ${LIB_RENDERER})
+target_link_libraries(${APP_UNIX} ${LIB_SPLINES})
 
 # PROPERTIES
 # when Quake III Arena was installed with GOG
