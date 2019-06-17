@@ -719,13 +719,12 @@ GraphicsOptions_MenuInit
 */
 void GraphicsOptions_MenuInit( void )
 {
-	static const char *s_driver_names[] =
-	{
-		"OpenGL 1",
-		"OpenGL 3",
-        "Vulkan",
-		0
-	};
+    static const char *s_driver_names[] =
+    {
+        "Default",
+        "Voodoo",
+        0
+    };
 
 	static const char *tq_names[] =
 	{
@@ -760,26 +759,22 @@ void GraphicsOptions_MenuInit( void )
 		0
 	};
 
-	static const char *resolutions[] = 
-	{
-		"320x240",
-		"400x300",
-		"512x384",
-		"640x480",
-		"800x600",
-		"960x720",
-		"1024x768",
-		"1152x864",
-		"1280x1024",
-		"1600x1200",
-		"2048x1536",
-		"1024x576 wide screen",
-        "1280x720 wide screen",
-        "1600x900 wide screen",
-        "1920x1080 wide screen",
-        "2560x1440 wide screen",
-		0
-	};
+    static const char *resolutions[] =
+    {
+        "320x240",
+        "400x300",
+        "512x384",
+        "640x480",
+        "800x600",
+        "960x720",
+        "1024x768",
+        "1152x864",
+        "1280x1024",
+        "1600x1200",
+        "2048x1536",
+        "856x480 wide screen",
+        0
+    };
 	static const char *filter_names[] =
 	{
 		"Bilinear",
@@ -886,7 +881,7 @@ void GraphicsOptions_MenuInit( void )
 	y += 2 * ( BIGCHAR_HEIGHT + 2 );
 
 	s_graphicsoptions.driver.generic.type  = MTYPE_SPINCONTROL;
-	s_graphicsoptions.driver.generic.name  = "Backend:";
+	s_graphicsoptions.driver.generic.name  = "GL Driver:";
 	s_graphicsoptions.driver.generic.flags = QMF_PULSEIFFOCUS|QMF_SMALLFONT;
 	s_graphicsoptions.driver.generic.x     = 400;
 	s_graphicsoptions.driver.generic.y     = y;
