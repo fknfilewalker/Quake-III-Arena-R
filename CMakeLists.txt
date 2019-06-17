@@ -15,8 +15,11 @@ set(LIB_SPLINES Splines)
 set(LIB_UI ui_new)
 set(LIB_Q3UI ui)
 
+# Use dynamic libs instead of bytecode vm
+set(Q3_VM_DYNAMIC TRUE)
+
 # Arguments for IDE
-set(Q3_ARGUMENTS "+set sv_pure 0 +set vm_game 0 +set vm_cgame 0 +set vm_ui 0")
+set(Q3_ARGUMENTS "")
 # Set path to baseq3 folder
 if(WIN32)
 	set(BASEQ3_DIR "+set fs_basePath \"C:\\GOG Games\\Quake III\"")
