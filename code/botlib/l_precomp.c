@@ -1092,7 +1092,7 @@ int PC_WhiteSpaceBeforeToken(token_t *token)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-void PC_ClearTokenWhiteSpace(token_t *token)
+void __attribute__((optnone)) PC_ClearTokenWhiteSpace(token_t *token)
 {
 	token->whitespace_p = NULL;
 	token->endwhitespace_p = NULL;
@@ -2979,7 +2979,7 @@ void PC_SetPunctuations(source_t *source, punctuation_t *p)
 // Returns:				-
 // Changes Globals:		-
 //============================================================================
-source_t *LoadSourceFile(const char *filename)
+source_t __attribute__((optnone)) *LoadSourceFile(const char *filename)
 {
 	source_t *source;
 	script_t *script;
