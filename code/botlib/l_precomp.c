@@ -1092,7 +1092,7 @@ int PC_WhiteSpaceBeforeToken(token_t *token)
 // Returns:					-
 // Changes Globals:		-
 //============================================================================
-void __attribute__((optnone)) PC_ClearTokenWhiteSpace(token_t *token)
+void __attribute__((optimize("O0")))  __attribute__((optnone)) PC_ClearTokenWhiteSpace(token_t *token)
 {
 	token->whitespace_p = NULL;
 	token->endwhitespace_p = NULL;
