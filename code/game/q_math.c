@@ -545,13 +545,19 @@ void VectorRotate( vec3_t in, vec3_t matrix[3], vec3_t out )
 
 //============================================================================
 
-#if !idppc
+
 /*
 ** float q_rsqrt( float number )
 */
 float Q_rsqrt( float number )
 {
-	long i;
+    
+// the size of the long datatype on win/linux is 4 bytes but on macOS it is 8 bytes (the hex value that is set is for 4 bytes)
+#ifdef __APPLE__
+    int i;
+#else
+    long i;
+#endif
 	float x2, y;
 	const float threehalfs = 1.5F;
 
@@ -564,7 +570,7 @@ float Q_rsqrt( float number )
 //	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
 
 #ifndef Q3_VM
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 	assert( !isnan(y) ); // bk010122 - FPE?
 #endif
 #endif
@@ -576,7 +582,7 @@ float Q_fabs( float f ) {
 	tmp &= 0x7FFFFFFF;
 	return * ( float * ) &tmp;
 }
-#endif
+
 
 //============================================================
 

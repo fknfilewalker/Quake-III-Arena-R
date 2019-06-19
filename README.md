@@ -41,4 +41,3 @@ COMPILING ON MAC
 Use the provided `makefile` to generate a Xcode project. Open `Quake_III_Arena.xcodeproj` from `_project/` and build the `quake3` target. In order to run the game, make sure to set `fs_basePath` to a directory containing all the assets or put them in `~/Library/Application Support/baseq3`. Binarys can be found in `bin/`.
 
 ##### Bugs:
-* some weird texture artifacts
