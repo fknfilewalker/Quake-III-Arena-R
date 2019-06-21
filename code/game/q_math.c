@@ -552,12 +552,8 @@ void VectorRotate( vec3_t in, vec3_t matrix[3], vec3_t out )
 float Q_rsqrt( float number )
 {
     
-// the size of the long datatype on win/linux is 4 bytes but on macOS it is 8 bytes (the hex value that is set is for 4 bytes)
-#ifdef __APPLE__
-    int i;
-#else
-    long i;
-#endif
+    // the size of the long datatype on win/linux is 4 bytes but on macOS it is 8 bytes (the hex value that is set is for 4 bytes)
+    int32_t i;
 	float x2, y;
 	const float threehalfs = 1.5F;
 
