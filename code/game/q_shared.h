@@ -110,6 +110,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define idppc_altivec 0
 #endif
 
+// do not optimize code defines
+#ifdef __clang__
+    #define NO_OPT_CLANG __attribute__((optnone))
+#else
+    #define NO_OPT_CLANG
+#endif
+
+#ifdef __GNUC__
+    #define NO_OPT_GCC __attribute__((optimize("O0")))
+#else
+    #define NO_OPT_GCC
+#endif
+
 // for windows fastcall option
 
 #define	QDECL

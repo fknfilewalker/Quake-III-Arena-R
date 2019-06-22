@@ -2835,7 +2835,7 @@ Looks for product keys and restricts media add on ability
 if the full version is not found
 ===================
 */
-static void __attribute__((optimize("O0"))) FS_SetRestrictions( void ) {
+static void NO_OPT_GCC FS_SetRestrictions( void ) {
 	searchpath_t	*path;
 
 #ifndef PRE_RELEASE_DEMO
