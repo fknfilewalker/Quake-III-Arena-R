@@ -553,7 +553,12 @@ float Q_rsqrt( float number )
 {
     
     // the size of the long datatype on win/linux is 4 bytes but on macOS it is 8 bytes (the hex value that is set is for 4 bytes)
-    int32_t i;
+#ifdef _WIN32
+	__int32 i;
+#else
+	int32_t i;
+#endif
+
 	float x2, y;
 	const float threehalfs = 1.5F;
 
