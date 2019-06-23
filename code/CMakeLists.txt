@@ -1,5 +1,3 @@
-# tools
-add_subdirectory(tools)
 
 # STATIC LIB
 add_subdirectory(botlib)
@@ -20,3 +18,6 @@ elseif(APPLE)
 else(UNIX)
 	add_subdirectory(unix)
 endif()
+
+# tools
+add_subdirectory(tools)
