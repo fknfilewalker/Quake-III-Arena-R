@@ -30,8 +30,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 static int (QDECL *syscall)( int arg, ... ) = (int (QDECL *)( int, ...))-1;
 
-
-void dllEntry( int (QDECL *syscallptr)( int arg,... ) ) {
+#ifdef _MSC_VER
+void __declspec(dllexport) dllEntry(int (QDECL * syscallptr)(int arg, ...)) {
+#else
+void dllEntry(int (QDECL * syscallptr)(int arg, ...)) {
+#endif	
 	syscall = syscallptr;
 }
 
