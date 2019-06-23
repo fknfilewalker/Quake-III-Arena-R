@@ -4,6 +4,8 @@
 cmake_minimum_required(VERSION 3.14.0)
 project(Quake_III_Arena)
 
+# Quake III
+
 set(APP_MACOS quake3)
 set(APP_WIN32 quake3)
 set(APP_UNIX quake3)
@@ -14,6 +16,10 @@ set(LIB_BOTLIB botlib)
 set(LIB_SPLINES Splines)
 set(LIB_UI ui_new)
 set(LIB_Q3UI ui)
+
+# TOOLS
+
+set(TOOL_Q3ASM q3asm)
 
 # Use dynamic libs instead of bytecode vm
 set(Q3_VM_DYNAMIC TRUE)

@@ -1,3 +1,5 @@
+# tools
+add_subdirectory(tools)
 
 # STATIC LIB
 add_subdirectory(botlib)
