@@ -36,7 +36,7 @@ include_directories(${CMAKE_SOURCE_DIR}/code/client)
 include_directories(${CMAKE_SOURCE_DIR}/code/botlib)
 
 # EXECUTABLE
-add_executable(${APP_WIN32} WIN32 ${SOURCES})
+add_executable(${APP_WIN32} WIN32 ${SOURCES} "winquake.rc")
 target_link_libraries(${APP_WIN32} wsock32 ws2_32 winmm opengl32)
 target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_BOTLIB}.lib")
 target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_RENDERER}.lib")

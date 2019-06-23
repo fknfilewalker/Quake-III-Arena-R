@@ -1429,7 +1429,7 @@ void GLimp_Init( void )
 	ri.Cvar_Set( "r_lastValidRenderer", glConfig.renderer_string );
 
 	GLW_InitExtensions();
-	WG_CheckHardwareGamma();
+	//WG_CheckHardwareGamma();
 }
 
 /*
