@@ -135,8 +135,6 @@ float	FloatSwap (const float *f);
 
 #ifdef WIN32
 
-#define QDLLEXPORT __declspec(dllexport)
-
 #define	MAC_STATIC
 
 #undef QDECL
@@ -256,8 +254,6 @@ static inline float LittleFloat (const float l) { return FloatSwap(&l); }
 
 #ifdef __APPLE__
 
-#define QDLLEXPORT
-
 #undef QDECL
 #define    QDECL    __cdecl
 
@@ -295,8 +291,6 @@ static ID_INLINE float BigFloat(const float *l) { return FloatSwap(l); }
 #ifdef __linux__
 
 typedef long int intptr_t;
-
-#define QDLLEXPORT
 
 // bk001205 - from Makefile
 #define stricmp strcasecmp
