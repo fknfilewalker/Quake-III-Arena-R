@@ -2,6 +2,11 @@
 # add all src files and create file hierarchy for IDE
 file(GLOB_RECURSE SOURCES *.cpp *.c *.m *.mm *.hpp *.h)
 foreach(FILE ${SOURCES})
+    if("${FILE}" MATCHES "bg_lib.c" OR "${FILE}" MATCHES "bg_lib.h") 
+        list(REMOVE_ITEM SOURCES "${FILE}") 
+        continue() 
+    endif() 
+
     # Get the directory of the source file
     get_filename_component(PARENT_DIR "${FILE}" DIRECTORY)
 

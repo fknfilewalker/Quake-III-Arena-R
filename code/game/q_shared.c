@@ -709,10 +709,11 @@ Safe strncpy that ensures a trailing zero
 =============
 */
 void Q_strncpyz( char *dest, const char *src, int destsize ) {
-  // bk001129 - also NULL dest
-  if ( !dest ) {
-    Com_Error( ERR_FATAL, "Q_strncpyz: NULL dest" );
-  }
+	int srcsize;
+	// bk001129 - also NULL dest
+	if ( !dest ) {
+		Com_Error( ERR_FATAL, "Q_strncpyz: NULL dest" );
+	}
 	if ( !src ) {
 		Com_Error( ERR_FATAL, "Q_strncpyz: NULL src" );
 	}
@@ -721,7 +722,7 @@ void Q_strncpyz( char *dest, const char *src, int destsize ) {
 	}
 
     //strncpy( dest, src, destsize-1 );
-	int srcsize = strlen(src);
+	srcsize = strlen(src);
     memmove(dest, src, srcsize);
     dest[srcsize] = 0;
 }
