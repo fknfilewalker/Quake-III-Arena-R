@@ -2,7 +2,7 @@ rem make sure we have a safe environement
 set LIBRARY=
 set INCLUDE=
 
-mkdir build vm\ui\vm
+mkdir build vm
 
 set cc=bin\lcc -DQ3_VM -S -Wf-target=bytecode -Wo-lccdir=bin -Wf-g -I../../code/cgame -I../../code/game -I../../code/q3_ui %1
 
@@ -93,6 +93,6 @@ bin\lcc -DQ3_VM -S -Wf-target=bytecode -Wo-lccdir=bin -Wf-g -I../../code/cgame -
 bin\lcc -DQ3_VM -S -Wf-target=bytecode -Wo-lccdir=bin -Wf-g -I../../code/cgame -I../../code/game -I../../code/q3_ui ../../code/q3_ui/ui_mods.c -o build/ui_mods.asm
 @if errorlevel 1 goto quit
 
-bin\q3asm -f q3_ui.q3asm -o vm/ui/vm/ui
+bin\q3asm -f q3_ui.q3asm -o vm/ui
 :quit
 
