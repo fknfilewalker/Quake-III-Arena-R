@@ -624,7 +624,7 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		r.right  = width;
 		r.bottom = height;
 
-		if ( cdsFullscreen || !Q_stricmp( _3DFX_DRIVER_NAME, drivername ) )
+		if ( cdsFullscreen)
 		{
 			exstyle = WS_EX_TOPMOST;
 			stylebits = WS_POPUP|WS_VISIBLE|WS_SYSMENU;
@@ -639,7 +639,7 @@ static qboolean GLW_CreateWindow( const char *drivername, int width, int height,
 		w = r.right - r.left;
 		h = r.bottom - r.top;
 
-		if ( cdsFullscreen || !Q_stricmp( _3DFX_DRIVER_NAME, drivername ) )
+		if ( cdsFullscreen)
 		{
 			x = 0;
 			y = 0;
@@ -772,28 +772,26 @@ static rserr_t GLW_SetMode( const char *drivername,
 	//
 	// verify desktop bit depth
 	//
-	if ( glConfig.driverType != GLDRV_VOODOO )
+	if ( glw_state.desktopBitsPixel < 15 || glw_state.desktopBitsPixel == 24 )
 	{
-		if ( glw_state.desktopBitsPixel < 15 || glw_state.desktopBitsPixel == 24 )
+		if ( colorbits == 0 || ( !cdsFullscreen && colorbits >= 15 ) )
 		{
-			if ( colorbits == 0 || ( !cdsFullscreen && colorbits >= 15 ) )
+			if ( MessageBox( NULL,
+						"It is highly unlikely that a correct\n"
+						"windowed display can be initialized with\n"
+						"the current desktop display depth.  Select\n"
+						"'OK' to try anyway.  Press 'Cancel' if you\n"
+						"have a 3Dfx Voodoo, Voodoo-2, or Voodoo Rush\n"
+						"3D accelerator installed, or if you otherwise\n"
+						"wish to quit.",
+						"Low Desktop Color Depth",
+						MB_OKCANCEL | MB_ICONEXCLAMATION ) != IDOK )
 			{
-				if ( MessageBox( NULL,
-							"It is highly unlikely that a correct\n"
-							"windowed display can be initialized with\n"
-							"the current desktop display depth.  Select\n"
-							"'OK' to try anyway.  Press 'Cancel' if you\n"
-							"have a 3Dfx Voodoo, Voodoo-2, or Voodoo Rush\n"
-							"3D accelerator installed, or if you otherwise\n"
-							"wish to quit.",
-							"Low Desktop Color Depth",
-							MB_OKCANCEL | MB_ICONEXCLAMATION ) != IDOK )
-				{
-					return RSERR_INVALID_MODE;
-				}
+				return RSERR_INVALID_MODE;
 			}
 		}
 	}
+	
 
 	// do a CDS if needed
 	if ( cdsFullscreen )
@@ -1063,7 +1061,7 @@ static void GLW_InitExtensions( void )
 	// GL_EXT_compiled_vertex_array
 	qglLockArraysEXT = NULL;
 	qglUnlockArraysEXT = NULL;
-	if ( strstr( glConfig.extensions_string, "GL_EXT_compiled_vertex_array" ) && ( glConfig.hardwareType != GLHW_RIVA128 ) )
+	if ( strstr( glConfig.extensions_string, "GL_EXT_compiled_vertex_array" ) )
 	{
 		if ( r_ext_compiled_vertex_array->integer )
 		{
@@ -1186,10 +1184,6 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 
 		ri.Printf( PRINT_ALL, "...assuming '%s' is a standalone driver\n", drivername );
 
-		if ( strstr( buffer, _3DFX_DRIVER_NAME ) )
-		{
-			glConfig.driverType = GLDRV_VOODOO;
-		}
 	}
 
 	// disable the 3Dfx splash screen
@@ -1223,11 +1217,6 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 			{
 				goto fail;
 			}
-		}
-
-		if ( glConfig.driverType == GLDRV_VOODOO )
-		{
-			glConfig.isFullscreen = qtrue;
 		}
 
 		return qtrue;
@@ -1396,35 +1385,6 @@ void GLimp_Init( void )
 	// this is where hardware specific workarounds that should be
 	// detected/initialized every startup should go.
 	//
-	if ( strstr( buf, "banshee" ) || strstr( buf, "voodoo3" ) )
-	{
-		glConfig.hardwareType = GLHW_3DFX_2D3D;
-	}
-	// VOODOO GRAPHICS w/ 2MB
-	else if ( strstr( buf, "voodoo graphics/1 tmu/2 mb" ) )
-	{
-	}
-	else if ( strstr( buf, "glzicd" ) )
-	{
-	}
-	else if ( strstr( buf, "rage pro" ) || strstr( buf, "Rage Pro" ) || strstr( buf, "ragepro" ) )
-	{
-		glConfig.hardwareType = GLHW_RAGEPRO;
-	}
-	else if ( strstr( buf, "rage 128" ) )
-	{
-	}
-	else if ( strstr( buf, "permedia2" ) )
-	{
-		glConfig.hardwareType = GLHW_PERMEDIA2;
-	}
-	else if ( strstr( buf, "riva 128" ) )
-	{
-		glConfig.hardwareType = GLHW_RIVA128;
-	}
-	else if ( strstr( buf, "riva tnt " ) )
-	{
-	}
 
 	ri.Cvar_Set( "r_lastValidRenderer", glConfig.renderer_string );
 

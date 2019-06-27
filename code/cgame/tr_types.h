@@ -154,18 +154,11 @@ typedef enum {
 								// > GLDRV_ICD for minidriverness, so this
 								// should always be the lowest value in this
 								// enum set
-	GLDRV_STANDALONE,			// driver is a non-3Dfx standalone driver
-	GLDRV_VOODOO				// driver is a 3Dfx standalone driver
+	GLDRV_STANDALONE			// driver is a non-3Dfx standalone driver
 } glDriverType_t;
 
 typedef enum {
 	GLHW_GENERIC,			// where everthing works the way it should
-	GLHW_3DFX_2D3D,			// Voodoo Banshee or Voodoo3, relevant since if this is
-							// the hardware type then there can NOT exist a secondary
-							// display adapter
-	GLHW_RIVA128,			// where you can't interpolate alpha
-	GLHW_RAGEPRO,			// where you can't modulate alpha on alpha textures
-	GLHW_PERMEDIA2			// where you don't have src*dst
 } glHardwareType_t;
 
 typedef struct {
@@ -208,15 +201,17 @@ typedef struct {
 #ifdef Q3_VM
 
 #define _3DFX_DRIVER_NAME	"Voodoo"
-#define OPENGL_DRIVER_NAME	"Default"
+#define OPENGL_DRIVER_NAME	"opengl32"
+#define VULKAN_DRIVER_NAME	"vulkan"
 
 #elif defined(_WIN32)
 */
 
 #if defined(Q3_VM) || defined(_WIN32)
 
-#define _3DFX_DRIVER_NAME	"3dfxvgl"
+//#define _3DFX_DRIVER_NAME	"3dfxvgl"
 #define OPENGL_DRIVER_NAME	"opengl32"
+#define VULKAN_DRIVER_NAME	"vulkan"
 
 #else
 
