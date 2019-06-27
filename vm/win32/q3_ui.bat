@@ -94,5 +94,7 @@ bin\lcc -DQ3_VM -S -Wf-target=bytecode -Wo-lccdir=bin -Wf-g -I../../code/cgame -
 @if errorlevel 1 goto quit
 
 bin\q3asm -f q3_ui.q3asm -o vm/ui
+
+del vm\ui.map
 :quit
 

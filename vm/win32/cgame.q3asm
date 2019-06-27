@@ -1,0 +1,26 @@
+-o "\quake3\baseq3\vm\cgame"
+build\cg_main
+..\..\code\cgame\cg_syscalls
+build\cg_consolecmds
+build\cg_draw
+build\cg_drawtools
+build\cg_effects
+build\cg_ents
+build\cg_event
+build\cg_info
+build\cg_localents
+build\cg_marks
+build\cg_players
+build\cg_playerstate
+build\cg_predict
+build\cg_scoreboard
+build\cg_servercmds
+build\cg_snapshot
+build\cg_view
+build\cg_weapons
+build\bg_slidemove
+build\bg_pmove
+build\bg_lib
+build\bg_misc
+build\q_math
+build\q_shared
