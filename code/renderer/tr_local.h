@@ -962,6 +962,31 @@ typedef struct {
 	float					fogTable[FOG_TABLE_SIZE];
 } trGlobals_t;
 
+#define VK_CHECK(function_call) { \
+	VkResult result = function_call; \
+	if (result < 0) \
+		ri.Error(ERR_FATAL, "Vulkan: error code %d returned by %s", result, #function_call); \
+}
+
+/*
+** vkinstance_t
+**
+** Holds all data for the current vulkan backend
+*/
+typedef struct {
+	VkInstance instance;
+	VkPhysicalDevice physical_device;
+	VkSurfaceKHR surface;
+	VkSurfaceFormatKHR surface_format;
+
+#ifndef NDEBUG
+	VkDebugReportCallbackEXT debug_callback;
+#endif
+} vkinstance_t;
+
+extern vkinstance_t	vkInstance;
+
+
 extern backEndState_t	backEnd;
 extern trGlobals_t	tr;
 extern glconfig_t	glConfig;		// outside of TR since it shouldn't be cleared during ref re-init
@@ -1121,6 +1146,12 @@ int R_CullPointAndRadius( vec3_t origin, float radius );
 int R_CullLocalPointAndRadius( vec3_t origin, float radius );
 
 void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms, orientationr_t *or );
+
+/*
+** VK wrapper/helper functions
+*/
+void	VK_CreateInstance();
+void	VK_CreateSurface(void* p1, void* p2);
 
 /*
 ** GL wrapper/helper functions

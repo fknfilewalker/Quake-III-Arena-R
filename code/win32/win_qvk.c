@@ -20,14 +20,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
 /*
-** QGL_WIN.C
+** QVK_WIN.C
 **
 ** This file implements the operating system binding of GL to QGL function
 ** pointers.  When doing a port of Quake3 you must implement the following
 ** two functions:
 **
-** QGL_Init() - loads libraries, assigns function pointers, etc.
-** QGL_Shutdown() - unloads libraries, NULLs function pointers
+** QVK_Init() - loads libraries, assigns function pointers, etc.
+** QVK_Shutdown() - unloads libraries, NULLs function pointers
 */
 #include <float.h>
 #include "../renderer/tr_local.h"
@@ -42,7 +42,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define VK_EXPORTED_FUNCTION( a ) GetProcAddress( glw_state.hinstVulkan, a )
 #define VK_GLOBAL_LEVEL_FUNCTION( a ) vkGetInstanceProcAddr( NULL, a )
-#define VK_INSTANCE_LEVEL_FUNCTION( a ) vkGetInstanceProcAddr(NULL, a)
+#define VK_INSTANCE_LEVEL_FUNCTION( a ) vkGetInstanceProcAddr( vkInstance.instance , a)
 
 //#define VK_GLOBAL_LEVEL_FUNCTION( fun )                                                   \
 //    if( !(fun = (PFN_##fun)vkGetInstanceProcAddr( nullptr, #fun )) ) {                    \
@@ -79,12 +79,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 /*
 ** QVK_Init
-**
-** This is responsible for binding our qgl function pointers to
-** the appropriate GL stuff.  In Windows this means doing a
-** LoadLibrary and a bunch of calls to GetProcAddress.  On other
-** operating systems we need to do the right thing, whatever that
-** might be.
 */
 qboolean QVK_Init(const char* dllname)
 {
@@ -121,16 +115,23 @@ qboolean QVK_Init(const char* dllname)
 
 	// Global Functions
 	vkCreateInstance = VK_GLOBAL_LEVEL_FUNCTION("vkCreateInstance");
-	
-	// Instance Functions
+	vkEnumerateInstanceExtensionProperties = VK_GLOBAL_LEVEL_FUNCTION("vkEnumerateInstanceExtensionProperties");
+
+	return qtrue;
+}
+
+qboolean QVK_LoadInstanceFunctions(void)
+{
 	vkCreateWin32SurfaceKHR = VK_INSTANCE_LEVEL_FUNCTION("vkCreateWin32SurfaceKHR");
 	vkEnumeratePhysicalDevices = VK_INSTANCE_LEVEL_FUNCTION("vkEnumeratePhysicalDevices");
 	vkEnumerateDeviceExtensionProperties = VK_INSTANCE_LEVEL_FUNCTION("vkEnumerateDeviceExtensionProperties");
 	vkGetPhysicalDeviceProperties = VK_INSTANCE_LEVEL_FUNCTION("vkGetPhysicalDeviceProperties");
-
-	//qwvkCreateInstance = vkGetInstanceProcAddr(NULL, "vkCreateInstance");
-	//qwvkCreateInstance = qwvkGetInstanceProcAddr(NULL, "vkCreateInstance");
-
+	vkGetPhysicalDeviceSurfaceSupportKHR = VK_INSTANCE_LEVEL_FUNCTION("vkGetPhysicalDeviceSurfaceSupportKHR");
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR = VK_INSTANCE_LEVEL_FUNCTION("vkGetPhysicalDeviceSurfaceCapabilitiesKHR");
+	vkGetPhysicalDeviceSurfaceSupportKHR = VK_INSTANCE_LEVEL_FUNCTION("vkGetPhysicalDeviceSurfaceSupportKHR");
+	vkGetPhysicalDeviceQueueFamilyProperties = VK_INSTANCE_LEVEL_FUNCTION("vkGetPhysicalDeviceQueueFamilyProperties");
+	vkGetPhysicalDeviceSurfacePresentModesKHR = VK_INSTANCE_LEVEL_FUNCTION("vkGetPhysicalDeviceSurfacePresentModesKHR");
+	vkGetPhysicalDeviceSurfaceFormatsKHR = VK_INSTANCE_LEVEL_FUNCTION("vkGetPhysicalDeviceSurfaceFormatsKHR");
 	return qtrue;
 }
 

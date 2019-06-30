@@ -27,6 +27,16 @@ typedef enum {
 	return qtrue;
 };
 
+//void VKimp_CreateSurface() {
+//	VkWin32SurfaceCreateInfoKHR desc;
+//	desc.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+//	desc.pNext = NULL;
+//	desc.flags = 0;
+//	desc.hinstance = glw_state.hinstVulkan;
+//	desc.hwnd = wv.hWnd;
+//	VK_CHECK(vkCreateWin32SurfaceKHR(vkInstance.instance, &desc, NULL, &vkInstance.surface));
+//}
+
 /*
 ** VKW_LoadVulkan
 **
@@ -48,16 +58,21 @@ static qboolean VKW_LoadVulkan(const char* drivername)
 		cdsFullscreen = r_fullscreen->integer;
 
 		// create the window and set up the context
-		if (!W_StartDriverAndSetMode(drivername, r_mode->integer, r_colorbits->integer, cdsFullscreen)) {
-			QVK_Shutdown();
-			return qfalse;
-		}
+		if (!W_StartDriverAndSetMode(drivername, r_mode->integer, r_colorbits->integer, cdsFullscreen)) goto fail;	
+		VK_CreateInstance();
+		if (!QVK_LoadInstanceFunctions()) goto fail;
+		VK_CreateSurface((void*)glw_state.hinstVulkan, (void*)wv.hWnd);
+		//VKimp_CreateSurface();
+		VK_PickPhysicalDevice();
+
+		return qtrue;
 	}
-	else {
-		QVK_Shutdown();
-		return qfalse;
-	}
-	return qtrue;
+
+
+fail:
+
+	QVK_Shutdown();
+	return qfalse;
 }
 
 static void VKW_StartVulkan(void) {
@@ -70,17 +85,6 @@ static void VKW_StartVulkan(void) {
 		ri.Error(ERR_FATAL, "VKW_StartVulkan() - could not load Vulkan subsystem\n");
 	}
 	
-}
-
-void VKimp_CreateSurface() {
-	VkWin32SurfaceCreateInfoKHR desc;
-	desc.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-	desc.pNext = NULL;
-	desc.flags = 0;
-	desc.hinstance = glw_state.hinstVulkan;
-	
-	//desc.hwnd = wv.hWnd_vulkan;
-	//VK_CHECK(vkCreateWin32SurfaceKHR(vk.instance, &desc, nullptr, &vk.surface));
 }
 
 void VKimp_Init( void ) {
@@ -108,21 +112,8 @@ void VKimp_Init( void ) {
 
 	// get our config strings
 
-	VKimp_CreateSurface();
+	
 
 
-	//// Create window.
-	//SetMode(r_mode->integer, (qboolean)r_fullscreen->integer);
-
-	//if (get_render_api() == RENDER_API_VK) {
-	//	wv.hWnd_vulkan = create_main_window(glConfig.vidWidth, glConfig.vidHeight, (qboolean)r_fullscreen->integer);
-	//	wv.hWnd = wv.hWnd_vulkan;
-	//	SetForegroundWindow(wv.hWnd);
-	//	SetFocus(wv.hWnd);
-	//	WG_CheckHardwareGamma();
-	//}
-	//else {
-	//	wv.hWnd_vulkan = create_twin_window(glConfig.vidWidth, glConfig.vidHeight, RENDER_API_VK);
-	//}
 }
 
