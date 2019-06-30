@@ -109,7 +109,7 @@ void IN_ActivateWin32Mouse( void ) {
 	width = GetSystemMetrics (SM_CXSCREEN);
 	height = GetSystemMetrics (SM_CYSCREEN);
 
-	GetWindowRect ( g_wv.hWnd, &window_rect);
+	GetWindowRect ( wv.hWnd, &window_rect);
 	if (window_rect.left < 0)
 		window_rect.left = 0;
 	if (window_rect.top < 0)
@@ -123,7 +123,7 @@ void IN_ActivateWin32Mouse( void ) {
 
 	SetCursorPos (window_center_x, window_center_y);
 
-	SetCapture ( g_wv.hWnd );
+	SetCapture ( wv.hWnd );
 	ClipCursor (&window_rect);
 	while (ShowCursor (FALSE) >= 0)
 		;
@@ -266,7 +266,7 @@ qboolean IN_InitDIMouse( void ) {
 	}
 
 	// register with DirectInput and get an IDirectInput to play with.
-	hr = iDirectInputCreate( g_wv.hInstance, DIRECTINPUT_VERSION, &g_pdi, NULL);
+	hr = iDirectInputCreate( wv.hInstance, DIRECTINPUT_VERSION, &g_pdi, NULL);
 
 	if (FAILED(hr)) {
 		Com_Printf ("iDirectInputCreate failed\n");
@@ -290,7 +290,7 @@ qboolean IN_InitDIMouse( void ) {
 	}
 
 	// set the cooperativity level.
-	hr = IDirectInputDevice_SetCooperativeLevel(g_pMouse, g_wv.hWnd,
+	hr = IDirectInputDevice_SetCooperativeLevel(g_pMouse, wv.hWnd,
 			DISCL_EXCLUSIVE | DISCL_FOREGROUND);
 
 	// https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=50
@@ -540,8 +540,8 @@ void IN_StartupMouse( void )
 	}
 
 	// nt4.0 direct input is screwed up
-	if ( ( g_wv.osversion.dwPlatformId == VER_PLATFORM_WIN32_NT ) &&
-		 ( g_wv.osversion.dwMajorVersion == 4 ) )
+	if ( ( wv.osversion.dwPlatformId == VER_PLATFORM_WIN32_NT ) &&
+		 ( wv.osversion.dwMajorVersion == 4 ) )
 	{
 		Com_Printf ("Disallowing DirectInput on NT 4.0\n");
 		Cvar_Set( "in_mouse", "-1" );
@@ -550,7 +550,7 @@ void IN_StartupMouse( void )
 	if ( in_mouse->integer == -1 ) {
 		Com_Printf ("Skipping check for DirectInput\n");
 	} else {
-    if (!g_wv.hWnd)
+    if (!wv.hWnd)
     {
       Com_Printf ("No window for DirectInput mouse init, delaying\n");
       s_wmv.mouseStartupDelayed = qtrue;
@@ -584,13 +584,13 @@ void IN_MouseEvent (int mstate)
 		if ( (mstate & (1<<i)) &&
 			!(s_wmv.oldButtonState & (1<<i)) )
 		{
-			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE1 + i, qtrue, 0, NULL );
+			Sys_QueEvent( wv.sysMsgTime, SE_KEY, K_MOUSE1 + i, qtrue, 0, NULL );
 		}
 
 		if ( !(mstate & (1<<i)) &&
 			(s_wmv.oldButtonState & (1<<i)) )
 		{
-			Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MOUSE1 + i, qfalse, 0, NULL );
+			Sys_QueEvent( wv.sysMsgTime, SE_KEY, K_MOUSE1 + i, qfalse, 0, NULL );
 		}
 	}	
 
@@ -694,7 +694,7 @@ Called every frame, even if not generating commands
 void IN_Frame (void) {
 
 	if ( !s_wmv.mouseInitialized ) {
-    if (s_wmv.mouseStartupDelayed && g_wv.hWnd)
+    if (s_wmv.mouseStartupDelayed && wv.hWnd)
 		{
 			Com_Printf("Proceeding with delayed mouse init\n");
       IN_StartupMouse();

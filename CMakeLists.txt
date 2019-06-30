@@ -43,6 +43,18 @@ if(WIN32)
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /EHc /std:clatest")
 	ENDIF(MSVC)
 	
+	# check Vulkan
+	find_package(Vulkan REQUIRED)
+	find_path(VULKAN_INCLUDE_DIR NAMES vulkan/vulkan.h HINTS
+        "$ENV{VULKAN_SDK}/Include"
+        "$ENV{VK_SDK_PATH}/Include")
+
+	if (VULKAN_FOUND)
+		message(STATUS "Found Vulkan")
+	else(VULKAN_FOUND)
+		message(STATUS "Vulkan not found")
+	endif (VULKAN_FOUND)
+	
 	#add_definitions(-DVK_USE_PLATFORM_WIN32_KHR)
 elseif(APPLE)
 	find_package(OpenGL REQUIRED)

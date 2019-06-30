@@ -24,6 +24,7 @@ foreach(FILE ${SOURCES})
     source_group("${GROUP}" FILES "${FILE}")
 endforeach()
 
+include_directories(${VULKAN_INCLUDE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/external/stb)
 include_directories(${CMAKE_SOURCE_DIR}/external/TinyJPEG)
 if(APPLE)

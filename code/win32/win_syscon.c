@@ -188,8 +188,8 @@ static LONG WINAPI ConWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		}
 		break;
 	case WM_CREATE:
-//		s_wcd.hbmLogo = LoadBitmap( g_wv.hInstance, MAKEINTRESOURCE( IDB_BITMAP1 ) );
-//		s_wcd.hbmClearBitmap = LoadBitmap( g_wv.hInstance, MAKEINTRESOURCE( IDB_BITMAP2 ) );
+//		s_wcd.hbmLogo = LoadBitmap( wv.hInstance, MAKEINTRESOURCE( IDB_BITMAP1 ) );
+//		s_wcd.hbmClearBitmap = LoadBitmap( wv.hInstance, MAKEINTRESOURCE( IDB_BITMAP2 ) );
 		s_wcd.hbrEditBackground = CreateSolidBrush( RGB( 0x00, 0x00, 0xB0 ) );
 		s_wcd.hbrErrorBackground = CreateSolidBrush( RGB( 0x80, 0x80, 0x80 ) );
 		SetTimer( hWnd, 1, 1000, NULL );
@@ -308,8 +308,8 @@ void Sys_CreateConsole( void )
 	wc.lpfnWndProc   = (WNDPROC) ConWndProc;
 	wc.cbClsExtra    = 0;
 	wc.cbWndExtra    = 0;
-	wc.hInstance     = g_wv.hInstance;
-	wc.hIcon         = LoadIcon( g_wv.hInstance, MAKEINTRESOURCE(IDI_ICON1));
+	wc.hInstance     = wv.hInstance;
+	wc.hIcon         = LoadIcon( wv.hInstance, MAKEINTRESOURCE(IDI_ICON1));
 	wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
 	wc.hbrBackground = (void *)COLOR_WINDOW;
 	wc.lpszMenuName  = 0;
@@ -339,7 +339,7 @@ void Sys_CreateConsole( void )
 							   ( swidth - 600 ) / 2, ( sheight - 450 ) / 2 , rect.right - rect.left + 1, rect.bottom - rect.top + 1,
 							   NULL,
 							   NULL,
-							   g_wv.hInstance,
+							   wv.hInstance,
 							   NULL );
 
 	if ( s_wcd.hWnd == NULL )
@@ -378,7 +378,7 @@ void Sys_CreateConsole( void )
 												6, 400, 528, 20,
 												s_wcd.hWnd, 
 												( HMENU ) INPUT_ID,	// child window ID
-												g_wv.hInstance, NULL );
+												wv.hInstance, NULL );
 
 	//
 	// create the buttons
@@ -387,21 +387,21 @@ void Sys_CreateConsole( void )
 												5, 425, 72, 24,
 												s_wcd.hWnd, 
 												( HMENU ) COPY_ID,	// child window ID
-												g_wv.hInstance, NULL );
+												wv.hInstance, NULL );
 	SendMessage( s_wcd.hwndButtonCopy, WM_SETTEXT, 0, ( LPARAM ) "copy" );
 
 	s_wcd.hwndButtonClear = CreateWindow( "button", NULL, BS_PUSHBUTTON | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
 												82, 425, 72, 24,
 												s_wcd.hWnd, 
 												( HMENU ) CLEAR_ID,	// child window ID
-												g_wv.hInstance, NULL );
+												wv.hInstance, NULL );
 	SendMessage( s_wcd.hwndButtonClear, WM_SETTEXT, 0, ( LPARAM ) "clear" );
 
 	s_wcd.hwndButtonQuit = CreateWindow( "button", NULL, BS_PUSHBUTTON | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
 												462, 425, 72, 24,
 												s_wcd.hWnd, 
 												( HMENU ) QUIT_ID,	// child window ID
-												g_wv.hInstance, NULL );
+												wv.hInstance, NULL );
 	SendMessage( s_wcd.hwndButtonQuit, WM_SETTEXT, 0, ( LPARAM ) "quit" );
 
 
@@ -413,7 +413,7 @@ void Sys_CreateConsole( void )
 												6, 40, 526, 354,
 												s_wcd.hWnd, 
 												( HMENU ) EDIT_ID,	// child window ID
-												g_wv.hInstance, NULL );
+												wv.hInstance, NULL );
 	SendMessage( s_wcd.hwndBuffer, WM_SETFONT, ( WPARAM ) s_wcd.hfBufferFont, 0 );
 
 	s_wcd.SysInputLineWndProc = ( WNDPROC ) SetWindowLong( s_wcd.hwndInputLine, GWLP_WNDPROC, ( long ) InputLineWndProc );
@@ -586,7 +586,7 @@ void Sys_SetErrorText( const char *buf )
 													6, 5, 526, 30,
 													s_wcd.hWnd, 
 													( HMENU ) ERRORBOX_ID,	// child window ID
-													g_wv.hInstance, NULL );
+													wv.hInstance, NULL );
 		SendMessage( s_wcd.hwndErrorBox, WM_SETFONT, ( WPARAM ) s_wcd.hfBufferFont, 0 );
 		SetWindowText( s_wcd.hwndErrorBox, s_wcd.errorString );
 

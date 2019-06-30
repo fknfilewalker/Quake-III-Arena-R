@@ -962,7 +962,7 @@ sysEvent_t Sys_GetEvent( void ) {
 		}
 
 		// save the msg time, because wndprocs don't have access to the timestamp
-		g_wv.sysMsgTime = msg.time;
+		wv.sysMsgTime = msg.time;
 
 		TranslateMessage (&msg);
       	DispatchMessage (&msg);
@@ -1057,27 +1057,27 @@ void Sys_Init( void ) {
 	Cmd_AddCommand ("in_restart", Sys_In_Restart_f);
 	Cmd_AddCommand ("net_restart", Sys_Net_Restart_f);
 
-	g_wv.osversion.dwOSVersionInfoSize = sizeof( g_wv.osversion );
+	wv.osversion.dwOSVersionInfoSize = sizeof( wv.osversion );
 
-	if (!GetVersionEx (&g_wv.osversion))
+	if (!GetVersionEx (&wv.osversion))
 		Sys_Error ("Couldn't get OS info");
 
-	if (g_wv.osversion.dwMajorVersion < 4)
+	if (wv.osversion.dwMajorVersion < 4)
 		Sys_Error ("Quake3 requires Windows version 4 or greater");
-	if (g_wv.osversion.dwPlatformId == VER_PLATFORM_WIN32s)
+	if (wv.osversion.dwPlatformId == VER_PLATFORM_WIN32s)
 		Sys_Error ("Quake3 doesn't run on Win32s");
 
-	if ( g_wv.osversion.dwPlatformId == VER_PLATFORM_WIN32_NT )
+	if ( wv.osversion.dwPlatformId == VER_PLATFORM_WIN32_NT )
 	{
 		Cvar_Set( "arch", "winnt" );
 	}
-	else if ( g_wv.osversion.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS )
+	else if ( wv.osversion.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS )
 	{
-		if ( LOWORD( g_wv.osversion.dwBuildNumber ) >= WIN98_BUILD_NUMBER )
+		if ( LOWORD( wv.osversion.dwBuildNumber ) >= WIN98_BUILD_NUMBER )
 		{
 			Cvar_Set( "arch", "win98" );
 		}
-		else if ( LOWORD( g_wv.osversion.dwBuildNumber ) >= OSR2_BUILD_NUMBER )
+		else if ( LOWORD( wv.osversion.dwBuildNumber ) >= OSR2_BUILD_NUMBER )
 		{
 			Cvar_Set( "arch", "win95 osr2.x" );
 		}
@@ -1092,7 +1092,7 @@ void Sys_Init( void ) {
 	}
 
 	// save out a couple things in rom cvars for the renderer to access
-	Cvar_Get( "win_hinstance", va("%i", (int)g_wv.hInstance), CVAR_ROM );
+	Cvar_Get( "win_hinstance", va("%i", (int)wv.hInstance), CVAR_ROM );
 	Cvar_Get( "win_wndproc", va("%p", MainWndProc), CVAR_ROM );
 
 	//
@@ -1156,7 +1156,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
         return 0;
 	}
 
-	g_wv.hInstance = hInstance;
+	wv.hInstance = hInstance;
 	Q_strncpyz( sys_cmdline, lpCmdLine, sizeof( sys_cmdline ) );
 
 	// done before Com/Sys_Init since we need this for error output
@@ -1189,7 +1189,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
     // main game loop
 	while( 1 ) {
 		// if not running as a game client, sleep a bit
-		if ( g_wv.isMinimized || ( com_dedicated && com_dedicated->integer ) ) {
+		if ( wv.isMinimized || ( com_dedicated && com_dedicated->integer ) ) {
 			Sleep( 5 );
 		}
 

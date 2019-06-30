@@ -233,6 +233,53 @@ static void InitOpenGL( void )
 	GL_SetDefaultState();
 }
 
+static void InitVulkan(void)
+{
+	VKimp_Init();
+
+	//char renderer_buffer[1024];
+
+	////
+	//// initialize OS specific portions of the renderer
+	////
+	//// GLimp_Init directly or indirectly references the following cvars:
+	////		- r_fullscreen
+	////		- r_glDriver
+	////		- r_mode
+	////		- r_(color|depth|stencil)bits
+	////		- r_ignorehwgamma
+	////		- r_gamma
+	////
+
+	//if (glConfig.vidWidth == 0)
+	//{
+	//	GLint		temp;
+
+	//	VKimp_Init();
+	//	strcpy(renderer_buffer, glConfig.renderer_string);
+	//	Q_strlwr(renderer_buffer);
+
+	//	// OpenGL driver constants
+	//	qglGetIntegerv(GL_MAX_TEXTURE_SIZE, &temp);
+	//	glConfig.maxTextureSize = temp;
+
+	//	// stubbed or broken drivers may have reported 0...
+	//	if (glConfig.maxTextureSize <= 0)
+	//	{
+	//		glConfig.maxTextureSize = 0;
+	//	}
+	//}
+
+	//// init command buffers and SMP
+	//R_InitCommandBuffers();
+
+	//// print info
+	//GfxInfo_f();
+
+	//// set default state
+	//GL_SetDefaultState();
+}
+
 /*
 ==================
 GL_CheckErrors
@@ -1072,7 +1119,9 @@ void R_Init( void ) {
 	}
 	R_ToggleSmpFrame();
 
-	InitOpenGL();
+
+	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) InitOpenGL();
+	else InitVulkan();
 
 	R_InitImages();
 

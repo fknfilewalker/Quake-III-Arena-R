@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../client/client.h"
 #include "win_local.h"
 
-WinVars_t	g_wv;
+WinVars_t	wv;
 
 #ifndef WM_MOUSEWHEEL
 #define WM_MOUSEWHEEL (WM_MOUSELAST+1)  // message that will be supported by the OS 
@@ -86,24 +86,24 @@ VID_AppActivate
 */
 static void VID_AppActivate(BOOL fActive, BOOL minimize)
 {
-	g_wv.isMinimized = minimize;
+	wv.isMinimized = minimize;
 
 	Com_DPrintf("VID_AppActivate: %i\n", fActive );
 
 	Key_ClearStates();	// FIXME!!!
 
 	// we don't want to act like we're active if we're minimized
-	if (fActive && !g_wv.isMinimized )
+	if (fActive && !wv.isMinimized )
 	{
-		g_wv.activeApp = qtrue;
+		wv.activeApp = qtrue;
 	}
 	else
 	{
-		g_wv.activeApp = qfalse;
+		wv.activeApp = qfalse;
 	}
 
 	// minimize/restore mouse-capture on demand
-	if (!g_wv.activeApp )
+	if (!wv.activeApp )
 	{
 		IN_Activate (qfalse);
 	}
@@ -243,13 +243,13 @@ LRESULT WINAPI MainWndProc (
 		{
 			if ( ( ( int ) wParam ) > 0 )
 			{
-				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELUP, qtrue, 0, NULL );
-				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELUP, qfalse, 0, NULL );
+				Sys_QueEvent( wv.sysMsgTime, SE_KEY, K_MWHEELUP, qtrue, 0, NULL );
+				Sys_QueEvent( wv.sysMsgTime, SE_KEY, K_MWHEELUP, qfalse, 0, NULL );
 			}
 			else
 			{
-				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qtrue, 0, NULL );
-				Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qfalse, 0, NULL );
+				Sys_QueEvent( wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qtrue, 0, NULL );
+				Sys_QueEvent( wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qfalse, 0, NULL );
 			}
 			return DefWindowProc (hWnd, uMsg, wParam, lParam);
 		}
@@ -274,12 +274,12 @@ LRESULT WINAPI MainWndProc (
 				{
 					if (!in_logitechbug->integer)
 					{
-						Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELUP, qtrue, 0, NULL );
-						Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELUP, qfalse, 0, NULL );
+						Sys_QueEvent( wv.sysMsgTime, SE_KEY, K_MWHEELUP, qtrue, 0, NULL );
+						Sys_QueEvent( wv.sysMsgTime, SE_KEY, K_MWHEELUP, qfalse, 0, NULL );
 					}
 					else
 					{
-						Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELUP, flip, 0, NULL );
+						Sys_QueEvent( wv.sysMsgTime, SE_KEY, K_MWHEELUP, flip, 0, NULL );
 						flip = !flip;
 					}
 				}
@@ -290,12 +290,12 @@ LRESULT WINAPI MainWndProc (
 				{
 					if (!in_logitechbug->integer)
 					{
-						Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qtrue, 0, NULL );
-						Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qfalse, 0, NULL );
+						Sys_QueEvent( wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qtrue, 0, NULL );
+						Sys_QueEvent( wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, qfalse, 0, NULL );
 					}
 					else
 					{
-						Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, flip, 0, NULL );
+						Sys_QueEvent( wv.sysMsgTime, SE_KEY, K_MWHEELDOWN, flip, 0, NULL );
 						flip = !flip;
 					}
 				}
@@ -307,7 +307,7 @@ LRESULT WINAPI MainWndProc (
 
 	case WM_CREATE:
 
-		g_wv.hWnd = hWnd;
+		wv.hWnd = hWnd;
 
 		vid_xpos = Cvar_Get ("vid_xpos", "3", CVAR_ARCHIVE);
 		vid_ypos = Cvar_Get ("vid_ypos", "22", CVAR_ARCHIVE);
@@ -340,7 +340,7 @@ LRESULT WINAPI MainWndProc (
 #endif
 	case WM_DESTROY:
 		// let sound and input know about this?
-		g_wv.hWnd = NULL;
+		wv.hWnd = NULL;
 		if ( r_fullscreen->integer )
 		{
 			WIN_EnableAltTab();
@@ -386,7 +386,7 @@ LRESULT WINAPI MainWndProc (
 				Cvar_SetValue( "vid_ypos", yPos + r.top);
 				vid_xpos->modified = qfalse;
 				vid_ypos->modified = qfalse;
-				if ( g_wv.activeApp )
+				if ( wv.activeApp )
 				{
 					IN_Activate (qtrue);
 				}
@@ -438,16 +438,16 @@ LRESULT WINAPI MainWndProc (
 		}
 		// fall through
 	case WM_KEYDOWN:
-		Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, MapKey( lParam ), qtrue, 0, NULL );
+		Sys_QueEvent( wv.sysMsgTime, SE_KEY, MapKey( lParam ), qtrue, 0, NULL );
 		break;
 
 	case WM_SYSKEYUP:
 	case WM_KEYUP:
-		Sys_QueEvent( g_wv.sysMsgTime, SE_KEY, MapKey( lParam ), qfalse, 0, NULL );
+		Sys_QueEvent( wv.sysMsgTime, SE_KEY, MapKey( lParam ), qfalse, 0, NULL );
 		break;
 
 	case WM_CHAR:
-		Sys_QueEvent( g_wv.sysMsgTime, SE_CHAR, wParam, 0, 0, NULL );
+		Sys_QueEvent( wv.sysMsgTime, SE_CHAR, wParam, 0, 0, NULL );
 		break;
    }
 

@@ -34,6 +34,7 @@ typedef struct
 	HGLRC   hGLRC;			// handle to GL rendering context
 
 	HINSTANCE hinstOpenGL;	// HINSTANCE for the OpenGL library
+	HINSTANCE hinstVulkan;	// HINSTANCE for the Vulkkan library
 
 	qboolean allowdisplaydepthchange;
 	qboolean pixelFormatSet;

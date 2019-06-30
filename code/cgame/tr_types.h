@@ -154,7 +154,6 @@ typedef enum {
 								// > GLDRV_ICD for minidriverness, so this
 								// should always be the lowest value in this
 								// enum set
-	GLDRV_STANDALONE			// driver is a non-3Dfx standalone driver
 } glDriverType_t;
 
 typedef enum {
@@ -211,7 +210,7 @@ typedef struct {
 
 //#define _3DFX_DRIVER_NAME	"3dfxvgl"
 #define OPENGL_DRIVER_NAME	"opengl32"
-#define VULKAN_DRIVER_NAME	"vulkan"
+#define VULKAN_DRIVER_NAME	"vulkan-1"
 
 #else
 

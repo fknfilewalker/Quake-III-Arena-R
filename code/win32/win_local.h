@@ -92,4 +92,4 @@ typedef struct
 	unsigned		sysMsgTime;
 } WinVars_t;
 
-extern WinVars_t	g_wv;
+extern WinVars_t	wv;

@@ -44,28 +44,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 extern void WG_CheckHardwareGamma( void );
 extern void WG_RestoreGamma( void );
 
-typedef enum {
-	RSERR_OK,
-
-	RSERR_INVALID_FULLSCREEN,
-	RSERR_INVALID_MODE,
-
-	RSERR_UNKNOWN
-} rserr_t;
 
 #define TRY_PFD_SUCCESS		0
 #define TRY_PFD_FAIL_SOFT	1
 #define TRY_PFD_FAIL_HARD	2
 
-#define	WINDOW_CLASS_NAME	"Quake 3: Arena"
 
 static void		GLW_InitExtensions( void );
-static rserr_t	GLW_SetMode( const char *drivername, 
-							 int mode, 
-							 int colorbits, 
-							 qboolean cdsFullscreen );
-
-static qboolean s_classRegistered = qfalse;
 
 //
 // function declaration
@@ -83,40 +68,12 @@ cvar_t	*r_allowSoftwareGL;		// don't abort out if the pixelformat claims softwar
 cvar_t	*r_maskMinidriver;		// allow a different dll name to be treated as if it were opengl32.dll
 
 
-
-/*
-** GLW_StartDriverAndSetMode
-*/
-static qboolean GLW_StartDriverAndSetMode( const char *drivername, 
-										   int mode, 
-										   int colorbits,
-										   qboolean cdsFullscreen )
-{
-	rserr_t err;
-
-	err = GLW_SetMode( drivername, r_mode->integer, colorbits, cdsFullscreen );
-
-	switch ( err )
-	{
-	case RSERR_INVALID_FULLSCREEN:
-		ri.Printf( PRINT_ALL, "...WARNING: fullscreen unavailable in this mode\n" );
-		return qfalse;
-	case RSERR_INVALID_MODE:
-		ri.Printf( PRINT_ALL, "...WARNING: could not set the given mode (%d)\n", mode );
-		return qfalse;
-	default:
-		break;
-	}
-	return qtrue;
-}
-
 /*
 ** ChoosePFD
 **
 ** Helper function that replaces ChoosePixelFormat.
 */
 #define MAX_PFDS 256
-
 static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 {
 	PIXELFORMATDESCRIPTOR pfds[MAX_PFDS+1];
@@ -444,7 +401,7 @@ static int GLW_MakeContext( PIXELFORMATDESCRIPTOR *pPFD )
 ** - get a DC if one doesn't exist
 ** - create an HGLRC if one doesn't exist
 */
-static qboolean GLW_InitDriver( const char *drivername, int colorbits )
+/*static*/ qboolean GLW_InitDriver( const char *drivername, int colorbits )
 {
 	int		tpfd;
 	int		depthbits, stencilbits;
@@ -459,7 +416,7 @@ static qboolean GLW_InitDriver( const char *drivername, int colorbits )
 	{
 		ri.Printf( PRINT_ALL, "...getting DC: " );
 
-		if ( ( glw_state.hDC = GetDC( g_wv.hWnd ) ) == NULL )
+		if ( ( glw_state.hDC = GetDC( wv.hWnd ) ) == NULL )
 		{
 			ri.Printf( PRINT_ALL, "failed\n" );
 			return qfalse;
@@ -518,7 +475,7 @@ static qboolean GLW_InitDriver( const char *drivername, int colorbits )
 			if ( ( r_colorbits->integer == glw_state.desktopBitsPixel ) &&
 				 ( stencilbits == 0 ) )
 			{
-				ReleaseDC( g_wv.hWnd, glw_state.hDC );
+				ReleaseDC( wv.hWnd, glw_state.hDC );
 				glw_state.hDC = NULL;
 
 				ri.Printf( PRINT_ALL, "...failed to find an appropriate PIXELFORMAT\n" );
@@ -538,7 +495,7 @@ static qboolean GLW_InitDriver( const char *drivername, int colorbits )
 			{
 				if ( glw_state.hDC )
 				{
-					ReleaseDC( g_wv.hWnd, glw_state.hDC );
+					ReleaseDC( wv.hWnd, glw_state.hDC );
 					glw_state.hDC = NULL;
 				}
 
@@ -568,391 +525,6 @@ static qboolean GLW_InitDriver( const char *drivername, int colorbits )
 	return qtrue;
 }
 
-
-/*
-** GLW_CreateWindow
-**
-** Responsible for creating the Win32 window and initializing the OpenGL driver.
-*/
-#define	WINDOW_STYLE	(WS_OVERLAPPED|WS_BORDER|WS_CAPTION|WS_VISIBLE)
-static qboolean GLW_CreateWindow( const char *drivername, int width, int height, int colorbits, qboolean cdsFullscreen )
-{
-	RECT			r;
-	cvar_t			*vid_xpos, *vid_ypos;
-	int				stylebits;
-	int				x, y, w, h;
-	int				exstyle;
-
-	//
-	// register the window class if necessary
-	//
-	if ( !s_classRegistered )
-	{
-		WNDCLASS wc;
-
-		memset( &wc, 0, sizeof( wc ) );
-
-		wc.style         = 0;
-		wc.lpfnWndProc   = (WNDPROC) glw_state.wndproc;
-		wc.cbClsExtra    = 0;
-		wc.cbWndExtra    = 0;
-		wc.hInstance     = g_wv.hInstance;
-		wc.hIcon         = LoadIcon( g_wv.hInstance, MAKEINTRESOURCE(IDI_ICON1));
-		wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
-		wc.hbrBackground = (HBRUSH)(void *)COLOR_GRAYTEXT;
-		wc.lpszMenuName  = 0;
-		wc.lpszClassName = WINDOW_CLASS_NAME;
-
-		if ( !RegisterClass( &wc ) )
-		{
-			ri.Error( ERR_FATAL, "GLW_CreateWindow: could not register window class" );
-		}
-		s_classRegistered = qtrue;
-		ri.Printf( PRINT_ALL, "...registered window class\n" );
-	}
-
-	//
-	// create the HWND if one does not already exist
-	//
-	if ( !g_wv.hWnd )
-	{
-		//
-		// compute width and height
-		//
-		r.left = 0;
-		r.top = 0;
-		r.right  = width;
-		r.bottom = height;
-
-		if ( cdsFullscreen)
-		{
-			exstyle = WS_EX_TOPMOST;
-			stylebits = WS_POPUP|WS_VISIBLE|WS_SYSMENU;
-		}
-		else
-		{
-			exstyle = 0;
-			stylebits = WINDOW_STYLE|WS_SYSMENU;
-			AdjustWindowRect (&r, stylebits, FALSE);
-		}
-
-		w = r.right - r.left;
-		h = r.bottom - r.top;
-
-		if ( cdsFullscreen)
-		{
-			x = 0;
-			y = 0;
-		}
-		else
-		{
-			vid_xpos = ri.Cvar_Get ("vid_xpos", "", 0);
-			vid_ypos = ri.Cvar_Get ("vid_ypos", "", 0);
-			x = vid_xpos->integer;
-			y = vid_ypos->integer;
-
-			// adjust window coordinates if necessary 
-			// so that the window is completely on screen
-			if ( x < 0 )
-				x = 0;
-			if ( y < 0 )
-				y = 0;
-
-			if ( w < glw_state.desktopWidth &&
-				 h < glw_state.desktopHeight )
-			{
-				if ( x + w > glw_state.desktopWidth )
-					x = ( glw_state.desktopWidth - w );
-				if ( y + h > glw_state.desktopHeight )
-					y = ( glw_state.desktopHeight - h );
-			}
-		}
-
-		g_wv.hWnd = CreateWindowEx (
-			 exstyle, 
-			 WINDOW_CLASS_NAME,
-			 "Quake 3: Arena",
-			 stylebits,
-			 x, y, w, h,
-			 NULL,
-			 NULL,
-			 g_wv.hInstance,
-			 NULL);
-
-		if ( !g_wv.hWnd )
-		{
-			ri.Error (ERR_FATAL, "GLW_CreateWindow() - Couldn't create window");
-		}
-	
-		ShowWindow( g_wv.hWnd, SW_SHOW );
-		UpdateWindow( g_wv.hWnd );
-		ri.Printf( PRINT_ALL, "...created window@%d,%d (%dx%d)\n", x, y, w, h );
-	}
-	else
-	{
-		ri.Printf( PRINT_ALL, "...window already present, CreateWindowEx skipped\n" );
-	}
-
-	if ( !GLW_InitDriver( drivername, colorbits ) )
-	{
-		ShowWindow( g_wv.hWnd, SW_HIDE );
-		DestroyWindow( g_wv.hWnd );
-		g_wv.hWnd = NULL;
-
-		return qfalse;
-	}
-
-	SetForegroundWindow( g_wv.hWnd );
-	SetFocus( g_wv.hWnd );
-
-	return qtrue;
-}
-
-static void PrintCDSError( int value )
-{
-	switch ( value )
-	{
-	case DISP_CHANGE_RESTART:
-		ri.Printf( PRINT_ALL, "restart required\n" );
-		break;
-	case DISP_CHANGE_BADPARAM:
-		ri.Printf( PRINT_ALL, "bad param\n" );
-		break;
-	case DISP_CHANGE_BADFLAGS:
-		ri.Printf( PRINT_ALL, "bad flags\n" );
-		break;
-	case DISP_CHANGE_FAILED:
-		ri.Printf( PRINT_ALL, "DISP_CHANGE_FAILED\n" );
-		break;
-	case DISP_CHANGE_BADMODE:
-		ri.Printf( PRINT_ALL, "bad mode\n" );
-		break;
-	case DISP_CHANGE_NOTUPDATED:
-		ri.Printf( PRINT_ALL, "not updated\n" );
-		break;
-	default:
-		ri.Printf( PRINT_ALL, "unknown error %d\n", value );
-		break;
-	}
-}
-
-/*
-** GLW_SetMode
-*/
-static rserr_t GLW_SetMode( const char *drivername, 
-						    int mode, 
-							int colorbits, 
-							qboolean cdsFullscreen )
-{
-	HDC hDC;
-	const char *win_fs[] = { "W", "FS" };
-	int		cdsRet;
-	DEVMODE dm;
-		
-	//
-	// print out informational messages
-	//
-	ri.Printf( PRINT_ALL, "...setting mode %d:", mode );
-	if ( !R_GetModeInfo( &glConfig.vidWidth, &glConfig.vidHeight, &glConfig.windowAspect, mode ) )
-	{
-		ri.Printf( PRINT_ALL, " invalid mode\n" );
-		return RSERR_INVALID_MODE;
-	}
-	ri.Printf( PRINT_ALL, " %d %d %s\n", glConfig.vidWidth, glConfig.vidHeight, win_fs[cdsFullscreen] );
-
-	//
-	// check our desktop attributes
-	//
-	hDC = GetDC( GetDesktopWindow() );
-	glw_state.desktopBitsPixel = GetDeviceCaps( hDC, BITSPIXEL );
-	glw_state.desktopWidth = GetDeviceCaps( hDC, HORZRES );
-	glw_state.desktopHeight = GetDeviceCaps( hDC, VERTRES );
-	ReleaseDC( GetDesktopWindow(), hDC );
-
-	//
-	// verify desktop bit depth
-	//
-	if ( glw_state.desktopBitsPixel < 15 || glw_state.desktopBitsPixel == 24 )
-	{
-		if ( colorbits == 0 || ( !cdsFullscreen && colorbits >= 15 ) )
-		{
-			if ( MessageBox( NULL,
-						"It is highly unlikely that a correct\n"
-						"windowed display can be initialized with\n"
-						"the current desktop display depth.  Select\n"
-						"'OK' to try anyway.  Press 'Cancel' if you\n"
-						"have a 3Dfx Voodoo, Voodoo-2, or Voodoo Rush\n"
-						"3D accelerator installed, or if you otherwise\n"
-						"wish to quit.",
-						"Low Desktop Color Depth",
-						MB_OKCANCEL | MB_ICONEXCLAMATION ) != IDOK )
-			{
-				return RSERR_INVALID_MODE;
-			}
-		}
-	}
-	
-
-	// do a CDS if needed
-	if ( cdsFullscreen )
-	{
-		memset( &dm, 0, sizeof( dm ) );
-		
-		dm.dmSize = sizeof( dm );
-		
-		dm.dmPelsWidth  = glConfig.vidWidth;
-		dm.dmPelsHeight = glConfig.vidHeight;
-		dm.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT;
-
-		if ( r_displayRefresh->integer != 0 )
-		{
-			dm.dmDisplayFrequency = r_displayRefresh->integer;
-			dm.dmFields |= DM_DISPLAYFREQUENCY;
-		}
-		
-		// try to change color depth if possible
-		if ( colorbits != 0 )
-		{
-			if ( glw_state.allowdisplaydepthchange )
-			{
-				dm.dmBitsPerPel = colorbits;
-				dm.dmFields |= DM_BITSPERPEL;
-				ri.Printf( PRINT_ALL, "...using colorsbits of %d\n", colorbits );
-			}
-			else
-			{
-				ri.Printf( PRINT_ALL, "WARNING:...changing depth not supported on Win95 < pre-OSR 2.x\n" );
-			}
-		}
-		else
-		{
-			ri.Printf( PRINT_ALL, "...using desktop display depth of %d\n", glw_state.desktopBitsPixel );
-		}
-
-		//
-		// if we're already in fullscreen then just create the window
-		//
-		if ( glw_state.cdsFullscreen )
-		{
-			ri.Printf( PRINT_ALL, "...already fullscreen, avoiding redundant CDS\n" );
-
-			if ( !GLW_CreateWindow ( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qtrue ) )
-			{
-				ri.Printf( PRINT_ALL, "...restoring display settings\n" );
-				ChangeDisplaySettings( 0, 0 );
-				return RSERR_INVALID_MODE;
-			}
-		}
-		//
-		// need to call CDS
-		//
-		else
-		{
-			ri.Printf( PRINT_ALL, "...calling CDS: " );
-			
-			// try setting the exact mode requested, because some drivers don't report
-			// the low res modes in EnumDisplaySettings, but still work
-			if ( ( cdsRet = ChangeDisplaySettings( &dm, CDS_FULLSCREEN ) ) == DISP_CHANGE_SUCCESSFUL )
-			{
-				ri.Printf( PRINT_ALL, "ok\n" );
-
-				if ( !GLW_CreateWindow ( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qtrue) )
-				{
-					ri.Printf( PRINT_ALL, "...restoring display settings\n" );
-					ChangeDisplaySettings( 0, 0 );
-					return RSERR_INVALID_MODE;
-				}
-				
-				glw_state.cdsFullscreen = qtrue;
-			}
-			else
-			{
-				//
-				// the exact mode failed, so scan EnumDisplaySettings for the next largest mode
-				//
-				DEVMODE		devmode;
-				int			modeNum;
-
-				ri.Printf( PRINT_ALL, "failed, " );
-				
-				PrintCDSError( cdsRet );
-			
-				ri.Printf( PRINT_ALL, "...trying next higher resolution:" );
-				
-				// we could do a better matching job here...
-				for ( modeNum = 0 ; ; modeNum++ ) {
-					if ( !EnumDisplaySettings( NULL, modeNum, &devmode ) ) {
-						modeNum = -1;
-						break;
-					}
-					if ( devmode.dmPelsWidth >= glConfig.vidWidth
-						&& devmode.dmPelsHeight >= glConfig.vidHeight
-						&& devmode.dmBitsPerPel >= 15 ) {
-						break;
-					}
-				}
-
-				if ( modeNum != -1 && ( cdsRet = ChangeDisplaySettings( &devmode, CDS_FULLSCREEN ) ) == DISP_CHANGE_SUCCESSFUL )
-				{
-					ri.Printf( PRINT_ALL, " ok\n" );
-					if ( !GLW_CreateWindow( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qtrue) )
-					{
-						ri.Printf( PRINT_ALL, "...restoring display settings\n" );
-						ChangeDisplaySettings( 0, 0 );
-						return RSERR_INVALID_MODE;
-					}
-					
-					glw_state.cdsFullscreen = qtrue;
-				}
-				else
-				{
-					ri.Printf( PRINT_ALL, " failed, " );
-					
-					PrintCDSError( cdsRet );
-					
-					ri.Printf( PRINT_ALL, "...restoring display settings\n" );
-					ChangeDisplaySettings( 0, 0 );
-					
-					glw_state.cdsFullscreen = qfalse;
-					glConfig.isFullscreen = qfalse;
-					if ( !GLW_CreateWindow( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qfalse) )
-					{
-						return RSERR_INVALID_MODE;
-					}
-					return RSERR_INVALID_FULLSCREEN;
-				}
-			}
-		}
-	}
-	else
-	{
-		if ( glw_state.cdsFullscreen )
-		{
-			ChangeDisplaySettings( 0, 0 );
-		}
-
-		glw_state.cdsFullscreen = qfalse;
-		if ( !GLW_CreateWindow( drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qfalse ) )
-		{
-			return RSERR_INVALID_MODE;
-		}
-	}
-
-	//
-	// success, now check display frequency, although this won't be valid on Voodoo(2)
-	//
-	memset( &dm, 0, sizeof( dm ) );
-	dm.dmSize = sizeof( dm );
-	if ( EnumDisplaySettings( NULL, ENUM_CURRENT_SETTINGS, &dm ) )
-	{
-		glConfig.displayFrequency = dm.dmDisplayFrequency;
-	}
-
-	// NOTE: this is overridden later on standalone 3Dfx drivers
-	glConfig.isFullscreen = cdsFullscreen;
-
-	return RSERR_OK;
-}
 
 /*
 ** GLW_InitExtensions
@@ -1178,13 +750,7 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 	{
 		glConfig.driverType = GLDRV_ICD;
 	}
-	else
-	{
-		glConfig.driverType = GLDRV_STANDALONE;
 
-		ri.Printf( PRINT_ALL, "...assuming '%s' is a standalone driver\n", drivername );
-
-	}
 
 	// disable the 3Dfx splash screen
 	_putenv("FX_GLIDE_NO_SPLASH=0");
@@ -1197,7 +763,7 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 		cdsFullscreen = r_fullscreen->integer;
 
 		// create the window and set up the context
-		if ( !GLW_StartDriverAndSetMode( drivername, r_mode->integer, r_colorbits->integer, cdsFullscreen ) )
+		if ( !W_StartDriverAndSetMode( drivername, r_mode->integer, r_colorbits->integer, cdsFullscreen ) )
 		{
 			// if we're on a 24/32-bit desktop and we're going fullscreen on an ICD,
 			// try it again but with a 16-bit desktop
@@ -1207,7 +773,7 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 					 cdsFullscreen != qtrue ||
 					 r_mode->integer != 3 )
 				{
-					if ( !GLW_StartDriverAndSetMode( drivername, 3, 16, qtrue ) )
+					if ( !W_StartDriverAndSetMode( drivername, 3, 16, qtrue ) )
 					{
 						goto fail;
 					}
@@ -1325,7 +891,7 @@ void GLimp_Init( void )
 
 	// save off hInstance and wndproc
 	cv = ri.Cvar_Get( "win_hinstance", "", 0 );
-	sscanf( cv->string, "%i", (int *)&g_wv.hInstance );
+	sscanf( cv->string, "%i", (int *)&wv.hInstance );
 
 	cv = ri.Cvar_Get( "win_wndproc", "", 0 );
 	sscanf( cv->string, "%p", (void **)&glw_state.wndproc );
@@ -1359,25 +925,16 @@ void GLimp_Init( void )
 
 		ri.Cvar_Set( "r_textureMode", "GL_LINEAR_MIPMAP_NEAREST" );
 
-		// VOODOO GRAPHICS w/ 2MB
-		if ( strstr( buf, "voodoo graphics/1 tmu/2 mb" ) )
-		{
-			ri.Cvar_Set( "r_picmip", "2" );
-			ri.Cvar_Get( "r_picmip", "1", CVAR_ARCHIVE | CVAR_LATCH );
-		}
-		else
-		{
-			ri.Cvar_Set( "r_picmip", "1" );
+		ri.Cvar_Set( "r_picmip", "1" );
 
-			if ( strstr( buf, "rage 128" ) || strstr( buf, "rage128" ) )
-			{
-				ri.Cvar_Set( "r_finish", "0" );
-			}
-			// Savage3D and Savage4 should always have trilinear enabled
-			else if ( strstr( buf, "savage3d" ) || strstr( buf, "s3 savage4" ) )
-			{
-				ri.Cvar_Set( "r_texturemode", "GL_LINEAR_MIPMAP_LINEAR" );
-			}
+		if ( strstr( buf, "rage 128" ) || strstr( buf, "rage128" ) )
+		{
+			ri.Cvar_Set( "r_finish", "0" );
+		}
+		// Savage3D and Savage4 should always have trilinear enabled
+		else if ( strstr( buf, "savage3d" ) || strstr( buf, "s3 savage4" ) )
+		{
+			ri.Cvar_Set( "r_texturemode", "GL_LINEAR_MIPMAP_LINEAR" );
 		}
 	}
 	
@@ -1433,18 +990,18 @@ void GLimp_Shutdown( void )
 	// release DC
 	if ( glw_state.hDC )
 	{
-		retVal = ReleaseDC( g_wv.hWnd, glw_state.hDC ) != 0;
+		retVal = ReleaseDC( wv.hWnd, glw_state.hDC ) != 0;
 		ri.Printf( PRINT_ALL, "...releasing DC: %s\n", success[retVal] );
 		glw_state.hDC   = NULL;
 	}
 
 	// destroy window
-	if ( g_wv.hWnd )
+	if ( wv.hWnd )
 	{
 		ri.Printf( PRINT_ALL, "...destroying window\n" );
-		ShowWindow( g_wv.hWnd, SW_HIDE );
-		DestroyWindow( g_wv.hWnd );
-		g_wv.hWnd = NULL;
+		ShowWindow( wv.hWnd, SW_HIDE );
+		DestroyWindow( wv.hWnd );
+		wv.hWnd = NULL;
 		glw_state.pixelFormatSet = qfalse;
 	}
 
