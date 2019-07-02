@@ -42,13 +42,25 @@
 
 PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr;
 
-// GLOBAL
+/*
+** GLOBAL
+*/
 PFN_vkCreateInstance vkCreateInstance;
 PFN_vkEnumerateInstanceExtensionProperties vkEnumerateInstanceExtensionProperties;
+PFN_vkEnumerateInstanceLayerProperties vkEnumerateInstanceLayerProperties;
 
-// INSTANCE
+/*
+** INSTANCE
+*/
 PFN_vkEnumeratePhysicalDevices vkEnumeratePhysicalDevices;
 PFN_vkEnumerateDeviceExtensionProperties vkEnumerateDeviceExtensionProperties;
+
+/* Surface */
+#if defined( _WIN32 )
+PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
+#endif
+
+/* Physical Device */
 PFN_vkGetPhysicalDeviceProperties vkGetPhysicalDeviceProperties;
 PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR;
 PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
@@ -56,8 +68,21 @@ PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR;
 PFN_vkGetPhysicalDeviceQueueFamilyProperties vkGetPhysicalDeviceQueueFamilyProperties;
 PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR;
 PFN_vkGetPhysicalDeviceSurfaceFormatsKHR vkGetPhysicalDeviceSurfaceFormatsKHR;
-#if defined( _WIN32 )
-PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
+
+/* Device */
+PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr;
+PFN_vkCreateDevice vkCreateDevice;
+
+/*
+** DEVICE
+*/
+PFN_vkGetDeviceQueue vkGetDeviceQueue;
+PFN_vkCreateCommandPool vkCreateCommandPool;
+
+/* Debug */
+#ifndef NDEBUG
+PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
+PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT;
 #endif
 
 #endif

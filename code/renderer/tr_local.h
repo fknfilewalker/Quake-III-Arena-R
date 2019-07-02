@@ -962,11 +962,35 @@ typedef struct {
 	float					fogTable[FOG_TABLE_SIZE];
 } trGlobals_t;
 
-#define VK_CHECK(function_call) { \
-	VkResult result = function_call; \
-	if (result < 0) \
-		ri.Error(ERR_FATAL, "Vulkan: error code %d returned by %s", result, #function_call); \
-}
+extern backEndState_t	backEnd;
+extern trGlobals_t	tr;
+extern glconfig_t	glConfig;		// outside of TR since it shouldn't be cleared during ref re-init
+extern glstate_t	glState;		// outside of TR since it shouldn't be cleared during ref re-init
+
+/*
+==============================================================================
+
+Vulkan
+
+==============================================================================
+*/
+#define MAX_SWAPCHAIN_IMAGE_COUNT 5
+#define MAX_SURFACE_FORMAT_ARRAY_SIZE 10
+
+typedef struct {
+	VkSwapchainKHR				swapChain;
+	VkExtent2D					swapChainExtent;
+
+	VkFormat					swapChainImageFormat;
+	VkImage						swapChainImages[MAX_SWAPCHAIN_IMAGE_COUNT];
+	VkImageView					swapChainImageViews[MAX_SWAPCHAIN_IMAGE_COUNT];
+	VkFramebuffer				swapChainFramebuffers[MAX_SWAPCHAIN_IMAGE_COUNT];
+
+	VkFormat					depthStencilFormat;
+	VkImage						depthImage;
+	VkDeviceMemory				depthImageMemory;
+	VkImageView					depthImageView;
+} vkswapchain_t;
 
 /*
 ** vkinstance_t
@@ -974,24 +998,37 @@ typedef struct {
 ** Holds all data for the current vulkan backend
 */
 typedef struct {
-	VkInstance instance;
-	VkPhysicalDevice physical_device;
-	VkSurfaceKHR surface;
-	VkSurfaceFormatKHR surface_format;
+	VkInstance					instance;
+	VkPhysicalDevice			physical_device;
+	VkSurfaceKHR				surface;
+	VkSurfaceFormatKHR			surface_format;
 
+	VkDevice					device;
+	VkQueue						graphicsQueue;
+	VkQueue						presentQueue;
+	VkCommandPool				commandPool;
+
+	vkswapchain_t				swapChain;
 #ifndef NDEBUG
-	VkDebugReportCallbackEXT debug_callback;
+	VkDebugUtilsMessengerEXT	callback;
 #endif
 } vkinstance_t;
 
-extern vkinstance_t	vkInstance;
+typedef struct {
+	uint32_t graphicsFamily;
+	uint32_t presentFamily;
+} queueFamilyIndices_t;
+
+typedef struct {
+	VkSurfaceCapabilitiesKHR	capabilities;
+	uint32_t					formatCount;
+	VkSurfaceFormatKHR			formats[MAX_SURFACE_FORMAT_ARRAY_SIZE];
+	uint32_t					presentModeCount;
+	VkPresentModeKHR			presentModes[MAX_SURFACE_FORMAT_ARRAY_SIZE];
+} swapChainSupportDetails_t;
 
 
-extern backEndState_t	backEnd;
-extern trGlobals_t	tr;
-extern glconfig_t	glConfig;		// outside of TR since it shouldn't be cleared during ref re-init
-extern glstate_t	glState;		// outside of TR since it shouldn't be cleared during ref re-init
-
+extern vkinstance_t		vkInstance;
 
 //
 // cvars
@@ -1150,8 +1187,15 @@ void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms, 
 /*
 ** VK wrapper/helper functions
 */
-void	VK_CreateInstance();
-void	VK_CreateSurface(void* p1, void* p2);
+char* VK_ErrorString(VkResult errorCode);
+
+#define VK_CHECK(function_call, msg) { \
+	VkResult result = function_call; \
+	if (result < 0) \
+		ri.Error(ERR_FATAL, "Vulkan: %s %s", msg, VK_ErrorString(result)); \
+}
+
+swapChainSupportDetails_t querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 /*
 ** GL wrapper/helper functions

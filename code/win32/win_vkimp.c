@@ -24,6 +24,18 @@ typedef enum {
 */
 /*static*/ qboolean VKW_InitDriver(const char* drivername, int colorbits)
 {
+	if (!VK_LoadGlobalFunctions()) return qfalse;
+	VK_CreateInstance();
+	if (!VK_LoadInstanceFunctions()) return qfalse;
+	VK_CreateSurface((void*)glw_state.hinstVulkan, (void*)wv.hWnd); //VKimp_CreateSurface();
+	VK_PickPhysicalDevice();
+	VK_CreateLogicalDevice();
+	if (!VK_LoadDeviceFunctions()) return qfalse;
+	VK_CreateCommandPool();
+#ifndef NDEBUG
+	VK_SetupDebugCallback();
+#endif
+
 	return qtrue;
 };
 
@@ -59,12 +71,7 @@ static qboolean VKW_LoadVulkan(const char* drivername)
 
 		// create the window and set up the context
 		if (!W_StartDriverAndSetMode(drivername, r_mode->integer, r_colorbits->integer, cdsFullscreen)) goto fail;	
-		VK_CreateInstance();
-		if (!QVK_LoadInstanceFunctions()) goto fail;
-		VK_CreateSurface((void*)glw_state.hinstVulkan, (void*)wv.hWnd);
-		//VKimp_CreateSurface();
-		VK_PickPhysicalDevice();
-
+		
 		return qtrue;
 	}
 
@@ -116,4 +123,3 @@ void VKimp_Init( void ) {
 
 
 }
-
