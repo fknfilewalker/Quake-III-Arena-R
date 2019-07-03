@@ -35,7 +35,13 @@ typedef enum {
 #ifndef NDEBUG
 	VK_SetupDebugCallback();
 #endif
+	VK_CreateSwapChain();
+	VK_CreateImageViews();
+	VK_CreateRenderPass();
+	VK_CreateFramebuffers();
 
+	VK_CreateCommandBuffers();
+	VK_CreateSyncObjects();
 	return qtrue;
 };
 

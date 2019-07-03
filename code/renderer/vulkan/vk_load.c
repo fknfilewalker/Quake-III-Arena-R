@@ -45,6 +45,24 @@ qboolean VK_LoadDeviceFunctions(void)
 {
 	vkGetDeviceQueue = VK_DEVICE_LEVEL_FUNCTION("vkGetDeviceQueue");
 	vkCreateCommandPool = VK_DEVICE_LEVEL_FUNCTION("vkCreateCommandPool");
+	vkCreateSwapchainKHR = VK_DEVICE_LEVEL_FUNCTION("vkCreateSwapchainKHR");
+	vkGetSwapchainImagesKHR = VK_DEVICE_LEVEL_FUNCTION("vkGetSwapchainImagesKHR");
+	vkCreateImageView = VK_DEVICE_LEVEL_FUNCTION("vkCreateImageView");
+	vkCreateRenderPass = VK_DEVICE_LEVEL_FUNCTION("vkCreateRenderPass");
+	vkCreateFramebuffer = VK_DEVICE_LEVEL_FUNCTION("vkCreateFramebuffer");
+	vkAllocateCommandBuffers = VK_DEVICE_LEVEL_FUNCTION("vkAllocateCommandBuffers");
+	vkCreateSemaphore = VK_DEVICE_LEVEL_FUNCTION("vkCreateSemaphore");
+	vkCreateFence = VK_DEVICE_LEVEL_FUNCTION("vkCreateFence");
+
+	vkWaitForFences = VK_DEVICE_LEVEL_FUNCTION("vkWaitForFences");
+	vkResetFences = VK_DEVICE_LEVEL_FUNCTION("vkResetFences");
+	vkAcquireNextImageKHR = VK_DEVICE_LEVEL_FUNCTION("vkAcquireNextImageKHR");
+	vkFreeCommandBuffers = VK_DEVICE_LEVEL_FUNCTION("vkFreeCommandBuffers");
+	vkBeginCommandBuffer = VK_DEVICE_LEVEL_FUNCTION("vkBeginCommandBuffer");
+
+	vkEndCommandBuffer = VK_DEVICE_LEVEL_FUNCTION("vkEndCommandBuffer");
+	vkQueueSubmit = VK_DEVICE_LEVEL_FUNCTION("vkQueueSubmit");
+	vkQueuePresentKHR = VK_DEVICE_LEVEL_FUNCTION("vkQueuePresentKHR");
 
 	/* Debug */
 #ifndef NDEBUG

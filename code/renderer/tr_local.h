@@ -974,22 +974,32 @@ Vulkan
 
 ==============================================================================
 */
-#define MAX_SWAPCHAIN_IMAGE_COUNT 5
 #define MAX_SURFACE_FORMAT_ARRAY_SIZE 10
 
 typedef struct {
-	VkSwapchainKHR				swapChain;
-	VkExtent2D					swapChainExtent;
+	VkSwapchainKHR				handle;
+	VkExtent2D					extent;
 
-	VkFormat					swapChainImageFormat;
-	VkImage						swapChainImages[MAX_SWAPCHAIN_IMAGE_COUNT];
-	VkImageView					swapChainImageViews[MAX_SWAPCHAIN_IMAGE_COUNT];
-	VkFramebuffer				swapChainFramebuffers[MAX_SWAPCHAIN_IMAGE_COUNT];
+	uint32_t					currentFrame;
+	uint32_t					currentImage;
+
+	VkCommandBuffer				*commandBuffers;
+	VkSemaphore					*imageAvailableSemaphores;
+	VkSemaphore					*renderFinishedSemaphores;
+	VkFence						*inFlightFences;
+
+	uint32_t					imageCount;
+	VkFormat					imageFormat;
+	VkImage						*images;
+	VkImageView					*imageViews;
+	VkFramebuffer				*framebuffers;
 
 	VkFormat					depthStencilFormat;
 	VkImage						depthImage;
 	VkDeviceMemory				depthImageMemory;
 	VkImageView					depthImageView;
+
+	VkRenderPass				renderpass;
 } vkswapchain_t;
 
 /*
@@ -1001,14 +1011,13 @@ typedef struct {
 	VkInstance					instance;
 	VkPhysicalDevice			physical_device;
 	VkSurfaceKHR				surface;
-	VkSurfaceFormatKHR			surface_format;
 
 	VkDevice					device;
 	VkQueue						graphicsQueue;
 	VkQueue						presentQueue;
 	VkCommandPool				commandPool;
 
-	vkswapchain_t				swapChain;
+	vkswapchain_t				swapchain;
 #ifndef NDEBUG
 	VkDebugUtilsMessengerEXT	callback;
 #endif
@@ -1196,6 +1205,7 @@ char* VK_ErrorString(VkResult errorCode);
 }
 
 swapChainSupportDetails_t querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
+queueFamilyIndices_t findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 /*
 ** GL wrapper/helper functions

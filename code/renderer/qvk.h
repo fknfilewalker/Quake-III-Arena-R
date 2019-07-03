@@ -40,49 +40,67 @@
 #endif
 
 
-PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr;
+PFN_vkGetInstanceProcAddr						vkGetInstanceProcAddr;
 
 /*
 ** GLOBAL
 */
-PFN_vkCreateInstance vkCreateInstance;
-PFN_vkEnumerateInstanceExtensionProperties vkEnumerateInstanceExtensionProperties;
-PFN_vkEnumerateInstanceLayerProperties vkEnumerateInstanceLayerProperties;
+PFN_vkCreateInstance							vkCreateInstance;
+PFN_vkEnumerateInstanceExtensionProperties		vkEnumerateInstanceExtensionProperties;
+PFN_vkEnumerateInstanceLayerProperties			vkEnumerateInstanceLayerProperties;
 
 /*
 ** INSTANCE
 */
-PFN_vkEnumeratePhysicalDevices vkEnumeratePhysicalDevices;
-PFN_vkEnumerateDeviceExtensionProperties vkEnumerateDeviceExtensionProperties;
+PFN_vkEnumeratePhysicalDevices					vkEnumeratePhysicalDevices;
+PFN_vkEnumerateDeviceExtensionProperties		vkEnumerateDeviceExtensionProperties;
 
 /* Surface */
 #if defined( _WIN32 )
-PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
+PFN_vkCreateWin32SurfaceKHR						vkCreateWin32SurfaceKHR;
 #endif
 
 /* Physical Device */
-PFN_vkGetPhysicalDeviceProperties vkGetPhysicalDeviceProperties;
-PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR;
-PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
-PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR;
-PFN_vkGetPhysicalDeviceQueueFamilyProperties vkGetPhysicalDeviceQueueFamilyProperties;
-PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR;
-PFN_vkGetPhysicalDeviceSurfaceFormatsKHR vkGetPhysicalDeviceSurfaceFormatsKHR;
+PFN_vkGetPhysicalDeviceProperties				vkGetPhysicalDeviceProperties;
+PFN_vkGetPhysicalDeviceSurfaceSupportKHR		vkGetPhysicalDeviceSurfaceSupportKHR;
+PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR	vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
+PFN_vkGetPhysicalDeviceSurfaceSupportKHR		vkGetPhysicalDeviceSurfaceSupportKHR;
+PFN_vkGetPhysicalDeviceQueueFamilyProperties	vkGetPhysicalDeviceQueueFamilyProperties;
+PFN_vkGetPhysicalDeviceSurfacePresentModesKHR	vkGetPhysicalDeviceSurfacePresentModesKHR;
+PFN_vkGetPhysicalDeviceSurfaceFormatsKHR		vkGetPhysicalDeviceSurfaceFormatsKHR;
 
 /* Device */
-PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr;
-PFN_vkCreateDevice vkCreateDevice;
+PFN_vkGetDeviceProcAddr							vkGetDeviceProcAddr;
+PFN_vkCreateDevice								vkCreateDevice;
 
 /*
 ** DEVICE
 */
-PFN_vkGetDeviceQueue vkGetDeviceQueue;
-PFN_vkCreateCommandPool vkCreateCommandPool;
+PFN_vkGetDeviceQueue							vkGetDeviceQueue;
+PFN_vkCreateCommandPool							vkCreateCommandPool;
+PFN_vkCreateSwapchainKHR						vkCreateSwapchainKHR;
+PFN_vkGetSwapchainImagesKHR						vkGetSwapchainImagesKHR;
+PFN_vkCreateImageView							vkCreateImageView;
+PFN_vkCreateRenderPass							vkCreateRenderPass;
+PFN_vkCreateFramebuffer							vkCreateFramebuffer;
+PFN_vkAllocateCommandBuffers					vkAllocateCommandBuffers;
+PFN_vkCreateSemaphore							vkCreateSemaphore;
+PFN_vkCreateFence								vkCreateFence;
+
+PFN_vkWaitForFences								vkWaitForFences;
+PFN_vkResetFences								vkResetFences;
+PFN_vkAcquireNextImageKHR						vkAcquireNextImageKHR;
+PFN_vkFreeCommandBuffers						vkFreeCommandBuffers;
+PFN_vkBeginCommandBuffer						vkBeginCommandBuffer;
+
+PFN_vkEndCommandBuffer							vkEndCommandBuffer;
+PFN_vkQueueSubmit								vkQueueSubmit;
+PFN_vkQueuePresentKHR							vkQueuePresentKHR;
 
 /* Debug */
 #ifndef NDEBUG
-PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
-PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT;
+PFN_vkCreateDebugUtilsMessengerEXT				vkCreateDebugUtilsMessengerEXT;
+PFN_vkDestroyDebugUtilsMessengerEXT				vkDestroyDebugUtilsMessengerEXT;
 #endif
 
 #endif
