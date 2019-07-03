@@ -97,6 +97,12 @@ PFN_vkEndCommandBuffer							vkEndCommandBuffer;
 PFN_vkQueueSubmit								vkQueueSubmit;
 PFN_vkQueuePresentKHR							vkQueuePresentKHR;
 
+PFN_vkCmdBeginRenderPass						vkCmdBeginRenderPass;
+PFN_vkCmdSetViewport							vkCmdSetViewport;
+PFN_vkCmdSetScissor								vkCmdSetScissor;
+PFN_vkCmdEndRenderPass							vkCmdEndRenderPass;
+
+
 /* Debug */
 #ifndef NDEBUG
 PFN_vkCreateDebugUtilsMessengerEXT				vkCreateDebugUtilsMessengerEXT;

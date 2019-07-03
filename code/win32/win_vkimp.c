@@ -42,6 +42,13 @@ typedef enum {
 
 	VK_CreateCommandBuffers();
 	VK_CreateSyncObjects();
+
+	VK_BeginFrame();
+	beginRenderClear();
+	endRender();
+	VK_DrawFrame();
+	VK_BeginFrame();
+	
 	return qtrue;
 };
 
