@@ -62,6 +62,17 @@ elseif(APPLE)
 		message(STATUS "Found OpenGL")
 	endif (OpenGL_FOUND)
 
+	# check Vulkan
+	find_package(Vulkan REQUIRED)
+	find_path(VULKAN_INCLUDE_DIR NAMES vulkan/vulkan.h HINTS
+        "$ENV{VULKAN_SDK}/Include"
+        "$ENV{VK_SDK_PATH}/Include")
+
+	if (VULKAN_FOUND)
+		message(STATUS "Found Vulkan")
+	else(VULKAN_FOUND)
+		message(STATUS "Vulkan not found")
+	endif (VULKAN_FOUND)
 	#add_definitions(-DVK_USE_PLATFORM_MACOS_MVK)
 	#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 	set(CMAKE_XCODE_GENERATE_SCHEME TRUE)

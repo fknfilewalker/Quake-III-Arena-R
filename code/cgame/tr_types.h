@@ -213,10 +213,9 @@ typedef struct {
 #define VULKAN_DRIVER_NAME	"vulkan-1"
 
 #else
-
-#define _3DFX_DRIVER_NAME	"libMesaVoodooGL.so"
 // https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=524
 #define OPENGL_DRIVER_NAME	"libGL.so.1"
+#define VULKAN_DRIVER_NAME    "libvulkan.1"
 
 #endif	// !defined _WIN32
 

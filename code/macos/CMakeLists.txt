@@ -36,6 +36,7 @@ endforeach()
 
 # HEADER
 include_directories(${OPENGL_INCLUDE_DIR})
+include_directories(${VULKAN_INCLUDE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/code/renderer)
 include_directories(${CMAKE_SOURCE_DIR}/code/macos)
 include_directories(${CMAKE_SOURCE_DIR}/code/qcommon)
@@ -46,8 +47,8 @@ include_directories(${CMAKE_SOURCE_DIR}/code/server)
 set(CMAKE_XCODE_GENERATE_SCHEME TRUE)
 add_executable(${APP_MACOS} MACOSX_BUNDLE ${SOURCES} Quake3.icns)
 # +set fs_basePath \"Volumes/data_mac/Games/GOG Games/Quake III\"
-FIND_LIBRARY(OpenGL_LIBRARY OpenGL)
-target_link_libraries(${APP_MACOS} ${OpenGL_LIBRARY})
+#FIND_LIBRARY(OpenGL_LIBRARY OpenGL)
+#target_link_libraries(${APP_MACOS} ${OpenGL_LIBRARY})
 target_link_libraries(${APP_MACOS} "-framework AppKit")
 target_link_libraries(${APP_MACOS} "-framework IOKit")
 target_link_libraries(${APP_MACOS} "-framework CoreAudio")

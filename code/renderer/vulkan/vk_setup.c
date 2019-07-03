@@ -14,14 +14,20 @@ const char* validationLayer[] = {
 //
 // function declaration
 //
-qboolean isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface);
+static qboolean isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface);
 queueFamilyIndices_t findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
-qboolean checkValidationLayerSupport();
+static qboolean checkValidationLayerSupport();
 
 void VK_CreateInstance() {
 	const char* instance_extensions[] = {
 		VK_KHR_SURFACE_EXTENSION_NAME,
-		VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#if defined( _WIN32 )
+        VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#elif defined(__APPLE__)
+        VK_MVK_MACOS_SURFACE_EXTENSION_NAME,
+#elif defined( __linux__ )
+        
+#endif
 #ifndef NDEBUG
 		VK_EXT_DEBUG_REPORT_EXTENSION_NAME
 #endif

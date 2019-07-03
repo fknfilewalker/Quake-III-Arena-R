@@ -22,7 +22,9 @@
 
 #elif defined(__APPLE__)
 
-#include "macosx_glimp.h" // "../macosx/macosx_glimp.h"
+#define VK_USE_PLATFORM_MACOS_MVK
+#define VK_NO_PROTOTYPES
+#include <vulkan/vulkan.h>
 
 #elif defined( __linux__ )
 

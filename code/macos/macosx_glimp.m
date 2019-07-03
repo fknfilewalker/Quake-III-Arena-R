@@ -422,6 +422,10 @@ void Sys_ResumeGL ()
     }
 }
 
+void VKimp_Init( void )
+{
+}
+
 /*
 ===================
 GLimp_Init
@@ -849,7 +853,7 @@ static void GLW_InitExtensions( void )
         // GL_EXT_compiled_vertex_array
         qglLockArraysEXT = NULL;
         qglUnlockArraysEXT = NULL;
-        if ( strstr( glConfig.extensions_string, "GL_EXT_compiled_vertex_array" ) && ( glConfig.hardwareType != GLHW_RIVA128 ) )
+        if ( strstr( glConfig.extensions_string, "GL_EXT_compiled_vertex_array" ) )
         {
                 if ( r_ext_compiled_vertex_array->integer )
                 {
