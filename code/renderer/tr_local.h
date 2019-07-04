@@ -1037,7 +1037,7 @@ typedef struct {
 } swapChainSupportDetails_t;
 
 
-extern vkinstance_t		vkInstance;
+extern vkinstance_t		vk;
 
 //
 // cvars

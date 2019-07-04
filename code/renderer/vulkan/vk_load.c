@@ -6,8 +6,8 @@
 ** vkGetInstanceProcAddr needs to be set by platform specific implementation
 */ 
 #define VK_GLOBAL_LEVEL_FUNCTION( a ) vkGetInstanceProcAddr( NULL, a )
-#define VK_INSTANCE_LEVEL_FUNCTION( a ) vkGetInstanceProcAddr( vkInstance.instance , a )
-#define VK_DEVICE_LEVEL_FUNCTION( a ) vkGetDeviceProcAddr( vkInstance.device , a )
+#define VK_INSTANCE_LEVEL_FUNCTION( a ) vkGetInstanceProcAddr( vk.instance , a )
+#define VK_DEVICE_LEVEL_FUNCTION( a ) vkGetDeviceProcAddr( vk.device , a )
 
 
 qboolean VK_LoadGlobalFunctions(void)

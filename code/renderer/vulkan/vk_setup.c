@@ -1,7 +1,7 @@
 
 #include "../tr_local.h"
 
-vkinstance_t    vkInstance;
+vkinstance_t vk;
 
 #define MAX_EXTENSION_PROPERTIES 50
 
@@ -76,7 +76,7 @@ void VK_CreateInstance() {
 		desc.ppEnabledLayerNames = &validationLayer[0];
 #endif
 
-		VK_CHECK(vkCreateInstance(&desc, NULL, &vkInstance.instance), "failed to create Instance!");
+		VK_CHECK(vkCreateInstance(&desc, NULL, &vk.instance), "failed to create Instance!");
 	}
 }
 
@@ -100,7 +100,7 @@ void VK_CreateSurface(void* p1, void* p2) {
     desc.pNext = NULL;
     desc.flags = 0;
     desc.pView = p1;
-    VK_CHECK(vkCreateMacOSSurfaceMVK(vkInstance.instance, &desc, NULL, &vkInstance.surface), "failed to create MacOS Surface!");
+    VK_CHECK(vkCreateMacOSSurfaceMVK(vk.instance, &desc, NULL, &vk.surface), "failed to create MacOS Surface!");
 #elif defined( __linux__ )
         
 #endif
@@ -111,30 +111,30 @@ void VK_PickPhysicalDevice()
 {
 	{
 		uint32_t deviceCount = 0;
-		vkEnumeratePhysicalDevices(vkInstance.instance, &deviceCount, NULL);
+		vkEnumeratePhysicalDevices(vk.instance, &deviceCount, NULL);
 		if (deviceCount == 0) {
 			ri.Error(ERR_FATAL, "Vulkan: failed to find GPUs with Vulkan support!");
 		}
 		VkPhysicalDevice devices[10];
-		vkEnumeratePhysicalDevices(vkInstance.instance, &deviceCount, &devices[0]);
+		vkEnumeratePhysicalDevices(vk.instance, &deviceCount, &devices[0]);
 
 		for (int i = 0; i < deviceCount; i++) {
-			if (isDeviceSuitable(devices[i], vkInstance.surface)) {
-				vkInstance.physical_device = devices[i];
+			if (isDeviceSuitable(devices[i], vk.surface)) {
+				vk.physical_device = devices[i];
 				break;
 			}
 		}
 	}
 
-	if (vkInstance.physical_device == VK_NULL_HANDLE) {
+	if (vk.physical_device == VK_NULL_HANDLE) {
 		ri.Error(ERR_FATAL, "Vulkan: failed to find a suitable GPU!");
 	}
 
 	{
 		uint32_t extensionCount = 0;
-		vkEnumerateDeviceExtensionProperties(vkInstance.physical_device, NULL, &extensionCount, NULL);
+		vkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &extensionCount, NULL);
 		VkExtensionProperties extensions[MAX_EXTENSION_PROPERTIES];
-		vkEnumerateDeviceExtensionProperties(vkInstance.physical_device, NULL, &extensionCount, &extensions[0]);
+		vkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &extensionCount, &extensions[0]);
 		//std::cout << "LogicalDeviceExtensions..." << std::endl;
 
 		//for (const auto& extension : extensions) {
@@ -143,7 +143,7 @@ void VK_PickPhysicalDevice()
 	}
 	// device infos
 	VkPhysicalDeviceProperties devProperties;
-	vkGetPhysicalDeviceProperties(vkInstance.physical_device, &devProperties);
+	vkGetPhysicalDeviceProperties(vk.physical_device, &devProperties);
 
 	// device limits
 	VkPhysicalDeviceLimits limits = devProperties.limits;
@@ -154,7 +154,7 @@ void VK_PickPhysicalDevice()
 }
 
 void VK_CreateLogicalDevice() {
-	queueFamilyIndices_t indices = findQueueFamilies(vkInstance.physical_device, vkInstance.surface);
+	queueFamilyIndices_t indices = findQueueFamilies(vk.physical_device, vk.surface);
 
 	VkDeviceQueueCreateInfo queueCreateInfos[2];
 	memset(&queueCreateInfos, 0, sizeof(queueCreateInfos));
@@ -191,43 +191,43 @@ void VK_CreateLogicalDevice() {
 
 	createInfo.enabledLayerCount = 0;
 
-	VK_CHECK(vkCreateDevice(vkInstance.physical_device, &createInfo, NULL, &vkInstance.device), "failed to create logical device!")
+	VK_CHECK(vkCreateDevice(vk.physical_device, &createInfo, NULL, &vk.device), "failed to create logical device!")
 
 }
 
 void VK_CreateCommandPool() {
-	queueFamilyIndices_t queueFamilyIndices = findQueueFamilies(vkInstance.physical_device, vkInstance.surface);
+	queueFamilyIndices_t queueFamilyIndices = findQueueFamilies(vk.physical_device, vk.surface);
 
-	vkGetDeviceQueue(vkInstance.device, queueFamilyIndices.graphicsFamily, 0, &vkInstance.graphicsQueue);
-	vkGetDeviceQueue(vkInstance.device, queueFamilyIndices.presentFamily, 0, &vkInstance.presentQueue);
+	vkGetDeviceQueue(vk.device, queueFamilyIndices.graphicsFamily, 0, &vk.graphicsQueue);
+	vkGetDeviceQueue(vk.device, queueFamilyIndices.presentFamily, 0, &vk.presentQueue);
 
 	VkCommandPoolCreateInfo poolInfo = { 0 };
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
 	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;//VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 
-	VK_CHECK(vkCreateCommandPool(vkInstance.device, &poolInfo, NULL, &vkInstance.commandPool), "failed to create command pool!");
+	VK_CHECK(vkCreateCommandPool(vk.device, &poolInfo, NULL, &vk.commandPool), "failed to create command pool!");
 
 
 }
 
 void VK_CreateCommandBuffers() {
-	vkInstance.swapchain.commandBuffers = malloc(vkInstance.swapchain.imageCount * sizeof(VkCommandBuffer));
+	vk.swapchain.commandBuffers = malloc(vk.swapchain.imageCount * sizeof(VkCommandBuffer));
 
 	VkCommandBufferAllocateInfo allocInfo = {0};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = vkInstance.commandPool;
+	allocInfo.commandPool = vk.commandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = vkInstance.swapchain.imageCount;
+	allocInfo.commandBufferCount = vk.swapchain.imageCount;
 
-	VK_CHECK(vkAllocateCommandBuffers(vkInstance.device, &allocInfo, vkInstance.swapchain.commandBuffers), "failed to allocate command buffers!");
+	VK_CHECK(vkAllocateCommandBuffers(vk.device, &allocInfo, vk.swapchain.commandBuffers), "failed to allocate command buffers!");
 
 }
 
 void VK_CreateSyncObjects() {
-	vkInstance.swapchain.imageAvailableSemaphores = malloc(vkInstance.swapchain.imageCount * sizeof(VkSemaphore));
-	vkInstance.swapchain.renderFinishedSemaphores = malloc(vkInstance.swapchain.imageCount * sizeof(VkSemaphore));
-	vkInstance.swapchain.inFlightFences = malloc(vkInstance.swapchain.imageCount * sizeof(VkFence));
+	vk.swapchain.imageAvailableSemaphores = malloc(vk.swapchain.imageCount * sizeof(VkSemaphore));
+	vk.swapchain.renderFinishedSemaphores = malloc(vk.swapchain.imageCount * sizeof(VkSemaphore));
+	vk.swapchain.inFlightFences = malloc(vk.swapchain.imageCount * sizeof(VkFence));
 
 	VkSemaphoreCreateInfo semaphoreInfo = {0};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -236,46 +236,46 @@ void VK_CreateSyncObjects() {
 	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	for (size_t i = 0; i < vkInstance.swapchain.imageCount; i++) {
-		VK_CHECK(vkCreateSemaphore(vkInstance.device, &semaphoreInfo, NULL, &vkInstance.swapchain.imageAvailableSemaphores[i]), "failed to create Semaphore!");
-		VK_CHECK(vkCreateSemaphore(vkInstance.device, &semaphoreInfo, NULL, &vkInstance.swapchain.renderFinishedSemaphores[i]), "failed to create Semaphore!");
-		VK_CHECK(vkCreateFence(vkInstance.device, &fenceInfo, NULL, &vkInstance.swapchain.inFlightFences[i]), "failed to create Fence!");
+	for (size_t i = 0; i < vk.swapchain.imageCount; i++) {
+		VK_CHECK(vkCreateSemaphore(vk.device, &semaphoreInfo, NULL, &vk.swapchain.imageAvailableSemaphores[i]), "failed to create Semaphore!");
+		VK_CHECK(vkCreateSemaphore(vk.device, &semaphoreInfo, NULL, &vk.swapchain.renderFinishedSemaphores[i]), "failed to create Semaphore!");
+		VK_CHECK(vkCreateFence(vk.device, &fenceInfo, NULL, &vk.swapchain.inFlightFences[i]), "failed to create Fence!");
 	}
 
-	vkInstance.swapchain.currentFrame = vkInstance.swapchain.imageCount - 1;
+	vk.swapchain.currentFrame = vk.swapchain.imageCount - 1;
 }
 
 void VK_BeginFrame() {
 
 	// wait for command buffer submission for last image
-	vkWaitForFences(vkInstance.device, 1, &vkInstance.swapchain.inFlightFences[vkInstance.swapchain.currentFrame], VK_TRUE, UINT64_MAX);
-	vkResetFences(vkInstance.device, 1, &vkInstance.swapchain.inFlightFences[vkInstance.swapchain.currentFrame]);
+	vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentFrame], VK_TRUE, UINT64_MAX);
+	vkResetFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentFrame]);
 
-	vkAcquireNextImageKHR(vkInstance.device, vkInstance.swapchain.handle, UINT64_MAX, vkInstance.swapchain.imageAvailableSemaphores[vkInstance.swapchain.currentFrame], vkInstance.swapchain.inFlightFences[vkInstance.swapchain.currentFrame], &vkInstance.swapchain.currentImage);
+	vkAcquireNextImageKHR(vk.device, vk.swapchain.handle, UINT64_MAX, vk.swapchain.imageAvailableSemaphores[vk.swapchain.currentFrame], vk.swapchain.inFlightFences[vk.swapchain.currentFrame], &vk.swapchain.currentImage);
 
-	vkWaitForFences(vkInstance.device, 1, &vkInstance.swapchain.inFlightFences[vkInstance.swapchain.currentImage], VK_TRUE, UINT64_MAX);
-	vkResetFences(vkInstance.device, 1, &vkInstance.swapchain.inFlightFences[vkInstance.swapchain.currentImage]);
+	vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentImage], VK_TRUE, UINT64_MAX);
+	vkResetFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentImage]);
 
-	vkFreeCommandBuffers(vkInstance.device, vkInstance.commandPool, 1, &vkInstance.swapchain.commandBuffers[vkInstance.swapchain.currentImage]);
+	vkFreeCommandBuffers(vk.device, vk.commandPool, 1, &vk.swapchain.commandBuffers[vk.swapchain.currentImage]);
 	VkCommandBufferAllocateInfo cmdBufInfo = {
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, NULL, vkInstance.commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1 };
-	VkResult err = vkAllocateCommandBuffers(vkInstance.device, &cmdBufInfo, &vkInstance.swapchain.commandBuffers[vkInstance.swapchain.currentImage]);
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, NULL, vk.commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1 };
+	VkResult err = vkAllocateCommandBuffers(vk.device, &cmdBufInfo, &vk.swapchain.commandBuffers[vk.swapchain.currentImage]);
 
 	VkCommandBufferBeginInfo beginInfo = {0};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;//VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
-	VK_CHECK(vkBeginCommandBuffer(vkInstance.swapchain.commandBuffers[vkInstance.swapchain.currentImage], &beginInfo), "failed to begin recording command buffer!");
+	VK_CHECK(vkBeginCommandBuffer(vk.swapchain.commandBuffers[vk.swapchain.currentImage], &beginInfo), "failed to begin recording command buffer!");
 }
 
 void VK_DrawFrame() {
 
-	VK_CHECK(vkEndCommandBuffer(vkInstance.swapchain.commandBuffers[vkInstance.swapchain.currentImage]), "failed to end commandbuffer!");
+	VK_CHECK(vkEndCommandBuffer(vk.swapchain.commandBuffers[vk.swapchain.currentImage]), "failed to end commandbuffer!");
 	//vkResetFences(this->device, 1, &inFlightFences[currentFrame]);
 
-	VkSemaphore waitSemaphores[] = { vkInstance.swapchain.imageAvailableSemaphores[vkInstance.swapchain.currentFrame] };
+	VkSemaphore waitSemaphores[] = { vk.swapchain.imageAvailableSemaphores[vk.swapchain.currentFrame] };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-	VkSemaphore signalSemaphores[] = { vkInstance.swapchain.renderFinishedSemaphores[vkInstance.swapchain.currentFrame] };
+	VkSemaphore signalSemaphores[] = { vk.swapchain.renderFinishedSemaphores[vk.swapchain.currentFrame] };
 
 	VkSubmitInfo submitInfo = {0};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -283,14 +283,14 @@ void VK_DrawFrame() {
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &vkInstance.swapchain.commandBuffers[vkInstance.swapchain.currentImage];
+	submitInfo.pCommandBuffers = &vk.swapchain.commandBuffers[vk.swapchain.currentImage];
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	VK_CHECK(vkQueueSubmit(vkInstance.graphicsQueue, 1, &submitInfo, vkInstance.swapchain.inFlightFences[vkInstance.swapchain.currentImage]), "failed to submit draw command buffer!");
+	VK_CHECK(vkQueueSubmit(vk.graphicsQueue, 1, &submitInfo, vk.swapchain.inFlightFences[vk.swapchain.currentImage]), "failed to submit draw command buffer!");
 	
 
-	VkSwapchainKHR swapChains[] = { vkInstance.swapchain.handle };
+	VkSwapchainKHR swapChains[] = { vk.swapchain.handle };
 
 	VkPresentInfoKHR presentInfo = {0};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -298,11 +298,11 @@ void VK_DrawFrame() {
 	presentInfo.pWaitSemaphores = signalSemaphores;
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
-	presentInfo.pImageIndices = &vkInstance.swapchain.currentImage;
+	presentInfo.pImageIndices = &vk.swapchain.currentImage;
 
-	VK_CHECK(vkQueuePresentKHR(vkInstance.presentQueue, &presentInfo), "failed to Queue Present!");
+	VK_CHECK(vkQueuePresentKHR(vk.presentQueue, &presentInfo), "failed to Queue Present!");
 
-	vkInstance.swapchain.currentFrame = (vkInstance.swapchain.currentFrame + 1) % vkInstance.swapchain.imageCount;
+	vk.swapchain.currentFrame = (vk.swapchain.currentFrame + 1) % vk.swapchain.imageCount;
 }
 
 /*
@@ -348,7 +348,7 @@ void VK_SetupDebugCallback() {
 	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 	createInfo.pfnUserCallback = &VK_DebugCallback;
 
-	VK_CHECK(vkCreateDebugUtilsMessengerEXT(vkInstance.instance, &createInfo, NULL, &vkInstance.callback), "failed to set up debug callback!");
+	VK_CHECK(vkCreateDebugUtilsMessengerEXT(vk.instance, &createInfo, NULL, &vk.callback), "failed to set up debug callback!");
 }
 
 /*
