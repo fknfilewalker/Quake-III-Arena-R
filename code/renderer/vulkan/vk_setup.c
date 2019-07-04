@@ -1,6 +1,8 @@
 
 #include "../tr_local.h"
 
+vkinstance_t    vkInstance;
+
 #define MAX_EXTENSION_PROPERTIES 50
 
 const char* deviceExtensions[] = {
@@ -20,16 +22,18 @@ static qboolean checkValidationLayerSupport();
 
 void VK_CreateInstance() {
 	const char* instance_extensions[] = {
+#ifndef NDEBUG
+        VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+#endif
+        
 		VK_KHR_SURFACE_EXTENSION_NAME,
 #if defined( _WIN32 )
-        VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+        VK_KHR_WIN32_SURFACE_EXTENSION_NAME
 #elif defined(__APPLE__)
-        VK_MVK_MACOS_SURFACE_EXTENSION_NAME,
+        VK_MVK_MACOS_SURFACE_EXTENSION_NAME
 #elif defined( __linux__ )
         
-#endif
-#ifndef NDEBUG
-		VK_EXT_DEBUG_REPORT_EXTENSION_NAME
 #endif
 	};
 
@@ -90,7 +94,17 @@ void VK_CreateSurface(void* p1, void* p2) {
 	desc.hinstance = p1;
 	desc.hwnd = p2;
 	VK_CHECK(vkCreateWin32SurfaceKHR(vkInstance.instance, &desc, NULL, &vkInstance.surface), "failed to create Win32 Surface!");
+#elif defined(__APPLE__)
+    VkMacOSSurfaceCreateInfoMVK desc = {0};
+    desc.sType = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
+    desc.pNext = NULL;
+    desc.flags = 0;
+    desc.pView = p1;
+    VK_CHECK(vkCreateMacOSSurfaceMVK(vkInstance.instance, &desc, NULL, &vkInstance.surface), "failed to create MacOS Surface!");
+#elif defined( __linux__ )
+        
 #endif
+
 }
 
 void VK_PickPhysicalDevice()

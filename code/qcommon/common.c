@@ -2181,7 +2181,7 @@ Com_Milliseconds
 Can be used for profiling, but will be journaled accurately
 ================
 */
-int Com_Milliseconds(void) {
+int  Com_Milliseconds(void) {
 	sysEvent_t	ev;
 
 	// get events and push them until we get a null event with the current time

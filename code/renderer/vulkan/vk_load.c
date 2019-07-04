@@ -15,6 +15,8 @@ qboolean VK_LoadGlobalFunctions(void)
 	vkCreateInstance = VK_GLOBAL_LEVEL_FUNCTION("vkCreateInstance");
 	vkEnumerateInstanceExtensionProperties = VK_GLOBAL_LEVEL_FUNCTION("vkEnumerateInstanceExtensionProperties");
 	vkEnumerateInstanceLayerProperties = VK_GLOBAL_LEVEL_FUNCTION("vkEnumerateInstanceLayerProperties");
+    
+    return qtrue;
 }
 
 qboolean VK_LoadInstanceFunctions(void)
@@ -26,7 +28,7 @@ qboolean VK_LoadInstanceFunctions(void)
 #if defined( _WIN32 )
     vkCreateWin32SurfaceKHR = VK_INSTANCE_LEVEL_FUNCTION("vkCreateWin32SurfaceKHR");
 #elif defined(__APPLE__)
-    
+    vkCreateMacOSSurfaceMVK = VK_INSTANCE_LEVEL_FUNCTION("vkCreateMacOSSurfaceMVK");
 #elif defined( __linux__ )
     
 #endif
@@ -80,4 +82,5 @@ qboolean VK_LoadDeviceFunctions(void)
 	vkCreateDebugUtilsMessengerEXT = VK_DEVICE_LEVEL_FUNCTION("vkCreateDebugUtilsMessengerEXT");
 	vkDestroyDebugUtilsMessengerEXT = VK_DEVICE_LEVEL_FUNCTION("vkDestroyDebugUtilsMessengerEXT");
 #endif
+    return qtrue;
 }

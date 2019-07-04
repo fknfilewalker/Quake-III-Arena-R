@@ -60,6 +60,10 @@ PFN_vkEnumerateDeviceExtensionProperties		vkEnumerateDeviceExtensionProperties;
 /* Surface */
 #if defined( _WIN32 )
 PFN_vkCreateWin32SurfaceKHR						vkCreateWin32SurfaceKHR;
+#elif defined(__APPLE__)
+PFN_vkCreateMacOSSurfaceMVK                     vkCreateMacOSSurfaceMVK;
+#elif defined( __linux__ )
+
 #endif
 
 /* Physical Device */

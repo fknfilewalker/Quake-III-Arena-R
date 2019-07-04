@@ -46,9 +46,6 @@ include_directories(${CMAKE_SOURCE_DIR}/code/server)
 # EXECUTABLE
 set(CMAKE_XCODE_GENERATE_SCHEME TRUE)
 add_executable(${APP_MACOS} MACOSX_BUNDLE ${SOURCES} Quake3.icns)
-# +set fs_basePath \"Volumes/data_mac/Games/GOG Games/Quake III\"
-#FIND_LIBRARY(OpenGL_LIBRARY OpenGL)
-#target_link_libraries(${APP_MACOS} ${OpenGL_LIBRARY})
 target_link_libraries(${APP_MACOS} "-framework AppKit")
 target_link_libraries(${APP_MACOS} "-framework IOKit")
 target_link_libraries(${APP_MACOS} "-framework CoreAudio")
@@ -58,6 +55,7 @@ target_link_libraries(${APP_MACOS} ${LIB_SPLINES})
 
 # PROPERTIES
 set_target_properties(${APP_MACOS} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/code/macos/plist.in)
+set_target_properties(${APP_MACOS} PROPERTIES XCODE_SCHEME_ENVIRONMENT "VK_ICD_FILENAMES=$ENV{VULKAN_SDK}/etc/vulkan/icd.d/MoltenVK_icd.json;VK_LAYER_PATH=$ENV{VULKAN_SDK}/etc/vulkan/explicit_layer.d")
 set_source_files_properties(Quake3.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 IF(Q3_ARGUMENTS)
     set_target_properties(${APP_MACOS} PROPERTIES XCODE_SCHEME_ARGUMENTS ${Q3_ARGUMENTS})

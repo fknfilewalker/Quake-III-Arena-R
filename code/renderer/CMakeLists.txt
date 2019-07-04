@@ -36,4 +36,5 @@ endif()
 # LIB
 add_library(${LIB_RENDERER} STATIC ${SOURCES})
 target_link_libraries(${LIB_RENDERER} "${OPENGL_LIBRARIES}")
+target_link_libraries(${LIB_RENDERER} Vulkan::Vulkan)
 set_target_properties(${LIB_RENDERER} PROPERTIES LINKER_LANGUAGE C)

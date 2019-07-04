@@ -422,9 +422,7 @@ void Sys_ResumeGL ()
     }
 }
 
-void VKimp_Init( void )
-{
-}
+
 
 /*
 ===================
