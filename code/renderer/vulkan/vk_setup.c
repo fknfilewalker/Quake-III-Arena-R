@@ -93,7 +93,7 @@ void VK_CreateSurface(void* p1, void* p2) {
 	desc.flags = 0;
 	desc.hinstance = p1;
 	desc.hwnd = p2;
-	VK_CHECK(vkCreateWin32SurfaceKHR(vkInstance.instance, &desc, NULL, &vkInstance.surface), "failed to create Win32 Surface!");
+	VK_CHECK(vkCreateWin32SurfaceKHR(vk.instance, &desc, NULL, &vk.surface), "failed to create Win32 Surface!");
 #elif defined(__APPLE__)
     VkMacOSSurfaceCreateInfoMVK desc = {0};
     desc.sType = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
