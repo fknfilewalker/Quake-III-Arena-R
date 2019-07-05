@@ -9,6 +9,7 @@
 #import <mach/mach_error.h>
 #include <dlfcn.h>
 
+cvar_t  *r_enablerender;                // Enable actual rendering
 
 NSWindow *_window; // keep window handle so we don't need to recreate a window all the time
 
@@ -210,20 +211,18 @@ qboolean VKimp_SetMode( qboolean isSecondTry )
         ri.Printf( PRINT_ALL, "VKimp_Init: window could not be created!\n" );
         return qfalse;
     }
-    // draw something to show that GL is alive
-//    if (r_enablerender->integer) {
-//        VK_BeginFrame();
-//        beginRenderClear();
-//        endRender();
-//        VK_DrawFrame();
-//
-//        VK_BeginFrame();
-//        beginRenderClear();
-//        endRender();
-//        VK_DrawFrame();
-//
-//        VK_BeginFrame();
-//    }
+    // draw something to show that VK is alive
+    if (r_enablerender->integer) {
+        VK_BeginFrame();
+        beginRenderClear();
+        endRender();
+        VK_DrawFrame();
+
+        VK_BeginFrame();
+        beginRenderClear();
+        endRender();
+        VK_DrawFrame();
+    }
     
     return qtrue;
 }
@@ -242,8 +241,7 @@ void VKimp_Init( void )
     // We only allow changing the gamma if we are full screen
     glConfig.deviceSupportsGamma = false;//(r_fullscreen->integer != 0);
     
-//    r_allowSoftwareGL = ri.Cvar_Get( "r_allowSoftwareGL", "0", CVAR_LATCH );
-//    r_enablerender = ri.Cvar_Get("r_enablerender", "1", 0 );
+    r_enablerender = ri.Cvar_Get("r_enablerender", "1", 0 );
     
     if ( ! VKimp_SetMode(qfalse) ) {
         // fall back to the known-good mode
