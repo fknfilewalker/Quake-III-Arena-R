@@ -13,6 +13,46 @@ const char* validationLayer[] = {
 		"VK_LAYER_LUNARG_standard_validation"
 };
 
+/*
+ ==============================================================================
+ 
+ Vulkan Setup
+ 
+ ==============================================================================
+ */
+void VK_CreateInstance();
+void VK_CreateSurface(void* p1, void* p2);
+void VK_PickPhysicalDevice();
+void VK_CreateLogicalDevice();
+void VK_CreateCommandPool();
+void VK_SetupDebugCallback();
+void VK_CreateCommandBuffers();
+void VK_CreateSyncObjects();
+
+void VK_Setup(void* p1, void* p2) {
+    if (!VK_LoadGlobalFunctions()) return qfalse;
+    VK_CreateInstance();
+    if (!VK_LoadInstanceFunctions()) return qfalse;
+    VK_CreateSurface(p1, p2);
+    VK_PickPhysicalDevice();
+    VK_CreateLogicalDevice();
+    if (!VK_LoadDeviceFunctions()) return qfalse;
+    VK_CreateCommandPool();
+#ifndef NDEBUG
+    VK_SetupDebugCallback();
+#endif
+    
+    // -- Swap chain part
+    VK_CreateSwapChain();
+    VK_CreateImageViews();
+    VK_CreateRenderPass();
+    VK_CreateFramebuffers();
+    // --
+    
+    VK_CreateCommandBuffers();
+    VK_CreateSyncObjects();
+}
+
 //
 // function declaration
 //
@@ -489,3 +529,6 @@ char* VK_ErrorString(VkResult errorCode)
 		return "UNKNOWN_ERROR";
 	}
 }
+
+
+

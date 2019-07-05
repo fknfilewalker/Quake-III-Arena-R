@@ -12,10 +12,6 @@
 
 NSWindow *_window; // keep window handle so we don't need to recreate a window all the time
 
-#define _glfw_dlopen(name) dlopen(name, RTLD_LAZY | RTLD_LOCAL)
-#define _glfw_dlclose(handle) dlclose(handle)
-#define _glfw_dlsym(handle, name) dlsym(handle, name)
-
 /*
  =================
  CreateGameWindow
@@ -23,17 +19,17 @@ NSWindow *_window; // keep window handle so we don't need to recreate a window a
  */
 static qboolean CreateGameWindow( qboolean isSecondTry )
 {
-//    const char *windowed[] = { "Windowed", "Fullscreen" };
-//    int            current_mode;
-//    NSOpenGLPixelFormatAttribute *pixelAttributes;
-//    NSOpenGLPixelFormat *pixelFormat;
-//    CGDisplayErr err;
-//    
-//    
-//    // get mode info
-//    current_mode = r_mode->integer;
-//    glConfig.isFullscreen = (r_fullscreen->integer != 0);
-//    
+    const char *windowed[] = { "Windowed", "Fullscreen" };
+    int            current_mode;
+    NSOpenGLPixelFormatAttribute *pixelAttributes;
+    NSOpenGLPixelFormat *pixelFormat;
+    CGDisplayErr err;
+    
+    
+    // get mode info
+    current_mode = r_mode->integer;
+    glConfig.isFullscreen = (r_fullscreen->integer != 0);
+//
 //    glw_state.desktopMode = (NSDictionary *)CGDisplayCurrentMode(glw_state.display);
 //    if (!glw_state.desktopMode) {
 //        ri.Error(ERR_FATAL, "Could not get current graphics mode for display 0x%08x\n", glw_state.display);
@@ -45,13 +41,13 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
 //              depthStrings[glw_state.desktopDesc.depth]);
 //#endif
 //    
-//    ri.Printf( PRINT_ALL, "...setting mode %d:\n", current_mode );
-//    if ( !R_GetModeInfo( &glConfig.vidWidth, &glConfig.vidHeight, &glConfig.windowAspect, current_mode ) )  {
-//        ri.Printf( PRINT_ALL, " invalid mode\n" );
-//        return qfalse;
-//    }
-//    ri.Printf( PRINT_ALL, " %d %d %s\n", glConfig.vidWidth, glConfig.vidHeight, windowed[glConfig.isFullscreen] );
-//    
+    ri.Printf( PRINT_ALL, "...setting mode %d:\n", current_mode );
+    if ( !R_GetModeInfo( &glConfig.vidWidth, &glConfig.vidHeight, &glConfig.windowAspect, current_mode ) )  {
+        ri.Printf( PRINT_ALL, " invalid mode\n" );
+        return qfalse;
+    }
+    ri.Printf( PRINT_ALL, " %d %d %s\n", glConfig.vidWidth, glConfig.vidHeight, windowed[glConfig.isFullscreen] );
+//
 //    glw_state.gameMode = glw_state.desktopMode;
 //    
 //    
@@ -90,8 +86,8 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
     // Create a window of the desired size
     windowRect.origin.x = vid_xpos->integer;
     windowRect.origin.y = vid_ypos->integer;
-    windowRect.size.width = 600;//glConfig.vidWidth;
-    windowRect.size.height = 600;// glConfig.vidHeight;
+    windowRect.size.width = glConfig.vidWidth;
+    windowRect.size.height = glConfig.vidHeight;
     
     if(_window == nil) _window = [[NSWindow alloc] initWithContentRect:windowRect
                                                              styleMask: (glConfig.isFullscreen ? NSTitledWindowMask : NSTitledWindowMask)
@@ -148,23 +144,21 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
     // Direct the context to draw in this window
     //[OSX_GetNSGLContext() setView: [_window contentView]];
 
+    // Export Function
+    void *libHandle = dlopen("libvulkan.1.dylib", RTLD_LAZY | RTLD_LOCAL);
+    if (!libHandle)
+    {
+        ri.Printf( PRINT_ERROR, " Could not load libvulkan.1.dylib");
+        return qfalse;
+    }
+    vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr) dlsym(libHandle, "vkGetInstanceProcAddr");
+    dlclose(libHandle);
     
-
-    
-    void *libHandle = _glfw_dlopen("libvulkan.1.dylib");
-
-//    if (!_glfw.vk.handle)
-//    {
-//        if (mode == _GLFW_REQUIRE_LOADER)
-//            _glfwInputError(GLFW_API_UNAVAILABLE, "Vulkan: Loader not found");
-//
-//        return GLFW_FALSE;
-//    }
-    
+    // Window: set Metal Layer
     NSBundle* bundle = [NSBundle bundleWithPath:@"/System/Library/Frameworks/QuartzCore.framework"];
     if (!bundle)
     {
-        int x;
+        ri.Printf( PRINT_ERROR, " Could not load Metal Layer");
     }
     id metalLayer = [[bundle classNamed:@"CAMetalLayer"] layer];
     
@@ -178,33 +172,8 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
     [[_window contentView] setWantsLayer:YES];
     [[_window contentView] setLayer:metalLayer];
     
-    vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr) _glfw_dlsym(libHandle, "vkGetInstanceProcAddr");
-    
-    
-    if (!VK_LoadGlobalFunctions()) return qfalse;
-    VK_CreateInstance();
-    if (!VK_LoadInstanceFunctions()) return qfalse;
-    VK_CreateSurface((void*) [_window contentView], NULL); //VKimp_CreateSurface();
-    VK_PickPhysicalDevice();
-    VK_CreateLogicalDevice();
-    if (!VK_LoadDeviceFunctions()) return qfalse;
-    VK_CreateCommandPool();
-#ifndef NDEBUG
-    VK_SetupDebugCallback();
-#endif
-    VK_CreateSwapChain();
-    VK_CreateImageViews();
-    VK_CreateRenderPass();
-    VK_CreateFramebuffers();
-
-    VK_CreateCommandBuffers();
-    VK_CreateSyncObjects();
-
-    VK_BeginFrame();
-    beginRenderClear();
-    endRender();
-    VK_DrawFrame();
-    VK_BeginFrame();
+    // Setup Vulkan
+    VK_Setup((void*) [_window contentView], NULL);
     
     // Sync input rect with where the window actually is...
     //Sys_UpdateWindowMouseInputRect();
@@ -238,22 +207,23 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
 qboolean VKimp_SetMode( qboolean isSecondTry )
 {
     if ( !CreateGameWindow(isSecondTry) ) {
-        ri.Printf( PRINT_ALL, "GLimp_Init: window could not be created!\n" );
+        ri.Printf( PRINT_ALL, "VKimp_Init: window could not be created!\n" );
         return qfalse;
     }
-//
-//    // draw something to show that GL is alive
+    // draw something to show that GL is alive
 //    if (r_enablerender->integer) {
-//        qglClearColor( 0.5, 0.5, 0.7, 0 );
-//        qglClear( GL_COLOR_BUFFER_BIT );
-//        GLimp_EndFrame();
+//        VK_BeginFrame();
+//        beginRenderClear();
+//        endRender();
+//        VK_DrawFrame();
 //
-//        qglClearColor( 0.5, 0.5, 0.7, 0 );
-//        qglClear( GL_COLOR_BUFFER_BIT );
-//        GLimp_EndFrame();
+//        VK_BeginFrame();
+//        beginRenderClear();
+//        endRender();
+//        VK_DrawFrame();
+//
+//        VK_BeginFrame();
 //    }
-//
-//    CheckErrors();
     
     return qtrue;
 }
@@ -291,8 +261,8 @@ void VKimp_Init( void )
         ri.Error( ERR_FATAL, "Could not initialize Vulkan\n" );
         return;
     }
-//
-//    ri.Printf( PRINT_ALL, "------------------\n" );
+
+    ri.Printf( PRINT_ALL, "------------------\n" );
 //    
 //    // get our config strings
 //    Q_strncpyz( glConfig.vendor_string, (const char *)qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
