@@ -24,30 +24,17 @@ typedef enum {
 */
 /*static*/ qboolean VKW_InitDriver(const char* drivername, int colorbits)
 {
-	if (!VK_LoadGlobalFunctions()) return qfalse;
-	VK_CreateInstance();
-	if (!VK_LoadInstanceFunctions()) return qfalse;
-	VK_CreateSurface((void*)glw_state.hinstVulkan, (void*)wv.hWnd); //VKimp_CreateSurface();
-	VK_PickPhysicalDevice();
-	VK_CreateLogicalDevice();
-	if (!VK_LoadDeviceFunctions()) return qfalse;
-	VK_CreateCommandPool();
-#ifndef NDEBUG
-	VK_SetupDebugCallback();
-#endif
-	VK_CreateSwapChain();
-	VK_CreateImageViews();
-	VK_CreateRenderPass();
-	VK_CreateFramebuffers();
-
-	VK_CreateCommandBuffers();
-	VK_CreateSyncObjects();
+	VK_Setup((void*)glw_state.hinstVulkan, (void*)wv.hWnd);
 
 	VK_BeginFrame();
 	beginRenderClear();
 	endRender();
 	VK_DrawFrame();
+
 	VK_BeginFrame();
+	beginRenderClear();
+	endRender();
+	VK_DrawFrame();
 	
 	return qtrue;
 };

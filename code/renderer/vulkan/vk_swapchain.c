@@ -8,7 +8,8 @@ static VkSurfaceFormatKHR chooseSwapSurfaceFormat(VkSurfaceFormatKHR* availableF
 static VkPresentModeKHR chooseSwapPresentMode(VkPresentModeKHR* availablePresentModes, uint32_t availablePresentModesCount);
 
 void VK_CreateSwapChain() {
-	
+	vk.swapchain.depthStencilFormat = VK_FORMAT_D24_UNORM_S8_UINT;
+
 	swapChainSupportDetails_t swapChainSupport = querySwapChainSupport(vk.physical_device, vk.surface);
 
 	VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(&swapChainSupport.formats[0], swapChainSupport.formatCount);
@@ -85,6 +86,58 @@ void VK_CreateImageViews() {
 	}
 }
 
+void VK_CreateDepthStencil() {
+
+	// Buffer
+	VkImageCreateInfo imageInfo = {0};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.extent.width = vk.swapchain.extent.width;
+	imageInfo.extent.height = vk.swapchain.extent.height;
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.format = vk.swapchain.depthStencilFormat;
+	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+	imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	VK_CHECK(vkCreateImage(vk.device, &imageInfo, NULL, &vk.swapchain.depthImage), "failed to create DepthStencil Image for Swapchain!");
+	
+	VkMemoryRequirements memRequirements = {0};
+	vkGetImageMemoryRequirements(vk.device, vk.swapchain.depthImage, &memRequirements);
+
+	int32_t memoryTypeIndex = VK_FindMemoryTypeIndex(vk.physical_device, memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	VkMemoryAllocateInfo allocInfo = {0};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = memoryTypeIndex != -1 ? memoryTypeIndex : VK_DeviceLocalMemoryIndex(vk.physical_device);
+
+	VK_CHECK(vkAllocateMemory(vk.device, &allocInfo, NULL, &vk.swapchain.depthImageMemory), "failed to allocate DepthStencil image memory for Swapchain!");
+	
+
+	VK_CHECK(vkBindImageMemory(vk.device, vk.swapchain.depthImage, vk.swapchain.depthImageMemory, 0), "failed to bind DepthStencil image memory for Swapchain!");
+
+	// Image View
+	VkImageViewCreateInfo viewInfo = {0};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = vk.swapchain.depthImage;
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.format = vk.swapchain.depthStencilFormat;
+	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 1;
+
+	VK_CHECK(vkCreateImageView(vk.device, &viewInfo, NULL, &vk.swapchain.depthImageView), "failed to create DepthStencil image view for Swapchain!");
+	
+}
+
+
 void VK_CreateRenderPass() {
 	VkAttachmentDescription colorAttachment = {0};
 	colorAttachment.format = vk.swapchain.imageFormat;
@@ -118,7 +171,7 @@ void VK_CreateRenderPass() {
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &colorAttachmentRef;
-	//if (hasDepthStencil) subpass.pDepthStencilAttachment = &depthAttachmentRef;
+	if (vk.swapchain.depthImageView) subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
 	VkSubpassDependency dependency = {0};
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -130,13 +183,11 @@ void VK_CreateRenderPass() {
 
 	VkAttachmentDescription attachments[2];
 	attachments[0] = colorAttachment;
-	//attachments[1] = depthAttachment;
-	//std::vector<VkAttachmentDescription> attachments = { colorAttachment };
-	//if (hasDepthStencil) attachments.push_back(depthAttachment);
+	attachments[1] = depthAttachment;
 
 	VkRenderPassCreateInfo renderPassInfo = {0};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = (uint32_t) 1;
+	renderPassInfo.attachmentCount = (uint32_t) (vk.swapchain.depthImageView ? 2 : 1);
 	renderPassInfo.pAttachments = &attachments[0];
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
@@ -152,14 +203,12 @@ void VK_CreateFramebuffers() {
 	for (size_t i = 0; i < vk.swapchain.imageCount; i++) {
 		VkImageView attachments[2];
 		attachments[0] = vk.swapchain.imageViews[i];
-
-		//std::vector<VkImageView> attachments = { swapChainImageViews[i] };
-		//if (hasDepthStencil) attachments.push_back(depthImageView);
+		attachments[1] = vk.swapchain.depthImageView;
 
 		VkFramebufferCreateInfo framebufferInfo = {0};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferInfo.renderPass = vk.swapchain.renderpass;
-		framebufferInfo.attachmentCount = (uint32_t) 1;
+		framebufferInfo.attachmentCount = (uint32_t) (vk.swapchain.depthImageView ? 2 : 1);
 		framebufferInfo.pAttachments = &attachments[0];
 		framebufferInfo.width = vk.swapchain.extent.width;
 		framebufferInfo.height = vk.swapchain.extent.height;

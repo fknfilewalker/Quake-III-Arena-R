@@ -45,6 +45,7 @@ void VK_Setup(void* p1, void* p2) {
     // -- Swap chain part
     VK_CreateSwapChain();
     VK_CreateImageViews();
+	VK_CreateDepthStencil();
     VK_CreateRenderPass();
     VK_CreateFramebuffers();
     // --
@@ -123,7 +124,8 @@ void VK_CreateInstance() {
 /*
 ** VK_CreateSurface
 **
-** win: (hinstance, hwnd)
+** win:		(HINSTANCE, HWND)
+** macOS:	(NSView, NULL)
 */
 void VK_CreateSurface(void* p1, void* p2) {
 #ifdef WIN32

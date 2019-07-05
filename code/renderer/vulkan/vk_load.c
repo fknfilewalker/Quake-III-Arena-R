@@ -23,6 +23,7 @@ qboolean VK_LoadInstanceFunctions(void)
 {
 	vkEnumeratePhysicalDevices = VK_INSTANCE_LEVEL_FUNCTION("vkEnumeratePhysicalDevices");
 	vkEnumerateDeviceExtensionProperties = VK_INSTANCE_LEVEL_FUNCTION("vkEnumerateDeviceExtensionProperties");
+	vkGetPhysicalDeviceMemoryProperties = VK_INSTANCE_LEVEL_FUNCTION("vkGetPhysicalDeviceMemoryProperties");
 
 	/* Surface */
 #if defined( _WIN32 )
@@ -76,6 +77,12 @@ qboolean VK_LoadDeviceFunctions(void)
 	vkCmdSetViewport = VK_DEVICE_LEVEL_FUNCTION("vkCmdSetViewport");
 	vkCmdSetScissor = VK_DEVICE_LEVEL_FUNCTION("vkCmdSetScissor");
 	vkCmdEndRenderPass = VK_DEVICE_LEVEL_FUNCTION("vkCmdEndRenderPass");
+
+	vkCreateImage = VK_DEVICE_LEVEL_FUNCTION("vkCreateImage");
+	vkGetImageMemoryRequirements = VK_DEVICE_LEVEL_FUNCTION("vkGetImageMemoryRequirements");
+
+	vkAllocateMemory = VK_DEVICE_LEVEL_FUNCTION("vkAllocateMemory");
+	vkBindImageMemory = VK_DEVICE_LEVEL_FUNCTION("vkBindImageMemory");
 
 	/* Debug */
 #ifndef NDEBUG

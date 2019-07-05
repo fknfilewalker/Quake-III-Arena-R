@@ -56,6 +56,7 @@ PFN_vkEnumerateInstanceLayerProperties			vkEnumerateInstanceLayerProperties;
 */
 PFN_vkEnumeratePhysicalDevices					vkEnumeratePhysicalDevices;
 PFN_vkEnumerateDeviceExtensionProperties		vkEnumerateDeviceExtensionProperties;
+PFN_vkGetPhysicalDeviceMemoryProperties			vkGetPhysicalDeviceMemoryProperties;
 
 /* Surface */
 #if defined( _WIN32 )
@@ -108,6 +109,11 @@ PFN_vkCmdSetViewport							vkCmdSetViewport;
 PFN_vkCmdSetScissor								vkCmdSetScissor;
 PFN_vkCmdEndRenderPass							vkCmdEndRenderPass;
 
+PFN_vkCreateImage								vkCreateImage;
+PFN_vkGetImageMemoryRequirements				vkGetImageMemoryRequirements;
+
+PFN_vkAllocateMemory							vkAllocateMemory;
+PFN_vkBindImageMemory							vkBindImageMemory;
 
 /* Debug */
 #ifndef NDEBUG
