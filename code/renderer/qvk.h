@@ -88,6 +88,7 @@ PFN_vkCreateCommandPool							vkCreateCommandPool;
 PFN_vkCreateSwapchainKHR						vkCreateSwapchainKHR;
 PFN_vkGetSwapchainImagesKHR						vkGetSwapchainImagesKHR;
 PFN_vkCreateImageView							vkCreateImageView;
+PFN_vkCreateSampler								vkCreateSampler;
 PFN_vkCreateRenderPass							vkCreateRenderPass;
 PFN_vkCreateFramebuffer							vkCreateFramebuffer;
 PFN_vkAllocateCommandBuffers					vkAllocateCommandBuffers;
@@ -102,6 +103,7 @@ PFN_vkBeginCommandBuffer						vkBeginCommandBuffer;
 
 PFN_vkEndCommandBuffer							vkEndCommandBuffer;
 PFN_vkQueueSubmit								vkQueueSubmit;
+PFN_vkQueueWaitIdle								vkQueueWaitIdle;
 PFN_vkQueuePresentKHR							vkQueuePresentKHR;
 
 PFN_vkCmdBeginRenderPass						vkCmdBeginRenderPass;
@@ -111,9 +113,25 @@ PFN_vkCmdEndRenderPass							vkCmdEndRenderPass;
 
 PFN_vkCreateImage								vkCreateImage;
 PFN_vkGetImageMemoryRequirements				vkGetImageMemoryRequirements;
+PFN_vkGetBufferMemoryRequirements				vkGetBufferMemoryRequirements;
 
+PFN_vkCreateBuffer								vkCreateBuffer;
 PFN_vkAllocateMemory							vkAllocateMemory;
+PFN_vkBindBufferMemory							vkBindBufferMemory;
 PFN_vkBindImageMemory							vkBindImageMemory;
+PFN_vkMapMemory									vkMapMemory;
+PFN_vkUnmapMemory								vkUnmapMemory;
+
+PFN_vkDestroyBuffer								vkDestroyBuffer;
+PFN_vkFreeMemory								vkFreeMemory;
+
+PFN_vkAllocateCommandBuffers					vkAllocateCommandBuffers;
+PFN_vkBeginCommandBuffer						vkBeginCommandBuffer;
+PFN_vkEndCommandBuffer							vkEndCommandBuffer;
+PFN_vkFreeCommandBuffers						vkFreeCommandBuffers;
+
+PFN_vkCmdPipelineBarrier						vkCmdPipelineBarrier;
+PFN_vkCmdCopyBufferToImage						vkCmdCopyBufferToImage;
 
 /* Debug */
 #ifndef NDEBUG

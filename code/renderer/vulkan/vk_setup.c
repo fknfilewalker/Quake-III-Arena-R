@@ -310,7 +310,7 @@ void VK_BeginFrame() {
 	VK_CHECK(vkBeginCommandBuffer(vk.swapchain.commandBuffers[vk.swapchain.currentImage], &beginInfo), "failed to begin recording command buffer!");
 }
 
-void VK_DrawFrame() {
+void VK_EndFrame() {
 
 	VK_CHECK(vkEndCommandBuffer(vk.swapchain.commandBuffers[vk.swapchain.currentImage]), "failed to end commandbuffer!");
 	//vkResetFences(this->device, 1, &inFlightFences[currentFrame]);

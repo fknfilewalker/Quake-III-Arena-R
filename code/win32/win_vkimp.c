@@ -29,12 +29,12 @@ typedef enum {
 	VK_BeginFrame();
 	beginRenderClear();
 	endRender();
-	VK_DrawFrame();
+	VK_EndFrame();
 
 	VK_BeginFrame();
 	beginRenderClear();
 	endRender();
-	VK_DrawFrame();
+	VK_EndFrame();
 	
 	return qtrue;
 };

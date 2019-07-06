@@ -42,12 +42,76 @@ void endRender()
 }
 
 /*
+** CMD RECORD
+*/
+VkCommandBuffer VK_BeginSingleTimeCommands(VkCommandBuffer *commandBuffer) {
+
+	VkCommandBufferAllocateInfo allocInfo = {0};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandPool = vk.commandPool;
+	allocInfo.commandBufferCount = 1;
+
+	VK_CHECK(vkAllocateCommandBuffers(vk.device, &allocInfo, commandBuffer), "failed to allocate CMD Buffer!");
+
+	VkCommandBufferBeginInfo beginInfo = {0};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	VK_CHECK(vkBeginCommandBuffer(*commandBuffer, &beginInfo), "failed to begin CMD Buffer!");
+
+}
+
+void VK_EndSingleTimeCommands(VkCommandBuffer *commandBuffer) {
+
+	VK_CHECK(vkEndCommandBuffer(*commandBuffer), "failed to end CMD Buffer!");
+
+	VkSubmitInfo submitInfo = {0};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = commandBuffer;
+
+	VK_CHECK(vkQueueSubmit(vk.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "failed to submit Queue!");
+	VK_CHECK(vkQueueWaitIdle(vk.graphicsQueue), "failed to wait for Queue execution!");
+
+	vkFreeCommandBuffers(vk.device, vk.commandPool, 1, commandBuffer);
+}
+
+
+/*
 ** MEMORY
 */
-uint32_t VK_FindMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t memoryTypeBits, VkMemoryPropertyFlags properties)
+void VK_CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+	uint32_t memIndex, VkBuffer* buffer, VkDeviceMemory* bufferMemory) {
+
+
+	VkBufferCreateInfo bufInfo = { 0 };
+	bufInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufInfo.size = size;
+	bufInfo.usage = usage;
+
+	VK_CHECK(vkCreateBuffer(vk.device, &bufInfo, NULL, buffer), "failed to create Buffer!");
+
+	VkMemoryRequirements memReq = { 0 };
+	vkGetBufferMemoryRequirements(vk.device, *buffer, &memReq);
+	//qDebug("allocating %u bytes for buffer", uint32_t(memReq.size));
+
+	VkMemoryAllocateInfo memAllocInfo = {
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+		NULL,
+		memReq.size,
+		memIndex
+	};
+
+	VK_CHECK(vkAllocateMemory(vk.device, &memAllocInfo, NULL, bufferMemory), "failed to allocate Memory!");
+
+	VK_CHECK(vkBindBufferMemory(vk.device, *buffer, *bufferMemory, 0), "failed to bind Buffer Memory!");
+}
+
+uint32_t VK_FindMemoryTypeIndex(uint32_t memoryTypeBits, VkMemoryPropertyFlags properties)
 {
 	VkPhysicalDeviceMemoryProperties prop = {0};
-	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &prop);
+	vkGetPhysicalDeviceMemoryProperties(vk.physical_device, &prop);
 
 	for (int32_t i = 0; i < prop.memoryTypeCount; ++i)
 	{
@@ -58,12 +122,12 @@ uint32_t VK_FindMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t memory
 	return -1;
 }
 
-uint32_t VK_HostVisibleMemoryIndex(VkPhysicalDevice physicalDevice)
+uint32_t VK_HostVisibleMemoryIndex()
 {
 	uint32_t hostVisibleMemIndex = 0;
 	VkPhysicalDeviceMemoryProperties physDevMemProps = { 0 };
 	qboolean hostVisibleMemIndexSet = qfalse;
-	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &physDevMemProps);
+	vkGetPhysicalDeviceMemoryProperties(vk.physical_device, &physDevMemProps);
 	for (uint32_t i = 0; i < physDevMemProps.memoryTypeCount; ++i) {
 		const VkMemoryType* memType = physDevMemProps.memoryTypes;
 		// Find a host visible, host coherent memtype. If there is one that is
@@ -80,11 +144,11 @@ uint32_t VK_HostVisibleMemoryIndex(VkPhysicalDevice physicalDevice)
 	return hostVisibleMemIndex;
 }
 
-uint32_t VK_DeviceLocalMemoryIndex(VkPhysicalDevice physicalDevice)
+uint32_t VK_DeviceLocalMemoryIndex()
 {
 	uint32_t deviceLocalMemIndex = 0;
 	VkPhysicalDeviceMemoryProperties physDevMemProps = { 0 };
-	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &physDevMemProps);
+	vkGetPhysicalDeviceMemoryProperties(vk.physical_device, &physDevMemProps);
 	for (uint32_t i = 0; i < physDevMemProps.memoryTypeCount; ++i) {
 		const VkMemoryType* memType = physDevMemProps.memoryTypes;
 		// Just pick the first device local memtype.

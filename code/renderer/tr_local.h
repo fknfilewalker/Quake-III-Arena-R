@@ -1024,6 +1024,21 @@ typedef struct {
 } vkinstance_t;
 
 typedef struct {
+	VkExtent3D					extent;
+	uint32_t					mipLevels;
+
+	VkImage						handle;
+	VkImageView					view;
+	VkSampler					sampler;
+	VkDeviceMemory				memory;
+
+
+	// Descriptor set that contains single descriptor used to access the given image.
+	// It is updated only once during image initialization.
+	VkDescriptorSet descriptor_set;
+}vkimage_t;
+
+typedef struct {
 	uint32_t graphicsFamily;
 	uint32_t presentFamily;
 } queueFamilyIndices_t;

@@ -680,6 +680,96 @@ static int upload_gl_image(const struct Image_Upload_Data *upload_data, int text
 	return internal_format;
 }
 
+// VULKAN
+static int upload_vk_image(const struct Image_Upload_Data* upload_data, int texture_address_mode) {
+	int w = upload_data->base_level_width;
+	int h = upload_data->base_level_height;
+
+	qboolean has_alpha = qfalse;
+	for (int i = 0; i < w * h; i++) {
+		if (upload_data->buffer[i * 4 + 3] != 255) {
+			has_alpha = qtrue;
+			break;
+		}
+	}
+
+	VkFormat internal_format = VK_FORMAT_R8G8B8A8_UNORM;
+	if (glConfig.textureCompression && !has_alpha) {
+		//internal_format = GL_RGB4_S3TC;
+	}
+	else if (r_texturebits->integer <= 16) {
+		internal_format = has_alpha ? VK_FORMAT_R4G4B4A4_UNORM_PACK16 : VK_FORMAT_R5G5B5A1_UNORM_PACK16; // GL_RGBA4 : GL_RGB5;
+	}
+
+	vkimage_t image = { 0 };
+	VK_CreateImage(&image, (uint32_t)w, (uint32_t)h, internal_format, (uint32_t)upload_data->mip_levels);
+	//vk_upload_image_data(image.handle, w, h, upload_data.mip_levels > 1, buffer, bytes_per_pixel);
+
+	byte* buffer = upload_data->buffer;
+	for (int i = 0; i < upload_data->mip_levels; i++) {
+		VK_UploadData(image, buffer, 4, i);
+		//qglTexImage2D(GL_TEXTURE_2D, i, internal_format, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+		buffer += w * h * 4;
+
+		w >>= 1;
+		if (w < 1) w = 1;
+
+		h >>= 1;
+		if (h < 1) h = 1;
+	}
+
+	VK_CreateSampler(image,
+		(upload_data->mip_levels > 1) ? VK_FILTER_LINEAR : VK_FILTER_LINEAR,
+		(upload_data->mip_levels > 1) ? VK_FILTER_LINEAR : VK_FILTER_LINEAR,
+		texture_address_mode == GL_REPEAT ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+
+	///*byte* buffer = upload_data.buffer;
+	//VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+	//int bytes_per_pixel = 4;
+
+	//if (r_texturebits->integer <= 16) {
+	//	buffer = (byte*)ri.Hunk_AllocateTempMemory(upload_data.buffer_size / 2);
+	//	format = has_alpha ? VK_FORMAT_B4G4R4A4_UNORM_PACK16 : VK_FORMAT_A1R5G5B5_UNORM_PACK16;
+	//	bytes_per_pixel = 2;
+	//}
+
+	//if (format == VK_FORMAT_A1R5G5B5_UNORM_PACK16) {
+	//	auto p = (uint16_t*)buffer;
+	//	for (int i = 0; i < upload_data.buffer_size; i += 4, p++) {
+	//		byte r = upload_data.buffer[i + 0];
+	//		byte g = upload_data.buffer[i + 1];
+	//		byte b = upload_data.buffer[i + 2];
+
+	//		*p = uint32_t((b / 255.0) * 31.0 + 0.5) |
+	//			(uint32_t((g / 255.0) * 31.0 + 0.5) << 5) |
+	//			(uint32_t((r / 255.0) * 31.0 + 0.5) << 10) |
+	//			(1 << 15);
+	//	}
+	//}*/
+	//else if (format == VK_FORMAT_B4G4R4A4_UNORM_PACK16) {
+	//	auto p = (uint16_t*)buffer;
+	//	for (int i = 0; i < upload_data.buffer_size; i += 4, p++) {
+	//		byte r = upload_data.buffer[i + 0];
+	//		byte g = upload_data.buffer[i + 1];
+	//		byte b = upload_data.buffer[i + 2];
+	//		byte a = upload_data.buffer[i + 3];
+
+	//		*p = uint32_t((a / 255.0) * 15.0 + 0.5) |
+	//			(uint32_t((r / 255.0) * 15.0 + 0.5) << 4) |
+	//			(uint32_t((g / 255.0) * 15.0 + 0.5) << 8) |
+	//			(uint32_t((b / 255.0) * 15.0 + 0.5) << 12);
+	//	}
+	//}
+
+	//Vk_Image image = vk_create_image(w, h, format, upload_data.mip_levels, repeat_texture);
+	//vk_upload_image_data(image.handle, w, h, upload_data.mip_levels > 1, buffer, bytes_per_pixel);
+
+	//if (bytes_per_pixel == 2)
+	//	ri.Hunk_FreeTempMemory(buffer);
+
+	//return image;
+}
+
 /*
 ================
 R_CreateImage
@@ -717,18 +807,26 @@ image_t *R_CreateImage(const char *name, const byte *pic, int width, int height,
 
 	// Create corresponding GPU resource.
 	qboolean isLightmap = (strncmp(name, "*lightmap", 9) == 0);
-	GL_SelectTexture(isLightmap ? 1 : 0);
-	GL_Bind(image);
+	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+		GL_SelectTexture(isLightmap ? 1 : 0);
+		GL_Bind(image);
+	}
 
 	struct Image_Upload_Data upload_data = generate_image_upload_data(pic, width, height, mipmap, allowPicmip);
 
+	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+		image->internalFormat = upload_gl_image(&upload_data, glWrapClampMode );
 
-	image->internalFormat = upload_gl_image(&upload_data, glWrapClampMode);
+		if (isLightmap) {
+			GL_SelectTexture(0);
+		}
+	}
+	else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+		upload_vk_image(&upload_data, glWrapClampMode);
+	}
 	
 
-	if (isLightmap) {
-		GL_SelectTexture(0);
-	}
+	
 	ri.Hunk_FreeTempMemory(upload_data.buffer);
 	return image;
 }
@@ -1618,7 +1716,9 @@ static void R_CreateFogImage(void) {
 	borderColor[2] = 1.0;
 	borderColor[3] = 1;
 
-	qglTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+		qglTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	}
 }
 
 /*

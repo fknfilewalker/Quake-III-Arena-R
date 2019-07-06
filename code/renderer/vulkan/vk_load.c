@@ -57,6 +57,7 @@ qboolean VK_LoadDeviceFunctions(void)
 	vkCreateSwapchainKHR = VK_DEVICE_LEVEL_FUNCTION("vkCreateSwapchainKHR");
 	vkGetSwapchainImagesKHR = VK_DEVICE_LEVEL_FUNCTION("vkGetSwapchainImagesKHR");
 	vkCreateImageView = VK_DEVICE_LEVEL_FUNCTION("vkCreateImageView");
+	vkCreateSampler = VK_DEVICE_LEVEL_FUNCTION("vkCreateSampler");
 	vkCreateRenderPass = VK_DEVICE_LEVEL_FUNCTION("vkCreateRenderPass");
 	vkCreateFramebuffer = VK_DEVICE_LEVEL_FUNCTION("vkCreateFramebuffer");
 	vkAllocateCommandBuffers = VK_DEVICE_LEVEL_FUNCTION("vkAllocateCommandBuffers");
@@ -71,6 +72,7 @@ qboolean VK_LoadDeviceFunctions(void)
 
 	vkEndCommandBuffer = VK_DEVICE_LEVEL_FUNCTION("vkEndCommandBuffer");
 	vkQueueSubmit = VK_DEVICE_LEVEL_FUNCTION("vkQueueSubmit");
+	vkQueueWaitIdle = VK_DEVICE_LEVEL_FUNCTION("vkQueueWaitIdle");
 	vkQueuePresentKHR = VK_DEVICE_LEVEL_FUNCTION("vkQueuePresentKHR");
 
 	vkCmdBeginRenderPass = VK_DEVICE_LEVEL_FUNCTION("vkCmdBeginRenderPass");
@@ -80,9 +82,25 @@ qboolean VK_LoadDeviceFunctions(void)
 
 	vkCreateImage = VK_DEVICE_LEVEL_FUNCTION("vkCreateImage");
 	vkGetImageMemoryRequirements = VK_DEVICE_LEVEL_FUNCTION("vkGetImageMemoryRequirements");
+	vkGetBufferMemoryRequirements = VK_DEVICE_LEVEL_FUNCTION("vkGetBufferMemoryRequirements");
 
+	vkCreateBuffer = VK_DEVICE_LEVEL_FUNCTION("vkCreateBuffer");
 	vkAllocateMemory = VK_DEVICE_LEVEL_FUNCTION("vkAllocateMemory");
+	vkBindBufferMemory = VK_DEVICE_LEVEL_FUNCTION("vkBindBufferMemory");
 	vkBindImageMemory = VK_DEVICE_LEVEL_FUNCTION("vkBindImageMemory");
+	vkMapMemory = VK_DEVICE_LEVEL_FUNCTION("vkMapMemory");
+	vkUnmapMemory = VK_DEVICE_LEVEL_FUNCTION("vkUnmapMemory");
+
+	vkDestroyBuffer = VK_DEVICE_LEVEL_FUNCTION("vkDestroyBuffer");
+	vkFreeMemory = VK_DEVICE_LEVEL_FUNCTION("vkFreeMemory");
+
+	vkAllocateCommandBuffers = VK_DEVICE_LEVEL_FUNCTION("vkAllocateCommandBuffers");
+	vkBeginCommandBuffer = VK_DEVICE_LEVEL_FUNCTION("vkBeginCommandBuffer");
+	vkEndCommandBuffer = VK_DEVICE_LEVEL_FUNCTION("vkEndCommandBuffer");
+	vkFreeCommandBuffers = VK_DEVICE_LEVEL_FUNCTION("vkFreeCommandBuffers");
+
+	vkCmdPipelineBarrier = VK_DEVICE_LEVEL_FUNCTION("vkCmdPipelineBarrier");
+	vkCmdCopyBufferToImage = VK_DEVICE_LEVEL_FUNCTION("vkCmdCopyBufferToImage");
 
 	/* Debug */
 #ifndef NDEBUG

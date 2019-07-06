@@ -237,6 +237,22 @@ static void InitVulkan(void)
 {
 	VKimp_Init();
 
+
+	// device infos
+	VkPhysicalDeviceProperties devProperties;
+	vkGetPhysicalDeviceProperties(vk.physical_device, &devProperties);
+
+	// device limits
+	VkPhysicalDeviceLimits limits = devProperties.limits;
+	glConfig.maxTextureSize = limits.maxImageDimension2D;
+
+	// stubbed or broken drivers may have reported 0...
+	if (glConfig.maxTextureSize <= 0)
+	{
+		glConfig.maxTextureSize = 0;
+	}
+	
+
 	//char renderer_buffer[1024];
 
 	////
@@ -1121,7 +1137,7 @@ void R_Init( void ) {
 
 
 	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) InitOpenGL();
-	else InitVulkan();
+	else if(!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME))  InitVulkan();
 
 	R_InitImages();
 
