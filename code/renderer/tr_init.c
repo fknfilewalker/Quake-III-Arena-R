@@ -1149,10 +1149,11 @@ void R_Init( void ) {
 
 	R_InitFreeType();
 
-
-	err = qglGetError();
-	if ( err != GL_NO_ERROR )
-		ri.Printf (PRINT_ALL, "glGetError() = 0x%x\n", err);
+	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+		err = qglGetError();
+		if (err != GL_NO_ERROR)
+			ri.Printf(PRINT_ALL, "glGetError() = 0x%x\n", err);
+	}
 
 	ri.Printf( PRINT_ALL, "----- finished R_Init -----\n" );
 }
