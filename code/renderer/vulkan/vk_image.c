@@ -3,7 +3,7 @@
 static void VK_AllocateMemory(vkimage_t* image, VkMemoryPropertyFlags properties);
 void VK_CreateSampler(vkimage_t* image, VkFilter magFilter, VkFilter minFilter,
 	VkSamplerMipmapMode mipmapMode, VkSamplerAddressMode addressMode);
-void VK_CopyBufferToImage(vkimage_t* image, VkBuffer buffer, uint32_t mipLevel);
+void VK_CopyBufferToImage(vkimage_t* image, VkBuffer *buffer, uint32_t mipLevel);
 
 void VK_CreateImage(vkimage_t *image, uint32_t width, uint32_t height, VkFormat format, uint32_t mipLevels) {
 	image->extent = (VkExtent3D) { width, height, 1 };

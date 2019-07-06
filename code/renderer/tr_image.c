@@ -707,7 +707,7 @@ static int upload_vk_image(const struct Image_Upload_Data* upload_data, int text
 
 	byte* buffer = upload_data->buffer;
 	for (int i = 0; i < upload_data->mip_levels; i++) {
-		VK_UploadData(image, buffer, 4, i);
+		VK_UploadData(&image, buffer, 4, i);
 		//qglTexImage2D(GL_TEXTURE_2D, i, internal_format, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 		buffer += w * h * 4;
 
@@ -718,7 +718,7 @@ static int upload_vk_image(const struct Image_Upload_Data* upload_data, int text
 		if (h < 1) h = 1;
 	}
 
-	VK_CreateSampler(image,
+	VK_CreateSampler(&image,
 		(upload_data->mip_levels > 1) ? VK_FILTER_LINEAR : VK_FILTER_LINEAR,
 		(upload_data->mip_levels > 1) ? VK_FILTER_LINEAR : VK_FILTER_LINEAR,
 		texture_address_mode == GL_REPEAT ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
