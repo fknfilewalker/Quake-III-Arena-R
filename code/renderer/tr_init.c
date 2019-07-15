@@ -1156,6 +1156,7 @@ void R_Init( void ) {
 	}
 
 	ri.Printf( PRINT_ALL, "----- finished R_Init -----\n" );
+    
 }
 
 /*

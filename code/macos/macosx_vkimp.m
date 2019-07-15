@@ -113,8 +113,8 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
 //        err = CGDisplaySwitchToMode(glw_state.display, (CFDictionaryRef)glw_state.desktopMode);
         
         NSSize size;
-        size.height = 400;//glConfig.vidHeight;
-        size.width = 600;//glConfig.vidWidth;
+        size.height = glConfig.vidHeight;
+        size.width = glConfig.vidWidth;
         
         if(isFullscreen) [_window toggleFullScreen:nil];
         [_window setContentSize:size];
@@ -211,15 +211,76 @@ qboolean VKimp_SetMode( qboolean isSecondTry )
         ri.Printf( PRINT_ALL, "VKimp_Init: window could not be created!\n" );
         return qfalse;
     }
+    
+    vkattribbuffer_t a;
+    VK_CreateVertexBuffer(&a, 15 * sizeof(Float32));
+                    // vec3 vec4 vec2
+//    float vdata[] = {0, 0, 0.1,
+//                     1, 0, 0.1,
+//                     1, 1, 0.1};
+    Float32 vdata[] = {0.0, -0.9, 0.0,      1.0f, 1.0f, // top
+        0.9, 0.9, 0.0,                      1.0f, 0.0f, // right
+        -0.9, 0.9, 0.0,                     1.0f, 0.0f}; // left
+    VK_UploadAttribData(&a, (void *) &vdata[0]);
+    
+    vkshader_t s = {0};
+    VK_SingleTextureShader(&s);
+    
+    vkimage_t image = { 0 };
+    VK_CreateImage(&image, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 1);
+    uint8_t data[4] = {0,0,255,255
+    };
+    Float32 data2[4] = {1,1,0,1
+    };
+    VK_UploadImageData(&image, 1, 1, &data, 4, 0); // rows wise
+    //VK_UploadImageData(&image, 1, 1, &data2, 16, 1);
+    VK_CreateSampler(&image, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST,VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+    
+    
+    vkdescriptor_t d = {0};
+    VK_AddSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
+    //VK_AddSampler(&d, 1, VK_SHADER_STAGE_VERTEX_BIT);
+    VK_SetSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image.sampler, image.view);
+    VK_FinishDescriptor(&d);
+    
+    
+    vkpipeline_t p = {0};
+    VK_SetDescriptorSet(&p, &d);
+    VK_SetShader(&p, &s);
+    VK_AddBindingDescription(&p, 0, 5 * sizeof(float), VK_VERTEX_INPUT_RATE_VERTEX);
+    VK_AddAttributeDescription(&p, 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 * sizeof(float));
+    VK_AddAttributeDescription(&p, 1, 0, VK_FORMAT_R32G32_SFLOAT, 3 * sizeof(float));
+    VK_FinishPipeline(&p);
+
     // draw something to show that VK is alive
     if (r_enablerender->integer) {
         VK_BeginFrame();
         beginRenderClear();
+        VK_Draw(&p, &a, 3);
         endRender();
         VK_EndFrame();
 
         VK_BeginFrame();
         beginRenderClear();
+        VK_Draw(&p, &a, 3);
+        endRender();
+        VK_EndFrame();
+        
+        VK_BeginFrame();
+        beginRenderClear();
+        VK_Draw(&p, &a, 3);
+        endRender();
+        VK_EndFrame();
+        
+        VK_BeginFrame();
+        beginRenderClear();
+        VK_Draw(&p, &a, 3);
+        endRender();
+        VK_EndFrame();
+        
+        VK_BeginFrame();
+        beginRenderClear();
+        VK_Draw(&p, &a, 3);
         endRender();
         VK_EndFrame();
     }

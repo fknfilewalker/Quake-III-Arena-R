@@ -2,6 +2,7 @@
 #include "../tr_local.h"
 
 vkinstance_t vk;
+vkdata_t     vk_d;
 
 #define MAX_EXTENSION_PROPERTIES 50
 
@@ -378,7 +379,7 @@ static qboolean checkValidationLayerSupport() {
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL VK_DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-	ri.Printf(PRINT_WARNING, "Vulkan Validation Layer: %s", pCallbackData->pMessage);
+	ri.Printf(PRINT_WARNING, "Vulkan Validation Layer: %s\n", pCallbackData->pMessage);
 
 	return VK_FALSE;
 }

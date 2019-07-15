@@ -976,6 +976,68 @@ Vulkan
 */
 #define MAX_SURFACE_FORMAT_ARRAY_SIZE 10
 
+#define VK_MAX_IMAGES 100
+
+// --Pipeline parts--
+typedef union {
+    VkDescriptorImageInfo descImageInfo;
+    VkDescriptorBufferInfo descBufferInfo;
+} vkdescriptorData_t;
+
+typedef struct {
+    size_t size;
+    VkDescriptorSetLayoutBinding *bindings; // length = size
+    vkdescriptorData_t *data; // length = size
+
+    VkDescriptorSet *sets; // length = swapchain images
+    
+    VkDescriptorSetLayout layout;
+    VkDescriptorPool pool;
+} vkdescriptor_t;
+
+typedef struct {
+    size_t size;
+    VkShaderModule *modules;
+    VkShaderStageFlagBits *flags;
+    VkPipelineShaderStageCreateInfo *shaderStageCreateInfos;
+} vkshader_t;
+
+typedef struct {
+    VkPipelineCache cache;
+    VkPipelineLayout layout;
+    VkPipeline handle;
+    
+    vkdescriptor_t *descriptor;
+    vkshader_t *shader;
+    
+    struct {
+        size_t size;
+        VkPushConstantRange *p;
+    } pushConstantRange;
+
+    struct {
+        size_t size;
+        VkVertexInputBindingDescription *p;
+    } bindingDescription;
+    
+    struct {
+        size_t size;
+        VkVertexInputAttributeDescription *p;
+    } attributeDescription;
+    
+} vkpipeline_t;
+// ----------------
+
+typedef struct {
+    //uint32_t dataSize;
+    //uint16_t elementSize;
+    VkDeviceSize allocSize;
+    VkBool32 onGpu;
+    
+    VkBuffer buffer;
+    VkDeviceMemory memory;
+} vkattribbuffer_t;
+
 typedef struct {
 	VkSwapchainKHR				handle;
 	VkExtent2D					extent;
@@ -1035,7 +1097,7 @@ typedef struct {
 
 	// Descriptor set that contains single descriptor used to access the given image.
 	// It is updated only once during image initialization.
-	VkDescriptorSet descriptor_set;
+	vkdescriptor_t descriptor_set;
 }vkimage_t;
 
 typedef struct {
@@ -1051,8 +1113,13 @@ typedef struct {
 	VkPresentModeKHR			presentModes[MAX_SURFACE_FORMAT_ARRAY_SIZE];
 } swapChainSupportDetails_t;
 
+typedef struct {
+    size_t size;
+    vkimage_t images[MAX_DRAWIMAGES];
+} vkdata_t;
 
 extern vkinstance_t		vk;
+extern vkdata_t         vk_d;
 
 //
 // cvars

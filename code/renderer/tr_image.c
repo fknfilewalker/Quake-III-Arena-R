@@ -82,6 +82,11 @@ typedef struct {
 	int	minimize, maximize;
 } textureMode_t;
 
+typedef struct {
+    char *name;
+    int    minimize, maximize, mipmap;
+} vkTextureMode_t;
+
 textureMode_t modes[] = {
 	{"GL_NEAREST", GL_NEAREST, GL_NEAREST},
 	{"GL_LINEAR", GL_LINEAR, GL_LINEAR},
@@ -89,6 +94,15 @@ textureMode_t modes[] = {
 	{"GL_LINEAR_MIPMAP_NEAREST", GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR},
 	{"GL_NEAREST_MIPMAP_LINEAR", GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST},
 	{"GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR}
+};
+
+vkTextureMode_t vkModes[] = {
+    {"GL_NEAREST", VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_NEAREST},
+    {"GL_LINEAR", VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST},
+    {"GL_NEAREST_MIPMAP_NEAREST", VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_NEAREST},
+    {"GL_LINEAR_MIPMAP_NEAREST", VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST},
+    {"GL_NEAREST_MIPMAP_LINEAR", VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_LINEAR},
+    {"GL_LINEAR_MIPMAP_LINEAR", VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR}
 };
 
 /*
@@ -147,6 +161,45 @@ void GL_TextureMode(const char *string) {
 	}
 
 	
+}
+
+void VK_TextureMode(const char *string) {
+    int i;
+    
+    for (i = 0; i < 6; i++) {
+        if (!Q_stricmp(modes[i].name, string)) {
+            break;
+        }
+    }
+    
+    if (i == 6) {
+        ri.Printf(PRINT_ALL, "bad filter name\n");
+        return;
+    }
+    
+    VK_CHECK(vkDeviceWaitIdle(vk.device), " failed to wait for Idle!");
+    for ( i = 0 ; i < tr.numImages ; i++ ) {
+        image_t* glt = tr.images[i];
+        if (glt->mipmap) {
+            VK_CreateSampler(&vk_d.images[i], VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST,
+                            glt->wrapClampMode == GL_REPEAT ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+            VK_AddSampler(&vk_d.images[i].descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
+            VK_SetSampler(&vk_d.images[i].descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, vk_d.images[i].sampler, vk_d.images[i].view);
+            VK_FinishDescriptor(&vk_d.images[i].descriptor_set);
+//            Vk_Image& image = vk_world.images[i];
+//            vk_update_descriptor_set(image.descriptor_set, image.view, true, glt->wrapClampMode == GL_REPEAT);
+//
+           
+//            VK_CreateSampler(&image, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST,VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+//
+//
+//            vkdescriptor_t d = {0};
+//            VK_AddSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
+//            //VK_AddSampler(&d, 1, VK_SHADER_STAGE_VERTEX_BIT);
+//            VK_SetSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image.sampler, image.view);
+//            VK_FinishDescriptor(&d);
+        }
+    }
 }
 
 /*
@@ -681,7 +734,7 @@ static int upload_gl_image(const struct Image_Upload_Data *upload_data, int text
 }
 
 // VULKAN
-static int upload_vk_image(const struct Image_Upload_Data* upload_data, int texture_address_mode) {
+static vkimage_t upload_vk_image(const struct Image_Upload_Data* upload_data, int texture_address_mode) {
 	int w = upload_data->base_level_width;
 	int h = upload_data->base_level_height;
 
@@ -693,7 +746,7 @@ static int upload_vk_image(const struct Image_Upload_Data* upload_data, int text
 		}
 	}
 
-	VkFormat internal_format = VK_FORMAT_R8G8B8A8_UNORM;
+    VkFormat internal_format = VK_FORMAT_R8G8B8A8_UNORM;
 	if (glConfig.textureCompression && !has_alpha) {
 		//internal_format = GL_RGB4_S3TC;
 	}
@@ -703,11 +756,10 @@ static int upload_vk_image(const struct Image_Upload_Data* upload_data, int text
 
 	vkimage_t image = { 0 };
 	VK_CreateImage(&image, (uint32_t)w, (uint32_t)h, internal_format, (uint32_t)upload_data->mip_levels);
-	//vk_upload_image_data(image.handle, w, h, upload_data.mip_levels > 1, buffer, bytes_per_pixel);
 
 	byte* buffer = upload_data->buffer;
 	for (int i = 0; i < upload_data->mip_levels; i++) {
-		VK_UploadData(&image, buffer, 4, i);
+		VK_UploadImageData(&image, w, h, buffer, 4, i);
 		//qglTexImage2D(GL_TEXTURE_2D, i, internal_format, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 		buffer += w * h * 4;
 
@@ -721,53 +773,10 @@ static int upload_vk_image(const struct Image_Upload_Data* upload_data, int text
 	VK_CreateSampler(&image,
 		(upload_data->mip_levels > 1) ? VK_FILTER_LINEAR : VK_FILTER_LINEAR,
 		(upload_data->mip_levels > 1) ? VK_FILTER_LINEAR : VK_FILTER_LINEAR,
+        (upload_data->mip_levels > 1) ? VK_SAMPLER_MIPMAP_MODE_NEAREST : VK_SAMPLER_MIPMAP_MODE_NEAREST,
 		texture_address_mode == GL_REPEAT ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-
-	///*byte* buffer = upload_data.buffer;
-	//VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
-	//int bytes_per_pixel = 4;
-
-	//if (r_texturebits->integer <= 16) {
-	//	buffer = (byte*)ri.Hunk_AllocateTempMemory(upload_data.buffer_size / 2);
-	//	format = has_alpha ? VK_FORMAT_B4G4R4A4_UNORM_PACK16 : VK_FORMAT_A1R5G5B5_UNORM_PACK16;
-	//	bytes_per_pixel = 2;
-	//}
-
-	//if (format == VK_FORMAT_A1R5G5B5_UNORM_PACK16) {
-	//	auto p = (uint16_t*)buffer;
-	//	for (int i = 0; i < upload_data.buffer_size; i += 4, p++) {
-	//		byte r = upload_data.buffer[i + 0];
-	//		byte g = upload_data.buffer[i + 1];
-	//		byte b = upload_data.buffer[i + 2];
-
-	//		*p = uint32_t((b / 255.0) * 31.0 + 0.5) |
-	//			(uint32_t((g / 255.0) * 31.0 + 0.5) << 5) |
-	//			(uint32_t((r / 255.0) * 31.0 + 0.5) << 10) |
-	//			(1 << 15);
-	//	}
-	//}*/
-	//else if (format == VK_FORMAT_B4G4R4A4_UNORM_PACK16) {
-	//	auto p = (uint16_t*)buffer;
-	//	for (int i = 0; i < upload_data.buffer_size; i += 4, p++) {
-	//		byte r = upload_data.buffer[i + 0];
-	//		byte g = upload_data.buffer[i + 1];
-	//		byte b = upload_data.buffer[i + 2];
-	//		byte a = upload_data.buffer[i + 3];
-
-	//		*p = uint32_t((a / 255.0) * 15.0 + 0.5) |
-	//			(uint32_t((r / 255.0) * 15.0 + 0.5) << 4) |
-	//			(uint32_t((g / 255.0) * 15.0 + 0.5) << 8) |
-	//			(uint32_t((b / 255.0) * 15.0 + 0.5) << 12);
-	//	}
-	//}
-
-	//Vk_Image image = vk_create_image(w, h, format, upload_data.mip_levels, repeat_texture);
-	//vk_upload_image_data(image.handle, w, h, upload_data.mip_levels > 1, buffer, bytes_per_pixel);
-
-	//if (bytes_per_pixel == 2)
-	//	ri.Hunk_FreeTempMemory(buffer);
-
-	//return image;
+    
+    return image;
 }
 
 /*
@@ -822,7 +831,7 @@ image_t *R_CreateImage(const char *name, const byte *pic, int width, int height,
 		}
 	}
 	else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
-		upload_vk_image(&upload_data, glWrapClampMode);
+        vk_d.images[image->index] = upload_vk_image(&upload_data, glWrapClampMode);
 	}
 	
 

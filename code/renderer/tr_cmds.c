@@ -346,7 +346,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 		// this is only reached if it was on and is now off
 		if ( r_measureOverdraw->modified ) {
 			R_SyncRenderThread();
-			qglDisable( GL_STENCIL_TEST );
+			if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) qglDisable( GL_STENCIL_TEST );
 		}
 		r_measureOverdraw->modified = qfalse;
 	}
@@ -356,7 +356,8 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	//
 	if ( r_textureMode->modified ) {
 		R_SyncRenderThread();
-		GL_TextureMode( r_textureMode->string );
+		if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) GL_TextureMode( r_textureMode->string );
+        if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) VK_TextureMode( r_textureMode->string );
 		r_textureMode->modified = qfalse;
 	}
 

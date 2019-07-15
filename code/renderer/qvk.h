@@ -110,6 +110,10 @@ PFN_vkCmdBeginRenderPass						vkCmdBeginRenderPass;
 PFN_vkCmdSetViewport							vkCmdSetViewport;
 PFN_vkCmdSetScissor								vkCmdSetScissor;
 PFN_vkCmdEndRenderPass							vkCmdEndRenderPass;
+PFN_vkCmdBindVertexBuffers                      vkCmdBindVertexBuffers;
+PFN_vkCmdBindIndexBuffer                        vkCmdBindIndexBuffer;
+PFN_vkCmdPushConstants                          vkCmdPushConstants;
+PFN_vkCmdClearAttachments                       vkCmdClearAttachments;
 
 PFN_vkCreateImage								vkCreateImage;
 PFN_vkGetImageMemoryRequirements				vkGetImageMemoryRequirements;
@@ -132,6 +136,23 @@ PFN_vkFreeCommandBuffers						vkFreeCommandBuffers;
 
 PFN_vkCmdPipelineBarrier						vkCmdPipelineBarrier;
 PFN_vkCmdCopyBufferToImage						vkCmdCopyBufferToImage;
+PFN_vkCmdBindPipeline                           vkCmdBindPipeline;
+PFN_vkCmdBindDescriptorSets                     vkCmdBindDescriptorSets;
+PFN_vkCmdBindVertexBuffers                      vkCmdBindVertexBuffers;
+PFN_vkCmdDraw                                   vkCmdDraw;
+PFN_vkCmdDrawIndexed                            vkCmdDrawIndexed;
+PFN_vkCmdPushConstants                          vkCmdPushConstants;
+
+PFN_vkCreatePipelineCache                       vkCreatePipelineCache;
+PFN_vkCreatePipelineLayout                      vkCreatePipelineLayout;
+PFN_vkCreateGraphicsPipelines                   vkCreateGraphicsPipelines;
+
+PFN_vkCreateShaderModule                        vkCreateShaderModule;
+PFN_vkCreateDescriptorSetLayout                 vkCreateDescriptorSetLayout;
+PFN_vkCreateDescriptorPool                      vkCreateDescriptorPool;
+PFN_vkUpdateDescriptorSets                      vkUpdateDescriptorSets;
+
+PFN_vkDestroySampler                            vkDestroySampler;
 
 /* Debug */
 #ifndef NDEBUG

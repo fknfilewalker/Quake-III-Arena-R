@@ -2,11 +2,12 @@
 
 void beginRenderClear()
 {
-	VkClearColorValue cc = { 1.0f,0.0f,0.0f,1.0f };
+	VkClearColorValue cc = { 0.1f,0.1f,0.1f,1.0f };
+    VkClearDepthStencilValue dsc = { 1, 0};
 
-	VkClearValue clearValues[1];
-	memset(clearValues, 0, sizeof(clearValues));
+    VkClearValue clearValues[2] ={0};
 	clearValues[0].color = cc;
+    clearValues[1].depthStencil = dsc;
 
 	VkRenderPassBeginInfo rpBeginInfo = {0};
 	rpBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -14,7 +15,7 @@ void beginRenderClear()
 	rpBeginInfo.framebuffer = vk.swapchain.framebuffers[vk.swapchain.currentImage];
 	rpBeginInfo.renderArea.extent.width = vk.swapchain.extent.width;
 	rpBeginInfo.renderArea.extent.height = vk.swapchain.extent.height;
-	rpBeginInfo.clearValueCount = 1;//m_window->sampleCountFlagBits() > VK_SAMPLE_COUNT_1_BIT ? 3 : 2;
+	rpBeginInfo.clearValueCount = 2;//m_window->sampleCountFlagBits() > VK_SAMPLE_COUNT_1_BIT ? 3 : 2;
 	rpBeginInfo.pClearValues = clearValues;
 
 	VkCommandBuffer cmdBuf = vk.swapchain.commandBuffers[vk.swapchain.currentImage];

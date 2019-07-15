@@ -819,7 +819,7 @@ const void *RB_StretchPic ( const void *data ) {
 
 	cmd = (const stretchPicCommand_t *)data;
 
-	if ( !backEnd.projection2D ) {
+	if ( !backEnd.projection2D && (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) ) {
 		RB_SetGL2D();
 	}
 

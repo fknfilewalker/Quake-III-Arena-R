@@ -3,7 +3,7 @@
 static void VK_AllocateMemory(vkimage_t* image, VkMemoryPropertyFlags properties);
 void VK_CreateSampler(vkimage_t* image, VkFilter magFilter, VkFilter minFilter,
 	VkSamplerMipmapMode mipmapMode, VkSamplerAddressMode addressMode);
-void VK_CopyBufferToImage(vkimage_t* image, VkBuffer *buffer, uint32_t mipLevel);
+static void VK_CopyBufferToImage(vkimage_t* image, uint32_t width, uint32_t height, VkBuffer *buffer, uint32_t mipLevel);
 
 void VK_CreateImage(vkimage_t *image, uint32_t width, uint32_t height, VkFormat format, uint32_t mipLevels) {
 	image->extent = (VkExtent3D) { width, height, 1 };
@@ -75,6 +75,8 @@ static void VK_AllocateMemory(vkimage_t *image, VkMemoryPropertyFlags properties
 void VK_CreateSampler(	vkimage_t* image, VkFilter magFilter, VkFilter minFilter, 
 						VkSamplerMipmapMode mipmapMode, VkSamplerAddressMode addressMode)
 {
+    if(image->sampler) vkDestroySampler(vk.device, image->sampler, NULL);
+    
 	VkSamplerCreateInfo desc = { 0 };
 	desc.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	desc.pNext = NULL;
@@ -98,9 +100,9 @@ void VK_CreateSampler(	vkimage_t* image, VkFilter magFilter, VkFilter minFilter,
 }
 
 //VkImage image, int width, int height, bool mipmap, const uint8_t* pixels, int bytes_per_pixel
-VK_UploadData(vkimage_t* image, const uint8_t* pixels, uint32_t bytes_per_pixel, uint32_t mipLevel) {
+void VK_UploadImageData(vkimage_t* image, uint32_t width, uint32_t height, const uint8_t* pixels, uint32_t bytes_per_pixel, uint32_t mipLevel) {
 
-	VkDeviceSize imageSize = (uint64_t)image->extent.width * (uint64_t)image->extent.height * (uint64_t)image->extent.depth * (uint64_t)bytes_per_pixel;
+	VkDeviceSize imageSize = (uint64_t) width * (uint64_t) height * (uint64_t) 1 * (uint64_t)bytes_per_pixel;
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
@@ -109,18 +111,18 @@ VK_UploadData(vkimage_t* image, const uint8_t* pixels, uint32_t bytes_per_pixel,
 	// write data to buffer
 	uint8_t* p;
 	VK_CHECK(vkMapMemory(vk.device, stagingBufferMemory, 0, imageSize, 0, (void**)(&p)), "failed to Map Memory!");
-	memcpy(p, pixels, (size_t)(imageSize));
+	Com_Memcpy(p, pixels, (size_t)(imageSize));
 	vkUnmapMemory(vk.device, stagingBufferMemory);
 
 	//createImage(VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, format, textureImage, textureImageMemory);
 
-	VK_CopyBufferToImage(image, &stagingBuffer, mipLevel);
+	VK_CopyBufferToImage(image, width, height, &stagingBuffer, mipLevel);
 
 	vkDestroyBuffer(vk.device, stagingBuffer, NULL);
 	vkFreeMemory(vk.device, stagingBufferMemory, NULL);
 }
 
-void VK_CopyBufferToImage(vkimage_t* image, VkBuffer *buffer, uint32_t mipLevel)
+static void VK_CopyBufferToImage(vkimage_t* image, uint32_t width, uint32_t height, VkBuffer *buffer, uint32_t mipLevel)
 {
 	VkCommandBuffer commandBuffer;
 	VK_BeginSingleTimeCommands(&commandBuffer);
@@ -157,7 +159,7 @@ void VK_CopyBufferToImage(vkimage_t* image, VkBuffer *buffer, uint32_t mipLevel)
 	region.imageSubresource.baseArrayLayer = 0;
 	region.imageSubresource.layerCount = 1;
 	region.imageOffset = (VkOffset3D){ 0, 0, 0 };
-	region.imageExtent = image->extent;
+    region.imageExtent = (VkExtent3D){ width, height, 1 };
 
 	vkCmdCopyBufferToImage(commandBuffer, *buffer, image->handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 

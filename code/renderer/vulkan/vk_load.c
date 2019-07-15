@@ -79,6 +79,11 @@ qboolean VK_LoadDeviceFunctions(void)
 	vkCmdSetViewport = VK_DEVICE_LEVEL_FUNCTION("vkCmdSetViewport");
 	vkCmdSetScissor = VK_DEVICE_LEVEL_FUNCTION("vkCmdSetScissor");
 	vkCmdEndRenderPass = VK_DEVICE_LEVEL_FUNCTION("vkCmdEndRenderPass");
+    vkCmdBindVertexBuffers = VK_DEVICE_LEVEL_FUNCTION("vkCmdBindVertexBuffers");
+    vkCmdBindIndexBuffer = VK_DEVICE_LEVEL_FUNCTION("vkCmdBindIndexBuffer");
+    vkCmdPushConstants = VK_DEVICE_LEVEL_FUNCTION("vkCmdPushConstants");
+    vkCmdClearAttachments = VK_DEVICE_LEVEL_FUNCTION("vkCmdClearAttachments");
+    vkCmdPushConstants = VK_DEVICE_LEVEL_FUNCTION("vkCmdPushConstants");
 
 	vkCreateImage = VK_DEVICE_LEVEL_FUNCTION("vkCreateImage");
 	vkGetImageMemoryRequirements = VK_DEVICE_LEVEL_FUNCTION("vkGetImageMemoryRequirements");
@@ -101,7 +106,22 @@ qboolean VK_LoadDeviceFunctions(void)
 
 	vkCmdPipelineBarrier = VK_DEVICE_LEVEL_FUNCTION("vkCmdPipelineBarrier");
 	vkCmdCopyBufferToImage = VK_DEVICE_LEVEL_FUNCTION("vkCmdCopyBufferToImage");
+    vkCmdBindPipeline = VK_DEVICE_LEVEL_FUNCTION("vkCmdBindPipeline");
+    vkCmdBindDescriptorSets = VK_DEVICE_LEVEL_FUNCTION("vkCmdBindDescriptorSets");
+    vkCmdBindVertexBuffers = VK_DEVICE_LEVEL_FUNCTION("vkCmdBindVertexBuffers");
+    vkCmdDraw = VK_DEVICE_LEVEL_FUNCTION("vkCmdDraw");
+    vkCmdDrawIndexed = VK_DEVICE_LEVEL_FUNCTION("vkCmdDrawIndexed");
 
+    vkCreatePipelineCache = VK_DEVICE_LEVEL_FUNCTION("vkCreatePipelineCache");
+    vkCreatePipelineLayout = VK_DEVICE_LEVEL_FUNCTION("vkCreatePipelineLayout");
+    vkCreateGraphicsPipelines = VK_DEVICE_LEVEL_FUNCTION("vkCreateGraphicsPipelines");
+    
+    vkCreateShaderModule = VK_DEVICE_LEVEL_FUNCTION("vkCreateShaderModule");
+    vkCreateDescriptorSetLayout = VK_DEVICE_LEVEL_FUNCTION("vkCreateDescriptorSetLayout");
+    vkCreateDescriptorPool = VK_DEVICE_LEVEL_FUNCTION("vkCreateDescriptorPool");
+    vkUpdateDescriptorSets = VK_DEVICE_LEVEL_FUNCTION("vkUpdateDescriptorSets");
+    
+    vkDestroySampler = VK_DEVICE_LEVEL_FUNCTION("vkDestroySampler");
 	/* Debug */
 #ifndef NDEBUG
 	vkCreateDebugUtilsMessengerEXT = VK_DEVICE_LEVEL_FUNCTION("vkCreateDebugUtilsMessengerEXT");
