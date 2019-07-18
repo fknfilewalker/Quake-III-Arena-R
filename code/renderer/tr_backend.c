@@ -161,6 +161,51 @@ void GL_Cull( int cullType ) {
 	}
 }
 
+void VK_Cull( int cullType ) {
+    if ( vk_d.state.faceCulling == cullType ) {
+        return;
+    }
+    
+    vk_d.state.faceCulling = cullType;
+    
+    if ( cullType == CT_TWO_SIDED )
+    {
+        vk_d.state.cullMode = VK_CULL_MODE_NONE;
+        //qglDisable( GL_CULL_FACE );
+    }
+    else
+    {
+        //qglEnable( GL_CULL_FACE );
+        
+        if ( cullType == CT_BACK_SIDED )
+        {
+            if ( backEnd.viewParms.isMirror )
+            {
+                vk_d.state.cullMode = VK_CULL_MODE_FRONT_BIT;
+                //qglCullFace( GL_FRONT );
+            }
+            else
+            {
+                vk_d.state.cullMode = VK_CULL_MODE_BACK_BIT;
+                qglCullFace( GL_BACK );
+            }
+        }
+        else
+        {
+            if ( backEnd.viewParms.isMirror )
+            {
+                vk_d.state.cullMode = VK_CULL_MODE_BACK_BIT;
+                //qglCullFace( GL_BACK );
+            }
+            else
+            {
+                vk_d.state.cullMode = VK_CULL_MODE_FRONT_BIT;
+                //qglCullFace( GL_FRONT );
+            }
+        }
+    }
+}
+
 /*
 ** GL_TexEnv
 */
@@ -385,6 +430,243 @@ void GL_State( unsigned long stateBits )
 	glState.glStateBits = stateBits;
 }
 
+void VK_State( unsigned long stateBits )
+{
+    unsigned long diff = stateBits ^ vk_d.state.blendBits;
+    
+    if ( !diff )
+    {
+        return;
+    }
+    
+//    VkPipelineDepthStencilStateCreateInfo depthStencil = { 0 };
+//    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+//    depthStencil.depthTestEnable = VK_TRUE;
+//    depthStencil.depthWriteEnable = VK_TRUE;
+//    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+
+//
+//    VkPipelineColorBlendAttachmentState colorBlend = {0};
+//    colorBlend.colorWriteMask = 0xF;
+//    colorBlend.blendEnable = VK_TRUE;
+//    colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+//    colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+//    colorBlend.colorBlendOp = VK_BLEND_OP_ADD;
+//    colorBlend.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+//    colorBlend.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+//    colorBlend.alphaBlendOp = VK_BLEND_OP_ADD;
+    
+    //
+    // check depthFunc bits
+    //
+    if ( diff & GLS_DEPTHFUNC_EQUAL )
+    {
+        if ( stateBits & GLS_DEPTHFUNC_EQUAL )
+        {
+            //qglDepthFunc( GL_EQUAL );
+            vk_d.state.dsBlend.depthCompareOp = VK_COMPARE_OP_EQUAL;
+        }
+        else
+        {
+            qglDepthFunc( GL_LEQUAL );
+            vk_d.state.dsBlend.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+        }
+    }
+    
+    //
+    // check blend bits
+    //
+    if ( diff & ( GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS ) )
+    {
+        if ( stateBits & ( GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS ) )
+        {
+            switch ( stateBits & GLS_SRCBLEND_BITS )
+            {
+                case GLS_SRCBLEND_ZERO:
+                    vk_d.state.colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+                    //srcFactor = GL_ZERO;
+                    break;
+                case GLS_SRCBLEND_ONE:
+                    vk_d.state.colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+                    //srcFactor = GL_ONE;
+                    break;
+                case GLS_SRCBLEND_DST_COLOR:
+                    vk_d.state.colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_DST_COLOR;
+                    //srcFactor = GL_DST_COLOR;
+                    break;
+                case GLS_SRCBLEND_ONE_MINUS_DST_COLOR:
+                    vk_d.state.colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+                    //srcFactor = GL_ONE_MINUS_DST_COLOR;
+                    break;
+                case GLS_SRCBLEND_SRC_ALPHA:
+                    vk_d.state.colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+                    //srcFactor = GL_SRC_ALPHA;
+                    break;
+                case GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA:
+                    vk_d.state.colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+                    //srcFactor = GL_ONE_MINUS_SRC_ALPHA;
+                    break;
+                case GLS_SRCBLEND_DST_ALPHA:
+                    vk_d.state.colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_DST_ALPHA;
+                    //srcFactor = GL_DST_ALPHA;
+                    break;
+                case GLS_SRCBLEND_ONE_MINUS_DST_ALPHA:
+                    vk_d.state.colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+                    //srcFactor = GL_ONE_MINUS_DST_ALPHA;
+                    break;
+                case GLS_SRCBLEND_ALPHA_SATURATE:
+                    vk_d.state.colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+                    //srcFactor = GL_SRC_ALPHA_SATURATE;
+                    break;
+                default:
+                    vk_d.state.colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+                    //srcFactor = GL_ONE;        // to get warning to shut up
+                    ri.Error( ERR_DROP, "GL_State: invalid src blend state bits\n" );
+                    break;
+            }
+            
+            switch ( stateBits & GLS_DSTBLEND_BITS )
+            {
+                case GLS_DSTBLEND_ZERO:
+                    vk_d.state.colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+                    //dstFactor = GL_ZERO;
+                    break;
+                case GLS_DSTBLEND_ONE:
+                    vk_d.state.colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+                    //dstFactor = GL_ONE;
+                    break;
+                case GLS_DSTBLEND_SRC_COLOR:
+                    vk_d.state.colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
+                    //dstFactor = GL_SRC_COLOR;
+                    break;
+                case GLS_DSTBLEND_ONE_MINUS_SRC_COLOR:
+                    vk_d.state.colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+                    //dstFactor = GL_ONE_MINUS_SRC_COLOR;
+                    break;
+                case GLS_DSTBLEND_SRC_ALPHA:
+                    vk_d.state.colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+                    //dstFactor = GL_SRC_ALPHA;
+                    break;
+                case GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA:
+                    vk_d.state.colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+                    //dstFactor = GL_ONE_MINUS_SRC_ALPHA;
+                    break;
+                case GLS_DSTBLEND_DST_ALPHA:
+                    vk_d.state.colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_DST_ALPHA;
+                    //dstFactor = GL_DST_ALPHA;
+                    break;
+                case GLS_DSTBLEND_ONE_MINUS_DST_ALPHA:
+                    vk_d.state.colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+                    //dstFactor = GL_ONE_MINUS_DST_ALPHA;
+                    break;
+                default:
+                    vk_d.state.colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+                    //dstFactor = GL_ONE;        // to get warning to shut up
+                    ri.Error( ERR_DROP, "GL_State: invalid dst blend state bits\n" );
+                    break;
+            }
+            
+            vk_d.state.colorBlend.blendEnable = VK_TRUE;
+            vk_d.state.colorBlend.colorBlendOp = VK_BLEND_OP_ADD;
+            vk_d.state.colorBlend.alphaBlendOp = VK_BLEND_OP_ADD;
+            vk_d.state.colorBlend.srcAlphaBlendFactor = vk_d.state.colorBlend.srcColorBlendFactor;
+            vk_d.state.colorBlend.dstAlphaBlendFactor = vk_d.state.colorBlend.dstColorBlendFactor;
+            //qglEnable( GL_BLEND );
+            //qglBlendFunc( srcFactor, dstFactor );
+        }
+        else
+        {
+            vk_d.state.colorBlend.blendEnable = VK_FALSE;
+            //qglDisable( GL_BLEND );
+        }
+    }
+    
+    //
+    // check depthmask
+    //
+    if ( diff & GLS_DEPTHMASK_TRUE )
+    {
+        if ( stateBits & GLS_DEPTHMASK_TRUE )
+        {
+            vk_d.state.dsBlend.depthWriteEnable = VK_TRUE;
+            //qglDepthMask( GL_TRUE );
+        }
+        else
+        {
+            vk_d.state.dsBlend.depthWriteEnable = VK_FALSE;
+            //qglDepthMask( GL_FALSE );
+        }
+    }
+    
+    //
+    // fill/line mode
+    //
+    if ( diff & GLS_POLYMODE_LINE )
+    {
+        if ( stateBits & GLS_POLYMODE_LINE )
+        {
+            vk_d.state.polygonMode = VK_POLYGON_MODE_LINE;
+            qglPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+        }
+        else
+        {
+            vk_d.state.polygonMode = VK_POLYGON_MODE_LINE;
+            qglPolygonMode( GL_FRONT_AND_BACK, VK_POLYGON_MODE_FILL );
+        }
+    }
+    
+    //
+    // depthtest
+    //
+    if ( diff & GLS_DEPTHTEST_DISABLE )
+    {
+        if ( stateBits & GLS_DEPTHTEST_DISABLE )
+        {
+            vk_d.state.dsBlend.depthTestEnable = VK_FALSE;
+            //qglDisable( GL_DEPTH_TEST );
+        }
+        else
+        {
+            vk_d.state.dsBlend.depthTestEnable = VK_TRUE;
+            //qglEnable( GL_DEPTH_TEST );
+        }
+    }
+    
+    //
+    // alpha test
+    //
+    if ( diff & GLS_ATEST_BITS )
+    {
+        switch ( stateBits & GLS_ATEST_BITS )
+        {
+            case 0:
+                vk_d.discardModeAlpha = 0;
+                //vk_d.state.colorBlend.
+                //qglDisable( GL_ALPHA_TEST );
+                break;
+            case GLS_ATEST_GT_0:
+                vk_d.discardModeAlpha = 1;
+                //qglEnable( GL_ALPHA_TEST );
+                //qglAlphaFunc( GL_GREATER, 0.0f );
+                break;
+            case GLS_ATEST_LT_80:
+                vk_d.discardModeAlpha = 2;
+                //qglEnable( GL_ALPHA_TEST );
+                //qglAlphaFunc( GL_LESS, 0.5f );
+                break;
+            case GLS_ATEST_GE_80:
+                vk_d.discardModeAlpha = 3;
+                //qglEnable( GL_ALPHA_TEST );
+                //qglAlphaFunc( GL_GEQUAL, 0.5f );
+                break;
+            default:
+                assert( 0 );
+                break;
+        }
+    }
+    
+    vk_d.state.blendBits = stateBits;
+}
 
 
 /*
@@ -668,21 +950,50 @@ RB_SetGL2D
 void	RB_SetGL2D (void) {
 	backEnd.projection2D = qtrue;
 
-	// set 2D virtual screen size
-	qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
-	qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
-	qglMatrixMode(GL_PROJECTION);
-    qglLoadIdentity ();
-	qglOrtho (0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1);
-	qglMatrixMode(GL_MODELVIEW);
-    qglLoadIdentity ();
+    if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+        // set 2D virtual screen size
+        qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
+        qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
+        qglMatrixMode(GL_PROJECTION);
+        qglLoadIdentity ();
+        qglOrtho (0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1);
+        qglMatrixMode(GL_MODELVIEW);
+        qglLoadIdentity ();
 
-	GL_State( GLS_DEPTHTEST_DISABLE |
-			  GLS_SRCBLEND_SRC_ALPHA |
-			  GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
+        GL_State( GLS_DEPTHTEST_DISABLE |
+                  GLS_SRCBLEND_SRC_ALPHA |
+                  GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
 
-	qglDisable( GL_CULL_FACE );
-	qglDisable( GL_CLIP_PLANE0 );
+        qglDisable( GL_CULL_FACE );
+        qglDisable( GL_CLIP_PLANE0 );
+    } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+        
+        vk_d.scissor.offset.x = 0;
+        vk_d.scissor.offset.y = 0;
+        vk_d.scissor.extent.width = glConfig.vidWidth;
+        vk_d.scissor.extent.height = glConfig.vidHeight;
+        
+        vk_d.viewport.x = 0;
+        vk_d.viewport.y = 0;
+        vk_d.viewport.width = glConfig.vidWidth;
+        vk_d.viewport.height = glConfig.vidHeight;
+        vk_d.viewport.minDepth = 0;
+        vk_d.viewport.maxDepth = 1;
+        
+        float mvp0 = 2.0f / glConfig.vidWidth;
+        float mvp5 = 2.0f / glConfig.vidHeight;
+        
+        vk_d.mvp[0]  =  mvp0; vk_d.mvp[1]  =  0.0f; vk_d.mvp[2]  = 0.0f; vk_d.mvp[3]  = 0.0f;
+        vk_d.mvp[4]  =  0.0f; vk_d.mvp[5]  =  mvp5; vk_d.mvp[6]  = 0.0f; vk_d.mvp[7]  = 0.0f;
+        vk_d.mvp[8]  =  0.0f; vk_d.mvp[9]  =  0.0f; vk_d.mvp[10] = 1.0f; vk_d.mvp[11] = 0.0f;
+        vk_d.mvp[12] = -1.0f; vk_d.mvp[13] = -1.0f; vk_d.mvp[14] = 0.0f; vk_d.mvp[15] = 1.0f;
+        
+        VK_State( GLS_DEPTHTEST_DISABLE |
+                 GLS_SRCBLEND_SRC_ALPHA |
+                 GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
+        
+        vk_d.state.cullMode = VK_CULL_MODE_NONE;
+    }
 
 	// set time for 2D shaders
 	backEnd.refdef.time = ri.Milliseconds();
@@ -703,88 +1014,79 @@ void RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *
 	int			i, j;
 	int			start, end;
 
-	if ( !tr.registered ) {
-		return;
-	}
-	R_SyncRenderThread();
-
-	// we definately want to sync every frame for the cinematics
-	qglFinish();
-
-	start = end = 0;
-	if ( r_speeds->integer ) {
-		start = ri.Milliseconds();
-	}
-
-	// make sure rows and cols are powers of 2
-	for ( i = 0 ; ( 1 << i ) < cols ; i++ ) {
-	}
-	for ( j = 0 ; ( 1 << j ) < rows ; j++ ) {
-	}
-	if ( ( 1 << i ) != cols || ( 1 << j ) != rows) {
-		ri.Error (ERR_DROP, "Draw_StretchRaw: size not a power of 2: %i by %i", cols, rows);
-	}
-
-	GL_Bind( tr.scratchImage[client] );
-
-	// if the scratchImage isn't in the format we want, specify it as a new texture
-	if ( cols != tr.scratchImage[client]->width || rows != tr.scratchImage[client]->height ) {
-		tr.scratchImage[client]->width = tr.scratchImage[client]->uploadWidth = cols;
-		tr.scratchImage[client]->height = tr.scratchImage[client]->uploadHeight = rows;
-		qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
-		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
-		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );	
-	} else {
-		if (dirty) {
-			// otherwise, just subimage upload it so that drivers can tell we are going to be changing
-			// it and don't try and do a texture compression
-			qglTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, cols, rows, GL_RGBA, GL_UNSIGNED_BYTE, data );
-		}
-	}
-
-	if ( r_speeds->integer ) {
-		end = ri.Milliseconds();
-		ri.Printf( PRINT_ALL, "qglTexSubImage2D %i, %i: %i msec\n", cols, rows, end - start );
-	}
-
-	RB_SetGL2D();
-
-	qglColor3f( tr.identityLight, tr.identityLight, tr.identityLight );
-
-	qglBegin (GL_QUADS);
-	qglTexCoord2f ( 0.5f / cols,  0.5f / rows );
-	qglVertex2f (x, y);
-	qglTexCoord2f ( ( cols - 0.5f ) / cols ,  0.5f / rows );
-	qglVertex2f (x+w, y);
-	qglTexCoord2f ( ( cols - 0.5f ) / cols, ( rows - 0.5f ) / rows );
-	qglVertex2f (x+w, y+h);
-	qglTexCoord2f ( 0.5f / cols, ( rows - 0.5f ) / rows );
-	qglVertex2f (x, y+h);
-	qglEnd ();
+    if ( !tr.registered ) {
+        return;
+    }
+    R_SyncRenderThread();
+    
+    start = end = 0;
+    if ( r_speeds->integer ) {
+        start = ri.Milliseconds();
+    }
+    
+    // make sure rows and cols are powers of 2
+    for ( i = 0 ; ( 1 << i ) < cols ; i++ ) {
+    }
+    for ( j = 0 ; ( 1 << j ) < rows ; j++ ) {
+    }
+    if ( ( 1 << i ) != cols || ( 1 << j ) != rows) {
+        ri.Error (ERR_DROP, "Draw_StretchRaw: size not a power of 2: %i by %i", cols, rows);
+    }
+    
+    RE_UploadCinematic(w, h, cols, rows, data, client, dirty);
+    
+    if ( r_speeds->integer ) {
+        end = ri.Milliseconds();
+        ri.Printf( PRINT_ALL, "qglTexSubImage2D %i, %i: %i msec\n", cols, rows, end - start );
+    }
+    
+    tr.cinematicShader->stages[0]->bundle[0].image[0] = tr.scratchImage[client];
+    RE_StretchPic(x, y, w, h,  0.5f / cols, 0.5f / rows,  1.0f - 0.5f / cols, 1.0f - 0.5 / rows, tr.cinematicShader->index);
 }
 
 void RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty) {
 
-	GL_Bind( tr.scratchImage[client] );
-
-	// if the scratchImage isn't in the format we want, specify it as a new texture
-	if ( cols != tr.scratchImage[client]->width || rows != tr.scratchImage[client]->height ) {
-		tr.scratchImage[client]->width = tr.scratchImage[client]->uploadWidth = cols;
-		tr.scratchImage[client]->height = tr.scratchImage[client]->uploadHeight = rows;
-		qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
-		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
-		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );	
-	} else {
-		if (dirty) {
-			// otherwise, just subimage upload it so that drivers can tell we are going to be changing
-			// it and don't try and do a texture compression
-			qglTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, cols, rows, GL_RGBA, GL_UNSIGNED_BYTE, data );
-		}
-	}
+    if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+        GL_Bind( tr.scratchImage[client] );
+        
+        // if the scratchImage isn't in the format we want, specify it as a new texture
+        if ( cols != tr.scratchImage[client]->width || rows != tr.scratchImage[client]->height ) {
+            tr.scratchImage[client]->width = tr.scratchImage[client]->uploadWidth = cols;
+            tr.scratchImage[client]->height = tr.scratchImage[client]->uploadHeight = rows;
+            qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+            qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+            qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+            qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+            qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+        } else {
+            if (dirty) {
+                // otherwise, just subimage upload it so that drivers can tell we are going to be changing
+                // it and don't try and do a texture compression
+                qglTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, cols, rows, GL_RGBA, GL_UNSIGNED_BYTE, data );
+            }
+        }
+    } else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+        if ( cols != tr.scratchImage[client]->width || rows != tr.scratchImage[client]->height ) {
+            tr.scratchImage[client]->width = tr.scratchImage[client]->uploadWidth = cols;
+            tr.scratchImage[client]->height = tr.scratchImage[client]->uploadHeight = rows;
+            
+            vkimage_t *image = &vk_d.images[tr.scratchImage[client]->index];
+            VK_DestroyImage(image);
+            
+            VK_CreateImage(image, cols, rows, VK_FORMAT_R8G8B8A8_UNORM, 1);
+            VK_UploadImageData(image, cols, rows, data, 4, 0); // rows wise
+            VK_CreateSampler(image, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+            
+            VK_AddSampler(&image->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
+            VK_SetSampler(&image->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image->sampler, image->view);
+            VK_FinishDescriptor(&image->descriptor_set);
+        }
+        else {
+            if (dirty) {
+                VK_UploadImageData(&vk_d.images[tr.scratchImage[client]->index], cols, rows, data, 4, 0);   
+            }
+        }
+    }
 }
 
 
@@ -819,10 +1121,10 @@ const void *RB_StretchPic ( const void *data ) {
 
 	cmd = (const stretchPicCommand_t *)data;
 
-	if ( !backEnd.projection2D && (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) ) {
-		RB_SetGL2D();
-	}
-
+    if ( !backEnd.projection2D ) {
+        RB_SetGL2D();
+    }
+    
 	shader = cmd->shader;
 	if ( shader != tess.shader ) {
 		if ( tess.numIndexes ) {
@@ -919,13 +1221,21 @@ const void	*RB_DrawBuffer( const void *data ) {
 
 	cmd = (const drawBufferCommand_t *)data;
 
-	qglDrawBuffer( cmd->buffer );
+    if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+        qglDrawBuffer( cmd->buffer );
 
-	// clear screen for debugging
-	if ( r_clear->integer ) {
-		qglClearColor( 1, 0, 0.5, 1 );
-		qglClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-	}
+        // clear screen for debugging
+        if ( r_clear->integer ) {
+            qglClearColor( 1, 0, 0.5, 1 );
+            qglClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+        }
+    } else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+        VK_BeginFrame();
+        beginRenderClear();
+        if ( r_clear->integer ) {
+            VK_ClearAttachments(false, true, (vec4_t){1, 0, 0.5, 1});
+        }
+    }
 
 	return (const void *)(cmd + 1);
 }
@@ -1030,14 +1340,18 @@ const void	*RB_SwapBuffers( const void *data ) {
 		ri.Hunk_FreeTempMemory( stencilReadback );
 	}
 
+    if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+        if ( !glState.finishCalled ) {
+            qglFinish();
+        }
 
-	if ( !glState.finishCalled ) {
-		qglFinish();
-	}
+        GLimp_LogComment( "***************** RB_SwapBuffers *****************\n\n\n" );
 
-	GLimp_LogComment( "***************** RB_SwapBuffers *****************\n\n\n" );
-
-	GLimp_EndFrame();
+        GLimp_EndFrame();
+    } else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+        endRender();
+        VK_EndFrame();
+    }
 
 	backEnd.projection2D = qfalse;
 
@@ -1086,6 +1400,10 @@ void RB_ExecuteRenderCommands( const void *data ) {
 
 		case RC_END_OF_LIST:
 		default:
+//            if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+//                endRender();
+//                VK_EndFrame();
+//            }
 			// stop rendering on this thread
 			t2 = ri.Milliseconds ();
 			backEnd.pc.msec = t2 - t1;

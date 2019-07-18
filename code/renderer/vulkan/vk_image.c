@@ -75,7 +75,10 @@ static void VK_AllocateMemory(vkimage_t *image, VkMemoryPropertyFlags properties
 void VK_CreateSampler(	vkimage_t* image, VkFilter magFilter, VkFilter minFilter, 
 						VkSamplerMipmapMode mipmapMode, VkSamplerAddressMode addressMode)
 {
-    if(image->sampler) vkDestroySampler(vk.device, image->sampler, NULL);
+    if(image->sampler != NULL) {
+        vkDestroySampler(vk.device, image->sampler, NULL);
+        image->sampler = VK_NULL_HANDLE;
+    }
     
 	VkSamplerCreateInfo desc = { 0 };
 	desc.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -177,4 +180,21 @@ static void VK_CopyBufferToImage(vkimage_t* image, uint32_t width, uint32_t heig
 		1, &barrier);
 
 	VK_EndSingleTimeCommands(&commandBuffer);
+}
+
+void VK_DestroyImage(vkimage_t* image){
+    if(image->handle != NULL) {
+        vkDestroyImage(vk.device, image->handle, NULL);
+        image->handle = VK_NULL_HANDLE;
+    }
+    if(image->view != NULL) {
+        vkDestroyImageView(vk.device, image->view, NULL);
+        image->view = VK_NULL_HANDLE;
+    }
+    if(image->sampler != NULL) {
+        vkDestroySampler(vk.device, image->sampler, NULL);
+        image->sampler = VK_NULL_HANDLE;
+    }
+    
+    VK_DestroyDescriptor(&image->descriptor_set);
 }

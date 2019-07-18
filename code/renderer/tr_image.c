@@ -181,23 +181,11 @@ void VK_TextureMode(const char *string) {
     for ( i = 0 ; i < tr.numImages ; i++ ) {
         image_t* glt = tr.images[i];
         if (glt->mipmap) {
-            VK_CreateSampler(&vk_d.images[i], VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST,
+            vkimage_t *image = &vk_d.images[glt->index];
+            VK_CreateSampler(image, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST,
                             glt->wrapClampMode == GL_REPEAT ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-            VK_AddSampler(&vk_d.images[i].descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
-            VK_SetSampler(&vk_d.images[i].descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, vk_d.images[i].sampler, vk_d.images[i].view);
-            VK_FinishDescriptor(&vk_d.images[i].descriptor_set);
-//            Vk_Image& image = vk_world.images[i];
-//            vk_update_descriptor_set(image.descriptor_set, image.view, true, glt->wrapClampMode == GL_REPEAT);
-//
-           
-//            VK_CreateSampler(&image, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST,VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-//
-//
-//            vkdescriptor_t d = {0};
-//            VK_AddSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
-//            //VK_AddSampler(&d, 1, VK_SHADER_STAGE_VERTEX_BIT);
-//            VK_SetSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image.sampler, image.view);
-//            VK_FinishDescriptor(&d);
+            VK_SetSampler(&image->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image->sampler, image->view);
+            VK_UpdateDescriptorSet(&image->descriptor_set);
         }
     }
 }
@@ -832,6 +820,10 @@ image_t *R_CreateImage(const char *name, const byte *pic, int width, int height,
 	}
 	else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
         vk_d.images[image->index] = upload_vk_image(&upload_data, glWrapClampMode);
+        
+        VK_AddSampler(&vk_d.images[image->index].descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
+        VK_SetSampler(&vk_d.images[image->index].descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, vk_d.images[image->index].sampler, vk_d.images[image->index].view);
+        VK_FinishDescriptor(&vk_d.images[image->index].descriptor_set);
 	}
 	
 

@@ -142,6 +142,9 @@ PFN_vkCmdBindVertexBuffers                      vkCmdBindVertexBuffers;
 PFN_vkCmdDraw                                   vkCmdDraw;
 PFN_vkCmdDrawIndexed                            vkCmdDrawIndexed;
 PFN_vkCmdPushConstants                          vkCmdPushConstants;
+PFN_vkCmdClearAttachments                       vkCmdClearAttachments;
+PFN_vkCmdSetDepthBias                           vkCmdSetDepthBias;
+PFN_vkCmdSetBlendConstants                      vkCmdSetBlendConstants;
 
 PFN_vkCreatePipelineCache                       vkCreatePipelineCache;
 PFN_vkCreatePipelineLayout                      vkCreatePipelineLayout;
@@ -153,6 +156,11 @@ PFN_vkCreateDescriptorPool                      vkCreateDescriptorPool;
 PFN_vkUpdateDescriptorSets                      vkUpdateDescriptorSets;
 
 PFN_vkDestroySampler                            vkDestroySampler;
+PFN_vkDestroyImage                              vkDestroyImage;
+PFN_vkDestroyImageView                          vkDestroyImageView;
+PFN_vkFreeDescriptorSets                        vkFreeDescriptorSets;
+PFN_vkDestroyDescriptorSetLayout                vkDestroyDescriptorSetLayout;
+PFN_vkDestroyDescriptorPool                     vkDestroyDescriptorPool;
 
 /* Debug */
 #ifndef NDEBUG

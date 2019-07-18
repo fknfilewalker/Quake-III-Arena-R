@@ -190,7 +190,37 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
 //    [pixelFormat getValues: (GLint *) &glConfig.depthBits forAttribute: NSOpenGLPFADepthSize forVirtualScreen: 0];
 //    [pixelFormat getValues: (GLint *) &glConfig.stencilBits forAttribute: NSOpenGLPFAStencilSize forVirtualScreen: 0];
 //
-//    glConfig.displayFrequency = [[glw_state.gameMode objectForKey: (id)kCGDisplayRefreshRate] intValue];
+    
+//    CGDirectDisplayID displays[5];
+//    uint32_t numDisplays;
+//    uint32_t i;
+//    
+//    CGGetActiveDisplayList (5, displays, &numDisplays);
+//    
+//    for (i = 0; i < numDisplays; i++) // 2
+//    {
+//        CGDisplayModeRef mode;
+//        CFIndex index, count;
+//        CFArrayRef modeList;
+//        
+//        modeList = CGDisplayCopyAllDisplayModes (displays[i], NULL); // 3
+//        count = CFArrayGetCount (modeList);
+//        
+//        for (index = 0; index < count; index++) // 4
+//        {
+//            mode = (CGDisplayModeRef)CFArrayGetValueAtIndex (modeList, index);
+//            
+//            long height = 0, width = 0;
+//            double refresh = 0;
+//            
+//            height = CGDisplayModeGetHeight(mode);
+//            width = CGDisplayModeGetWidth(mode);
+//            refresh = CGDisplayModeGetRefreshRate(mode);
+//        }
+//        CFRelease(modeList);// 6
+//    }
+    
+    //glConfig.displayFrequency = [screen refresj ]//[[glw_state.gameMode objectForKey: (id)kCGDisplayRefreshRate] intValue];
 //
     
     ri.Printf(PRINT_ALL, "ok\n" );
@@ -212,78 +242,91 @@ qboolean VKimp_SetMode( qboolean isSecondTry )
         return qfalse;
     }
     
-    vkattribbuffer_t a;
-    VK_CreateVertexBuffer(&a, 15 * sizeof(Float32));
-                    // vec3 vec4 vec2
-//    float vdata[] = {0, 0, 0.1,
-//                     1, 0, 0.1,
-//                     1, 1, 0.1};
-    Float32 vdata[] = {0.0, -0.9, 0.0,      1.0f, 1.0f, // top
-        0.9, 0.9, 0.0,                      1.0f, 0.0f, // right
-        -0.9, 0.9, 0.0,                     1.0f, 0.0f}; // left
-    VK_UploadAttribData(&a, (void *) &vdata[0]);
     
-    vkshader_t s = {0};
-    VK_SingleTextureShader(&s);
+    VK_CreateIndexBuffer(&vk_d.indexbuffer, SHADER_MAX_INDEXES * sizeof(uint32_t));
+    VK_CreateVertexBuffer(&vk_d.vertexbuffer, SHADER_MAX_VERTEXES * sizeof(vec4_t));
+    VK_CreateVertexBuffer(&vk_d.normalbuffer, SHADER_MAX_VERTEXES * sizeof(vec4_t));
+    VK_CreateVertexBuffer(&vk_d.uvbuffer, SHADER_MAX_VERTEXES * sizeof(vec2_t));
+    VK_CreateVertexBuffer(&vk_d.colorbuffer, SHADER_MAX_VERTEXES * sizeof(color4ub_t));
     
-    vkimage_t image = { 0 };
-    VK_CreateImage(&image, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 1);
-    uint8_t data[4] = {0,0,255,255
-    };
-    Float32 data2[4] = {1,1,0,1
-    };
-    VK_UploadImageData(&image, 1, 1, &data, 4, 0); // rows wise
-    //VK_UploadImageData(&image, 1, 1, &data2, 16, 1);
-    VK_CreateSampler(&image, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST,VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-    
-    
-    vkdescriptor_t d = {0};
-    VK_AddSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
-    //VK_AddSampler(&d, 1, VK_SHADER_STAGE_VERTEX_BIT);
-    VK_SetSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image.sampler, image.view);
-    VK_FinishDescriptor(&d);
-    
-    
-    vkpipeline_t p = {0};
-    VK_SetDescriptorSet(&p, &d);
-    VK_SetShader(&p, &s);
-    VK_AddBindingDescription(&p, 0, 5 * sizeof(float), VK_VERTEX_INPUT_RATE_VERTEX);
-    VK_AddAttributeDescription(&p, 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 * sizeof(float));
-    VK_AddAttributeDescription(&p, 1, 0, VK_FORMAT_R32G32_SFLOAT, 3 * sizeof(float));
-    VK_FinishPipeline(&p);
-
-    // draw something to show that VK is alive
-    if (r_enablerender->integer) {
-        VK_BeginFrame();
-        beginRenderClear();
-        VK_Draw(&p, &a, 3);
-        endRender();
-        VK_EndFrame();
-
-        VK_BeginFrame();
-        beginRenderClear();
-        VK_Draw(&p, &a, 3);
-        endRender();
-        VK_EndFrame();
-        
-        VK_BeginFrame();
-        beginRenderClear();
-        VK_Draw(&p, &a, 3);
-        endRender();
-        VK_EndFrame();
-        
-        VK_BeginFrame();
-        beginRenderClear();
-        VK_Draw(&p, &a, 3);
-        endRender();
-        VK_EndFrame();
-        
-        VK_BeginFrame();
-        beginRenderClear();
-        VK_Draw(&p, &a, 3);
-        endRender();
-        VK_EndFrame();
-    }
+//    vkattribbuffer_t a;
+//    VK_CreateVertexBuffer(&a, 9 * sizeof(Float32));
+//    
+//    vkattribbuffer_t uv;
+//    VK_CreateVertexBuffer(&uv, 6 * sizeof(Float32));
+//                    // vec3 vec4 vec2
+////    float vdata[] = {0, 0, 0.1,
+////                     1, 0, 0.1,
+////                     1, 1, 0.1};
+//    Float32 vdata[] = {0.0, -0.9, 0.0, // top
+//        0.9, 0.9, 0.0, // right
+//        -0.9, 0.9, 0.0}; // left
+//    VK_UploadAttribData(&a, (void *) &vdata[0]);
+//    Float32 uvdata[] = {1.0f, 1.0f, // top
+//            1.0f, 0.0f, // right
+//            1.0f, 0.0f}; // left
+//    VK_UploadAttribData(&uv, (void *) &uvdata[0]);
+//    
+//    vkshader_t s = {0};
+//    VK_SingleTextureShader(&s);
+//    
+//    vkimage_t image = { 0 };
+//    VK_CreateImage(&image, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 1);
+//    uint8_t data[4] = {0,0,255,255
+//    };
+//    Float32 data2[4] = {1,1,0,1
+//    };
+//    VK_UploadImageData(&image, 1, 1, &data, 4, 0); // rows wise
+//    //VK_UploadImageData(&image, 1, 1, &data2, 16, 1);
+//    VK_CreateSampler(&image, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST,VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+//    
+//    
+//    vkdescriptor_t d = {0};
+//    VK_AddSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
+//    //VK_AddSampler(&d, 1, VK_SHADER_STAGE_VERTEX_BIT);
+//    VK_SetSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image.sampler, image.view);
+//    VK_FinishDescriptor(&d);
+//    
+//    float mvp[16] = {1, 0, 0, 0,
+//        0, 1, 0, 0,
+//        0, 0, 1, 0,
+//        0, 0, 0, 1
+//    };
+//    
+//    vkpipeline_t p = {0};
+//    VK_SetDescriptorSet(&p, &d);
+//    VK_SetShader(&p, &s);
+//    VK_AddBindingDescription(&p, 0, 3 * sizeof(float), VK_VERTEX_INPUT_RATE_VERTEX);
+//    VK_AddBindingDescription(&p, 1, 2 * sizeof(float), VK_VERTEX_INPUT_RATE_VERTEX);
+//    VK_AddAttributeDescription(&p, 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 * sizeof(float));
+//    VK_AddAttributeDescription(&p, 1, 1, VK_FORMAT_R32G32_SFLOAT, 0 * sizeof(float));
+//    VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mvp));
+//    VK_FinishPipeline(&p);
+//    
+//    // draw something to show that VK is alive
+//    if (r_enablerender->integer) {
+//        VK_BeginFrame();
+//        beginRenderClear();
+//        VK_BindAttribBuffer(&a, 0);
+//        VK_BindAttribBuffer(&uv, 1);
+//        VK_BindDescriptorSet(&p, &d);
+//        VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mvp), &mvp);
+//        VK_Draw(&p, 3);
+//        endRender();
+//        VK_EndFrame();
+//        
+//        VK_BeginFrame();
+//        beginRenderClear();
+//        VK_BindAttribBuffer(&a, 0);
+//        VK_BindAttribBuffer(&uv, 1);
+//        VK_BindDescriptorSet(&p, &d);
+//        VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mvp), &mvp);
+//        VK_Draw(&p, 3);
+//        endRender();
+//        VK_EndFrame();
+//  
+//     
+//    }
     
     return qtrue;
 }
@@ -322,13 +365,42 @@ void VKimp_Init( void )
     }
 
     ri.Printf( PRINT_ALL, "------------------\n" );
-//    
-//    // get our config strings
-//    Q_strncpyz( glConfig.vendor_string, (const char *)qglGetString (GL_VENDOR), sizeof( glConfig.vendor_string ) );
-//    Q_strncpyz( glConfig.renderer_string, (const char *)qglGetString (GL_RENDERER), sizeof( glConfig.renderer_string ) );
-//    Q_strncpyz( glConfig.version_string, (const char *)qglGetString (GL_VERSION), sizeof( glConfig.version_string ) );
-//    Q_strncpyz( glConfig.extensions_string, (const char *)qglGetString (GL_EXTENSIONS), sizeof( glConfig.extensions_string ) );
-//    
+    
+    // get our config strings
+    VkPhysicalDeviceProperties deviceProp;
+    VK_GetDeviceProperties(&deviceProp);
+    
+    const char* vendor_name = "unknown";
+    if (deviceProp.vendorID == 0x1002) {
+        vendor_name = "Advanced Micro Devices, Inc.";
+    } else if (deviceProp.vendorID == 0x10DE) {
+        vendor_name = "NVIDIA Corporation";
+    } else if (deviceProp.vendorID == 0x8086) {
+        vendor_name = "Intel Corporation";
+    }
+    Q_strncpyz( glConfig.vendor_string, (const char *) vendor_name, sizeof( glConfig.vendor_string ) );
+    Q_strncpyz( glConfig.renderer_string, (const char *) deviceProp.deviceName, sizeof( glConfig.renderer_string ) );
+    
+    uint32_t major = VK_VERSION_MAJOR(deviceProp.apiVersion);
+    uint32_t minor = VK_VERSION_MINOR(deviceProp.apiVersion);
+    uint32_t patch = VK_VERSION_PATCH(deviceProp.apiVersion);
+    const char* version[20];
+    snprintf(version, sizeof(version), "%d.%d.%d", major, minor, patch);
+    Q_strncpyz( glConfig.version_string, (const char *) version, sizeof( glConfig.version_string ) );
+    
+    uint32_t extensionCount = 0;
+    vkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &extensionCount, NULL);
+    VkExtensionProperties *extensions = malloc( extensionCount * sizeof(VkExtensionProperties));
+    vkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &extensionCount, &extensions[0]);
+    uint32_t offset = 0;
+    for (uint32_t i = 0; i < extensionCount; i++) {
+        Q_strncpyz( glConfig.extensions_string + offset, (const char *) extensions[i].extensionName, sizeof( glConfig.extensions_string ) - (offset * sizeof(char)) );
+        offset += strlen(extensions[i].extensionName);
+        Q_strncpyz( glConfig.extensions_string + offset, (const char *) " ", sizeof(char) );
+        offset += 1;
+    }
+    free(extensions);
+//
 //    //
 //    // chipset specific configuration
 //    //

@@ -67,8 +67,8 @@ OSStatus audioDeviceIOProc(AudioDeviceID inDevice,
     offset = ( s_chunkCount * submissionChunk ) % maxMixedSamples;
     samples = s_mixedSamples + offset;
 
-    assert(outOutputData->mNumberBuffers == 1);
-    assert(outOutputData->mBuffers[0].mNumberChannels == 2);
+    //assert(outOutputData->mNumberBuffers == 1);
+    //assert(outOutputData->mBuffers[0].mNumberChannels == 2);
     //assert(outOutputData->mBuffers[0].mDataByteSize == (dma.submission_chunk * sizeof(float)));
 
     outBuffer = (float *)outOutputData->mBuffers[0].mData;

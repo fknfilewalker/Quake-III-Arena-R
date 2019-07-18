@@ -2981,6 +2981,20 @@ static void CreateInternalShaders( void ) {
 	Q_strncpyz( shader.name, "<stencil shadow>", sizeof( shader.name ) );
 	shader.sort = SS_STENCIL_SHADOW;
 	tr.shadowShader = FinishShader();
+    
+    // cinematic shader
+    Com_Memset( &shader, 0, sizeof( shader ) );
+    Com_Memset( &stages, 0, sizeof( stages ) );
+    
+    Q_strncpyz( shader.name, "<cinematic>", sizeof( shader.name ) );
+    shader.lightmapIndex = LIGHTMAP_NONE;
+    
+    stages[0].bundle[0].image[0] = tr.defaultImage; // will be updated by specific cinematic images
+    stages[0].active = qtrue;
+    stages[0].rgbGen = CGEN_IDENTITY_LIGHTING;
+    stages[0].stateBits = GLS_DEPTHTEST_DISABLE;
+    
+    tr.cinematicShader = FinishShader();
 }
 
 static void CreateExternalShaders( void ) {

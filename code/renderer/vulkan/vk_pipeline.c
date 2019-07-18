@@ -1,5 +1,29 @@
 #include "../tr_local.h"
 
+typedef struct {
+    vkpipeline_t        pipeline;
+    vkrenderState_t     state;
+} vkpipe_t;
+
+static uint8_t pipelineListSize;
+static vkpipe_t pipelineList[100];
+
+vkpipeline_t getPipeline(){
+    for (uint8_t i; i < pipelineListSize; ++i) {
+        vkrenderState_t *state = &pipelineList[i].state;
+        vkpipeline_t *p = &pipelineList[i].pipeline;
+        if(memcmp(&vk_d.state, state, sizeof(vkrenderState_t)) == 0) {
+            return *p;
+        }
+    }
+    //return NULL;
+}
+
+void addPipeline(vkpipeline_t p){
+    pipelineList[pipelineListSize] = (vkpipe_t){p, vk_d.state};
+    pipelineListSize++;
+}
+
 static void VK_CreatePipelineCache(vkpipeline_t *pipeline);
 static void VK_CreatePipelineLayout(vkpipeline_t *pipeline);
 static void VK_CreatePipeline(vkpipeline_t *pipeline);
@@ -112,9 +136,9 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline)
 
     VkPipelineRasterizationStateCreateInfo rs = { 0 };
     rs.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rs.polygonMode = VK_POLYGON_MODE_FILL;
-    rs.cullMode = VK_CULL_MODE_BACK_BIT; // we want the back face as well
-    rs.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rs.polygonMode = vk_d.state.polygonMode;
+    rs.cullMode = vk_d.state.cullMode;//VK_CULL_MODE_BACK_BIT; // we want the back face as well
+    rs.frontFace = VK_FRONT_FACE_CLOCKWISE;//VK_FRONT_FACE_CLOCKWISE;
     rs.lineWidth = 1.0f;
     pipelineInfo.pRasterizationState = &rs;
     
@@ -124,30 +148,35 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline)
     ms.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
     pipelineInfo.pMultisampleState = &ms;
 
-    VkPipelineDepthStencilStateCreateInfo depthStencil = { 0 };
-    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depthStencil.depthTestEnable = VK_TRUE;
-    depthStencil.depthWriteEnable = VK_TRUE;
-    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-    pipelineInfo.pDepthStencilState = &depthStencil;
+//    VkPipelineDepthStencilStateCreateInfo depthStencil = { 0 };
+//    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+//    depthStencil.depthTestEnable = VK_TRUE;
+//    depthStencil.depthWriteEnable = VK_TRUE;
+//    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
-    VkPipelineColorBlendAttachmentState colorBlend = {0};
-    colorBlend.colorWriteMask = 0xF;
-    colorBlend.blendEnable = VK_TRUE;
-    colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    colorBlend.colorBlendOp = VK_BLEND_OP_ADD;
-    colorBlend.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    colorBlend.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    colorBlend.alphaBlendOp = VK_BLEND_OP_ADD;
+//
+//    VkPipelineColorBlendAttachmentState colorBlend = {0};
+//    colorBlend.colorWriteMask = 0xF;
+//    colorBlend.blendEnable = VK_TRUE;
+//    colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+//    colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+//    colorBlend.colorBlendOp = VK_BLEND_OP_ADD;
+//    colorBlend.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+//    colorBlend.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+//    colorBlend.alphaBlendOp = VK_BLEND_OP_ADD;
+    
+    vk_d.state.colorBlend.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     
     VkPipelineColorBlendStateCreateInfo cb = { 0 };
     cb.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     cb.attachmentCount = 1;
-    cb.pAttachments = &colorBlend;
+    cb.pAttachments = &vk_d.state.colorBlend;
     pipelineInfo.pColorBlendState = &cb;
+    
+    vk_d.state.dsBlend.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    pipelineInfo.pDepthStencilState = &vk_d.state.dsBlend;
 
-    VkDynamicState dynEnable[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    VkDynamicState dynEnable[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_DEPTH_BIAS, VK_DYNAMIC_STATE_BLEND_CONSTANTS};
     VkPipelineDynamicStateCreateInfo dyn = {0};
     dyn.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dyn.dynamicStateCount = sizeof(dynEnable) / sizeof(VkDynamicState);
@@ -163,39 +192,37 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline)
     
 }
 
+void VK_BindDescriptorSet(vkpipeline_t *pipeline, vkdescriptor_t *descriptor){
+    VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1,
+                            &pipeline->descriptor->sets[vk.swapchain.currentFrame], 0, NULL);
+}
+
 void VK_SetPushConstant(vkpipeline_t *pipeline, VkShaderStageFlags stage, uint32_t offset, uint32_t size, void* data)
 {
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
     vkCmdPushConstants(commandBuffer, pipeline->layout, stage, offset, size, data);
 }
 
-void VK_Draw(vkpipeline_t *pipeline, vkattribbuffer_t *vBuffer, int count)
+void VK_BindAttribBuffer(vkattribbuffer_t *attribBuffer, uint32_t binding){
+    VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+    VkDeviceSize bOffset = 0;
+    vkCmdBindVertexBuffers(commandBuffer, binding, 1, &attribBuffer->buffer, &bOffset);
+}
+
+void VK_Draw(vkpipeline_t *pipeline, int count)
 {
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
-    
-    // bind descriptor set only when needed
-    if(pipeline->descriptor->size != 0){
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1,
-                                &pipeline->descriptor->sets[vk.swapchain.currentFrame], 0, NULL);
-    }
-    VkDeviceSize bOffset = 0;
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vBuffer->buffer, &bOffset);
     vkCmdDraw(commandBuffer, count, 1, 0, 0);
 }
 
-void VK_DrawIndexed(vkpipeline_t *pipeline, vkattribbuffer_t *vBuffer, vkattribbuffer_t *idxBuffer, int count)
+void VK_DrawIndexed(vkpipeline_t *pipeline, vkattribbuffer_t *idxBuffer, int count)
 {
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
-    
-    // bind descriptor set only when needed
-    if(pipeline->descriptor->size != 0){
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1,
-                                &pipeline->descriptor->sets[vk.swapchain.currentFrame], 0, NULL);
-    }
+
     VkDeviceSize bOffset = 0;
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vBuffer->buffer, &bOffset);
-    vkCmdBindIndexBuffer(commandBuffer, &idxBuffer->buffer, 0, VK_INDEX_TYPE_UINT16);
+    vkCmdBindIndexBuffer(commandBuffer, idxBuffer->buffer, 0, VK_INDEX_TYPE_UINT32);
     vkCmdDrawIndexed(commandBuffer, count, 1, 0, 0, 0);
 }

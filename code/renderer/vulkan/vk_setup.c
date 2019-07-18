@@ -196,7 +196,8 @@ void VK_PickPhysicalDevice()
 
 }
 
-void VK_CreateLogicalDevice() {
+void VK_CreateLogicalDevice()
+{
 	queueFamilyIndices_t indices = findQueueFamilies(vk.physical_device, vk.surface);
 
 	VkDeviceQueueCreateInfo queueCreateInfos[2];
@@ -235,7 +236,6 @@ void VK_CreateLogicalDevice() {
 	createInfo.enabledLayerCount = 0;
 
 	VK_CHECK(vkCreateDevice(vk.physical_device, &createInfo, NULL, &vk.device), "failed to create logical device!")
-
 }
 
 void VK_CreateCommandPool() {
@@ -250,11 +250,10 @@ void VK_CreateCommandPool() {
 	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;//VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 
 	VK_CHECK(vkCreateCommandPool(vk.device, &poolInfo, NULL, &vk.commandPool), "failed to create command pool!");
-
-
 }
 
-void VK_CreateCommandBuffers() {
+void VK_CreateCommandBuffers()
+{
 	vk.swapchain.commandBuffers = malloc(vk.swapchain.imageCount * sizeof(VkCommandBuffer));
 
 	VkCommandBufferAllocateInfo allocInfo = {0};
@@ -264,10 +263,10 @@ void VK_CreateCommandBuffers() {
 	allocInfo.commandBufferCount = vk.swapchain.imageCount;
 
 	VK_CHECK(vkAllocateCommandBuffers(vk.device, &allocInfo, vk.swapchain.commandBuffers), "failed to allocate command buffers!");
-
 }
 
-void VK_CreateSyncObjects() {
+void VK_CreateSyncObjects()
+{
 	vk.swapchain.imageAvailableSemaphores = malloc(vk.swapchain.imageCount * sizeof(VkSemaphore));
 	vk.swapchain.renderFinishedSemaphores = malloc(vk.swapchain.imageCount * sizeof(VkSemaphore));
 	vk.swapchain.inFlightFences = malloc(vk.swapchain.imageCount * sizeof(VkFence));
@@ -288,8 +287,8 @@ void VK_CreateSyncObjects() {
 	vk.swapchain.currentFrame = vk.swapchain.imageCount - 1;
 }
 
-void VK_BeginFrame() {
-
+void VK_BeginFrame()
+{
 	// wait for command buffer submission for last image
 	vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentFrame], VK_TRUE, UINT64_MAX);
 	vkResetFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentFrame]);

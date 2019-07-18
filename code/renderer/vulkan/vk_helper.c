@@ -1,8 +1,16 @@
 #include "../tr_local.h"
 
+/*
+ ** INFO
+ */
+void VK_GetDeviceProperties(VkPhysicalDeviceProperties *devProperties)
+{
+    vkGetPhysicalDeviceProperties(vk.physical_device, devProperties);
+}
+
 void beginRenderClear()
 {
-	VkClearColorValue cc = { 0.1f,0.1f,0.1f,1.0f };
+	VkClearColorValue cc = { 0.9f,0.1f,0.1f,1.0f };
     VkClearDepthStencilValue dsc = { 1, 0};
 
     VkClearValue clearValues[2] ={0};
@@ -21,25 +29,90 @@ void beginRenderClear()
 	VkCommandBuffer cmdBuf = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
 	vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	VkViewport viewport = {0};
-	viewport.x = viewport.y = 0;
-	viewport.width = vk.swapchain.extent.width;
-	viewport.height = vk.swapchain.extent.height;
-	viewport.minDepth = 0;
-	viewport.maxDepth = 1;
-	vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
+//    VkViewport viewport = {0};
+//    viewport.x = viewport.y = 0;
+//    viewport.width = vk.swapchain.extent.width;
+//    viewport.height = vk.swapchain.extent.height;
+//    viewport.minDepth = 0;
+//    viewport.maxDepth = 1;
+	vkCmdSetViewport(cmdBuf, 0, 1, &vk_d.viewport);
 
-	VkRect2D scissor;
-	scissor.offset.x = scissor.offset.y = 0;
-	scissor.extent.width = viewport.width;
-	scissor.extent.height = viewport.height;
-	vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
+//    VkRect2D scissor;
+//    scissor.offset.x = scissor.offset.y = 0;
+//    scissor.extent.width = viewport.width;
+//    scissor.extent.height = viewport.height;
+	vkCmdSetScissor(cmdBuf, 0, 1, &vk_d.scissor);
+    
+    if ( vk_d.polygonOffset )
+    {
+        vkCmdSetDepthBias(cmdBuf, r_offsetUnits->value, 0.0f, r_offsetFactor->value);
+    }
+    
+    
+    float constRGBA[4] = {0, 0, 0, 0};
+    vkCmdSetBlendConstants(cmdBuf, &constRGBA);
+}
+
+void beginRender()
+{
+   
 }
 
 void endRender()
 {
 	vkCmdEndRenderPass(vk.swapchain.commandBuffers[vk.swapchain.currentImage]);
 
+}
+
+void VK_ClearAttachments(bool clear_depth_stencil, bool clear_color, vec4_t color) {
+    if (!clear_depth_stencil && !clear_color)
+        return;
+    
+    VkClearAttachment attachments[2];
+    uint32_t attachment_count = 0;
+    
+    if (clear_depth_stencil) {
+        attachments[0].aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        attachments[0].clearValue.depthStencil.depth = 1.0f;
+        
+        if (r_shadows->integer == 2) {
+            attachments[0].aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+            attachments[0].clearValue.depthStencil.stencil = 0;
+        }
+        attachment_count = 1;
+    }
+    
+    if (clear_color) {
+        attachments[attachment_count].aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        attachments[attachment_count].colorAttachment = 0;
+        attachments[attachment_count].clearValue.color = (VkClearColorValue) { color[0], color[1], color[2], color[3] };
+        attachment_count++;
+    }
+    
+    VkClearRect clear_rect[2] = {0};
+    clear_rect[0].rect.extent.width = vk.swapchain.extent.width;
+    clear_rect[0].rect.extent.height = vk.swapchain.extent.height;
+    clear_rect[0].baseArrayLayer = 0;
+    clear_rect[0].layerCount = 1;
+    int rect_count = 1;
+    
+    // Split viewport rectangle into two non-overlapping rectangles.
+    // It's a HACK to prevent Vulkan validation layer's performance warning:
+    //        "vkCmdClearAttachments() issued on command buffer object XXX prior to any Draw Cmds.
+    //         It is recommended you use RenderPass LOAD_OP_CLEAR on Attachments prior to any Draw."
+    //
+    // NOTE: we don't use LOAD_OP_CLEAR for color attachment when we begin renderpass
+    // since at that point we don't know whether we need collor buffer clear (usually we don't).
+    if (clear_color) {
+        uint32_t h = clear_rect[0].rect.extent.height / 2;
+        clear_rect[0].rect.extent.height = h;
+        clear_rect[1] = clear_rect[0];
+        clear_rect[1].rect.offset.y = h;
+        rect_count = 2;
+    }
+    
+    VkCommandBuffer cmdBuf = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+    vkCmdClearAttachments(cmdBuf, attachment_count, attachments, rect_count, clear_rect);
 }
 
 /*
@@ -88,6 +161,7 @@ void VK_CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
 
 	VkBufferCreateInfo bufInfo = { 0 };
 	bufInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	bufInfo.size = size;
 	bufInfo.usage = usage;
 

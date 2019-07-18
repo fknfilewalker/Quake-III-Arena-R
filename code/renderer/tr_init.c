@@ -252,45 +252,11 @@ static void InitVulkan(void)
 		glConfig.maxTextureSize = 0;
 	}
 	
+	// init command buffers and SMP
+	R_InitCommandBuffers();
 
-	//char renderer_buffer[1024];
-
-	////
-	//// initialize OS specific portions of the renderer
-	////
-	//// GLimp_Init directly or indirectly references the following cvars:
-	////		- r_fullscreen
-	////		- r_glDriver
-	////		- r_mode
-	////		- r_(color|depth|stencil)bits
-	////		- r_ignorehwgamma
-	////		- r_gamma
-	////
-
-	//if (glConfig.vidWidth == 0)
-	//{
-	//	GLint		temp;
-
-	//	VKimp_Init();
-	//	strcpy(renderer_buffer, glConfig.renderer_string);
-	//	Q_strlwr(renderer_buffer);
-
-	//	// OpenGL driver constants
-	//	qglGetIntegerv(GL_MAX_TEXTURE_SIZE, &temp);
-	//	glConfig.maxTextureSize = temp;
-
-	//	// stubbed or broken drivers may have reported 0...
-	//	if (glConfig.maxTextureSize <= 0)
-	//	{
-	//		glConfig.maxTextureSize = 0;
-	//	}
-	//}
-
-	//// init command buffers and SMP
-	//R_InitCommandBuffers();
-
-	//// print info
-	//GfxInfo_f();
+	// print info
+	GfxInfo_f();
 
 	//// set default state
 	//GL_SetDefaultState();
@@ -832,11 +798,11 @@ void GfxInfo_f( void )
 		"fullscreen"
 	};
 
-	ri.Printf( PRINT_ALL, "\nGL_VENDOR: %s\n", glConfig.vendor_string );
-	ri.Printf( PRINT_ALL, "GL_RENDERER: %s\n", glConfig.renderer_string );
-	ri.Printf( PRINT_ALL, "GL_VERSION: %s\n", glConfig.version_string );
-	ri.Printf( PRINT_ALL, "GL_EXTENSIONS: %s\n", glConfig.extensions_string );
-	ri.Printf( PRINT_ALL, "GL_MAX_TEXTURE_SIZE: %d\n", glConfig.maxTextureSize );
+	ri.Printf( PRINT_ALL, "\nVENDOR: %s\n", glConfig.vendor_string );
+	ri.Printf( PRINT_ALL, "RENDERER: %s\n", glConfig.renderer_string );
+	ri.Printf( PRINT_ALL, "API_VERSION: %s\n", glConfig.version_string );
+	ri.Printf( PRINT_ALL, "EXTENSIONS: %s\n", glConfig.extensions_string );
+	ri.Printf( PRINT_ALL, "MAX_TEXTURE_SIZE: %d\n", glConfig.maxTextureSize );
 	ri.Printf( PRINT_ALL, "GL_MAX_ACTIVE_TEXTURES_ARB: %d\n", glConfig.maxActiveTextures );
 	ri.Printf( PRINT_ALL, "\nPIXELFORMAT: color(%d-bits) Z(%d-bit) stencil(%d-bits)\n", glConfig.colorBits, glConfig.depthBits, glConfig.stencilBits );
 	ri.Printf( PRINT_ALL, "MODE: %d, %d x %d %s hz:", r_mode->integer, glConfig.vidWidth, glConfig.vidHeight, fsstrings[r_fullscreen->integer == 1] );

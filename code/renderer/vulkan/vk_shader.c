@@ -11,8 +11,8 @@ void VK_SingleTextureShader(vkshader_t *shader){
     shader->flags[0] = VK_SHADER_STAGE_VERTEX_BIT;
     shader->flags[1] = VK_SHADER_STAGE_FRAGMENT_BIT;
     
-    unsigned char vert_spv[1500];
-    unsigned char frag_spv[1500];
+    unsigned char vert_spv[1500] = {0};
+    unsigned char frag_spv[1500] = {0};
     size_t vert_spv_size;
     size_t frag_spv_size;
     

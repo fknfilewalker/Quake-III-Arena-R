@@ -111,6 +111,9 @@ qboolean VK_LoadDeviceFunctions(void)
     vkCmdBindVertexBuffers = VK_DEVICE_LEVEL_FUNCTION("vkCmdBindVertexBuffers");
     vkCmdDraw = VK_DEVICE_LEVEL_FUNCTION("vkCmdDraw");
     vkCmdDrawIndexed = VK_DEVICE_LEVEL_FUNCTION("vkCmdDrawIndexed");
+    vkCmdClearAttachments = VK_DEVICE_LEVEL_FUNCTION("vkCmdClearAttachments");
+    vkCmdSetDepthBias = VK_DEVICE_LEVEL_FUNCTION("vkCmdSetDepthBias");
+    vkCmdSetBlendConstants = VK_DEVICE_LEVEL_FUNCTION("vkCmdSetBlendConstants");
 
     vkCreatePipelineCache = VK_DEVICE_LEVEL_FUNCTION("vkCreatePipelineCache");
     vkCreatePipelineLayout = VK_DEVICE_LEVEL_FUNCTION("vkCreatePipelineLayout");
@@ -122,6 +125,11 @@ qboolean VK_LoadDeviceFunctions(void)
     vkUpdateDescriptorSets = VK_DEVICE_LEVEL_FUNCTION("vkUpdateDescriptorSets");
     
     vkDestroySampler = VK_DEVICE_LEVEL_FUNCTION("vkDestroySampler");
+    vkDestroyImage = VK_DEVICE_LEVEL_FUNCTION("vkDestroyImage");
+    vkDestroyImageView = VK_DEVICE_LEVEL_FUNCTION("vkDestroyImageView");
+    vkFreeDescriptorSets = VK_DEVICE_LEVEL_FUNCTION("vkFreeDescriptorSets");
+    vkDestroyDescriptorSetLayout = VK_DEVICE_LEVEL_FUNCTION("vkDestroyDescriptorSetLayout");
+    vkDestroyDescriptorPool = VK_DEVICE_LEVEL_FUNCTION("vkDestroyDescriptorPool");
 	/* Debug */
 #ifndef NDEBUG
 	vkCreateDebugUtilsMessengerEXT = VK_DEVICE_LEVEL_FUNCTION("vkCreateDebugUtilsMessengerEXT");

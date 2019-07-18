@@ -2,7 +2,7 @@
 
 static void VK_CreateDescriptorSetLayout(vkdescriptor_t *descriptor);
 static void VK_CreateDescriptorPool(vkdescriptor_t *descriptor);
-static void VK_CreateDescriptorSet(vkdescriptor_t *descriptor);
+void VK_CreateDescriptorSet(vkdescriptor_t *descriptor);
 void VK_UpdateDescriptorSet(vkdescriptor_t *descriptor);
 
 void VK_AddSampler(vkdescriptor_t *descriptor, uint32_t binding, VkShaderStageFlagBits stage){
@@ -80,6 +80,7 @@ static void VK_CreateDescriptorPool(vkdescriptor_t *descriptor) {
     
     VkDescriptorPoolCreateInfo descPoolInfo = {0};
     descPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    descPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;//VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
     descPoolInfo.maxSets = vk.swapchain.imageCount;
     descPoolInfo.poolSizeCount = descriptor->size;
     descPoolInfo.pPoolSizes = &poolSizes[0];
@@ -88,8 +89,12 @@ static void VK_CreateDescriptorPool(vkdescriptor_t *descriptor) {
     free(poolSizes);
 }
 
-static void VK_CreateDescriptorSet(vkdescriptor_t *descriptor) {
+void VK_CreateDescriptorSet(vkdescriptor_t *descriptor) {
     descriptor->sets = calloc(vk.swapchain.imageCount,  sizeof(VkDescriptorSet));
+    
+    for(int i = 0; i < vk.swapchain.imageCount; ++i){
+        if(descriptor->sets[i]) vkFreeDescriptorSets(vk.device, &descriptor->pool, descriptor->size, &descriptor->sets[i]);
+    }
     
     for (uint32_t i = 0; i < vk.swapchain.imageCount; ++i) {
         VkDescriptorSetAllocateInfo descSetAllocInfo = {0};
@@ -100,5 +105,30 @@ static void VK_CreateDescriptorSet(vkdescriptor_t *descriptor) {
         
         VK_CHECK(vkAllocateDescriptorSets(vk.device, &descSetAllocInfo, &descriptor->sets[i]), " failed to allocate Descriptor Set!");
     }
+}
+
+void VK_DestroyDescriptor(vkdescriptor_t* descriptor){
+    for(int i = 0; i < vk.swapchain.imageCount; ++i){
+        //if(descriptor->sets[i] != NULL) {
+            vkFreeDescriptorSets(vk.device, descriptor->pool, descriptor->size, &descriptor->sets[i]);
+            descriptor->sets[i] = VK_NULL_HANDLE;
+        //}
+    }
+    //if(descriptor->layout != NULL) {
+        vkDestroyDescriptorSetLayout(vk.device, descriptor->layout, NULL);
+        descriptor->layout = VK_NULL_HANDLE;
+    //}
+    //if(descriptor->pool != NULL) {
+        vkDestroyDescriptorPool(vk.device, descriptor->pool, NULL);
+        descriptor->pool = VK_NULL_HANDLE;
+    //}
+    
+    free(descriptor->bindings);
+    free(descriptor->data);
+    free(descriptor->sets);
+    descriptor->size = 0;
+    descriptor->bindings = NULL;
+    descriptor->data = NULL;
+    descriptor->sets = NULL;
 }
 

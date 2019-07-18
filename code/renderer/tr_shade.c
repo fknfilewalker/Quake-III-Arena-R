@@ -959,49 +959,121 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 		ComputeColors( pStage );
 		ComputeTexCoords( pStage );
 
-		if ( !setArraysOnce )
-		{
-			qglEnableClientState( GL_COLOR_ARRAY );
-			qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors );
-		}
+        if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+            
+            if ( !setArraysOnce )
+            {
+                qglEnableClientState( GL_COLOR_ARRAY );
+                qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors );
+            }
 
-		//
-		// do multitexture
-		//
-		if ( pStage->bundle[1].image[0] != 0 )
-		{
-			DrawMultitextured( input, stage );
-		}
-		else
-		{
-			if ( !setArraysOnce )
-			{
-				qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[0] );
-			}
+            //
+            // do multitexture
+            //
+            if ( pStage->bundle[1].image[0] != 0 )
+            {
+                DrawMultitextured( input, stage );
+            }
+            else
+            {
+                if ( !setArraysOnce )
+                {
+                    qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[0] );
+                }
 
-			//
-			// set state
-			//
-			if ( pStage->bundle[0].vertexLightmap && (r_vertexLight->integer && !r_uiFullScreen->integer) && r_lightmap->integer )
-			{
-				GL_Bind( tr.whiteImage );
-			}
-			else 
-				R_BindAnimatedImage( &pStage->bundle[0] );
+                //
+                // set state
+                //
+                if ( pStage->bundle[0].vertexLightmap && (r_vertexLight->integer && !r_uiFullScreen->integer) && r_lightmap->integer )
+                {
+                    GL_Bind( tr.whiteImage );
+                }
+                else
+                    R_BindAnimatedImage( &pStage->bundle[0] );
 
-			GL_State( pStage->stateBits );
+                GL_State( pStage->stateBits );
 
-			//
-			// draw
-			//
-			R_DrawElements( input->numIndexes, input->indexes );
-		}
+                //
+                // draw
+                //
+                R_DrawElements( input->numIndexes, input->indexes );
+            }
+        
+        }
+        else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+            
+            //if ( !setArraysOnce )
+            //{
+                VK_UploadAttribData(&vk_d.colorbuffer, (void *) &tess.svars.colors[0]);
+            //}
+            
+            //
+            // do multitexture
+            //
+            if ( pStage->bundle[1].image[0] != 0 )
+            {
+                //DrawMultitextured( input, stage );
+            }else
+            {
+                //if ( !setArraysOnce )
+                //{
+                    VK_UploadAttribData(&vk_d.uvbuffer, (void *) &input->svars.texcoords[0]);
+                //}
+                //
+                // set state
+                //
+                if ( pStage->bundle[0].vertexLightmap && (r_vertexLight->integer && !r_uiFullScreen->integer) && r_lightmap->integer )
+                {
+                    //GL_Bind( tr.whiteImage );
+                }
+                else {
+                    //R_BindAnimatedImage( &pStage->bundle[0] );
+                }
+            
+                VK_State( pStage->stateBits );
+                
+                VK_UploadAttribData(&vk_d.indexbuffer, (void *) &input->indexes[0]);
+ 
+                
+                int aaa = pStage->bundle[0].image[0]->index;
+                vkshader_t s = {0};
+                VK_SingleTextureShader(&s);
+                
+                
+      
+                vkpipeline_t p = {0};
+                VK_SetDescriptorSet(&p, &vk_d.images[aaa].descriptor_set);
+                VK_SetShader(&p, &s);
+                VK_AddBindingDescription(&p, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
+                VK_AddBindingDescription(&p, 1, sizeof(color4ub_t), VK_VERTEX_INPUT_RATE_VERTEX);
+                VK_AddBindingDescription(&p, 2, sizeof(vec2_t), VK_VERTEX_INPUT_RATE_VERTEX);
+                VK_AddAttributeDescription(&p, 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 0 * sizeof(float));
+                VK_AddAttributeDescription(&p, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 0 * sizeof(float));
+                VK_AddAttributeDescription(&p, 2, 2, VK_FORMAT_R32G32_SFLOAT, 0 * sizeof(float));
+                VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp));
+                VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha));
+                VK_FinishPipeline(&p);
+                
+                
+                VK_BindAttribBuffer(&vk_d.vertexbuffer, 0);
+                VK_BindAttribBuffer(&vk_d.colorbuffer, 1);
+                VK_BindAttribBuffer(&vk_d.uvbuffer, 2);
+                VK_BindDescriptorSet(&p, &vk_d.images[aaa].descriptor_set);
+                VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp), &vk_d.mvp);
+                VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha), &vk_d.discardModeAlpha);
+                VK_DrawIndexed(&p, &vk_d.indexbuffer, input->numIndexes);
+                //VK_Draw(&p, 6);
+            }
+            
+        }
+        
 		// allow skipping out to show just lightmaps during development
 		if ( r_lightmap->integer && ( pStage->bundle[0].isLightmap || pStage->bundle[1].isLightmap || pStage->bundle[0].vertexLightmap ) )
 		{
 			break;
 		}
 	}
+
 }
 
 
@@ -1026,96 +1098,167 @@ void RB_StageIteratorGeneric( void )
 		GLimp_LogComment( va("--- RB_StageIteratorGeneric( %s ) ---\n", tess.shader->name) );
 	}
 
-	//
-	// set face culling appropriately
-	//
-	GL_Cull( input->shader->cullType );
+    if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+        //
+        // set face culling appropriately
+        //
+        GL_Cull( input->shader->cullType );
+        
+        // set polygon offset if necessary
+        if ( input->shader->polygonOffset )
+        {
+            qglEnable( GL_POLYGON_OFFSET_FILL );
+            qglPolygonOffset( r_offsetFactor->value, r_offsetUnits->value );
+        }
+        
+        //
+        // if there is only a single pass then we can enable color
+        // and texture arrays before we compile, otherwise we need
+        // to avoid compiling those arrays since they will change
+        // during multipass rendering
+        //
+        if ( tess.numPasses > 1 || input->shader->multitextureEnv )
+        {
+            setArraysOnce = qfalse;
+            qglDisableClientState (GL_COLOR_ARRAY);
+            qglDisableClientState (GL_TEXTURE_COORD_ARRAY);
+        }
+        else
+        {
+            setArraysOnce = qtrue;
+            
+            qglEnableClientState( GL_COLOR_ARRAY);
+            qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
+            
+            qglEnableClientState( GL_TEXTURE_COORD_ARRAY);
+            qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[0] );
+        }
+        
+        //
+        // lock XYZ
+        //
+        qglVertexPointer (3, GL_FLOAT, 16, input->xyz);    // padded for SIMD
+        if (qglLockArraysEXT)
+        {
+            qglLockArraysEXT(0, input->numVertexes);
+            GLimp_LogComment( "glLockArraysEXT\n" );
+        }
+        
+        //
+        // enable color and texcoord arrays after the lock if necessary
+        //
+        if ( !setArraysOnce )
+        {
+            qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+            qglEnableClientState( GL_COLOR_ARRAY );
+        }
+        
+        //
+        // call shader function
+        //
+        RB_IterateStagesGeneric( input );
+        
+        //
+        // now do any dynamic lighting needed
+        //
+        if ( tess.dlightBits && tess.shader->sort <= SS_OPAQUE
+            && !(tess.shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) ) {
+            ProjectDlightTexture();
+        }
+        
+        //
+        // now do fog
+        //
+        if ( tess.fogNum && tess.shader->fogPass ) {
+            RB_FogPass();
+        }
+        
+        //
+        // unlock arrays
+        //
+        if (qglUnlockArraysEXT)
+        {
+            qglUnlockArraysEXT();
+            GLimp_LogComment( "glUnlockArraysEXT\n" );
+        }
+        
+        //
+        // reset polygon offset
+        //
+        if ( input->shader->polygonOffset )
+        {
+            qglDisable( GL_POLYGON_OFFSET_FILL );
+        }
+    } else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+    
+        //
+        // set face culling appropriately
+        //
+        VK_Cull( input->shader->cullType );
+        
 
-	// set polygon offset if necessary
-	if ( input->shader->polygonOffset )
-	{
-		qglEnable( GL_POLYGON_OFFSET_FILL );
-		qglPolygonOffset( r_offsetFactor->value, r_offsetUnits->value );
-	}
+        // set polygon offset if necessary
+        if ( input->shader->polygonOffset ) vk_d.polygonOffset = qtrue;
+        
+        
+        //
+        // if there is only a single pass then we can enable color
+        // and texture arrays before we compile, otherwise we need
+        // to avoid compiling those arrays since they will change
+        // during multipass rendering
+        //
+        if ( tess.numPasses > 1 || input->shader->multitextureEnv )
+        {
+            setArraysOnce = qfalse;
+            qglDisableClientState (GL_COLOR_ARRAY);
+            qglDisableClientState (GL_TEXTURE_COORD_ARRAY);
+        }
+        else
+        {
+            setArraysOnce = qtrue;
+            VK_UploadAttribData(&vk_d.colorbuffer, (void *) &tess.svars.colors[0]);
+            VK_UploadAttribData(&vk_d.uvbuffer, (void *) &tess.svars.texcoords[0]);
+        }
 
-	//
-	// if there is only a single pass then we can enable color
-	// and texture arrays before we compile, otherwise we need
-	// to avoid compiling those arrays since they will change
-	// during multipass rendering
-	//
-	if ( tess.numPasses > 1 || input->shader->multitextureEnv )
-	{
-		setArraysOnce = qfalse;
-		qglDisableClientState (GL_COLOR_ARRAY);
-		qglDisableClientState (GL_TEXTURE_COORD_ARRAY);
-	}
-	else
-	{
-		setArraysOnce = qtrue;
+        //
+        // lock XYZ
+        //
+        VK_UploadAttribDataStride(&vk_d.vertexbuffer, sizeof(vec3_t), sizeof(vec4_t), (void *) &input->xyz[0]); // padded for SIMD
+        
+        //
+        // enable color and texcoord arrays after the lock if necessary
+        //
+        if ( !setArraysOnce )
+        {
+            qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+            qglEnableClientState( GL_COLOR_ARRAY );
+        }
 
-		qglEnableClientState( GL_COLOR_ARRAY);
-		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
+        //
+        // call shader function
+        //
+        RB_IterateStagesGeneric( input );
 
-		qglEnableClientState( GL_TEXTURE_COORD_ARRAY);
-		qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[0] );
-	}
+        //
+        // now do any dynamic lighting needed
+        //
+        if ( tess.dlightBits && tess.shader->sort <= SS_OPAQUE
+            && !(tess.shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) ) {
+            ProjectDlightTexture();
+        }
 
-	//
-	// lock XYZ
-	//
-	qglVertexPointer (3, GL_FLOAT, 16, input->xyz);	// padded for SIMD
-	if (qglLockArraysEXT)
-	{
-		qglLockArraysEXT(0, input->numVertexes);
-		GLimp_LogComment( "glLockArraysEXT\n" );
-	}
+        //
+        // now do fog
+        //
+        if ( tess.fogNum && tess.shader->fogPass ) {
+            RB_FogPass();
+        }
 
-	//
-	// enable color and texcoord arrays after the lock if necessary
-	//
-	if ( !setArraysOnce )
-	{
-		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
-		qglEnableClientState( GL_COLOR_ARRAY );
-	}
-
-	//
-	// call shader function
-	//
-	RB_IterateStagesGeneric( input );
-
-	// 
-	// now do any dynamic lighting needed
-	//
-	if ( tess.dlightBits && tess.shader->sort <= SS_OPAQUE
-		&& !(tess.shader->surfaceFlags & (SURF_NODLIGHT | SURF_SKY) ) ) {
-		ProjectDlightTexture();
-	}
-
-	//
-	// now do fog
-	//
-	if ( tess.fogNum && tess.shader->fogPass ) {
-		RB_FogPass();
-	}
-
-	// 
-	// unlock arrays
-	//
-	if (qglUnlockArraysEXT) 
-	{
-		qglUnlockArraysEXT();
-		GLimp_LogComment( "glUnlockArraysEXT\n" );
-	}
-
-	//
-	// reset polygon offset
-	//
-	if ( input->shader->polygonOffset )
-	{
-		qglDisable( GL_POLYGON_OFFSET_FILL );
-	}
+        //
+        // reset polygon offset
+        //
+        if ( input->shader->polygonOffset ) vk_d.polygonOffset = qfalse;
+    }
 }
 
 

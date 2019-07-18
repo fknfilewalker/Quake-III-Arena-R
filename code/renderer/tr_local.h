@@ -903,6 +903,7 @@ typedef struct {
 	shader_t				*defaultShader;
 	shader_t				*shadowShader;
 	shader_t				*projectionShadowShader;
+    shader_t                *cinematicShader;
 
 	shader_t				*flareShader;
 	shader_t				*sunShader;
@@ -1114,8 +1115,37 @@ typedef struct {
 } swapChainSupportDetails_t;
 
 typedef struct {
-    size_t size;
-    vkimage_t images[MAX_DRAWIMAGES];
+    VkPolygonMode                               polygonMode;
+    
+    // cull
+    int                                         faceCulling;
+    VkCullModeFlags                             cullMode;
+    
+    // blend
+    unsigned long                               blendBits;
+    VkPipelineDepthStencilStateCreateInfo       dsBlend;
+    VkPipelineColorBlendAttachmentState         colorBlend;
+    
+} vkrenderState_t;
+
+typedef struct {
+    size_t              size;
+    vkimage_t           images[MAX_DRAWIMAGES];
+    vkattribbuffer_t    indexbuffer;
+    vkattribbuffer_t    vertexbuffer;
+    vkattribbuffer_t    normalbuffer;
+    vkattribbuffer_t    uvbuffer;
+    vkattribbuffer_t    colorbuffer;
+    
+    // render clear
+    VkViewport          viewport;
+    VkRect2D            scissor;
+    qboolean            polygonOffset;
+    // push constant
+    float               mvp[16];
+    int                 discardModeAlpha;
+    
+    vkrenderState_t     state;
 } vkdata_t;
 
 extern vkinstance_t		vk;
