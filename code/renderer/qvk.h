@@ -162,6 +162,9 @@ PFN_vkFreeDescriptorSets                        vkFreeDescriptorSets;
 PFN_vkDestroyDescriptorSetLayout                vkDestroyDescriptorSetLayout;
 PFN_vkDestroyDescriptorPool                     vkDestroyDescriptorPool;
 
+PFN_vkDeviceWaitIdle							vkDeviceWaitIdle;
+PFN_vkAllocateDescriptorSets					vkAllocateDescriptorSets;
+
 /* Debug */
 #ifndef NDEBUG
 PFN_vkCreateDebugUtilsMessengerEXT				vkCreateDebugUtilsMessengerEXT;

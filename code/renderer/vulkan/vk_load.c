@@ -130,6 +130,9 @@ qboolean VK_LoadDeviceFunctions(void)
     vkFreeDescriptorSets = VK_DEVICE_LEVEL_FUNCTION("vkFreeDescriptorSets");
     vkDestroyDescriptorSetLayout = VK_DEVICE_LEVEL_FUNCTION("vkDestroyDescriptorSetLayout");
     vkDestroyDescriptorPool = VK_DEVICE_LEVEL_FUNCTION("vkDestroyDescriptorPool");
+
+	vkDeviceWaitIdle = VK_DEVICE_LEVEL_FUNCTION("vkDeviceWaitIdle");
+	vkAllocateDescriptorSets = VK_DEVICE_LEVEL_FUNCTION("vkAllocateDescriptorSets");
 	/* Debug */
 #ifndef NDEBUG
 	vkCreateDebugUtilsMessengerEXT = VK_DEVICE_LEVEL_FUNCTION("vkCreateDebugUtilsMessengerEXT");
