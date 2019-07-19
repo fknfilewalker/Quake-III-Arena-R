@@ -211,23 +211,7 @@ static NSOpenGLPixelFormatAttribute *GetPixelAttributes()
     
     return pixelAttributes;
 }
-
-// Needs to be visible to Q3Controller.m.
-void Sys_UpdateWindowMouseInputRect(void)
-{		
-    NSRect           windowRect, screenRect;
-    NSScreen        *screen;
-
-    // It appears we need to flip the coordinate system here.  This means we need
-    // to know the size of the screen.
-    screen = [glw_state.window screen];
-    screenRect = [screen frame];
-    windowRect = [glw_state.window frame];
-    windowRect.origin.y = screenRect.size.height - (windowRect.origin.y + windowRect.size.height);
-    
-    Sys_SetMouseInputRect(CGRectMake(windowRect.origin.x, windowRect.origin.y,
-                                    windowRect.size.width, windowRect.size.height));
-}									
+								
 
 // This is needed since CGReleaseAllDisplays() restores the gamma on the displays and we want to fade it up rather than just flickering all the displays
 static void ReleaseAllDisplays()
@@ -373,7 +357,7 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
     [OSX_GetNSGLContext() setView: [glw_state.window contentView]];
 
     // Sync input rect with where the window actually is...
-    Sys_UpdateWindowMouseInputRect();
+    Sys_UpdateWindowMouseInputRect(glw_state.window);
 
 
 #ifndef USE_CGLMACROS

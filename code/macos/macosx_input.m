@@ -181,7 +181,7 @@ static void Sys_LockMouseInInputRect(CGRect rect)
     Sys_PreventMouseMovement(center);
 }
 
-extern void Sys_UpdateWindowMouseInputRect(void);
+extern void Sys_UpdateWindowMouseInputRect(NSWindow *window);
 
 static void Sys_StartMouseInput()
 {
@@ -198,7 +198,7 @@ static void Sys_StartMouseInput()
     mouseactive = qtrue;
     if (inputRectValid && !glConfig.isFullscreen)
         // Make sure that if window moved we don't hose the user...
-        Sys_UpdateWindowMouseInputRect();
+        Sys_UpdateWindowMouseInputRect(glw_state.window);
 
     Sys_LockMouseInInputRect(inputRect);
 

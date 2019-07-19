@@ -10,7 +10,7 @@ void VK_GetDeviceProperties(VkPhysicalDeviceProperties *devProperties)
 
 void beginRenderClear()
 {
-	VkClearColorValue cc = { 0.9f,0.1f,0.1f,1.0f };
+	VkClearColorValue cc = { 0.1f,0.1f,0.1f,1.0f };
     VkClearDepthStencilValue dsc = { 1, 0};
 
     VkClearValue clearValues[2] ={0};
@@ -64,18 +64,19 @@ void endRender()
 
 }
 
-void VK_ClearAttachments(bool clear_depth_stencil, bool clear_color, vec4_t color) {
-    if (!clear_depth_stencil && !clear_color)
+void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean clear_color, vec4_t color) {
+    if (!clear_depth && !clear_stencil && !clear_color)
         return;
     
     VkClearAttachment attachments[2];
     uint32_t attachment_count = 0;
     
-    if (clear_depth_stencil) {
-        attachments[0].aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-        attachments[0].clearValue.depthStencil.depth = 1.0f;
-        
-        if (r_shadows->integer == 2) {
+    if (clear_depth || clear_stencil){
+        if (clear_depth) {
+            attachments[0].aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            attachments[0].clearValue.depthStencil.depth = 1.0f;
+        }
+        if (clear_stencil) {
             attachments[0].aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
             attachments[0].clearValue.depthStencil.stencil = 0;
         }

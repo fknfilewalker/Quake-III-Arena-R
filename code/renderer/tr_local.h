@@ -1126,6 +1126,10 @@ typedef struct {
     VkPipelineDepthStencilStateCreateInfo       dsBlend;
     VkPipelineColorBlendAttachmentState         colorBlend;
     
+    // clip
+    qboolean                                    clip;
+    double                                      plane[4];
+    
 } vkrenderState_t;
 
 typedef struct {
@@ -1137,13 +1141,20 @@ typedef struct {
     vkattribbuffer_t    uvbuffer;
     vkattribbuffer_t    colorbuffer;
     
+    //
+    qboolean            renderBegan;
+    
     // render clear
     VkViewport          viewport;
     VkRect2D            scissor;
     qboolean            polygonOffset;
     // push constant
+    float               modelview[16];
     float               mvp[16];
     int                 discardModeAlpha;
+    
+    // texture
+    int                 currentTexture[2];
     
     vkrenderState_t     state;
 } vkdata_t;

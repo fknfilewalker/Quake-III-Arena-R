@@ -12,7 +12,6 @@
 cvar_t  *r_enablerender;                // Enable actual rendering
 
 NSWindow *_window; // keep window handle so we don't need to recreate a window all the time
-
 /*
  =================
  CreateGameWindow
@@ -176,8 +175,9 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
     // Setup Vulkan
     VK_Setup((void*) [_window contentView], NULL);
     
+    //glw_state.window = _window;
     // Sync input rect with where the window actually is...
-    //Sys_UpdateWindowMouseInputRect();
+    Sys_UpdateWindowMouseInputRect(_window);
     
     
 #ifndef USE_CGLMACROS

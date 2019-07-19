@@ -224,7 +224,11 @@ static void R_BindAnimatedImage( textureBundle_t *bundle ) {
 	}
 
 	if ( bundle->numImageAnimations <= 1 ) {
-		GL_Bind( bundle->image[0] );
+        if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+            GL_Bind( bundle->image[0] );
+        } else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+            VK_Bind( bundle->image[0] );
+        }
 		return;
 	}
 
@@ -237,8 +241,11 @@ static void R_BindAnimatedImage( textureBundle_t *bundle ) {
 		index = 0;	// may happen with shader time offsets
 	}
 	index %= bundle->numImageAnimations;
-
-	GL_Bind( bundle->image[ index ] );
+    if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+        GL_Bind( bundle->image[ index ] );
+    } else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+        VK_Bind( bundle->image[ index ] );
+    }
 }
 
 /*
@@ -1024,10 +1031,10 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
                 //
                 if ( pStage->bundle[0].vertexLightmap && (r_vertexLight->integer && !r_uiFullScreen->integer) && r_lightmap->integer )
                 {
-                    //GL_Bind( tr.whiteImage );
+                    VK_Bind( tr.whiteImage );
                 }
                 else {
-                    //R_BindAnimatedImage( &pStage->bundle[0] );
+                    R_BindAnimatedImage( &pStage->bundle[0] );
                 }
             
                 VK_State( pStage->stateBits );
@@ -1035,14 +1042,14 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
                 VK_UploadAttribData(&vk_d.indexbuffer, (void *) &input->indexes[0]);
  
                 
-                int aaa = pStage->bundle[0].image[0]->index;
+                //int aaa = pStage->bundle[0].image[0]->index;
                 vkshader_t s = {0};
                 VK_SingleTextureShader(&s);
                 
                 
       
                 vkpipeline_t p = {0};
-                VK_SetDescriptorSet(&p, &vk_d.images[aaa].descriptor_set);
+                VK_SetDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
                 VK_SetShader(&p, &s);
                 VK_AddBindingDescription(&p, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
                 VK_AddBindingDescription(&p, 1, sizeof(color4ub_t), VK_VERTEX_INPUT_RATE_VERTEX);
@@ -1058,7 +1065,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
                 VK_BindAttribBuffer(&vk_d.vertexbuffer, 0);
                 VK_BindAttribBuffer(&vk_d.colorbuffer, 1);
                 VK_BindAttribBuffer(&vk_d.uvbuffer, 2);
-                VK_BindDescriptorSet(&p, &vk_d.images[aaa].descriptor_set);
+                VK_BindDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
                 VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp), &vk_d.mvp);
                 VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha), &vk_d.discardModeAlpha);
                 VK_DrawIndexed(&p, &vk_d.indexbuffer, input->numIndexes);
@@ -1210,8 +1217,8 @@ void RB_StageIteratorGeneric( void )
         if ( tess.numPasses > 1 || input->shader->multitextureEnv )
         {
             setArraysOnce = qfalse;
-            qglDisableClientState (GL_COLOR_ARRAY);
-            qglDisableClientState (GL_TEXTURE_COORD_ARRAY);
+            //qglDisableClientState (GL_COLOR_ARRAY);
+            //qglDisableClientState (GL_TEXTURE_COORD_ARRAY);
         }
         else
         {
@@ -1230,8 +1237,10 @@ void RB_StageIteratorGeneric( void )
         //
         if ( !setArraysOnce )
         {
-            qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
-            qglEnableClientState( GL_COLOR_ARRAY );
+            //qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+            //qglEnableClientState( GL_COLOR_ARRAY );
+            VK_UploadAttribData(&vk_d.colorbuffer, (void *) &tess.svars.colors[0]);
+            VK_UploadAttribData(&vk_d.uvbuffer, (void *) &tess.svars.texcoords[0]);
         }
 
         //

@@ -59,6 +59,31 @@ void GL_Bind( image_t *image ) {
 	}
 }
 
+void VK_Bind( image_t *image ) {
+    int index;
+    
+    if ( !image ) {
+        ri.Printf( PRINT_WARNING, "VK_Bind: NULL image\n" );
+        index = tr.defaultImage->index;
+    } else {
+        index = image->index;
+    }
+    
+    if ( r_nobind->integer && tr.dlightImage ) {        // performance evaluation option
+        index = tr.dlightImage->index;
+    }
+    
+    if ( vk_d.currentTexture[0] != index ) {
+        image->frameUsed = tr.frameCount;
+        vk_d.currentTexture[0] = index;
+    }
+//    if ( glState.currenttextures[glState.currenttmu] != texnum ) {
+//        image->frameUsed = tr.frameCount;
+//        glState.currenttextures[glState.currenttmu] = texnum;
+//        qglBindTexture (GL_TEXTURE_2D, texnum);
+//    }
+}
+
 /*
 ** GL_SelectTexture
 */
@@ -468,7 +493,7 @@ void VK_State( unsigned long stateBits )
         }
         else
         {
-            qglDepthFunc( GL_LEQUAL );
+            //qglDepthFunc( GL_LEQUAL );
             vk_d.state.dsBlend.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
         }
     }
@@ -606,12 +631,12 @@ void VK_State( unsigned long stateBits )
         if ( stateBits & GLS_POLYMODE_LINE )
         {
             vk_d.state.polygonMode = VK_POLYGON_MODE_LINE;
-            qglPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+            //qglPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
         }
         else
         {
             vk_d.state.polygonMode = VK_POLYGON_MODE_LINE;
-            qglPolygonMode( GL_FRONT_AND_BACK, VK_POLYGON_MODE_FILL );
+            //qglPolygonMode( GL_FRONT_AND_BACK, VK_POLYGON_MODE_FILL );
         }
     }
     
@@ -684,23 +709,60 @@ static void RB_Hyperspace( void ) {
 	}
 
 	c = ( backEnd.refdef.time & 255 ) / 255.0f;
-	qglClearColor( c, c, c, 1 );
-	qglClear( GL_COLOR_BUFFER_BIT );
+    if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+        qglClearColor( c, c, c, 1 );
+        qglClear( GL_COLOR_BUFFER_BIT );
+    } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+        VK_ClearAttachments(qfalse, qfalse, qtrue, (vec4_t){c, c, c, 1});
+    }
 
 	backEnd.isHyperspace = qtrue;
 }
 
 
 static void SetViewportAndScissor( void ) {
-	qglMatrixMode(GL_PROJECTION);
-	qglLoadMatrixf( backEnd.viewParms.projectionMatrix );
-	qglMatrixMode(GL_MODELVIEW);
-
-	// set the window clipping
-	qglViewport( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY, 
-		backEnd.viewParms.viewportWidth, backEnd.viewParms.viewportHeight );
-	qglScissor( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY, 
-		backEnd.viewParms.viewportWidth, backEnd.viewParms.viewportHeight );
+    if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+        qglMatrixMode(GL_PROJECTION);
+        qglLoadMatrixf( backEnd.viewParms.projectionMatrix );
+        qglMatrixMode(GL_MODELVIEW);
+        
+        // set the window clipping
+        qglViewport( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY,
+                    backEnd.viewParms.viewportWidth, backEnd.viewParms.viewportHeight );
+        qglScissor( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY,
+                   backEnd.viewParms.viewportWidth, backEnd.viewParms.viewportHeight );
+    } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+        
+        const float* p = backEnd.viewParms.projectionMatrix;
+        
+        // update q3's proj matrix (opengl) to vulkan conventions: z - [0, 1] instead of [-1, 1] and invert y direction
+        float zNear    = r_znear->value;
+        float zFar = backEnd.viewParms.zFar;
+        float P10 = -zFar / (zFar - zNear);
+        float P14 = -zFar*zNear / (zFar - zNear);
+        float P5 = -p[5];
+        
+        float proj[16] = {
+            p[0],  p[1],  p[2], p[3],
+            p[4],  P5,    p[6], p[7],
+            p[8],  p[9],  P10,  p[11],
+            p[12], p[13], P14,  p[15]
+        };
+        
+        myGlMultMatrix(vk_d.modelview, proj, vk_d.mvp);
+        
+        vk_d.viewport.x = backEnd.viewParms.viewportX;
+        vk_d.viewport.y = backEnd.viewParms.viewportY;
+        vk_d.viewport.width = backEnd.viewParms.viewportWidth;
+        vk_d.viewport.height = backEnd.viewParms.viewportHeight;
+        vk_d.viewport.minDepth = 0;
+        vk_d.viewport.maxDepth = 1;
+        
+        vk_d.scissor.offset.x = backEnd.viewParms.viewportX;
+        vk_d.scissor.offset.y = backEnd.viewParms.viewportY;
+        vk_d.scissor.extent.width = backEnd.viewParms.viewportWidth;
+        vk_d.scissor.extent.height = backEnd.viewParms.viewportHeight;
+    }
 }
 
 /*
@@ -713,6 +775,7 @@ to actually render the visible surfaces for this view
 */
 void RB_BeginDrawingView (void) {
 	int clearBits = 0;
+    vec4_t clearColor = {0, 0, 0, 0};
 
 	// sync with gl if needed
 	if ( r_finish->integer == 1 && !glState.finishCalled ) {
@@ -733,7 +796,11 @@ void RB_BeginDrawingView (void) {
 	SetViewportAndScissor();
 
 	// ensures that depth writes are enabled for the depth clear
-	GL_State( GLS_DEFAULT );
+    if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+        GL_State( GLS_DEFAULT );
+    } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+        VK_State( GLS_DEFAULT );
+    }
 	// clear relevant buffers
 	clearBits = GL_DEPTH_BUFFER_BIT;
 
@@ -745,13 +812,20 @@ void RB_BeginDrawingView (void) {
 	{
 		clearBits |= GL_COLOR_BUFFER_BIT;	// FIXME: only if sky shaders have been used
 #ifdef _DEBUG
-		qglClearColor( 0.8f, 0.7f, 0.4f, 1.0f );	// FIXME: get color of sky
+        clearColor[0] = 0.8f; clearColor[1] = 0.7f; clearColor[2] = 0.4f; clearColor[3] = 1.0f;
 #else
-		qglClearColor( 0.0f, 0.0f, 0.0f, 1.0f );	// FIXME: get color of sky
+        clearColor[0] = clearColor[1] = clearColor[2] = 0.0f; clearColor[3] = 1.0f;
 #endif
+        if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+            qglClearColor( clearColor[0], clearColor[1], clearColor[2], clearColor[3] );    // FIXME: get color of sky
+        }
 	}
-	qglClear( clearBits );
-
+    if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+        qglClear( clearBits );
+    } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+        VK_ClearAttachments(clearBits & GL_DEPTH_BUFFER_BIT, clearBits & GL_STENCIL_BUFFER_BIT, clearBits & GL_COLOR_BUFFER_BIT, clearColor);
+    }
+    
 	if ( ( backEnd.refdef.rdflags & RDF_HYPERSPACE ) )
 	{
 		RB_Hyperspace();
@@ -781,12 +855,25 @@ void RB_BeginDrawingView (void) {
 		plane2[1] = DotProduct (backEnd.viewParms.or.axis[1], plane);
 		plane2[2] = DotProduct (backEnd.viewParms.or.axis[2], plane);
 		plane2[3] = DotProduct (plane, backEnd.viewParms.or.origin) - plane[3];
-
-		qglLoadMatrixf( s_flipMatrix );
-		qglClipPlane (GL_CLIP_PLANE0, plane2);
-		qglEnable (GL_CLIP_PLANE0);
+		
+        if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+            qglLoadMatrixf( s_flipMatrix );
+            qglClipPlane (GL_CLIP_PLANE0, plane2);
+            qglEnable (GL_CLIP_PLANE0);
+        } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+            //Com_Memcpy(vk_d.state.plane, plane2, 16);
+            vk_d.state.plane[0] = -plane2[1];
+            vk_d.state.plane[1] =  plane2[2];
+            vk_d.state.plane[2] = -plane2[0];
+            vk_d.state.plane[3] =  plane2[3];
+            vk_d.state.clip = qtrue;
+        }
 	} else {
-		qglDisable (GL_CLIP_PLANE0);
+        if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+            qglDisable (GL_CLIP_PLANE0);
+        } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+            vk_d.state.clip = qfalse;
+        }
 	}
 }
 
@@ -888,17 +975,31 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 			}
 
-			qglLoadMatrixf( backEnd.or.modelMatrix );
+            if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+                qglLoadMatrixf( backEnd.or.modelMatrix );
+            } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+                Com_Memcpy(vk_d.modelview, backEnd.or.modelMatrix, 64);
+            }
 
 			//
 			// change depthrange if needed
 			//
 			if ( oldDepthRange != depthRange ) {
-				if ( depthRange ) {
-					qglDepthRange (0, 0.3);
-				} else {
-					qglDepthRange (0, 1);
-				}
+                if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+                    if ( depthRange ) {
+                        qglDepthRange (0, 0.3);
+                    } else {
+                        qglDepthRange (0, 1);
+                    }
+                } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+                    if ( depthRange ) {
+                        vk_d.viewport.minDepth = 0.0f;
+                        vk_d.viewport.maxDepth = 0.3f;
+                    } else {
+                        vk_d.viewport.minDepth = 0.0f;
+                        vk_d.viewport.maxDepth = 1.0f;
+                    }
+                }
 				oldDepthRange = depthRange;
 			}
 
@@ -917,9 +1018,19 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	}
 
 	// go back to the world modelview matrix
-	qglLoadMatrixf( backEnd.viewParms.world.modelMatrix );
+    if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+        qglLoadMatrixf( backEnd.viewParms.world.modelMatrix );
+    } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+        Com_Memcpy(vk_d.modelview, backEnd.viewParms.world.modelMatrix, 64);
+    }
 	if ( depthRange ) {
-		qglDepthRange (0, 1);
+        if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+            qglDepthRange (0, 1);
+        } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+            vk_d.viewport.minDepth = 0.0f;
+            vk_d.viewport.maxDepth = 1.0f;
+        }
+		
 	}
 
 #if 0
@@ -968,6 +1079,15 @@ void	RB_SetGL2D (void) {
         qglDisable( GL_CLIP_PLANE0 );
     } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
         
+        vk_d.modelview[0] = vk_d.modelview[5] = vk_d.modelview[10] = vk_d.modelview[15] = 1;
+        
+        float mvp0 = 2.0f / glConfig.vidWidth;
+        float mvp5 = 2.0f / glConfig.vidHeight;
+        vk_d.mvp[0]  =  mvp0; vk_d.mvp[1]  =  0.0f; vk_d.mvp[2]  = 0.0f; vk_d.mvp[3]  = 0.0f;
+        vk_d.mvp[4]  =  0.0f; vk_d.mvp[5]  =  mvp5; vk_d.mvp[6]  = 0.0f; vk_d.mvp[7]  = 0.0f;
+        vk_d.mvp[8]  =  0.0f; vk_d.mvp[9]  =  0.0f; vk_d.mvp[10] = 1.0f; vk_d.mvp[11] = 0.0f;
+        vk_d.mvp[12] = -1.0f; vk_d.mvp[13] = -1.0f; vk_d.mvp[14] = 0.0f; vk_d.mvp[15] = 1.0f;
+        
         vk_d.scissor.offset.x = 0;
         vk_d.scissor.offset.y = 0;
         vk_d.scissor.extent.width = glConfig.vidWidth;
@@ -979,14 +1099,6 @@ void	RB_SetGL2D (void) {
         vk_d.viewport.height = glConfig.vidHeight;
         vk_d.viewport.minDepth = 0;
         vk_d.viewport.maxDepth = 1;
-        
-        float mvp0 = 2.0f / glConfig.vidWidth;
-        float mvp5 = 2.0f / glConfig.vidHeight;
-        
-        vk_d.mvp[0]  =  mvp0; vk_d.mvp[1]  =  0.0f; vk_d.mvp[2]  = 0.0f; vk_d.mvp[3]  = 0.0f;
-        vk_d.mvp[4]  =  0.0f; vk_d.mvp[5]  =  mvp5; vk_d.mvp[6]  = 0.0f; vk_d.mvp[7]  = 0.0f;
-        vk_d.mvp[8]  =  0.0f; vk_d.mvp[9]  =  0.0f; vk_d.mvp[10] = 1.0f; vk_d.mvp[11] = 0.0f;
-        vk_d.mvp[12] = -1.0f; vk_d.mvp[13] = -1.0f; vk_d.mvp[14] = 0.0f; vk_d.mvp[15] = 1.0f;
         
         VK_State( GLS_DEPTHTEST_DISABLE |
                  GLS_SRCBLEND_SRC_ALPHA |
@@ -1233,7 +1345,7 @@ const void	*RB_DrawBuffer( const void *data ) {
         VK_BeginFrame();
         beginRenderClear();
         if ( r_clear->integer ) {
-            VK_ClearAttachments(false, true, (vec4_t){1, 0, 0.5, 1});
+            VK_ClearAttachments(qfalse, qfalse, qtrue, (vec4_t){1, 0, 0.5, 1});
         }
     }
 
@@ -1400,7 +1512,7 @@ void RB_ExecuteRenderCommands( const void *data ) {
 
 		case RC_END_OF_LIST:
 		default:
-//            if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+//            if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) && vk_d.renderBegan) {
 //                endRender();
 //                VK_EndFrame();
 //            }
