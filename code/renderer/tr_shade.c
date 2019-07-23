@@ -1075,7 +1075,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
         }
         else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
 			int a = tess.shader->index;
-			//if (a != 7) return;
+			//if (a != 21) return;
 
 			VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
 
@@ -1089,7 +1089,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
             //
             if ( pStage->bundle[1].image[0] != 0 )
             {
-                //DrawMultitextured( input, stage );
+                DrawMultitextured( input, stage );
             }else
             {
                 //if ( !setArraysOnce )
@@ -1109,26 +1109,15 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
             
                 VK_State( pStage->stateBits );
  
-				
-				/*if (a == 7) {
-					VK_ClearAttachments(qtrue, qtrue, qfalse, (vec4_t) { 0, 0, 0, 0 });
-					vk_d.currentTexture[0] = 1;
+				// set mvp
+				myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
+				if (a == 21) {
+					int b = 3;
 				}
-				vk_d.currentTexture[0] = 48;*/
-				//if (a == 15) vk_d.currentTexture[0] = 48;
-				//if (a == 7) vk_d.currentTexture[0] = 1;
-				//else vk_d.currentTexture[0] = 48;
-				//
-				// draw
-				//
-				//if (a == 2) break;
-				
-				//vk_d.currentTexture[0] = 1;
-				
 				R_DrawElements(input->numIndexes, input->indexes);
 				vk_d.offset += tess.numVertexes;
 				vk_d.offsetIdx += input->numIndexes;
-				//return;
+	
             }
             
         }

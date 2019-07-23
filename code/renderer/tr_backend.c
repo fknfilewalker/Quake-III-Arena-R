@@ -748,21 +748,21 @@ static void SetViewportAndScissor( void ) {
             p[8],  p[9],  P10,  p[11],
             p[12], p[13], P14,  p[15]
         };
-        
-        myGlMultMatrix(vk_d.modelview, proj, vk_d.mvp);
-        
+		Com_Memcpy(vk_d.projectionMatrix, proj, 64);
+  
         vk_d.viewport.x = backEnd.viewParms.viewportX;
-        vk_d.viewport.y = backEnd.viewParms.viewportY;
+        vk_d.viewport.y = glConfig.vidHeight - (backEnd.viewParms.viewportY + backEnd.viewParms.viewportHeight);
         vk_d.viewport.width = backEnd.viewParms.viewportWidth;
         vk_d.viewport.height = backEnd.viewParms.viewportHeight;
         vk_d.viewport.minDepth = 0;
         vk_d.viewport.maxDepth = 1;
         
-        vk_d.scissor.offset.x = backEnd.viewParms.viewportX;
-        vk_d.scissor.offset.y = backEnd.viewParms.viewportY;
-        vk_d.scissor.extent.width = backEnd.viewParms.viewportWidth;
-        vk_d.scissor.extent.height = backEnd.viewParms.viewportHeight;
-    }
+		vk_d.scissor.offset.x = backEnd.viewParms.viewportX;
+		vk_d.scissor.offset.y = vk_d.viewport.y < 0 ? 0 : vk_d.viewport.y;
+		vk_d.scissor.extent.width = backEnd.viewParms.viewportWidth;
+		vk_d.scissor.extent.height = backEnd.viewParms.viewportHeight;
+
+	}
 }
 
 /*
@@ -978,7 +978,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
             if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
                 qglLoadMatrixf( backEnd.or.modelMatrix );
             } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
-                Com_Memcpy(vk_d.modelview, backEnd.or.modelMatrix, 64);
+                Com_Memcpy(vk_d.modelViewMatrix, backEnd.or.modelMatrix, 64);
             }
 
 			//
@@ -1021,7 +1021,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
     if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
         qglLoadMatrixf( backEnd.viewParms.world.modelMatrix );
     } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
-        Com_Memcpy(vk_d.modelview, backEnd.viewParms.world.modelMatrix, 64);
+        Com_Memcpy(vk_d.modelViewMatrix, backEnd.viewParms.world.modelMatrix, 64);
     }
 	if ( depthRange ) {
         if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
@@ -1079,14 +1079,27 @@ void	RB_SetGL2D (void) {
         qglDisable( GL_CLIP_PLANE0 );
     } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
         
-        vk_d.modelview[0] = vk_d.modelview[5] = vk_d.modelview[10] = vk_d.modelview[15] = 1;
+		Com_Memset(vk_d.modelViewMatrix, 0, 64);
+        vk_d.modelViewMatrix[0] = vk_d.modelViewMatrix[5] = vk_d.modelViewMatrix[10] = vk_d.modelViewMatrix[15] = 1;
         
-        float mvp0 = 2.0f / glConfig.vidWidth;
-        float mvp5 = 2.0f / glConfig.vidHeight;
-        vk_d.mvp[0]  =  mvp0; vk_d.mvp[1]  =  0.0f; vk_d.mvp[2]  = 0.0f; vk_d.mvp[3]  = 0.0f;
-        vk_d.mvp[4]  =  0.0f; vk_d.mvp[5]  =  mvp5; vk_d.mvp[6]  = 0.0f; vk_d.mvp[7]  = 0.0f;
-        vk_d.mvp[8]  =  0.0f; vk_d.mvp[9]  =  0.0f; vk_d.mvp[10] = 1.0f; vk_d.mvp[11] = 0.0f;
-        vk_d.mvp[12] = -1.0f; vk_d.mvp[13] = -1.0f; vk_d.mvp[14] = 0.0f; vk_d.mvp[15] = 1.0f;
+		float top = 0;
+		float bottom = glConfig.vidHeight;
+		float left = 0;
+		float right = glConfig.vidWidth;
+		float zNear = 0;
+		float zFar = 1;
+
+        float mvp0 = 2.0f / (right - left);
+        float mvp5 = 2.0f / (bottom - top);
+		float mvp10 = 1.0f / (zNear - zFar);
+		float mvp12 = -(right - left) / (right - left);
+		float mvp13 = -(bottom + top) / (bottom - top);
+		float mvp14 = zNear / (zNear - zFar);
+
+		vk_d.projectionMatrix[0] = mvp0; vk_d.projectionMatrix[1] = 0.0f; vk_d.projectionMatrix[2] = 0.0f; vk_d.projectionMatrix[3] = 0.0f;
+		vk_d.projectionMatrix[4] = 0.0f; vk_d.projectionMatrix[5] = mvp5; vk_d.projectionMatrix[6] = 0.0f; vk_d.projectionMatrix[7] = 0.0f;
+		vk_d.projectionMatrix[8] = 0.0f; vk_d.projectionMatrix[9] = 0.0f; vk_d.projectionMatrix[10] = 1.0f; vk_d.projectionMatrix[11] = 0.0f;
+		vk_d.projectionMatrix[12] = mvp12; vk_d.projectionMatrix[13] = mvp13; vk_d.projectionMatrix[14] = mvp14; vk_d.projectionMatrix[15] = 1.0f;
         
         vk_d.scissor.offset.x = 0;
         vk_d.scissor.offset.y = 0;

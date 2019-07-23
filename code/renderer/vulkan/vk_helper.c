@@ -38,19 +38,18 @@ void beginRenderClear()
 //    viewport.height = vk.swapchain.extent.height;
 //    viewport.minDepth = 0;
 //    viewport.maxDepth = 1;
-	vkCmdSetViewport(cmdBuf, 0, 1, &vk_d.viewport);
+	//vkCmdSetViewport(cmdBuf, 0, 1, &vk_d.viewport);
 
 //    VkRect2D scissor;
 //    scissor.offset.x = scissor.offset.y = 0;
 //    scissor.extent.width = viewport.width;
 //    scissor.extent.height = viewport.height;
-	vkCmdSetScissor(cmdBuf, 0, 1, &vk_d.scissor);
+	//vkCmdSetScissor(cmdBuf, 0, 1, &vk_d.scissor);
     
-    if ( vk_d.polygonOffset )
+    /*if ( vk_d.polygonOffset )
     {
         vkCmdSetDepthBias(cmdBuf, r_offsetUnits->value, 0.0f, r_offsetFactor->value);
-    }
-    
+    }*/
     
     float constRGBA[4] = {0, 0, 0, 0};
     vkCmdSetBlendConstants(cmdBuf, &constRGBA);

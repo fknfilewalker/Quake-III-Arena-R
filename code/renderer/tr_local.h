@@ -1163,7 +1163,8 @@ typedef struct {
     qboolean            polygonOffset;
 	float				clearDepth;
     // push constant
-    float               modelview[16];
+    float               modelViewMatrix[16];
+	float               projectionMatrix[16];
     float               mvp[16];
     int                 discardModeAlpha;
     

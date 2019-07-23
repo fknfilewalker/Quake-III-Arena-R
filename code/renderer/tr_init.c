@@ -238,11 +238,11 @@ static void InitVulkan(void)
 
 	VKimp_Init();
 
-	VK_CreateIndexBuffer(&vk_d.indexbuffer, 2 * SHADER_MAX_INDEXES * sizeof(uint32_t));
-	VK_CreateVertexBuffer(&vk_d.vertexbuffer, 2 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
-	VK_CreateVertexBuffer(&vk_d.normalbuffer, 2 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
-	VK_CreateVertexBuffer(&vk_d.uvbuffer, 2 * SHADER_MAX_VERTEXES * sizeof(vec2_t));
-	VK_CreateVertexBuffer(&vk_d.colorbuffer, 2 * SHADER_MAX_VERTEXES * sizeof(color4ub_t));
+	VK_CreateIndexBuffer(&vk_d.indexbuffer, 3 * SHADER_MAX_INDEXES * sizeof(uint32_t));
+	VK_CreateVertexBuffer(&vk_d.vertexbuffer, 3 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
+	VK_CreateVertexBuffer(&vk_d.normalbuffer, 3 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
+	VK_CreateVertexBuffer(&vk_d.uvbuffer, 3 * SHADER_MAX_VERTEXES * sizeof(vec2_t));
+	VK_CreateVertexBuffer(&vk_d.colorbuffer, 3 * SHADER_MAX_VERTEXES * sizeof(color4ub_t));
 
 	// device infos
 	VkPhysicalDeviceProperties devProperties;

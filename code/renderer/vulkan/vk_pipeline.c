@@ -223,7 +223,14 @@ void VK_Draw(vkpipeline_t *pipeline, int count)
 
 void VK_DrawIndexed(vkpipeline_t *pipeline, vkattribbuffer_t *idxBuffer, int count, VkDeviceSize offset)
 {
-    VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+	VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+	vkCmdSetViewport(commandBuffer, 0, 1, &vk_d.viewport);
+	vkCmdSetScissor(commandBuffer, 0, 1, &vk_d.scissor);
+	if (vk_d.polygonOffset)
+	{
+		vkCmdSetDepthBias(commandBuffer, r_offsetUnits->value, 0.0f, r_offsetFactor->value);
+	}
+
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
 
     VkDeviceSize bOffset = 0;
