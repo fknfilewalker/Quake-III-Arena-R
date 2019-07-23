@@ -721,10 +721,10 @@ void Q_strncpyz( char *dest, const char *src, int destsize ) {
 		Com_Error(ERR_FATAL,"Q_strncpyz: destsize < 1" ); 
 	}
 
-    //strncpy( dest, src, destsize-1 );
-	srcsize = strlen(src);
-    memmove(dest, src, srcsize);
-    dest[srcsize] = 0;
+    strncpy( dest, src, destsize-1 );
+	//srcsize = strlen(src);
+    //memmove(dest, src, srcsize);
+    dest[destsize - 1] = 0;
 }
                  
 int Q_stricmpn (const char *s1, const char *s2, int n) {
