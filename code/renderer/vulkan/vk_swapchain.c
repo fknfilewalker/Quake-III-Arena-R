@@ -4,10 +4,47 @@
 #define min(a,b) (((a)<(b))?(a):(b))
 #define max(a,b) (((a)>(b))?(a):(b))
 
+
+/*
+ ==============================================================================
+
+ SwapChain Setup
+
+ ==============================================================================
+ */
+
+ // Function Declaration
+static void VK_CreateSwapChain();
+static void VK_CreateImageViews();
+static void VK_CreateDepthStencil();
+static void VK_CreateRenderPass();
+static void VK_CreateFramebuffers();
+static void VK_CreateCommandBuffers();
+static void VK_CreateSyncObjects();
+
+// Helper
 static VkSurfaceFormatKHR chooseSwapSurfaceFormat(VkSurfaceFormatKHR* availableFormats, uint32_t availableFormatsCount);
 static VkPresentModeKHR chooseSwapPresentMode(VkPresentModeKHR* availablePresentModes, uint32_t availablePresentModesCount);
 
-void VK_CreateSwapChain() {
+static VkFramebuffer VK_CurrentFramebuffer();
+static VkCommandBuffer VK_CurrentCommandBuffer();
+
+void VK_SetupSwapchain() 
+{
+	VK_CreateSwapChain();
+	VK_CreateImageViews();
+	VK_CreateDepthStencil();
+	VK_CreateRenderPass();
+	VK_CreateFramebuffers();
+
+	VK_CreateCommandBuffers();
+	VK_CreateSyncObjects();
+
+	vk.swapchain.CurrentCommandBuffer = VK_CurrentCommandBuffer;
+	vk.swapchain.CurrentFramebuffer = VK_CurrentFramebuffer;
+}
+
+static void VK_CreateSwapChain() {
 	vk.swapchain.depthStencilFormat = VK_FORMAT_D24_UNORM_S8_UINT;
 
 	swapChainSupportDetails_t swapChainSupport = querySwapChainSupport(vk.physical_device, vk.surface);
@@ -37,10 +74,10 @@ void VK_CreateSwapChain() {
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	queueFamilyIndices_t indices = findQueueFamilies(vk.physical_device, vk.surface);
-	uint32_t queueFamilyIndices[] = { indices.graphicsFamily, indices.presentFamily };
+	uint32_t queueFamilyIndices[] = {	vk.queryFamilyIndices.graphicsFamily, 
+										vk.queryFamilyIndices.presentFamily };
 
-	if (indices.graphicsFamily != indices.presentFamily) {
+	if (vk.queryFamilyIndices.graphicsFamily != vk.queryFamilyIndices.presentFamily) {
 		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		createInfo.queueFamilyIndexCount = 2;
 		createInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -63,7 +100,7 @@ void VK_CreateSwapChain() {
 
 }
 
-void VK_CreateImageViews() {
+static void VK_CreateImageViews() {
 	vk.swapchain.imageViews = malloc(vk.swapchain.imageCount * sizeof(VkImageView));
 
 	for (size_t i = 0; i < vk.swapchain.imageCount; i++) {
@@ -86,8 +123,8 @@ void VK_CreateImageViews() {
 	}
 }
 
-void VK_CreateDepthStencil() {
-
+static void VK_CreateDepthStencil()
+{
 	// Buffer
 	VkImageCreateInfo imageInfo = {0};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -137,12 +174,12 @@ void VK_CreateDepthStencil() {
 	
 }
 
-
-void VK_CreateRenderPass() {
+static void VK_CreateRenderPass()
+{
 	VkAttachmentDescription colorAttachment = {0};
 	colorAttachment.format = vk.swapchain.imageFormat;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -158,7 +195,7 @@ void VK_CreateRenderPass() {
 	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -197,7 +234,8 @@ void VK_CreateRenderPass() {
 	VK_CHECK(vkCreateRenderPass(vk.device, &renderPassInfo, NULL, &vk.swapchain.renderpass), "failed to create RenderPass for Swapchain!");
 }
 
-void VK_CreateFramebuffers() {
+static void VK_CreateFramebuffers()
+{
 	vk.swapchain.framebuffers = malloc(vk.swapchain.imageCount * sizeof(VkFramebuffer));
 
 	for (size_t i = 0; i < vk.swapchain.imageCount; i++) {
@@ -218,6 +256,134 @@ void VK_CreateFramebuffers() {
 	}
 }
 
+static void VK_CreateCommandBuffers()
+{
+	vk.swapchain.commandBuffers = malloc(vk.swapchain.imageCount * sizeof(VkCommandBuffer));
+
+	VkCommandBufferAllocateInfo allocInfo = { 0 };
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = vk.commandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = vk.swapchain.imageCount;
+
+	VK_CHECK(vkAllocateCommandBuffers(vk.device, &allocInfo, vk.swapchain.commandBuffers), "failed to allocate command buffers!");
+}
+
+static void VK_CreateSyncObjects()
+{
+	vk.swapchain.imageAvailableSemaphores = malloc(vk.swapchain.imageCount * sizeof(VkSemaphore));
+	vk.swapchain.renderFinishedSemaphores = malloc(vk.swapchain.imageCount * sizeof(VkSemaphore));
+	vk.swapchain.inFlightFences = malloc(vk.swapchain.imageCount * sizeof(VkFence));
+
+	VkSemaphoreCreateInfo semaphoreInfo = { 0 };
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkFenceCreateInfo fenceInfo = { 0 };
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+	for (size_t i = 0; i < vk.swapchain.imageCount; i++) {
+		VK_CHECK(vkCreateSemaphore(vk.device, &semaphoreInfo, NULL, &vk.swapchain.imageAvailableSemaphores[i]), "failed to create Semaphore!");
+		VK_CHECK(vkCreateSemaphore(vk.device, &semaphoreInfo, NULL, &vk.swapchain.renderFinishedSemaphores[i]), "failed to create Semaphore!");
+		VK_CHECK(vkCreateFence(vk.device, &fenceInfo, NULL, &vk.swapchain.inFlightFences[i]), "failed to create Fence!");
+	}
+
+	vk.swapchain.currentFrame = vk.swapchain.imageCount - 1;
+}
+
+void record_buffer_memory_barrier(VkCommandBuffer cb, VkBuffer buffer,
+	VkPipelineStageFlags src_stages, VkPipelineStageFlags dst_stages,
+	VkAccessFlags src_access, VkAccessFlags dst_access) {
+
+	VkBufferMemoryBarrier barrier;
+	barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;;
+	barrier.pNext = NULL;
+	barrier.srcAccessMask = src_access;
+	barrier.dstAccessMask = dst_access;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.buffer = buffer;
+	barrier.offset = 0;
+	barrier.size = VK_WHOLE_SIZE;
+
+	vkCmdPipelineBarrier(cb, src_stages, dst_stages, 0, 0, NULL, 1, &barrier, 0, NULL);
+}
+
+void VK_BeginFrame()
+{
+	if (vk.swapchain.frameStarted) return;
+	vk.swapchain.frameStarted = qtrue;
+
+	// wait for command buffer submission for last image
+	vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentFrame], VK_TRUE, UINT64_MAX);
+	vkResetFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentFrame]);
+
+	vkAcquireNextImageKHR(vk.device, vk.swapchain.handle, UINT64_MAX, vk.swapchain.imageAvailableSemaphores[vk.swapchain.currentFrame], vk.swapchain.inFlightFences[vk.swapchain.currentFrame], &vk.swapchain.currentImage);
+
+	vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentImage], VK_TRUE, UINT64_MAX);
+	vkResetFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentImage]);
+
+	vkFreeCommandBuffers(vk.device, vk.commandPool, 1, &vk.swapchain.commandBuffers[vk.swapchain.currentImage]);
+	VkCommandBufferAllocateInfo cmdBufInfo = {
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, NULL, vk.commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1 };
+	VkResult err = vkAllocateCommandBuffers(vk.device, &cmdBufInfo, &vk.swapchain.commandBuffers[vk.swapchain.currentImage]);
+
+	VkCommandBufferBeginInfo beginInfo = { 0 };
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;//VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+	VK_CHECK(vkBeginCommandBuffer(vk.swapchain.commandBuffers[vk.swapchain.currentImage], &beginInfo), "failed to begin recording command buffer!");
+
+	// Ensure visibility of geometry buffers writes.
+	record_buffer_memory_barrier(vk.swapchain.commandBuffers[vk.swapchain.currentImage], vk_d.vertexbuffer.buffer,
+		VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+		VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+
+	record_buffer_memory_barrier(vk.swapchain.commandBuffers[vk.swapchain.currentImage], vk_d.indexbuffer.buffer,
+		VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+		VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_INDEX_READ_BIT);
+}
+
+void VK_EndFrame()
+{
+	if (!vk.swapchain.frameStarted) return;
+	vk.swapchain.frameStarted = qfalse;
+
+	VK_CHECK(vkEndCommandBuffer(vk.swapchain.commandBuffers[vk.swapchain.currentImage]), "failed to end commandbuffer!");
+	//vkResetFences(this->device, 1, &inFlightFences[currentFrame]);
+
+	VkSemaphore waitSemaphores[] = { vk.swapchain.imageAvailableSemaphores[vk.swapchain.currentFrame] };
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+	VkSemaphore signalSemaphores[] = { vk.swapchain.renderFinishedSemaphores[vk.swapchain.currentFrame] };
+
+	VkSubmitInfo submitInfo = { 0 };
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = waitSemaphores;
+	submitInfo.pWaitDstStageMask = waitStages;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = signalSemaphores;
+
+	VK_CHECK(vkQueueSubmit(vk.graphicsQueue, 1, &submitInfo, vk.swapchain.inFlightFences[vk.swapchain.currentImage]), "failed to submit draw command buffer!");
+
+
+	VkSwapchainKHR swapChains[] = { vk.swapchain.handle };
+
+	VkPresentInfoKHR presentInfo = { 0 };
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = signalSemaphores;
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = swapChains;
+	presentInfo.pImageIndices = &vk.swapchain.currentImage;
+
+	VK_CHECK(vkQueuePresentKHR(vk.presentQueue, &presentInfo), "failed to Queue Present!");
+
+	vk.swapchain.currentFrame = (vk.swapchain.currentFrame + 1) % vk.swapchain.imageCount;
+}
+
 /*
 ==============================================================================
 
@@ -225,6 +391,16 @@ SwapChain Helper Function
 
 ==============================================================================
 */
+
+static VkFramebuffer VK_CurrentFramebuffer()
+{
+	return vk.swapchain.framebuffers[vk.swapchain.currentImage];
+}
+
+static VkCommandBuffer VK_CurrentCommandBuffer()
+{
+	return vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+}
 
 static VkSurfaceFormatKHR chooseSwapSurfaceFormat(VkSurfaceFormatKHR *availableFormats, uint32_t availableFormatsCount) {
 

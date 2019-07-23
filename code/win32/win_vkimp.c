@@ -26,21 +26,17 @@ typedef enum {
 {
 	VK_Setup((void*)glw_state.hinstVulkan, (void*)wv.hWnd);
 
-	VK_CreateIndexBuffer(&vk_d.indexbuffer, SHADER_MAX_INDEXES * sizeof(uint32_t));
-	VK_CreateVertexBuffer(&vk_d.vertexbuffer, SHADER_MAX_VERTEXES * sizeof(vec4_t));
-	VK_CreateVertexBuffer(&vk_d.normalbuffer, SHADER_MAX_VERTEXES * sizeof(vec4_t));
-	VK_CreateVertexBuffer(&vk_d.uvbuffer, SHADER_MAX_VERTEXES * sizeof(vec2_t));
-	VK_CreateVertexBuffer(&vk_d.colorbuffer, SHADER_MAX_VERTEXES * sizeof(color4ub_t));
 
-	VK_BeginFrame();
-	beginRenderClear();
-	endRender();
-	VK_EndFrame();
 
-	VK_BeginFrame();
-	beginRenderClear();
-	endRender();
-	VK_EndFrame();
+	//VK_BeginFrame();
+	//beginRenderClear();
+	//endRender();
+	//VK_EndFrame();
+
+	//VK_BeginFrame();
+	//beginRenderClear();
+	//endRender();
+	//VK_EndFrame();
 	
 	return qtrue;
 };

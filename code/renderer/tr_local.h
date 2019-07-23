@@ -979,6 +979,8 @@ Vulkan
 
 #define VK_MAX_IMAGES 100
 
+
+
 // --Pipeline parts--
 typedef union {
     VkDescriptorImageInfo descImageInfo;
@@ -1040,6 +1042,12 @@ typedef struct {
 } vkattribbuffer_t;
 
 typedef struct {
+	uint32_t graphicsFamily;
+	uint32_t presentFamily;
+} vkqueueFamilyIndices_t;
+
+
+typedef struct {
 	VkSwapchainKHR				handle;
 	VkExtent2D					extent;
 
@@ -1063,6 +1071,11 @@ typedef struct {
 	VkImageView					depthImageView;
 
 	VkRenderPass				renderpass;
+
+	// function pointer
+	qboolean					frameStarted;
+	VkCommandBuffer				(*CurrentCommandBuffer)();
+	VkFramebuffer				(*CurrentFramebuffer)();
 } vkswapchain_t;
 
 /*
@@ -1074,6 +1087,8 @@ typedef struct {
 	VkInstance					instance;
 	VkPhysicalDevice			physical_device;
 	VkSurfaceKHR				surface;
+
+	vkqueueFamilyIndices_t		queryFamilyIndices;
 
 	VkDevice					device;
 	VkQueue						graphicsQueue;
@@ -1102,11 +1117,6 @@ typedef struct {
 }vkimage_t;
 
 typedef struct {
-	uint32_t graphicsFamily;
-	uint32_t presentFamily;
-} queueFamilyIndices_t;
-
-typedef struct {
 	VkSurfaceCapabilitiesKHR	capabilities;
 	uint32_t					formatCount;
 	VkSurfaceFormatKHR			formats[MAX_SURFACE_FORMAT_ARRAY_SIZE];
@@ -1133,9 +1143,12 @@ typedef struct {
 } vkrenderState_t;
 
 typedef struct {
-    size_t              size;
+    size_t              size; // images
     vkimage_t           images[MAX_DRAWIMAGES];
+
+	VkDeviceSize		offsetIdx;
     vkattribbuffer_t    indexbuffer;
+	VkDeviceSize		offset;
     vkattribbuffer_t    vertexbuffer;
     vkattribbuffer_t    normalbuffer;
     vkattribbuffer_t    uvbuffer;
@@ -1148,6 +1161,7 @@ typedef struct {
     VkViewport          viewport;
     VkRect2D            scissor;
     qboolean            polygonOffset;
+	float				clearDepth;
     // push constant
     float               modelview[16];
     float               mvp[16];
@@ -1328,7 +1342,8 @@ char* VK_ErrorString(VkResult errorCode);
 }
 
 swapChainSupportDetails_t querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
-queueFamilyIndices_t findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
+
+void	VK_SetDefaultState(void);
 
 /*
 ** GL wrapper/helper functions

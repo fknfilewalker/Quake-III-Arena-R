@@ -1,8 +1,15 @@
 #include "../tr_local.h"
 
+static vkshader_t *singleTexture;
+
 void VK_CreateShaderModule(VkShaderModule *handle, const char *code, size_t size);
 
 void VK_SingleTextureShader(vkshader_t *shader){
+	if (singleTexture) {
+		Com_Memcpy(shader, singleTexture, sizeof(vkshader_t));
+		return;
+	}
+
     shader->size = 2;
     shader->modules = malloc(shader->size * sizeof(VkShaderModule));
     shader->flags = malloc(shader->size * sizeof(VkShaderStageFlagBits));
@@ -44,8 +51,18 @@ void VK_SingleTextureShader(vkshader_t *shader){
     shader->shaderStageCreateInfos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     shader->shaderStageCreateInfos[1].module = shader->modules[1];
     shader->shaderStageCreateInfos[1].pName = "main";
+
+	if (singleTexture == NULL) {
+		singleTexture = malloc(sizeof(vkshader_t));
+		Com_Memcpy(singleTexture, shader, sizeof(vkshader_t));
+	}
 }
 
+void VK_DestroyShader(vkshader_t* shader) {
+	for (int i = 0; i < shader->size; ++i) {
+		vkDestroyShaderModule(vk.device, shader->modules[i], NULL);
+	}
+}
 
 void VK_CreateShaderModule(VkShaderModule *handle, const char *code, size_t size)
 {

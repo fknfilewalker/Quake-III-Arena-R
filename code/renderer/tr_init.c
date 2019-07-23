@@ -235,8 +235,14 @@ static void InitOpenGL( void )
 
 static void InitVulkan(void)
 {
+
 	VKimp_Init();
 
+	VK_CreateIndexBuffer(&vk_d.indexbuffer, 2 * SHADER_MAX_INDEXES * sizeof(uint32_t));
+	VK_CreateVertexBuffer(&vk_d.vertexbuffer, 2 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
+	VK_CreateVertexBuffer(&vk_d.normalbuffer, 2 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
+	VK_CreateVertexBuffer(&vk_d.uvbuffer, 2 * SHADER_MAX_VERTEXES * sizeof(vec2_t));
+	VK_CreateVertexBuffer(&vk_d.colorbuffer, 2 * SHADER_MAX_VERTEXES * sizeof(color4ub_t));
 
 	// device infos
 	VkPhysicalDeviceProperties devProperties;
@@ -258,8 +264,8 @@ static void InitVulkan(void)
 	// print info
 	GfxInfo_f();
 
-	//// set default state
-	//GL_SetDefaultState();
+	// set default state
+	VK_SetDefaultState();
 }
 
 /*
@@ -778,6 +784,61 @@ void GL_SetDefaultState( void )
 	qglDisable( GL_BLEND );
 }
 
+void VK_SetDefaultState(void)
+{
+	//qglClearDepth(1.0f);
+	vk_d.clearDepth = 1.0f;
+
+	vk_d.state.cullMode = VK_CULL_MODE_FRONT_BIT;
+	//qglCullFace(GL_FRONT);
+
+	//qglColor4f(1, 1, 1, 1);
+
+	//// initialize downstream texture unit if we're running
+	//// in a multitexture environment
+	//if (qglActiveTextureARB) {
+	//	GL_SelectTexture(1);
+	//	GL_TextureMode(r_textureMode->string);
+	//	GL_TexEnv(GL_MODULATE);
+	//	qglDisable(GL_TEXTURE_2D);
+	//	GL_SelectTexture(0);
+	//}
+
+	//qglEnable(GL_TEXTURE_2D);
+	//GL_TextureMode(r_textureMode->string);
+	//GL_TexEnv(GL_MODULATE);
+
+	//qglShadeModel(GL_SMOOTH);
+	//qglDepthFunc(GL_LEQUAL);
+
+	vk_d.state.dsBlend.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+
+	//// the vertex array is always enabled, but the color and texture
+	//// arrays are enabled and disabled around the compiled vertex array call
+	//qglEnableClientState(GL_VERTEX_ARRAY);
+
+	//
+	// make sure our VK state vector is set correctly
+	//
+	glState.glStateBits = GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_TRUE;
+	vk_d.state.blendBits = GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_TRUE;
+
+	
+	//qglPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	//qglDepthMask(GL_TRUE);
+	//qglDisable(GL_DEPTH_TEST);
+	//qglEnable(GL_SCISSOR_TEST);
+	//qglDisable(GL_CULL_FACE);
+	//qglDisable(GL_BLEND);
+
+	vk_d.state.polygonMode = VK_POLYGON_MODE_FILL;
+	vk_d.state.dsBlend.depthWriteEnable = VK_TRUE;
+	vk_d.state.dsBlend.depthTestEnable = VK_FALSE;
+
+	vk_d.state.cullMode = VK_CULL_MODE_NONE;
+	vk_d.state.colorBlend.blendEnable = VK_FALSE;
+}
+
 
 /*
 ================
@@ -1131,34 +1192,37 @@ RE_Shutdown
 ===============
 */
 void RE_Shutdown( qboolean destroyWindow ) {	
+	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+		ri.Printf(PRINT_ALL, "RE_Shutdown( %i )\n", destroyWindow);
 
-	ri.Printf( PRINT_ALL, "RE_Shutdown( %i )\n", destroyWindow );
-
-	ri.Cmd_RemoveCommand ("modellist");
-	ri.Cmd_RemoveCommand ("screenshotJPEG");
-	ri.Cmd_RemoveCommand ("screenshot");
-	ri.Cmd_RemoveCommand ("imagelist");
-	ri.Cmd_RemoveCommand ("shaderlist");
-	ri.Cmd_RemoveCommand ("skinlist");
-	ri.Cmd_RemoveCommand ("gfxinfo");
-	ri.Cmd_RemoveCommand( "modelist" );
-	ri.Cmd_RemoveCommand( "shaderstate" );
+		ri.Cmd_RemoveCommand("modellist");
+		ri.Cmd_RemoveCommand("screenshotJPEG");
+		ri.Cmd_RemoveCommand("screenshot");
+		ri.Cmd_RemoveCommand("imagelist");
+		ri.Cmd_RemoveCommand("shaderlist");
+		ri.Cmd_RemoveCommand("skinlist");
+		ri.Cmd_RemoveCommand("gfxinfo");
+		ri.Cmd_RemoveCommand("modelist");
+		ri.Cmd_RemoveCommand("shaderstate");
 
 
-	if ( tr.registered ) {
-		R_SyncRenderThread();
-		R_ShutdownCommandBuffers();
-		R_DeleteTextures();
+		if (tr.registered) {
+			R_SyncRenderThread();
+			R_ShutdownCommandBuffers();
+			R_DeleteTextures();
+		}
+
+		R_DoneFreeType();
+
+		// shut down platform specific OpenGL stuff
+		if (destroyWindow) {
+			GLimp_Shutdown();
+		}
+
+		tr.registered = qfalse;
+	} else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+
 	}
-
-	R_DoneFreeType();
-
-	// shut down platform specific OpenGL stuff
-	if ( destroyWindow ) {
-		GLimp_Shutdown();
-	}
-
-	tr.registered = qfalse;
 }
 
 

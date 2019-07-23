@@ -202,7 +202,7 @@ void VK_Cull( int cullType ) {
     {
         //qglEnable( GL_CULL_FACE );
         
-        if ( cullType == CT_BACK_SIDED )
+        if ( cullType == CT_FRONT_SIDED )
         {
             if ( backEnd.viewParms.isMirror )
             {
@@ -212,7 +212,7 @@ void VK_Cull( int cullType ) {
             else
             {
                 vk_d.state.cullMode = VK_CULL_MODE_BACK_BIT;
-                qglCullFace( GL_BACK );
+                //qglCullFace( GL_BACK );
             }
         }
         else
@@ -1512,10 +1512,10 @@ void RB_ExecuteRenderCommands( const void *data ) {
 
 		case RC_END_OF_LIST:
 		default:
-//            if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) && vk_d.renderBegan) {
-//                endRender();
-//                VK_EndFrame();
-//            }
+            /*if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) && com_errorEntered && vk.swapchain.frameStarted) {
+                endRender();
+                VK_EndFrame();
+            }*/
 			// stop rendering on this thread
 			t2 = ri.Milliseconds ();
 			backEnd.pc.msec = t2 - t1;

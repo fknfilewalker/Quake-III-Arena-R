@@ -10,23 +10,26 @@ void VK_GetDeviceProperties(VkPhysicalDeviceProperties *devProperties)
 
 void beginRenderClear()
 {
+	vk_d.offsetIdx = 0;
+	vk_d.offset = 0;
+
 	VkClearColorValue cc = { 0.1f,0.1f,0.1f,1.0f };
-    VkClearDepthStencilValue dsc = { 1, 0};
+    VkClearDepthStencilValue dsc = { vk_d.clearDepth, 0};
 
     VkClearValue clearValues[2] ={0};
-	clearValues[0].color = cc;
+	//clearValues[0].color = cc;
     clearValues[1].depthStencil = dsc;
 
 	VkRenderPassBeginInfo rpBeginInfo = {0};
 	rpBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	rpBeginInfo.renderPass = vk.swapchain.renderpass;
-	rpBeginInfo.framebuffer = vk.swapchain.framebuffers[vk.swapchain.currentImage];
+	rpBeginInfo.framebuffer = vk.swapchain.CurrentFramebuffer();
 	rpBeginInfo.renderArea.extent.width = vk.swapchain.extent.width;
 	rpBeginInfo.renderArea.extent.height = vk.swapchain.extent.height;
 	rpBeginInfo.clearValueCount = 2;//m_window->sampleCountFlagBits() > VK_SAMPLE_COUNT_1_BIT ? 3 : 2;
 	rpBeginInfo.pClearValues = clearValues;
 
-	VkCommandBuffer cmdBuf = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+	VkCommandBuffer cmdBuf = vk.swapchain.CurrentCommandBuffer();
 	vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 //    VkViewport viewport = {0};
@@ -60,7 +63,7 @@ void beginRender()
 
 void endRender()
 {
-	vkCmdEndRenderPass(vk.swapchain.commandBuffers[vk.swapchain.currentImage]);
+	vkCmdEndRenderPass(vk.swapchain.CurrentCommandBuffer());
 
 }
 
@@ -112,7 +115,7 @@ void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean 
         rect_count = 2;
     }
     
-    VkCommandBuffer cmdBuf = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+	VkCommandBuffer cmdBuf = vk.swapchain.CurrentCommandBuffer();
     vkCmdClearAttachments(cmdBuf, attachment_count, attachments, rect_count, clear_rect);
 }
 

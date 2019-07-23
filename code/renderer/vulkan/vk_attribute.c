@@ -24,9 +24,15 @@ void VK_UploadAttribDataStride(vkattribbuffer_t *buffer, size_t element, size_t 
     
 }
 
-void VK_UploadAttribData(vkattribbuffer_t *buffer, const byte* data){
-	byte*p;
-    VK_CHECK(vkMapMemory(vk.device, buffer->memory, 0, buffer->allocSize, 0, (byte**)(&p)), "failed to Map Memory!");
-    Com_Memcpy(p, data, (size_t)(buffer->allocSize));
-    vkUnmapMemory(vk.device, buffer->memory);
+void VK_UploadAttribDataOffset(vkattribbuffer_t* buffer, VkDeviceSize offset, VkDeviceSize size, const byte* data) {
+	if (offset + size > buffer->allocSize) ri.Error(ERR_FATAL, "Vulkan: Buffer to small!");
+	byte* p;
+	VK_CHECK(vkMapMemory(vk.device, buffer->memory, offset, size, 0, (byte * *)(&p)), "failed to Map Memory!");
+	Com_Memcpy(p, data, (size_t)(size));
+	vkUnmapMemory(vk.device, buffer->memory);
 }
+
+void VK_UploadAttribData(vkattribbuffer_t* buffer, const byte* data) {
+	VK_UploadAttribDataOffset(buffer, 0, buffer->allocSize, data);
+}
+

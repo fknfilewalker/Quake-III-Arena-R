@@ -8,19 +8,21 @@ typedef struct {
 static uint8_t pipelineListSize;
 static vkpipe_t pipelineList[100];
 
-vkpipeline_t getPipeline(){
-    for (uint8_t i; i < pipelineListSize; ++i) {
+qboolean getPipeline(vkpipeline_t *p){
+    for (uint8_t i = 0; i < pipelineListSize; ++i) {
         vkrenderState_t *state = &pipelineList[i].state;
-        vkpipeline_t *p = &pipelineList[i].pipeline;
+        vkpipeline_t *found_p = &pipelineList[i].pipeline;
         if(memcmp(&vk_d.state, state, sizeof(vkrenderState_t)) == 0) {
-            return *p;
+			//p = found_p;
+			Com_Memcpy(p, found_p, sizeof(vkpipeline_t));
+			return qtrue;
         }
     }
-    //return NULL;
+    return qfalse;
 }
 
-void addPipeline(vkpipeline_t p){
-    pipelineList[pipelineListSize] = (vkpipe_t){p, vk_d.state};
+void addPipeline(vkpipeline_t *p){
+    pipelineList[pipelineListSize] = (vkpipe_t){*p, vk_d.state};
     pipelineListSize++;
 }
 
@@ -125,7 +127,8 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline)
 
     VkPipelineInputAssemblyStateCreateInfo ia = {0};
     ia.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    ia.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+    ia.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	ia.primitiveRestartEnable = VK_FALSE;
     pipelineInfo.pInputAssemblyState = &ia;
 
     VkPipelineViewportStateCreateInfo vp = {0};
@@ -166,7 +169,8 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline)
 //    colorBlend.alphaBlendOp = VK_BLEND_OP_ADD;
     
     vk_d.state.colorBlend.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    
+	//vk_d.state.colorBlend.colorWriteMask = 0xF;
+
     VkPipelineColorBlendStateCreateInfo cb = { 0 };
     cb.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     cb.attachmentCount = 1;
@@ -195,7 +199,7 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline)
 void VK_BindDescriptorSet(vkpipeline_t *pipeline, vkdescriptor_t *descriptor){
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1,
-                            &pipeline->descriptor->sets[vk.swapchain.currentFrame], 0, NULL);
+                            &descriptor->sets[vk.swapchain.currentFrame], 0, NULL);
 }
 
 void VK_SetPushConstant(vkpipeline_t *pipeline, VkShaderStageFlags stage, uint32_t offset, uint32_t size, void* data)
@@ -204,10 +208,10 @@ void VK_SetPushConstant(vkpipeline_t *pipeline, VkShaderStageFlags stage, uint32
     vkCmdPushConstants(commandBuffer, pipeline->layout, stage, offset, size, data);
 }
 
-void VK_BindAttribBuffer(vkattribbuffer_t *attribBuffer, uint32_t binding){
+void VK_BindAttribBuffer(vkattribbuffer_t *attribBuffer, uint32_t binding, VkDeviceSize offset){
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
     VkDeviceSize bOffset = 0;
-    vkCmdBindVertexBuffers(commandBuffer, binding, 1, &attribBuffer->buffer, &bOffset);
+    vkCmdBindVertexBuffers(commandBuffer, binding, 1, &attribBuffer->buffer, &offset);
 }
 
 void VK_Draw(vkpipeline_t *pipeline, int count)
@@ -217,12 +221,29 @@ void VK_Draw(vkpipeline_t *pipeline, int count)
     vkCmdDraw(commandBuffer, count, 1, 0, 0);
 }
 
-void VK_DrawIndexed(vkpipeline_t *pipeline, vkattribbuffer_t *idxBuffer, int count)
+void VK_DrawIndexed(vkpipeline_t *pipeline, vkattribbuffer_t *idxBuffer, int count, VkDeviceSize offset)
 {
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
 
     VkDeviceSize bOffset = 0;
-    vkCmdBindIndexBuffer(commandBuffer, idxBuffer->buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindIndexBuffer(commandBuffer, idxBuffer->buffer, offset, VK_INDEX_TYPE_UINT32);
     vkCmdDrawIndexed(commandBuffer, count, 1, 0, 0, 0);
+}
+
+void VK_DestroyPipeline(vkpipeline_t* pipeline) {
+	if (pipeline->handle) {
+		vkDestroyPipeline(vk.device, pipeline->handle, NULL);
+		pipeline->handle = VK_NULL_HANDLE;
+	}
+
+	if (pipeline->layout) {
+		vkDestroyPipelineLayout(vk.device, pipeline->layout, NULL);
+		pipeline->layout = VK_NULL_HANDLE;
+	}
+
+	if (pipeline->cache) {
+		vkDestroyPipelineCache(vk.device, pipeline->cache, NULL);
+		pipeline->cache = VK_NULL_HANDLE;
+	}
 }

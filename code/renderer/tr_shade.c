@@ -165,35 +165,88 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 
 	primitives = r_primitives->integer;
 
-	// default is to use triangles if compiled vertex arrays are present
-	if ( primitives == 0 ) {
-		if ( qglLockArraysEXT ) {
-			primitives = 2;
-		} else {
-			primitives = 1;
+	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+		// default is to use triangles if compiled vertex arrays are present
+		if (primitives == 0) {
+			if (qglLockArraysEXT) {
+				primitives = 2;
+			}
+			else {
+				primitives = 1;
+			}
 		}
-	}
 
 
-	if ( primitives == 2 ) {
-		qglDrawElements( GL_TRIANGLES, 
-						numIndexes,
-						GL_INDEX_TYPE,
-						indexes );
-		return;
-	}
+		if (primitives == 2) {
+			qglDrawElements(GL_TRIANGLES,
+				numIndexes,
+				GL_INDEX_TYPE,
+				indexes);
+			return;
+		}
 
-	if ( primitives == 1 ) {
-		R_DrawStripElements( numIndexes,  indexes, qglArrayElement );
-		return;
-	}
-	
-	if ( primitives == 3 ) {
-		R_DrawStripElements( numIndexes,  indexes, R_ArrayElementDiscrete );
-		return;
-	}
+		if (primitives == 1) {
+			R_DrawStripElements(numIndexes, indexes, qglArrayElement);
+			return;
+		}
 
-	// anything else will cause no drawing
+		if (primitives == 3) {
+			R_DrawStripElements(numIndexes, indexes, R_ArrayElementDiscrete);
+			return;
+		}
+
+		// anything else will cause no drawing
+	}
+	else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+		VK_UploadAttribDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*) &indexes[0]);
+
+		//int aaa = pStage->bundle[0].image[0]->index;
+		vkshader_t s = { 0 };
+		VK_SingleTextureShader(&s);
+
+		//vkimage_t image = {0};
+
+		//uint8_t data[4] = { 255,255,0,125 };
+		//VK_CreateImage(&image, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 1);
+		//VK_UploadImageData(&image, 1, 1, data, 4, 0); // rows wise
+		//VK_CreateSampler(&image, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+
+		//vkdescriptor_t d = { 0 };
+		//VK_AddSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
+		//VK_SetSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image.sampler, image.view);
+		//VK_FinishDescriptor(&d);
+
+		vkpipeline_t p = { 0 };
+		if (!getPipeline(&p)) {
+			
+			VK_SetDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
+			VK_SetShader(&p, &s);
+			VK_AddBindingDescription(&p, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
+			VK_AddBindingDescription(&p, 1, sizeof(color4ub_t), VK_VERTEX_INPUT_RATE_VERTEX);
+			VK_AddBindingDescription(&p, 2, sizeof(vec2_t), VK_VERTEX_INPUT_RATE_VERTEX);
+			VK_AddAttributeDescription(&p, 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 0 * sizeof(float));
+			VK_AddAttributeDescription(&p, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 0 * sizeof(float));
+			VK_AddAttributeDescription(&p, 2, 2, VK_FORMAT_R32G32_SFLOAT, 0 * sizeof(float));
+			VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp));
+			VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha));
+			VK_FinishPipeline(&p);
+			addPipeline(&p);
+
+			Com_Printf("new pipe \n");
+		}
+
+		VK_BindAttribBuffer(&vk_d.vertexbuffer, 0, vk_d.offset * sizeof(vec4_t));
+		VK_BindAttribBuffer(&vk_d.colorbuffer, 1, vk_d.offset * sizeof(color4ub_t));
+		VK_BindAttribBuffer(&vk_d.uvbuffer, 2, vk_d.offset * sizeof(vec2_t));
+		VK_BindDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
+		VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp), &vk_d.mvp);
+		VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha), &vk_d.discardModeAlpha);
+		//Com_Printf("%d", vk_d.discardModeAlpha);
+		VK_DrawIndexed(&p, &vk_d.indexbuffer, numIndexes, vk_d.offsetIdx * sizeof(uint32_t));
+		//VK_Draw(&p, 6);
+		//VK_DestroyPipeline(&p);
+		//VK_DestroyShader(&s);
+	}
 }
 
 
@@ -256,29 +309,42 @@ Draws triangle outlines for debugging
 ================
 */
 static void DrawTris (shaderCommands_t *input) {
-	GL_Bind( tr.whiteImage );
-	qglColor3f (1,1,1);
+	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+		GL_Bind(tr.whiteImage);
+		qglColor3f(1, 1, 1);
 
-	GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE );
-	qglDepthRange( 0, 0 );
+		GL_State(GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE);
+		qglDepthRange(0, 0);
 
-	qglDisableClientState (GL_COLOR_ARRAY);
-	qglDisableClientState (GL_TEXTURE_COORD_ARRAY);
+		qglDisableClientState(GL_COLOR_ARRAY);
+		qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
-	qglVertexPointer (3, GL_FLOAT, 16, input->xyz);	// padded for SIMD
+		qglVertexPointer(3, GL_FLOAT, 16, input->xyz);	// padded for SIMD
 
-	if (qglLockArraysEXT) {
-		qglLockArraysEXT(0, input->numVertexes);
-		GLimp_LogComment( "glLockArraysEXT\n" );
+		if (qglLockArraysEXT) {
+			qglLockArraysEXT(0, input->numVertexes);
+			GLimp_LogComment("glLockArraysEXT\n");
+		}
+
+		R_DrawElements(input->numIndexes, input->indexes);
+
+		if (qglUnlockArraysEXT) {
+			qglUnlockArraysEXT();
+			GLimp_LogComment("glUnlockArraysEXT\n");
+		}
+		qglDepthRange(0, 1);
 	}
+	else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+		VK_Bind(tr.whiteImage);
 
-	R_DrawElements( input->numIndexes, input->indexes );
+		VK_State(GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE);
+		vk_d.state.dsBlend.minDepthBounds = 0;
+		vk_d.state.dsBlend.maxDepthBounds = 0;
 
-	if (qglUnlockArraysEXT) {
-		qglUnlockArraysEXT();
-		GLimp_LogComment( "glUnlockArraysEXT\n" );
+		vk_d.state.dsBlend.minDepthBounds = 0;
+		vk_d.state.dsBlend.maxDepthBounds = 1;
 	}
-	qglDepthRange( 0, 1 );
+	
 }
 
 
@@ -1008,11 +1074,15 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
         
         }
         else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
-            
+			int a = tess.shader->index;
+			//if (a != 7) return;
+
+			VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
+
             //if ( !setArraysOnce )
-            //{
-                VK_UploadAttribData(&vk_d.colorbuffer, (void *) &tess.svars.colors[0]);
-            //}
+            {
+                VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+            }
             
             //
             // do multitexture
@@ -1023,9 +1093,9 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
             }else
             {
                 //if ( !setArraysOnce )
-                //{
-                    VK_UploadAttribData(&vk_d.uvbuffer, (void *) &input->svars.texcoords[0]);
-                //}
+                {
+                    VK_UploadAttribDataOffset(&vk_d.uvbuffer, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &input->svars.texcoords[0]);
+                }
                 //
                 // set state
                 //
@@ -1038,38 +1108,27 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
                 }
             
                 VK_State( pStage->stateBits );
-                
-                VK_UploadAttribData(&vk_d.indexbuffer, (void *) &input->indexes[0]);
  
-                
-                //int aaa = pStage->bundle[0].image[0]->index;
-                vkshader_t s = {0};
-                VK_SingleTextureShader(&s);
-                
-                
-      
-                vkpipeline_t p = {0};
-                VK_SetDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
-                VK_SetShader(&p, &s);
-                VK_AddBindingDescription(&p, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
-                VK_AddBindingDescription(&p, 1, sizeof(color4ub_t), VK_VERTEX_INPUT_RATE_VERTEX);
-                VK_AddBindingDescription(&p, 2, sizeof(vec2_t), VK_VERTEX_INPUT_RATE_VERTEX);
-                VK_AddAttributeDescription(&p, 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 0 * sizeof(float));
-                VK_AddAttributeDescription(&p, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 0 * sizeof(float));
-                VK_AddAttributeDescription(&p, 2, 2, VK_FORMAT_R32G32_SFLOAT, 0 * sizeof(float));
-                VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp));
-                VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha));
-                VK_FinishPipeline(&p);
-                
-                
-                VK_BindAttribBuffer(&vk_d.vertexbuffer, 0);
-                VK_BindAttribBuffer(&vk_d.colorbuffer, 1);
-                VK_BindAttribBuffer(&vk_d.uvbuffer, 2);
-                VK_BindDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
-                VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp), &vk_d.mvp);
-                VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha), &vk_d.discardModeAlpha);
-                VK_DrawIndexed(&p, &vk_d.indexbuffer, input->numIndexes);
-                //VK_Draw(&p, 6);
+				
+				/*if (a == 7) {
+					VK_ClearAttachments(qtrue, qtrue, qfalse, (vec4_t) { 0, 0, 0, 0 });
+					vk_d.currentTexture[0] = 1;
+				}
+				vk_d.currentTexture[0] = 48;*/
+				//if (a == 15) vk_d.currentTexture[0] = 48;
+				//if (a == 7) vk_d.currentTexture[0] = 1;
+				//else vk_d.currentTexture[0] = 48;
+				//
+				// draw
+				//
+				//if (a == 2) break;
+				
+				//vk_d.currentTexture[0] = 1;
+				
+				R_DrawElements(input->numIndexes, input->indexes);
+				vk_d.offset += tess.numVertexes;
+				vk_d.offsetIdx += input->numIndexes;
+				//return;
             }
             
         }
@@ -1214,34 +1273,35 @@ void RB_StageIteratorGeneric( void )
         // to avoid compiling those arrays since they will change
         // during multipass rendering
         //
-        if ( tess.numPasses > 1 || input->shader->multitextureEnv )
-        {
-            setArraysOnce = qfalse;
-            //qglDisableClientState (GL_COLOR_ARRAY);
-            //qglDisableClientState (GL_TEXTURE_COORD_ARRAY);
-        }
-        else
-        {
-            setArraysOnce = qtrue;
+        //if ( tess.numPasses > 1 || input->shader->multitextureEnv )
+        //{
+        //    setArraysOnce = qfalse;
+        //    //qglDisableClientState (GL_COLOR_ARRAY);
+        //    //qglDisableClientState (GL_TEXTURE_COORD_ARRAY);
+        //}
+        //else
+        //{
+            /*setArraysOnce = qtrue;
             VK_UploadAttribData(&vk_d.colorbuffer, (void *) &tess.svars.colors[0]);
-            VK_UploadAttribData(&vk_d.uvbuffer, (void *) &tess.svars.texcoords[0]);
-        }
+            VK_UploadAttribData(&vk_d.uvbuffer, (void *) &tess.svars.texcoords[0]);*/
+        //}
 
         //
         // lock XYZ
         //
-        VK_UploadAttribDataStride(&vk_d.vertexbuffer, sizeof(vec3_t), sizeof(vec4_t), (void *) &input->xyz[0]); // padded for SIMD
+		//VK_UploadAttribData(&vk_d.vertexbuffer, (void*)& input->xyz[0]);
+        //VK_UploadAttribDataStride(&vk_d.vertexbuffer, sizeof(vec3_t), sizeof(vec4_t), (void *) &input->xyz[0]); // padded for SIMD
         
         //
         // enable color and texcoord arrays after the lock if necessary
         //
-        if ( !setArraysOnce )
-        {
-            //qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
-            //qglEnableClientState( GL_COLOR_ARRAY );
-            VK_UploadAttribData(&vk_d.colorbuffer, (void *) &tess.svars.colors[0]);
-            VK_UploadAttribData(&vk_d.uvbuffer, (void *) &tess.svars.texcoords[0]);
-        }
+        //if ( !setArraysOnce )
+        //{
+        //    //qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+        //    //qglEnableClientState( GL_COLOR_ARRAY );
+        //    VK_UploadAttribData(&vk_d.colorbuffer, (void *) &tess.svars.colors[0]);
+        //    VK_UploadAttribData(&vk_d.uvbuffer, (void *) &tess.svars.texcoords[0]);
+        //}
 
         //
         // call shader function

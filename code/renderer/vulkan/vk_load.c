@@ -133,6 +133,11 @@ qboolean VK_LoadDeviceFunctions(void)
 
 	vkDeviceWaitIdle = VK_DEVICE_LEVEL_FUNCTION("vkDeviceWaitIdle");
 	vkAllocateDescriptorSets = VK_DEVICE_LEVEL_FUNCTION("vkAllocateDescriptorSets");
+
+	vkDestroyShaderModule = VK_DEVICE_LEVEL_FUNCTION("vkDestroyShaderModule");
+	vkDestroyPipeline = VK_DEVICE_LEVEL_FUNCTION("vkDestroyPipeline");
+	vkDestroyPipelineLayout = VK_DEVICE_LEVEL_FUNCTION("vkDestroyPipelineLayout");
+	vkDestroyPipelineCache = VK_DEVICE_LEVEL_FUNCTION("vkDestroyPipelineCache");
 	/* Debug */
 #ifndef NDEBUG
 	vkCreateDebugUtilsMessengerEXT = VK_DEVICE_LEVEL_FUNCTION("vkCreateDebugUtilsMessengerEXT");

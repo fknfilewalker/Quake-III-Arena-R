@@ -165,6 +165,11 @@ PFN_vkDestroyDescriptorPool                     vkDestroyDescriptorPool;
 PFN_vkDeviceWaitIdle							vkDeviceWaitIdle;
 PFN_vkAllocateDescriptorSets					vkAllocateDescriptorSets;
 
+PFN_vkDestroyShaderModule						vkDestroyShaderModule;
+PFN_vkDestroyPipeline							vkDestroyPipeline;
+PFN_vkDestroyPipelineLayout						vkDestroyPipelineLayout;
+PFN_vkDestroyPipelineCache						vkDestroyPipelineCache;
+
 /* Debug */
 #ifndef NDEBUG
 PFN_vkCreateDebugUtilsMessengerEXT				vkCreateDebugUtilsMessengerEXT;

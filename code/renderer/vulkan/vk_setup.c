@@ -4,14 +4,27 @@
 vkinstance_t vk;
 vkdata_t     vk_d;
 
-#define MAX_EXTENSION_PROPERTIES 50
-
-const char* deviceExtensions[] = {
+static const char* deviceExtensions[] = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-const char* validationLayer[] = {
+static const char* validationLayers[] = {
 		"VK_LAYER_LUNARG_standard_validation"
+};
+
+static const char* instanceExtensions[] = {
+#ifndef NDEBUG
+		VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+		VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+#endif
+		VK_KHR_SURFACE_EXTENSION_NAME,
+#if defined( _WIN32 )
+		VK_KHR_WIN32_SURFACE_EXTENSION_NAME
+#elif defined(__APPLE__)
+		VK_MVK_MACOS_SURFACE_EXTENSION_NAME
+#elif defined( __linux__ )
+
+#endif
 };
 
 /*
@@ -21,14 +34,18 @@ const char* validationLayer[] = {
  
  ==============================================================================
  */
-void VK_CreateInstance();
-void VK_CreateSurface(void* p1, void* p2);
-void VK_PickPhysicalDevice();
-void VK_CreateLogicalDevice();
-void VK_CreateCommandPool();
-void VK_SetupDebugCallback();
-void VK_CreateCommandBuffers();
-void VK_CreateSyncObjects();
+
+// Function Declaration
+static void VK_CreateInstance();
+static void VK_CreateSurface(void* p1, void* p2);
+static void VK_PickPhysicalDevice();
+static void VK_CreateLogicalDevice();
+static void VK_CreateCommandPool();
+static void VK_SetupDebugCallback();
+
+// Helper
+static qboolean VK_IsDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface);
+static qboolean VK_CheckValidationLayerSupport();
 
 void VK_Setup(void* p1, void* p2) {
     if (!VK_LoadGlobalFunctions()) return qfalse;
@@ -43,63 +60,36 @@ void VK_Setup(void* p1, void* p2) {
     VK_SetupDebugCallback();
 #endif
     
-    // -- Swap chain part
-    VK_CreateSwapChain();
-    VK_CreateImageViews();
-	VK_CreateDepthStencil();
-    VK_CreateRenderPass();
-    VK_CreateFramebuffers();
-    // --
-    
-    VK_CreateCommandBuffers();
-    VK_CreateSyncObjects();
+    // Create Swapchain
+	VK_SetupSwapchain();
 }
 
-//
-// function declaration
-//
-static qboolean isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface);
-queueFamilyIndices_t findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
-static qboolean checkValidationLayerSupport();
-
-void VK_CreateInstance() {
-	const char* instance_extensions[] = {
-#ifndef NDEBUG
-        VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-#endif
-        
-		VK_KHR_SURFACE_EXTENSION_NAME,
-#if defined( _WIN32 )
-        VK_KHR_WIN32_SURFACE_EXTENSION_NAME
-#elif defined(__APPLE__)
-        VK_MVK_MACOS_SURFACE_EXTENSION_NAME
-#elif defined( __linux__ )
-        
-#endif
-	};
-
+static void VK_CreateInstance() {
 	// check extensions availability
 	{
 		uint32_t count = 0;
 		vkEnumerateInstanceExtensionProperties(NULL, &count, NULL);
-		VkExtensionProperties extension_properties[MAX_EXTENSION_PROPERTIES];
+		VkExtensionProperties *extension_properties = malloc(count * sizeof(VkExtensionProperties));
 		vkEnumerateInstanceExtensionProperties(NULL, &count, &extension_properties[0]);
 
-
-		for (int i = 0; i < (sizeof(instance_extensions) / sizeof(instance_extensions[0])); i++) {
+		for (int i = 0; i < (sizeof(instanceExtensions) / sizeof(instanceExtensions[0])); i++) {
 			qboolean supported = qfalse;
 			for (int j = 0; j < count; j++) {
-				if (!strcmp(extension_properties[j].extensionName, instance_extensions[i])) {
+				if (!strcmp(extension_properties[j].extensionName, instanceExtensions[i])) {
 					supported = qtrue;
 					break;
 				}
 			}
-			if (!supported) ri.Error(ERR_FATAL, "Vulkan: required instance extension is not available: %s", instance_extensions[i]);
+			if (!supported) ri.Error(ERR_FATAL, "Vulkan: required instance extension is not available: %s", instanceExtensions[i]);
 		}
+		free(extension_properties);
 	}
 
-	checkValidationLayerSupport();
+#ifndef NDEBUG
+	if (!VK_CheckValidationLayerSupport()) {
+		ri.Error(ERR_FATAL, "Vulkan: validation layers requested, but not available!");
+	}
+#endif
 
 	// create instance
 	{
@@ -110,14 +100,12 @@ void VK_CreateInstance() {
 		desc.pApplicationInfo = NULL;
 		desc.enabledLayerCount = 0;
 		desc.ppEnabledLayerNames = NULL;
-		desc.enabledExtensionCount = sizeof(instance_extensions) / sizeof(instance_extensions[0]);
-		desc.ppEnabledExtensionNames = instance_extensions;
-
+		desc.enabledExtensionCount = sizeof(instanceExtensions) / sizeof(instanceExtensions[0]);
+		desc.ppEnabledExtensionNames = instanceExtensions;
 #ifndef NDEBUG
-		desc.enabledLayerCount = (uint32_t)(sizeof(validationLayer) / sizeof(validationLayer[0]));
-		desc.ppEnabledLayerNames = &validationLayer[0];
+		desc.enabledLayerCount = (uint32_t)(sizeof(validationLayers) / sizeof(validationLayers[0]));
+		desc.ppEnabledLayerNames = &validationLayers[0];
 #endif
-
 		VK_CHECK(vkCreateInstance(&desc, NULL, &vk.instance), "failed to create Instance!");
 	}
 }
@@ -128,7 +116,7 @@ void VK_CreateInstance() {
 ** win:		(HINSTANCE, HWND)
 ** macOS:	(NSView, NULL)
 */
-void VK_CreateSurface(void* p1, void* p2) {
+static void VK_CreateSurface(void* p1, void* p2) {
 #ifdef WIN32
 	VkWin32SurfaceCreateInfoKHR desc = {0};
 	desc.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
@@ -147,10 +135,9 @@ void VK_CreateSurface(void* p1, void* p2) {
 #elif defined( __linux__ )
         
 #endif
-
 }
 
-void VK_PickPhysicalDevice()
+static void VK_PickPhysicalDevice()
 {
 	{
 		uint32_t deviceCount = 0;
@@ -162,7 +149,7 @@ void VK_PickPhysicalDevice()
 		vkEnumeratePhysicalDevices(vk.instance, &deviceCount, &devices[0]);
 
 		for (int i = 0; i < deviceCount; i++) {
-			if (isDeviceSuitable(devices[i], vk.surface)) {
+			if (VK_IsDeviceSuitable(devices[i], vk.surface)) {
 				vk.physical_device = devices[i];
 				break;
 			}
@@ -176,13 +163,14 @@ void VK_PickPhysicalDevice()
 	{
 		uint32_t extensionCount = 0;
 		vkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &extensionCount, NULL);
-		VkExtensionProperties extensions[MAX_EXTENSION_PROPERTIES];
+		VkExtensionProperties *extensions = malloc(extensionCount * sizeof(VkExtensionProperties));
 		vkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &extensionCount, &extensions[0]);
 		//std::cout << "LogicalDeviceExtensions..." << std::endl;
 
 		//for (const auto& extension : extensions) {
 		//	std::cout << "\t" << extension.extensionName << std::endl;
 		//}
+		free(extensions);
 	}
 	// device infos
 	VkPhysicalDeviceProperties devProperties;
@@ -196,23 +184,21 @@ void VK_PickPhysicalDevice()
 
 }
 
-void VK_CreateLogicalDevice()
+static void VK_CreateLogicalDevice()
 {
-	queueFamilyIndices_t indices = findQueueFamilies(vk.physical_device, vk.surface);
+	VkDeviceQueueCreateInfo queueCreateInfos[2] = {0};
 
-	VkDeviceQueueCreateInfo queueCreateInfos[2];
-	memset(&queueCreateInfos, 0, sizeof(queueCreateInfos));
-
-	uint32_t queueCreateInfosCount = indices.graphicsFamily == indices.presentFamily ? 1 : 2;
+	// if graphic and present indices are the same, only one queue is needed
+	uint32_t queueCreateInfosCount = vk.queryFamilyIndices.graphicsFamily == vk.queryFamilyIndices.presentFamily ? 1 : 2;
 	float queuePriority = 1.0f;
 	queueCreateInfos[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfos[0].queueFamilyIndex = indices.graphicsFamily;
+	queueCreateInfos[0].queueFamilyIndex = vk.queryFamilyIndices.graphicsFamily;
 	queueCreateInfos[0].queueCount = 1;
 	queueCreateInfos[0].pQueuePriorities = &queuePriority;
 
-	if (indices.graphicsFamily != indices.presentFamily) {
+	if (vk.queryFamilyIndices.graphicsFamily != vk.queryFamilyIndices.presentFamily) {
 		queueCreateInfos[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfos[1].queueFamilyIndex = indices.presentFamily;
+		queueCreateInfos[1].queueFamilyIndex = vk.queryFamilyIndices.presentFamily;
 		queueCreateInfos[1].queueCount = 1;
 		queueCreateInfos[1].pQueuePriorities = &queuePriority;
 	}
@@ -222,129 +208,30 @@ void VK_CreateLogicalDevice()
 	deviceFeatures.multiDrawIndirect = qfalse;
 	deviceFeatures.drawIndirectFirstInstance = qfalse;
 
-	VkDeviceCreateInfo createInfo = { 0 };
-	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	VkDeviceCreateInfo desc = { 0 };
+	desc.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-	createInfo.queueCreateInfoCount = queueCreateInfosCount;
-	createInfo.pQueueCreateInfos = &queueCreateInfos[0];
+	desc.queueCreateInfoCount = queueCreateInfosCount;
+	desc.pQueueCreateInfos = &queueCreateInfos[0];
 
-	createInfo.pEnabledFeatures = &deviceFeatures;
+	desc.pEnabledFeatures = &deviceFeatures;
 
-	createInfo.enabledExtensionCount = (uint32_t)(sizeof(deviceExtensions) / sizeof(deviceExtensions[0]));
-	createInfo.ppEnabledExtensionNames = &deviceExtensions[0];
+	desc.enabledExtensionCount = (uint32_t)(sizeof(deviceExtensions) / sizeof(deviceExtensions[0]));
+	desc.ppEnabledExtensionNames = &deviceExtensions[0];
 
-	createInfo.enabledLayerCount = 0;
-
-	VK_CHECK(vkCreateDevice(vk.physical_device, &createInfo, NULL, &vk.device), "failed to create logical device!")
+	VK_CHECK(vkCreateDevice(vk.physical_device, &desc, NULL, &vk.device), "failed to create logical device!")
 }
 
-void VK_CreateCommandPool() {
-	queueFamilyIndices_t queueFamilyIndices = findQueueFamilies(vk.physical_device, vk.surface);
-
-	vkGetDeviceQueue(vk.device, queueFamilyIndices.graphicsFamily, 0, &vk.graphicsQueue);
-	vkGetDeviceQueue(vk.device, queueFamilyIndices.presentFamily, 0, &vk.presentQueue);
+static void VK_CreateCommandPool() {
+	vkGetDeviceQueue(vk.device, vk.queryFamilyIndices.graphicsFamily, 0, &vk.graphicsQueue);
+	vkGetDeviceQueue(vk.device, vk.queryFamilyIndices.presentFamily, 0, &vk.presentQueue);
 
 	VkCommandPoolCreateInfo poolInfo = { 0 };
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
+	poolInfo.queueFamilyIndex = vk.queryFamilyIndices.graphicsFamily;
 	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;//VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 
 	VK_CHECK(vkCreateCommandPool(vk.device, &poolInfo, NULL, &vk.commandPool), "failed to create command pool!");
-}
-
-void VK_CreateCommandBuffers()
-{
-	vk.swapchain.commandBuffers = malloc(vk.swapchain.imageCount * sizeof(VkCommandBuffer));
-
-	VkCommandBufferAllocateInfo allocInfo = {0};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = vk.commandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = vk.swapchain.imageCount;
-
-	VK_CHECK(vkAllocateCommandBuffers(vk.device, &allocInfo, vk.swapchain.commandBuffers), "failed to allocate command buffers!");
-}
-
-void VK_CreateSyncObjects()
-{
-	vk.swapchain.imageAvailableSemaphores = malloc(vk.swapchain.imageCount * sizeof(VkSemaphore));
-	vk.swapchain.renderFinishedSemaphores = malloc(vk.swapchain.imageCount * sizeof(VkSemaphore));
-	vk.swapchain.inFlightFences = malloc(vk.swapchain.imageCount * sizeof(VkFence));
-
-	VkSemaphoreCreateInfo semaphoreInfo = {0};
-	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-	VkFenceCreateInfo fenceInfo = {0};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-	for (size_t i = 0; i < vk.swapchain.imageCount; i++) {
-		VK_CHECK(vkCreateSemaphore(vk.device, &semaphoreInfo, NULL, &vk.swapchain.imageAvailableSemaphores[i]), "failed to create Semaphore!");
-		VK_CHECK(vkCreateSemaphore(vk.device, &semaphoreInfo, NULL, &vk.swapchain.renderFinishedSemaphores[i]), "failed to create Semaphore!");
-		VK_CHECK(vkCreateFence(vk.device, &fenceInfo, NULL, &vk.swapchain.inFlightFences[i]), "failed to create Fence!");
-	}
-
-	vk.swapchain.currentFrame = vk.swapchain.imageCount - 1;
-}
-
-void VK_BeginFrame()
-{
-	// wait for command buffer submission for last image
-	vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentFrame], VK_TRUE, UINT64_MAX);
-	vkResetFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentFrame]);
-
-	vkAcquireNextImageKHR(vk.device, vk.swapchain.handle, UINT64_MAX, vk.swapchain.imageAvailableSemaphores[vk.swapchain.currentFrame], vk.swapchain.inFlightFences[vk.swapchain.currentFrame], &vk.swapchain.currentImage);
-
-	vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentImage], VK_TRUE, UINT64_MAX);
-	vkResetFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentImage]);
-
-	vkFreeCommandBuffers(vk.device, vk.commandPool, 1, &vk.swapchain.commandBuffers[vk.swapchain.currentImage]);
-	VkCommandBufferAllocateInfo cmdBufInfo = {
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, NULL, vk.commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1 };
-	VkResult err = vkAllocateCommandBuffers(vk.device, &cmdBufInfo, &vk.swapchain.commandBuffers[vk.swapchain.currentImage]);
-
-	VkCommandBufferBeginInfo beginInfo = {0};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;//VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-
-	VK_CHECK(vkBeginCommandBuffer(vk.swapchain.commandBuffers[vk.swapchain.currentImage], &beginInfo), "failed to begin recording command buffer!");
-}
-
-void VK_EndFrame() {
-
-	VK_CHECK(vkEndCommandBuffer(vk.swapchain.commandBuffers[vk.swapchain.currentImage]), "failed to end commandbuffer!");
-	//vkResetFences(this->device, 1, &inFlightFences[currentFrame]);
-
-	VkSemaphore waitSemaphores[] = { vk.swapchain.imageAvailableSemaphores[vk.swapchain.currentFrame] };
-	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-	VkSemaphore signalSemaphores[] = { vk.swapchain.renderFinishedSemaphores[vk.swapchain.currentFrame] };
-
-	VkSubmitInfo submitInfo = {0};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
-	submitInfo.pWaitDstStageMask = waitStages;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &vk.swapchain.commandBuffers[vk.swapchain.currentImage];
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores;
-
-	VK_CHECK(vkQueueSubmit(vk.graphicsQueue, 1, &submitInfo, vk.swapchain.inFlightFences[vk.swapchain.currentImage]), "failed to submit draw command buffer!");
-	
-
-	VkSwapchainKHR swapChains[] = { vk.swapchain.handle };
-
-	VkPresentInfoKHR presentInfo = {0};
-	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = signalSemaphores;
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = swapChains;
-	presentInfo.pImageIndices = &vk.swapchain.currentImage;
-
-	VK_CHECK(vkQueuePresentKHR(vk.presentQueue, &presentInfo), "failed to Queue Present!");
-
-	vk.swapchain.currentFrame = (vk.swapchain.currentFrame + 1) % vk.swapchain.imageCount;
 }
 
 /*
@@ -354,17 +241,16 @@ Vulkan Debug Function
 
 ==============================================================================
 */
-static qboolean checkValidationLayerSupport() {
+static qboolean VK_CheckValidationLayerSupport() {
 	uint32_t layerCount;
 	vkEnumerateInstanceLayerProperties(&layerCount, NULL);
-	//VkLayerProperties* availableLayers = malloc(layerCount * sizeof(VkLayerProperties));
-	VkLayerProperties availableLayers[20];
+	VkLayerProperties* availableLayers = malloc(layerCount * sizeof(VkLayerProperties));
 	vkEnumerateInstanceLayerProperties(&layerCount, &availableLayers[0]);
 
-	for (int i = 0; i < (sizeof(validationLayer) / sizeof(validationLayer[0])); i++) {
+	for (int i = 0; i < (sizeof(validationLayers) / sizeof(validationLayers[0])); i++) {
 		qboolean layerFound = qfalse;
 		for (int j = 0; j < layerCount; j++) {
-			if (!strcmp(availableLayers[j].layerName, validationLayer[i])) {
+			if (!strcmp(availableLayers[j].layerName, validationLayers[i])) {
 				layerFound = qtrue;
 				break;
 			}
@@ -374,6 +260,7 @@ static qboolean checkValidationLayerSupport() {
 		}
 	}
 
+	free(availableLayers);
 	return qtrue;
 }
 
@@ -396,20 +283,21 @@ void VK_SetupDebugCallback() {
 /*
 ==============================================================================
 
-Vulkan Helper Function
+Vulkan Helper Function (Query Functions etc)
 
 ==============================================================================
 */
 
-queueFamilyIndices_t findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
+// -- Device Query -- Start
+static vkqueueFamilyIndices_t VK_FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
 
-	queueFamilyIndices_t indices;
+	vkqueueFamilyIndices_t indices;
 	indices.graphicsFamily = -1;
 	indices.presentFamily = -1;
 
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, NULL);
-	VkQueueFamilyProperties queueFamilies[20];
+	VkQueueFamilyProperties *queueFamilies = malloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, &queueFamilies[0]);
 
 	int i = 0;
@@ -426,15 +314,65 @@ queueFamilyIndices_t findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR sur
 			indices.presentFamily = i;
 		}
 
-		if (indices.graphicsFamily >= 0 && indices.presentFamily >= 0) {
+		if (indices.graphicsFamily >= 0 &&
+			indices.presentFamily  >= 0) {
 			break;
 		}
 
 		i++;
 	}
 
+	free(queueFamilies);
 	return indices;
 }
+
+static qboolean VK_CheckDeviceExtensionSupport(VkPhysicalDevice device) {
+	uint32_t extensionCount;
+	vkEnumerateDeviceExtensionProperties(device, NULL, &extensionCount, NULL);
+	VkExtensionProperties* availableExtensions = malloc(extensionCount * sizeof(VkExtensionProperties));
+	vkEnumerateDeviceExtensionProperties(device, NULL, &extensionCount, &availableExtensions[0]);
+
+	for (int i = 0; i < (sizeof(deviceExtensions) / sizeof(deviceExtensions[0])); i++) {
+		qboolean supported = qfalse;
+		for (int j = 0; j < extensionCount; j++) {
+			if (!strcmp(availableExtensions[j].extensionName, deviceExtensions[i])) {
+				supported = qtrue;
+				break;
+			}
+		}
+		if (!supported) ri.Error(ERR_FATAL, "Vulkan: required instance extension is not available: %s", deviceExtensions[i]);
+	}
+
+	free(availableExtensions);
+	return qtrue;
+}
+
+qboolean VK_IsDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
+	vkqueueFamilyIndices_t queueFamilyIndices = VK_FindQueueFamilies(device, surface);
+
+	qboolean extensionsSupported = VK_CheckDeviceExtensionSupport(device);
+
+	qboolean swapChainAdequate = qfalse;
+	if (extensionsSupported) {
+		swapChainSupportDetails_t swapChainSupport = querySwapChainSupport(device, surface);
+		swapChainAdequate = swapChainSupport.formatCount && swapChainSupport.presentModeCount;
+	}
+
+	if (queueFamilyIndices.graphicsFamily >= 0 &&
+		queueFamilyIndices.presentFamily >= 0 &&
+		extensionsSupported &&
+		swapChainAdequate)
+	{
+		Com_Memcpy(&vk.queryFamilyIndices, &queueFamilyIndices, sizeof(vkqueueFamilyIndices_t));
+		return qtrue;
+	}
+	else return qfalse;
+
+	return	vk.queryFamilyIndices.graphicsFamily >= 0 &&
+		vk.queryFamilyIndices.presentFamily >= 0 && extensionsSupported && swapChainAdequate;;
+}
+// -- Device Query -- End
+
 
 swapChainSupportDetails_t querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
 	swapChainSupportDetails_t details;
@@ -454,39 +392,6 @@ swapChainSupportDetails_t querySwapChainSupport(VkPhysicalDevice device, VkSurfa
 	}
 
 	return details;
-}
-
-static qboolean checkDeviceExtensionSupport(VkPhysicalDevice device) {
-	uint32_t extensionCount;
-	vkEnumerateDeviceExtensionProperties(device, NULL, &extensionCount, NULL);
-	VkExtensionProperties availableExtensions[60];
-	vkEnumerateDeviceExtensionProperties(device, NULL, &extensionCount, &availableExtensions[0]);
-
-	for (int i = 0; i < (sizeof(deviceExtensions) / sizeof(deviceExtensions[0])); i++) {
-		qboolean supported = qfalse;
-		for (int j = 0; j < extensionCount; j++) {
-			if (!strcmp(availableExtensions[j].extensionName, deviceExtensions[i])) {
-				supported = qtrue;
-				break;
-			}
-		}
-		if (!supported) ri.Error(ERR_FATAL, "Vulkan: required instance extension is not available: %s", deviceExtensions[i]);
-	}
-	return qtrue;
-}
-
-static qboolean isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
-	queueFamilyIndices_t q = findQueueFamilies(device, surface);
-
-	qboolean extensionsSupported = checkDeviceExtensionSupport(device);
-
-	qboolean swapChainAdequate = qfalse;
-	if (extensionsSupported) {
-		swapChainSupportDetails_t swapChainSupport = querySwapChainSupport(device, surface);
-		swapChainAdequate = swapChainSupport.formatCount && swapChainSupport.presentModeCount;
-	}
-
-	return q.graphicsFamily >= 0 && q.presentFamily >= 0 && extensionsSupported && swapChainAdequate;;
 }
 
 char* VK_ErrorString(VkResult errorCode)

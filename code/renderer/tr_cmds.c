@@ -347,6 +347,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 		if ( r_measureOverdraw->modified ) {
 			R_SyncRenderThread();
 			if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) qglDisable( GL_STENCIL_TEST );
+			if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) vk_d.state.dsBlend.stencilTestEnable = VK_FALSE;
 		}
 		r_measureOverdraw->modified = qfalse;
 	}
