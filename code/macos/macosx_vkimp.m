@@ -243,12 +243,6 @@ qboolean VKimp_SetMode( qboolean isSecondTry )
     }
     
     
-    VK_CreateIndexBuffer(&vk_d.indexbuffer, SHADER_MAX_INDEXES * sizeof(uint32_t));
-    VK_CreateVertexBuffer(&vk_d.vertexbuffer, SHADER_MAX_VERTEXES * sizeof(vec4_t));
-    VK_CreateVertexBuffer(&vk_d.normalbuffer, SHADER_MAX_VERTEXES * sizeof(vec4_t));
-    VK_CreateVertexBuffer(&vk_d.uvbuffer, SHADER_MAX_VERTEXES * sizeof(vec2_t));
-    VK_CreateVertexBuffer(&vk_d.colorbuffer, SHADER_MAX_VERTEXES * sizeof(color4ub_t));
-    
 //    vkattribbuffer_t a;
 //    VK_CreateVertexBuffer(&a, 9 * sizeof(Float32));
 //    
