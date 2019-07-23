@@ -160,7 +160,6 @@ void IN_Win32Mouse( int *mx, int *my ) {
 	*my = current_pos.y - window_center_y;
 }
 
-
 /*
 ============================================================
 
@@ -495,9 +494,6 @@ void IN_ActivateMouse( void )
 
 	s_wmv.mouseActive = qtrue;
 
-	if ( in_mouse->integer != -1 ) {
-		IN_ActivateDIMouse();
-	}
 	IN_ActivateWin32Mouse();
 }
 
@@ -518,7 +514,6 @@ void IN_DeactivateMouse( void ) {
 	}
 	s_wmv.mouseActive = qfalse;
 
-	IN_DeactivateDIMouse();
 	IN_DeactivateWin32Mouse();
 }
 
@@ -606,11 +601,8 @@ IN_MouseMove
 void IN_MouseMove ( void ) {
 	int		mx, my;
 
-	if ( g_pMouse ) {
-		IN_DIMouse( &mx, &my );
-	} else {
-		IN_Win32Mouse( &mx, &my );
-	}
+	IN_Win32Mouse( &mx, &my );
+
 
 	if ( !mx && !my ) {
 		return;
@@ -646,7 +638,6 @@ IN_Shutdown
 */
 void IN_Shutdown( void ) {
 	IN_DeactivateMouse();
-	IN_ShutdownDIMouse();
 	Cmd_RemoveCommand("midiinfo" );
 }
 
