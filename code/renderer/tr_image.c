@@ -804,21 +804,21 @@ image_t *R_CreateImage(const char *name, const byte *pic, int width, int height,
 
 	// Create corresponding GPU resource.
 	qboolean isLightmap = (strncmp(name, "*lightmap", 9) == 0);
-	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+	if (glConfig.driverType == OPENGL) {
 		GL_SelectTexture(isLightmap ? 1 : 0);
 		GL_Bind(image);
 	}
 
 	struct Image_Upload_Data upload_data = generate_image_upload_data(pic, width, height, mipmap, allowPicmip);
 
-	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+	if (glConfig.driverType == OPENGL) {
 		image->internalFormat = upload_gl_image(&upload_data, glWrapClampMode );
 
 		if (isLightmap) {
 			GL_SelectTexture(0);
 		}
 	}
-	else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+	else if (glConfig.driverType == VULKAN) {
         vk_d.images[image->index] = upload_vk_image(&upload_data, glWrapClampMode);
         
         VK_AddSampler(&vk_d.images[image->index].descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -1717,7 +1717,7 @@ static void R_CreateFogImage(void) {
 	borderColor[2] = 1.0;
 	borderColor[3] = 1;
 
-	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+	if (glConfig.driverType == OPENGL) {
 		qglTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 	}
 }
@@ -1906,19 +1906,25 @@ R_DeleteTextures
 */
 void R_DeleteTextures(void) {
 	for (int i = 0; i < tr.numImages; i++) {
-		qglDeleteTextures(1, &tr.images[i]->texnum);
+		if (glConfig.driverType == OPENGL) qglDeleteTextures(1, &tr.images[i]->texnum);
+		else if (glConfig.driverType == VULKAN) {
+			VK_DestroyImage(&vk_d.images[tr.images[i]->index]);
+		}
 	}
 	Com_Memset(tr.images, 0, sizeof(tr.images));
 
 	tr.numImages = 0;
+	if (glConfig.driverType == VULKAN) vk_d.size = 0;
 
 	Com_Memset(glState.currenttextures, 0, sizeof(glState.currenttextures));
 
-	if (qglBindTexture) {
-		GL_SelectTexture(1);
-		qglBindTexture(GL_TEXTURE_2D, 0);
-		GL_SelectTexture(0);
-		qglBindTexture(GL_TEXTURE_2D, 0);
+	if (glConfig.driverType == OPENGL) {
+		if (qglBindTexture) {
+			GL_SelectTexture(1);
+			qglBindTexture(GL_TEXTURE_2D, 0);
+			GL_SelectTexture(0);
+			qglBindTexture(GL_TEXTURE_2D, 0);
+		}
 	}
 }
 

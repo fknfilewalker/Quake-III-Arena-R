@@ -368,8 +368,8 @@ static qboolean W_CreateWindow(const char* drivername, int width, int height, in
 	}
 
 	qboolean initDriver = qfalse;
-	if (!Q_stricmp(drivername, OPENGL_DRIVER_NAME)) initDriver = GLW_InitDriver(drivername, colorbits);
-	else if(!Q_stricmp(drivername, VULKAN_DRIVER_NAME)) initDriver = VKW_InitDriver(drivername, colorbits);
+	if (glConfig.driverType == OPENGL) initDriver = GLW_InitDriver(drivername, colorbits);
+	else if(glConfig.driverType == VULKAN) initDriver = VKW_InitDriver(drivername, colorbits);
 
 	if (!initDriver)
 	{

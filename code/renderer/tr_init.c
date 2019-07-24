@@ -205,6 +205,7 @@ static void InitOpenGL( void )
 	
 	if ( glConfig.vidWidth == 0 )
 	{
+
 		GLint		temp;
 		
 		GLimp_Init();
@@ -1140,6 +1141,9 @@ void R_Init( void ) {
 
 	R_Register();
 
+	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) glConfig.driverType = OPENGL;
+	else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) glConfig.driverType = VULKAN;
+
 	max_polys = r_maxpolys->integer;
 	if (max_polys < MAX_POLYS)
 		max_polys = MAX_POLYS;
@@ -1162,9 +1166,8 @@ void R_Init( void ) {
 	}
 	R_ToggleSmpFrame();
 
-
-	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) InitOpenGL();
-	else if(!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME))  InitVulkan();
+	if (glConfig.driverType == OPENGL) InitOpenGL();
+	else if(glConfig.driverType == VULKAN)  InitVulkan();
 
 	R_InitImages();
 
@@ -1176,7 +1179,7 @@ void R_Init( void ) {
 
 	R_InitFreeType();
 
-	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+	if (glConfig.driverType == OPENGL) {
 		err = qglGetError();
 		if (err != GL_NO_ERROR)
 			ri.Printf(PRINT_ALL, "glGetError() = 0x%x\n", err);
@@ -1192,37 +1195,35 @@ RE_Shutdown
 ===============
 */
 void RE_Shutdown( qboolean destroyWindow ) {	
-	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
-		ri.Printf(PRINT_ALL, "RE_Shutdown( %i )\n", destroyWindow);
+	
+	ri.Printf(PRINT_ALL, "RE_Shutdown( %i )\n", destroyWindow);
 
-		ri.Cmd_RemoveCommand("modellist");
-		ri.Cmd_RemoveCommand("screenshotJPEG");
-		ri.Cmd_RemoveCommand("screenshot");
-		ri.Cmd_RemoveCommand("imagelist");
-		ri.Cmd_RemoveCommand("shaderlist");
-		ri.Cmd_RemoveCommand("skinlist");
-		ri.Cmd_RemoveCommand("gfxinfo");
-		ri.Cmd_RemoveCommand("modelist");
-		ri.Cmd_RemoveCommand("shaderstate");
+	ri.Cmd_RemoveCommand("modellist");
+	ri.Cmd_RemoveCommand("screenshotJPEG");
+	ri.Cmd_RemoveCommand("screenshot");
+	ri.Cmd_RemoveCommand("imagelist");
+	ri.Cmd_RemoveCommand("shaderlist");
+	ri.Cmd_RemoveCommand("skinlist");
+	ri.Cmd_RemoveCommand("gfxinfo");
+	ri.Cmd_RemoveCommand("modelist");
+	ri.Cmd_RemoveCommand("shaderstate");
 
 
-		if (tr.registered) {
-			R_SyncRenderThread();
-			R_ShutdownCommandBuffers();
-			R_DeleteTextures();
-		}
-
-		R_DoneFreeType();
-
-		// shut down platform specific OpenGL stuff
-		if (destroyWindow) {
-			GLimp_Shutdown();
-		}
-
-		tr.registered = qfalse;
-	} else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
-
+	if (tr.registered) {
+		R_SyncRenderThread();
+		R_ShutdownCommandBuffers();
+		R_DeleteTextures();
 	}
+
+	R_DoneFreeType();
+
+	// shut down platform specific OpenGL/Vulkan stuff
+	if (destroyWindow) {
+		if(glConfig.driverType == OPENGL) GLimp_Shutdown();
+		else if (glConfig.driverType == VULKAN) VKimp_Shutdown();
+	}
+
+	tr.registered = qfalse;
 }
 
 

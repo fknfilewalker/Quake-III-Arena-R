@@ -165,7 +165,7 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 
 	primitives = r_primitives->integer;
 
-	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+	if (glConfig.driverType == OPENGL) {
 		// default is to use triangles if compiled vertex arrays are present
 		if (primitives == 0) {
 			if (qglLockArraysEXT) {
@@ -197,7 +197,7 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 
 		// anything else will cause no drawing
 	}
-	else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+	else if (glConfig.driverType == VULKAN) {
 		VK_UploadAttribDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*) &indexes[0]);
 
 		//int aaa = pStage->bundle[0].image[0]->index;
@@ -277,9 +277,9 @@ static void R_BindAnimatedImage( textureBundle_t *bundle ) {
 	}
 
 	if ( bundle->numImageAnimations <= 1 ) {
-        if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+        if (glConfig.driverType == OPENGL) {
             GL_Bind( bundle->image[0] );
-        } else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+        } else if (glConfig.driverType == VULKAN) {
             VK_Bind( bundle->image[0] );
         }
 		return;
@@ -294,9 +294,9 @@ static void R_BindAnimatedImage( textureBundle_t *bundle ) {
 		index = 0;	// may happen with shader time offsets
 	}
 	index %= bundle->numImageAnimations;
-    if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+    if (glConfig.driverType == OPENGL) {
         GL_Bind( bundle->image[ index ] );
-    } else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+    } else if (glConfig.driverType == VULKAN) {
         VK_Bind( bundle->image[ index ] );
     }
 }
@@ -309,7 +309,7 @@ Draws triangle outlines for debugging
 ================
 */
 static void DrawTris (shaderCommands_t *input) {
-	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+	if (glConfig.driverType == OPENGL) {
 		GL_Bind(tr.whiteImage);
 		qglColor3f(1, 1, 1);
 
@@ -334,7 +334,7 @@ static void DrawTris (shaderCommands_t *input) {
 		}
 		qglDepthRange(0, 1);
 	}
-	else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+	else if (glConfig.driverType == VULKAN) {
 		VK_Bind(tr.whiteImage);
 
 		VK_State(GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE);
@@ -1032,7 +1032,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 		ComputeColors( pStage );
 		ComputeTexCoords( pStage );
 
-        if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+        if (glConfig.driverType == OPENGL) {
             
             if ( !setArraysOnce )
             {
@@ -1073,7 +1073,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
             }
         
         }
-        else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+        else if (glConfig.driverType == VULKAN) {
 			int a = tess.shader->index;
 			//if (a != 21) return;
 
@@ -1153,7 +1153,7 @@ void RB_StageIteratorGeneric( void )
 		GLimp_LogComment( va("--- RB_StageIteratorGeneric( %s ) ---\n", tess.shader->name) );
 	}
 
-    if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+    if (glConfig.driverType == OPENGL) {
         //
         // set face culling appropriately
         //
@@ -1244,7 +1244,7 @@ void RB_StageIteratorGeneric( void )
         {
             qglDisable( GL_POLYGON_OFFSET_FILL );
         }
-    } else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+    } else if (glConfig.driverType == VULKAN) {
     
         //
         // set face culling appropriately

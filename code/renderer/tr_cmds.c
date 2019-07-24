@@ -346,8 +346,8 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 		// this is only reached if it was on and is now off
 		if ( r_measureOverdraw->modified ) {
 			R_SyncRenderThread();
-			if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) qglDisable( GL_STENCIL_TEST );
-			if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) vk_d.state.dsBlend.stencilTestEnable = VK_FALSE;
+			if (glConfig.driverType == OPENGL) qglDisable( GL_STENCIL_TEST );
+			if (glConfig.driverType == VULKAN) vk_d.state.dsBlend.stencilTestEnable = VK_FALSE;
 		}
 		r_measureOverdraw->modified = qfalse;
 	}
@@ -357,8 +357,8 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	//
 	if ( r_textureMode->modified ) {
 		R_SyncRenderThread();
-		if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) GL_TextureMode( r_textureMode->string );
-        if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) VK_TextureMode( r_textureMode->string );
+		if (glConfig.driverType == OPENGL) GL_TextureMode( r_textureMode->string );
+        if (glConfig.driverType == VULKAN) VK_TextureMode( r_textureMode->string );
 		r_textureMode->modified = qfalse;
 	}
 

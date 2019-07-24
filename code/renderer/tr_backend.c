@@ -709,10 +709,10 @@ static void RB_Hyperspace( void ) {
 	}
 
 	c = ( backEnd.refdef.time & 255 ) / 255.0f;
-    if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+    if ( glConfig.driverType == OPENGL ) {
         qglClearColor( c, c, c, 1 );
         qglClear( GL_COLOR_BUFFER_BIT );
-    } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+    } else if ( glConfig.driverType == VULKAN ) {
         VK_ClearAttachments(qfalse, qfalse, qtrue, (vec4_t){c, c, c, 1});
     }
 
@@ -721,7 +721,7 @@ static void RB_Hyperspace( void ) {
 
 
 static void SetViewportAndScissor( void ) {
-    if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+    if ( glConfig.driverType == OPENGL ) {
         qglMatrixMode(GL_PROJECTION);
         qglLoadMatrixf( backEnd.viewParms.projectionMatrix );
         qglMatrixMode(GL_MODELVIEW);
@@ -731,7 +731,7 @@ static void SetViewportAndScissor( void ) {
                     backEnd.viewParms.viewportWidth, backEnd.viewParms.viewportHeight );
         qglScissor( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY,
                    backEnd.viewParms.viewportWidth, backEnd.viewParms.viewportHeight );
-    } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+    } else if ( glConfig.driverType == VULKAN ) {
         
         const float* p = backEnd.viewParms.projectionMatrix;
         
@@ -796,9 +796,9 @@ void RB_BeginDrawingView (void) {
 	SetViewportAndScissor();
 
 	// ensures that depth writes are enabled for the depth clear
-    if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+    if ( glConfig.driverType == OPENGL ) {
         GL_State( GLS_DEFAULT );
-    } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+    } else if ( glConfig.driverType == VULKAN ) {
         VK_State( GLS_DEFAULT );
     }
 	// clear relevant buffers
@@ -816,13 +816,13 @@ void RB_BeginDrawingView (void) {
 #else
         clearColor[0] = clearColor[1] = clearColor[2] = 0.0f; clearColor[3] = 1.0f;
 #endif
-        if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+        if ( glConfig.driverType == OPENGL ) {
             qglClearColor( clearColor[0], clearColor[1], clearColor[2], clearColor[3] );    // FIXME: get color of sky
         }
 	}
-    if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+    if ( glConfig.driverType == OPENGL ) {
         qglClear( clearBits );
-    } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+    } else if ( glConfig.driverType == VULKAN ) {
         VK_ClearAttachments(clearBits & GL_DEPTH_BUFFER_BIT, clearBits & GL_STENCIL_BUFFER_BIT, clearBits & GL_COLOR_BUFFER_BIT, clearColor);
     }
     
@@ -856,11 +856,11 @@ void RB_BeginDrawingView (void) {
 		plane2[2] = DotProduct (backEnd.viewParms.or.axis[2], plane);
 		plane2[3] = DotProduct (plane, backEnd.viewParms.or.origin) - plane[3];
 		
-        if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+        if ( glConfig.driverType == OPENGL ) {
             qglLoadMatrixf( s_flipMatrix );
             qglClipPlane (GL_CLIP_PLANE0, plane2);
             qglEnable (GL_CLIP_PLANE0);
-        } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+        } else if ( glConfig.driverType == VULKAN ) {
             //Com_Memcpy(vk_d.state.plane, plane2, 16);
             vk_d.state.plane[0] = -plane2[1];
             vk_d.state.plane[1] =  plane2[2];
@@ -869,9 +869,9 @@ void RB_BeginDrawingView (void) {
             vk_d.state.clip = qtrue;
         }
 	} else {
-        if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+        if ( glConfig.driverType == OPENGL ) {
             qglDisable (GL_CLIP_PLANE0);
-        } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+        } else if ( glConfig.driverType == VULKAN ) {
             vk_d.state.clip = qfalse;
         }
 	}
@@ -975,9 +975,9 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 			}
 
-            if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+            if ( glConfig.driverType == OPENGL ) {
                 qglLoadMatrixf( backEnd.or.modelMatrix );
-            } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+            } else if ( glConfig.driverType == VULKAN ) {
                 Com_Memcpy(vk_d.modelViewMatrix, backEnd.or.modelMatrix, 64);
             }
 
@@ -985,13 +985,13 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 			// change depthrange if needed
 			//
 			if ( oldDepthRange != depthRange ) {
-                if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+                if ( glConfig.driverType == OPENGL ) {
                     if ( depthRange ) {
                         qglDepthRange (0, 0.3);
                     } else {
                         qglDepthRange (0, 1);
                     }
-                } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+                } else if ( glConfig.driverType == VULKAN ) {
                     if ( depthRange ) {
                         vk_d.viewport.minDepth = 0.0f;
                         vk_d.viewport.maxDepth = 0.3f;
@@ -1018,15 +1018,15 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	}
 
 	// go back to the world modelview matrix
-    if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+    if ( glConfig.driverType == OPENGL ) {
         qglLoadMatrixf( backEnd.viewParms.world.modelMatrix );
-    } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+    } else if ( glConfig.driverType == VULKAN ) {
         Com_Memcpy(vk_d.modelViewMatrix, backEnd.viewParms.world.modelMatrix, 64);
     }
 	if ( depthRange ) {
-        if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+        if ( glConfig.driverType == OPENGL ) {
             qglDepthRange (0, 1);
-        } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+        } else if ( glConfig.driverType == VULKAN ) {
             vk_d.viewport.minDepth = 0.0f;
             vk_d.viewport.maxDepth = 1.0f;
         }
@@ -1061,7 +1061,7 @@ RB_SetGL2D
 void	RB_SetGL2D (void) {
 	backEnd.projection2D = qtrue;
 
-    if ( !Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME) ) {
+    if ( glConfig.driverType == OPENGL ) {
         // set 2D virtual screen size
         qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
         qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
@@ -1077,7 +1077,7 @@ void	RB_SetGL2D (void) {
 
         qglDisable( GL_CULL_FACE );
         qglDisable( GL_CLIP_PLANE0 );
-    } else if ( !Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ) {
+    } else if ( glConfig.driverType == VULKAN ) {
         
 		Com_Memset(vk_d.modelViewMatrix, 0, 64);
         vk_d.modelViewMatrix[0] = vk_d.modelViewMatrix[5] = vk_d.modelViewMatrix[10] = vk_d.modelViewMatrix[15] = 1;
@@ -1171,7 +1171,7 @@ void RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *
 
 void RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty) {
 
-    if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+    if (glConfig.driverType == OPENGL) {
         GL_Bind( tr.scratchImage[client] );
         
         // if the scratchImage isn't in the format we want, specify it as a new texture
@@ -1190,7 +1190,7 @@ void RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int
                 qglTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, cols, rows, GL_RGBA, GL_UNSIGNED_BYTE, data );
             }
         }
-    } else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+    } else if (glConfig.driverType == VULKAN) {
         if ( cols != tr.scratchImage[client]->width || rows != tr.scratchImage[client]->height ) {
             tr.scratchImage[client]->width = tr.scratchImage[client]->uploadWidth = cols;
             tr.scratchImage[client]->height = tr.scratchImage[client]->uploadHeight = rows;
@@ -1346,7 +1346,7 @@ const void	*RB_DrawBuffer( const void *data ) {
 
 	cmd = (const drawBufferCommand_t *)data;
 
-    if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+    if (glConfig.driverType == OPENGL) {
         qglDrawBuffer( cmd->buffer );
 
         // clear screen for debugging
@@ -1354,7 +1354,7 @@ const void	*RB_DrawBuffer( const void *data ) {
             qglClearColor( 1, 0, 0.5, 1 );
             qglClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         }
-    } else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+    } else if (glConfig.driverType == VULKAN) {
         VK_BeginFrame();
         beginRenderClear();
         if ( r_clear->integer ) {
@@ -1465,7 +1465,7 @@ const void	*RB_SwapBuffers( const void *data ) {
 		ri.Hunk_FreeTempMemory( stencilReadback );
 	}
 
-    if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) {
+    if (glConfig.driverType == OPENGL) {
         if ( !glState.finishCalled ) {
             qglFinish();
         }
@@ -1473,7 +1473,7 @@ const void	*RB_SwapBuffers( const void *data ) {
         GLimp_LogComment( "***************** RB_SwapBuffers *****************\n\n\n" );
 
         GLimp_EndFrame();
-    } else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) {
+    } else if (glConfig.driverType == VULKAN) {
         endRender();
         VK_EndFrame();
     }
@@ -1525,7 +1525,7 @@ void RB_ExecuteRenderCommands( const void *data ) {
 
 		case RC_END_OF_LIST:
 		default:
-            /*if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) && com_errorEntered && vk.swapchain.frameStarted) {
+            /*if (glConfig.driverType == VULKAN && com_errorEntered && vk.swapchain.frameStarted) {
                 endRender();
                 VK_EndFrame();
             }*/

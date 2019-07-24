@@ -876,7 +876,7 @@ void GraphicsOptions_MenuInit( void )
 	s_graphicsoptions.driver.generic.x     = 400;
 	s_graphicsoptions.driver.generic.y     = y;
 	s_graphicsoptions.driver.itemnames     = s_driver_names;
-	s_graphicsoptions.driver.curvalue	   = qfalse; //(uis.glconfig.driverType == GLDRV_VOODOO);
+	s_graphicsoptions.driver.curvalue	   = uis.glconfig.driverType;
 	y += BIGCHAR_HEIGHT+2;
 
 	// references/modifies "r_allowExtensions"

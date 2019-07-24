@@ -65,7 +65,6 @@ static qboolean VKW_LoadVulkan(const char* drivername)
 	Q_strncpyz(buffer, drivername, sizeof(buffer));
 	Q_strlwr(buffer);
 
-	glConfig.driverType = GLDRV_ICD;
 
 	if (QVK_Init(buffer))
 	{
@@ -88,8 +87,7 @@ static void VKW_StartVulkan(void) {
 	//
 	// load and initialize the specific Vulkan driver
 	//
-	if (Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME) ||
-		!VKW_LoadVulkan(VULKAN_DRIVER_NAME))
+	if (!VKW_LoadVulkan(VULKAN_DRIVER_NAME))
 	{
 		ri.Error(ERR_FATAL, "VKW_StartVulkan() - could not load Vulkan subsystem\n");
 	}
@@ -121,7 +119,54 @@ void VKimp_Init( void ) {
 
 	// get our config strings
 
-	
+}
 
+void VKimp_Shutdown(void) {
+	//	const char *strings[] = { "soft", "hard" };
+	const char* success[] = { "failed", "success" };
+	int retVal;
 
+	ri.Printf(PRINT_ALL, "Shutting down OpenGL subsystem\n");
+
+	// restore gamma.  We do this first because 3Dfx's extension needs a valid OGL subsystem
+	WG_RestoreGamma();
+
+	// release DC
+	if (glw_state.hDC)
+	{
+		retVal = ReleaseDC(wv.hWnd, glw_state.hDC) != 0;
+		ri.Printf(PRINT_ALL, "...releasing DC: %s\n", success[retVal]);
+		glw_state.hDC = NULL;
+	}
+
+	// destroy window
+	if (wv.hWnd)
+	{
+		ri.Printf(PRINT_ALL, "...destroying window\n");
+		ShowWindow(wv.hWnd, SW_HIDE);
+		DestroyWindow(wv.hWnd);
+		wv.hWnd = NULL;
+		glw_state.pixelFormatSet = qfalse;
+	}
+
+	// close the r_logFile
+	if (glw_state.log_fp)
+	{
+		fclose(glw_state.log_fp);
+		glw_state.log_fp = 0;
+	}
+
+	// reset display settings
+	if (glw_state.cdsFullscreen)
+	{
+		ri.Printf(PRINT_ALL, "...resetting display\n");
+		ChangeDisplaySettings(0, 0);
+		glw_state.cdsFullscreen = qfalse;
+	}
+
+	// shutdown QGL subsystem
+	QVK_Shutdown();
+
+	memset(&glConfig, 0, sizeof(glConfig));
+	memset(&glState, 0, sizeof(glState));
 }

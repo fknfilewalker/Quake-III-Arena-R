@@ -84,11 +84,11 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 	ri.Printf( PRINT_ALL, "...GLW_ChoosePFD( %d, %d, %d )\n", ( int ) pPFD->cColorBits, ( int ) pPFD->cDepthBits, ( int ) pPFD->cStencilBits );
 
 	// count number of PFDs
-	if ( glConfig.driverType > GLDRV_ICD )
+	/*if ( glConfig.driverType > GLDRV_ICD )
 	{
 		maxPFD = qwglDescribePixelFormat( hDC, 1, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[0] );
 	}
-	else
+	else*/
 	{
 		maxPFD = DescribePixelFormat( hDC, 1, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[0] );
 	}
@@ -103,11 +103,11 @@ static int GLW_ChoosePFD( HDC hDC, PIXELFORMATDESCRIPTOR *pPFD )
 	// grab information
 	for ( i = 1; i <= maxPFD; i++ )
 	{
-		if ( glConfig.driverType > GLDRV_ICD )
+		/*if ( glConfig.driverType > GLDRV_ICD )
 		{
 			qwglDescribePixelFormat( hDC, i, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[i] );
 		}
-		else
+		else*/
 		{
 			DescribePixelFormat( hDC, i, sizeof( PIXELFORMATDESCRIPTOR ), &pfds[i] );
 		}
@@ -343,7 +343,7 @@ static int GLW_MakeContext( PIXELFORMATDESCRIPTOR *pPFD )
 		}
 		ri.Printf( PRINT_ALL, "...PIXELFORMAT %d selected\n", pixelformat );
 
-		if ( glConfig.driverType > GLDRV_ICD )
+		/*if ( glConfig.driverType > GLDRV_ICD )
 		{
 			qwglDescribePixelFormat( glw_state.hDC, pixelformat, sizeof( *pPFD ), pPFD );
 			if ( qwglSetPixelFormat( glw_state.hDC, pixelformat, pPFD ) == FALSE )
@@ -352,7 +352,7 @@ static int GLW_MakeContext( PIXELFORMATDESCRIPTOR *pPFD )
 				return TRY_PFD_FAIL_SOFT;
 			}
 		}
-		else
+		else*/
 		{
 			DescribePixelFormat( glw_state.hDC, pixelformat, sizeof( *pPFD ), pPFD );
 
@@ -743,13 +743,14 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 	Q_strncpyz( buffer, drivername, sizeof(buffer) );
 	Q_strlwr(buffer);
 
-	//
-	// determine if we're on a standalone driver
-	//
-	if ( strstr( buffer, "opengl32" ) != 0 || r_maskMinidriver->integer )
-	{
-		glConfig.driverType = GLDRV_ICD;
-	}
+	glConfig.driverType = OPENGL;
+	////
+	//// determine if we're on a standalone driver
+	////
+	//if ( strstr( buffer, "opengl32" ) != 0 || r_maskMinidriver->integer )
+	//{
+	//	glConfig.driverType = GLDRV_ICD;
+	//}
 
 
 	// disable the 3Dfx splash screen
@@ -765,21 +766,6 @@ static qboolean GLW_LoadOpenGL( const char *drivername )
 		// create the window and set up the context
 		if ( !W_StartDriverAndSetMode( drivername, r_mode->integer, r_colorbits->integer, cdsFullscreen ) )
 		{
-			// if we're on a 24/32-bit desktop and we're going fullscreen on an ICD,
-			// try it again but with a 16-bit desktop
-			if ( glConfig.driverType == GLDRV_ICD )
-			{
-				if ( r_colorbits->integer != 16 ||
-					 cdsFullscreen != qtrue ||
-					 r_mode->integer != 3 )
-				{
-					if ( !W_StartDriverAndSetMode( drivername, 3, 16, qtrue ) )
-					{
-						goto fail;
-					}
-				}
-			}
-			else
 			{
 				goto fail;
 			}
@@ -816,14 +802,14 @@ void GLimp_EndFrame (void)
 	// don't flip if drawing to front buffer
 	if ( Q_stricmp( r_drawBuffer->string, "GL_FRONT" ) != 0 )
 	{
-		if ( glConfig.driverType > GLDRV_ICD )
+		/*if ( glConfig.driverType > GLDRV_ICD )
 		{
 			if ( !qwglSwapBuffers( glw_state.hDC ) )
 			{
 				ri.Error( ERR_FATAL, "GLimp_EndFrame() - SwapBuffers() failed!\n" );
 			}
 		}
-		else
+		else*/
 		{
 			SwapBuffers( glw_state.hDC );
 		}
@@ -842,7 +828,7 @@ static void GLW_StartOpenGL( void )
 	//
 	if ( !GLW_LoadOpenGL( r_glDriver->string ) )
 	{
-		if ( !Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) )
+		/*if ( !Q_stricmp( r_glDriver->string, OPENGL_DRIVER_NAME ) )
 		{
 			attemptedOpenGL32 = qtrue;
 		}
@@ -855,11 +841,11 @@ static void GLW_StartOpenGL( void )
 				ri.Cvar_Set( "r_glDriver", OPENGL_DRIVER_NAME );
 				r_glDriver->modified = qfalse;
 			}
-			else
+			else*/
 			{
 				ri.Error( ERR_FATAL, "GLW_StartOpenGL() - could not load OpenGL subsystem\n" );
 			}
-		}
+		//}
 	}
 }
 

@@ -149,11 +149,8 @@ typedef enum {
 } textureCompression_t;
 
 typedef enum {
-	GLDRV_ICD,					// driver is integrated with window system
-								// WARNING: there are tests that check for
-								// > GLDRV_ICD for minidriverness, so this
-								// should always be the lowest value in this
-								// enum set
+	OPENGL,
+	VULKAN
 } glDriverType_t;
 
 typedef enum {
@@ -172,6 +169,7 @@ typedef struct {
 	int						colorBits, depthBits, stencilBits;
 
 	glDriverType_t			driverType;
+
 	glHardwareType_t		hardwareType;
 
 	qboolean				deviceSupportsGamma;
@@ -199,7 +197,6 @@ typedef struct {
 /*
 #ifdef Q3_VM
 
-#define _3DFX_DRIVER_NAME	"Voodoo"
 #define OPENGL_DRIVER_NAME	"opengl32"
 #define VULKAN_DRIVER_NAME	"vulkan"
 
