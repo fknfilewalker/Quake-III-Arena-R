@@ -1213,6 +1213,20 @@ void RE_Shutdown( qboolean destroyWindow ) {
 		R_SyncRenderThread();
 		R_ShutdownCommandBuffers();
 		R_DeleteTextures();
+
+		if (glConfig.driverType == VULKAN) {
+			VK_DestroyAttribBuffer(&vk_d.indexbuffer);
+			VK_DestroyAttribBuffer(&vk_d.vertexbuffer);
+			VK_DestroyAttribBuffer(&vk_d.normalbuffer);
+			VK_DestroyAttribBuffer(&vk_d.uvbuffer);
+			VK_DestroyAttribBuffer(&vk_d.colorbuffer);
+
+			destroyAllPipeline();
+
+			VK_DestroyAllShader();
+
+			VK_Destroy();
+		}
 	}
 
 	R_DoneFreeType();

@@ -26,6 +26,15 @@ void addPipeline(vkpipeline_t *p){
     pipelineListSize++;
 }
 
+void VK_DestroyPipeline(vkpipeline_t* pipeline);
+void destroyAllPipeline() {
+	for (uint8_t i = 0; i < pipelineListSize; ++i) {
+		VK_DestroyPipeline(&pipelineList[i].pipeline);
+	}
+	pipelineListSize = 0;
+	memset(&pipelineList[0], 0, sizeof(pipelineList));
+}
+
 static void VK_CreatePipelineCache(vkpipeline_t *pipeline);
 static void VK_CreatePipelineLayout(vkpipeline_t *pipeline);
 static void VK_CreatePipeline(vkpipeline_t *pipeline);
@@ -83,6 +92,28 @@ void VK_FinishPipeline(vkpipeline_t *pipeline){
     VK_CreatePipelineCache(pipeline);
     VK_CreatePipelineLayout(pipeline);
     VK_CreatePipeline(pipeline);
+}
+
+void VK_DestroyPipeline(vkpipeline_t* pipeline) {
+	free(pipeline->attributeDescription.p);
+	free(pipeline->bindingDescription.p);
+
+	if (pipeline->handle) {
+		vkDestroyPipeline(vk.device, pipeline->handle, NULL);
+		pipeline->handle = VK_NULL_HANDLE;
+	}
+
+	if (pipeline->layout) {
+		vkDestroyPipelineLayout(vk.device, pipeline->layout, NULL);
+		pipeline->layout = VK_NULL_HANDLE;
+	}
+
+	if (pipeline->cache) {
+		vkDestroyPipelineCache(vk.device, pipeline->cache, NULL);
+		pipeline->cache = VK_NULL_HANDLE;
+	}
+
+	memset(pipeline, 0, sizeof(vkpipeline_t));
 }
 
 static void VK_CreatePipelineCache(vkpipeline_t *pipeline)
@@ -236,21 +267,4 @@ void VK_DrawIndexed(vkpipeline_t *pipeline, vkattribbuffer_t *idxBuffer, int cou
     VkDeviceSize bOffset = 0;
     vkCmdBindIndexBuffer(commandBuffer, idxBuffer->buffer, offset, VK_INDEX_TYPE_UINT32);
     vkCmdDrawIndexed(commandBuffer, count, 1, 0, 0, 0);
-}
-
-void VK_DestroyPipeline(vkpipeline_t* pipeline) {
-	if (pipeline->handle) {
-		vkDestroyPipeline(vk.device, pipeline->handle, NULL);
-		pipeline->handle = VK_NULL_HANDLE;
-	}
-
-	if (pipeline->layout) {
-		vkDestroyPipelineLayout(vk.device, pipeline->layout, NULL);
-		pipeline->layout = VK_NULL_HANDLE;
-	}
-
-	if (pipeline->cache) {
-		vkDestroyPipelineCache(vk.device, pipeline->cache, NULL);
-		pipeline->cache = VK_NULL_HANDLE;
-	}
 }

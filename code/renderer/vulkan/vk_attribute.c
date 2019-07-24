@@ -36,3 +36,13 @@ void VK_UploadAttribData(vkattribbuffer_t* buffer, const byte* data) {
 	VK_UploadAttribDataOffset(buffer, 0, buffer->allocSize, data);
 }
 
+void VK_DestroyAttribBuffer(vkattribbuffer_t* buffer)
+{
+	if (buffer->buffer != NULL) {
+		vkDestroyBuffer(vk.device, buffer->buffer, NULL);
+	}
+	if (buffer->memory != NULL) {
+		vkFreeMemory(vk.device, buffer->memory, NULL);
+	}
+	memset(buffer, 0, sizeof(vkattribbuffer_t));
+}

@@ -183,6 +183,8 @@ static void VK_CopyBufferToImage(vkimage_t* image, uint32_t width, uint32_t heig
 }
 
 void VK_DestroyImage(vkimage_t* image){
+	VK_CHECK(vkQueueWaitIdle(vk.graphicsQueue), "failed to wait for Queue execution!");
+
     if(image->handle != NULL) {
         vkDestroyImage(vk.device, image->handle, NULL);
         image->handle = VK_NULL_HANDLE;
@@ -195,6 +197,12 @@ void VK_DestroyImage(vkimage_t* image){
         vkDestroySampler(vk.device, image->sampler, NULL);
         image->sampler = VK_NULL_HANDLE;
     }
+	if (image->memory != NULL) {
+		vkFreeMemory(vk.device, image->memory, NULL);
+		image->memory = VK_NULL_HANDLE;
+	}
     
     VK_DestroyDescriptor(&image->descriptor_set);
+
+	memset(image, 0, sizeof(vkimage_t));
 }

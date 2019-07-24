@@ -108,27 +108,24 @@ void VK_CreateDescriptorSet(vkdescriptor_t *descriptor) {
 }
 
 void VK_DestroyDescriptor(vkdescriptor_t* descriptor){
-    for(int i = 0; i < vk.swapchain.imageCount; ++i){
+    //for(int i = 0; i < vk.swapchain.imageCount; ++i){
         //if(descriptor->sets[i] != NULL) {
-            vkFreeDescriptorSets(vk.device, descriptor->pool, descriptor->size, &descriptor->sets[i]);
-            descriptor->sets[i] = VK_NULL_HANDLE;
+            vkFreeDescriptorSets(vk.device, descriptor->pool, descriptor->size, &descriptor->sets[0]);
+			free(descriptor->sets);
         //}
-    }
+    //}
     //if(descriptor->layout != NULL) {
         vkDestroyDescriptorSetLayout(vk.device, descriptor->layout, NULL);
         descriptor->layout = VK_NULL_HANDLE;
     //}
     //if(descriptor->pool != NULL) {
         vkDestroyDescriptorPool(vk.device, descriptor->pool, NULL);
-        descriptor->pool = VK_NULL_HANDLE;
+
     //}
     
     free(descriptor->bindings);
     free(descriptor->data);
-    free(descriptor->sets);
-    descriptor->size = 0;
-    descriptor->bindings = NULL;
-    descriptor->data = NULL;
-    descriptor->sets = NULL;
+    
+	memset(descriptor, 0, sizeof(vkdescriptor_t));
 }
 

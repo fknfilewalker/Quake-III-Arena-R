@@ -158,11 +158,21 @@ PFN_vkUpdateDescriptorSets                      vkUpdateDescriptorSets;
 PFN_vkDestroySampler                            vkDestroySampler;
 PFN_vkDestroyImage                              vkDestroyImage;
 PFN_vkDestroyImageView                          vkDestroyImageView;
+PFN_vkDestroyFramebuffer						vkDestroyFramebuffer;
 PFN_vkFreeDescriptorSets                        vkFreeDescriptorSets;
 PFN_vkDestroyDescriptorSetLayout                vkDestroyDescriptorSetLayout;
 PFN_vkDestroyDescriptorPool                     vkDestroyDescriptorPool;
+PFN_vkDestroyRenderPass							vkDestroyRenderPass;
+PFN_vkDestroySwapchainKHR						vkDestroySwapchainKHR;
+PFN_vkDestroySemaphore							vkDestroySemaphore;
+PFN_vkDestroyFence								vkDestroyFence;
+PFN_vkDestroyInstance							vkDestroyInstance;
+PFN_vkDestroyCommandPool 						vkDestroyCommandPool;
+PFN_vkDestroyDevice								vkDestroyDevice;
+PFN_vkDestroySurfaceKHR							vkDestroySurfaceKHR;
 
 PFN_vkDeviceWaitIdle							vkDeviceWaitIdle;
+PFN_vkWaitForFences								vkWaitForFences;
 PFN_vkAllocateDescriptorSets					vkAllocateDescriptorSets;
 
 PFN_vkDestroyShaderModule						vkDestroyShaderModule;

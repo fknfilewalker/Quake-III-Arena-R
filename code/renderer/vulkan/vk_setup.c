@@ -64,6 +64,24 @@ void VK_Setup(void* p1, void* p2) {
 	VK_SetupSwapchain();
 }
 
+void VK_Destroy() {
+	vkDeviceWaitIdle(vk.device);
+
+	VK_DestroySwapchain();
+
+	vkDestroyCommandPool(vk.device, vk.commandPool, NULL);
+	vkDestroyDevice(vk.device, NULL);
+	vkDestroySurfaceKHR(vk.instance, vk.surface, NULL);
+
+#ifndef NDEBUG
+	vkDestroyDebugUtilsMessengerEXT(vk.instance, vk.callback, NULL);
+#endif
+
+	vkDestroyInstance(vk.instance, NULL);
+
+	Com_Memset(&vk, 0, sizeof(vk));
+}
+
 static void VK_CreateInstance() {
 	// check extensions availability
 	{

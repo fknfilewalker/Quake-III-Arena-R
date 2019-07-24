@@ -127,11 +127,21 @@ qboolean VK_LoadDeviceFunctions(void)
     vkDestroySampler = VK_DEVICE_LEVEL_FUNCTION("vkDestroySampler");
     vkDestroyImage = VK_DEVICE_LEVEL_FUNCTION("vkDestroyImage");
     vkDestroyImageView = VK_DEVICE_LEVEL_FUNCTION("vkDestroyImageView");
+	vkDestroyFramebuffer = VK_DEVICE_LEVEL_FUNCTION("vkDestroyFramebuffer");
     vkFreeDescriptorSets = VK_DEVICE_LEVEL_FUNCTION("vkFreeDescriptorSets");
     vkDestroyDescriptorSetLayout = VK_DEVICE_LEVEL_FUNCTION("vkDestroyDescriptorSetLayout");
     vkDestroyDescriptorPool = VK_DEVICE_LEVEL_FUNCTION("vkDestroyDescriptorPool");
+	vkDestroyRenderPass = VK_DEVICE_LEVEL_FUNCTION("vkDestroyRenderPass");
+	vkDestroySwapchainKHR = VK_DEVICE_LEVEL_FUNCTION("vkDestroySwapchainKHR");
+	vkDestroySemaphore = VK_DEVICE_LEVEL_FUNCTION("vkDestroySemaphore");
+	vkDestroyFence = VK_DEVICE_LEVEL_FUNCTION("vkDestroyFence");
+	vkDestroyInstance = VK_DEVICE_LEVEL_FUNCTION("vkDestroyInstance");
+	vkDestroyCommandPool = VK_DEVICE_LEVEL_FUNCTION("vkDestroyCommandPool");
+	vkDestroyDevice = VK_DEVICE_LEVEL_FUNCTION("vkDestroyDevice");
+	vkDestroySurfaceKHR = VK_DEVICE_LEVEL_FUNCTION("vkDestroySurfaceKHR");
 
 	vkDeviceWaitIdle = VK_DEVICE_LEVEL_FUNCTION("vkDeviceWaitIdle");
+	vkWaitForFences = VK_DEVICE_LEVEL_FUNCTION("vkWaitForFences");
 	vkAllocateDescriptorSets = VK_DEVICE_LEVEL_FUNCTION("vkAllocateDescriptorSets");
 
 	vkDestroyShaderModule = VK_DEVICE_LEVEL_FUNCTION("vkDestroyShaderModule");

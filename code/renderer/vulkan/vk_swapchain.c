@@ -44,6 +44,48 @@ void VK_SetupSwapchain()
 	vk.swapchain.CurrentFramebuffer = VK_CurrentFramebuffer;
 }
 
+void VK_DestroySwapchain() {
+	vkWaitForFences(vk.device, vk.swapchain.imageCount, vk.swapchain.inFlightFences, VK_TRUE, 10);
+
+	for (int i = 0; i < vk.swapchain.imageCount; ++i) {
+		vkDestroyFramebuffer(vk.device, vk.swapchain.framebuffers[i], NULL);
+	}
+	free(vk.swapchain.framebuffers);
+
+	for (int i = 0; i < vk.swapchain.imageCount; ++i) {
+		vkDestroyImageView(vk.device, vk.swapchain.imageViews[i], NULL);
+	}
+	free(vk.swapchain.imageViews);
+
+	/*for (int i = 0; i < vk.swapchain.imageCount; ++i) {
+		vkDestroyImage(vk.device, vk.swapchain.images[i], NULL);
+	}
+	*/
+
+	vkDestroyRenderPass(vk.device, vk.swapchain.renderpass, NULL);
+
+	vkDestroyImageView(vk.device, vk.swapchain.depthImageView, NULL);
+	vkDestroyImage(vk.device, vk.swapchain.depthImage, NULL);
+	vkFreeMemory(vk.device, vk.swapchain.depthImageMemory, NULL);
+
+	vkDestroySwapchainKHR(vk.device, vk.swapchain.handle, NULL);
+	free(vk.swapchain.images);
+
+	vkFreeCommandBuffers(vk.device, vk.commandPool, vk.swapchain.imageCount, vk.swapchain.commandBuffers);
+	free(vk.swapchain.commandBuffers);
+
+	for (int i = 0; i < vk.swapchain.imageCount; ++i) {
+		vkDestroySemaphore(vk.device, vk.swapchain.imageAvailableSemaphores[i], NULL);
+		vkDestroySemaphore(vk.device, vk.swapchain.renderFinishedSemaphores[i], NULL);
+		vkDestroyFence(vk.device, vk.swapchain.inFlightFences[i], NULL);
+	}
+	free(vk.swapchain.imageAvailableSemaphores);
+	free(vk.swapchain.renderFinishedSemaphores);
+	free(vk.swapchain.inFlightFences);
+
+	memset(&vk.swapchain, 0, sizeof(vk.swapchain));
+}
+
 static void VK_CreateSwapChain() {
 	vk.swapchain.depthStencilFormat = VK_FORMAT_D24_UNORM_S8_UINT;
 

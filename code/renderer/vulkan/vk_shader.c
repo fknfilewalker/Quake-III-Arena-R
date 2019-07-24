@@ -62,6 +62,15 @@ void VK_DestroyShader(vkshader_t* shader) {
 	for (int i = 0; i < shader->size; ++i) {
 		vkDestroyShaderModule(vk.device, shader->modules[i], NULL);
 	}
+	memset(shader, 0, sizeof(vkshader_t));
+}
+
+void VK_DestroyAllShader() {
+	if (singleTexture != NULL) {
+		VK_DestroyShader(singleTexture);
+		free(singleTexture);
+		singleTexture = NULL;
+	}
 }
 
 void VK_CreateShaderModule(VkShaderModule *handle, const char *code, size_t size)
@@ -72,5 +81,4 @@ void VK_CreateShaderModule(VkShaderModule *handle, const char *code, size_t size
     createInfo.pCode = (const uint32_t*)code;
     
     VK_CHECK(vkCreateShaderModule(vk.device, &createInfo, NULL, handle), "failed to create Shader Module!");
-    
 }
