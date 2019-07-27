@@ -24,7 +24,7 @@ void VK_SingleTextureShader(vkshader_t *shader){
     size_t frag_spv_size;
     
     FILE *fp;
-    fp = fopen("../../code/renderer/vulkan/shader/test_tex_vert.spv", "rb");
+    fp = fopen("../../shader/spv/singleTexture.vert.spv", "rb");
     fseek (fp, 0, SEEK_END);
     vert_spv_size = ftell(fp);
     fseek (fp, 0, SEEK_SET);
@@ -32,7 +32,7 @@ void VK_SingleTextureShader(vkshader_t *shader){
     fclose(fp);
     
     
-    fp = fopen("../../code/renderer/vulkan/shader/test_tex_frag.spv", "rb");
+    fp = fopen("../../shader/spv/singleTexture.frag.spv", "rb");
     fseek (fp, 0, SEEK_END);
     frag_spv_size = ftell(fp);
     fseek (fp, 0, SEEK_SET);
