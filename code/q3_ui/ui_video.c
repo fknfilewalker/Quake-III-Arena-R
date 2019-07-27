@@ -384,6 +384,13 @@ GraphicsOptions_UpdateMenuItems
 static void GraphicsOptions_UpdateMenuItems( void )
 {
 
+	if (s_graphicsoptions.driver.curvalue == VULKAN) {
+		s_graphicsoptions.allow_extensions.generic.flags |= QMF_GRAYED;
+	}
+	else {
+		s_graphicsoptions.allow_extensions.generic.flags &= ~QMF_GRAYED;
+	}
+
 	if ( s_graphicsoptions.fs.curvalue == 0 )
 	{
 		s_graphicsoptions.colordepth.curvalue = 0;
@@ -756,6 +763,10 @@ void GraphicsOptions_MenuInit( void )
         "1600x1200",
         "2048x1536",
         "856x480 wide screen",
+		"1280x720 wide screen",
+		"1600x900 wide screen",
+		"1920x1080 wide screen",
+		"2560x1440 wide screen",
         0
     };
 	static const char *filter_names[] =
