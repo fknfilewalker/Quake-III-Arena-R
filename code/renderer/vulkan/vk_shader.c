@@ -9,6 +9,7 @@ void VK_SingleTextureShader(vkshader_t *shader){
 		Com_Memcpy(shader, singleTexture, sizeof(vkshader_t));
 		return;
 	}
+	Com_Printf("new shader \n");
 
     shader->size = 2;
     shader->modules = malloc(shader->size * sizeof(VkShaderModule));

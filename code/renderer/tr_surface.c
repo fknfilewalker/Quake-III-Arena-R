@@ -321,7 +321,7 @@ void RB_SurfaceBeam( void )
 
 	GL_Bind( tr.whiteImage );
 
-	GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
+	tr_api.State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE );
 
 	qglColor3f( 1, 0, 0 );
 

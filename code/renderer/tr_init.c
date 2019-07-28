@@ -26,6 +26,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 glconfig_t	glConfig;
 glstate_t	glState;
 
+trApi_t		tr_api;
+
 static void GfxInfo_f( void );
 
 cvar_t	*r_flareSize;
@@ -203,11 +205,14 @@ static void InitOpenGL( void )
 	//		- r_gamma
 	//
 	
+	glConfig.driverType = OPENGL;
+
 	if ( glConfig.vidWidth == 0 )
 	{
 
 		GLint		temp;
 		
+		R_SetOpenGLApi(&tr_api);
 		GLimp_Init();
 
 		strcpy( renderer_buffer, glConfig.renderer_string );
@@ -236,37 +241,43 @@ static void InitOpenGL( void )
 
 static void InitVulkan(void)
 {
-
-	VKimp_Init();
-
-	VK_CreateIndexBuffer(&vk_d.indexbuffer, 10 * SHADER_MAX_INDEXES * sizeof(uint32_t));
-	VK_CreateVertexBuffer(&vk_d.vertexbuffer, 10 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
-	VK_CreateVertexBuffer(&vk_d.normalbuffer, 10 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
-	VK_CreateVertexBuffer(&vk_d.uvbuffer, 10 * SHADER_MAX_VERTEXES * sizeof(vec2_t));
-	VK_CreateVertexBuffer(&vk_d.colorbuffer, 10 * SHADER_MAX_VERTEXES * sizeof(color4ub_t));
-
-	// device infos
-	VkPhysicalDeviceProperties devProperties;
-	vkGetPhysicalDeviceProperties(vk.physical_device, &devProperties);
-
-	// device limits
-	VkPhysicalDeviceLimits limits = devProperties.limits;
-	glConfig.maxTextureSize = limits.maxImageDimension2D;
-
-	// stubbed or broken drivers may have reported 0...
-	if (glConfig.maxTextureSize <= 0)
-	{
-		glConfig.maxTextureSize = 0;
-	}
+	glConfig.driverType = VULKAN;
 	
-	// init command buffers and SMP
-	R_InitCommandBuffers();
+	if (glConfig.vidWidth == 0)
+	{
+		R_SetVulkanApi(&tr_api);
 
-	// print info
-	GfxInfo_f();
+		VKimp_Init();
 
-	// set default state
-	VK_SetDefaultState();
+		VK_CreateIndexBuffer(&vk_d.indexbuffer, 20 * SHADER_MAX_INDEXES * sizeof(uint32_t));
+		VK_CreateVertexBuffer(&vk_d.vertexbuffer, 20 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
+		VK_CreateVertexBuffer(&vk_d.normalbuffer, 20 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
+		VK_CreateVertexBuffer(&vk_d.uvbuffer, 20 * SHADER_MAX_VERTEXES * sizeof(vec2_t));
+		VK_CreateVertexBuffer(&vk_d.colorbuffer, 20 * SHADER_MAX_VERTEXES * sizeof(color4ub_t));
+
+		// device infos
+		VkPhysicalDeviceProperties devProperties;
+		vkGetPhysicalDeviceProperties(vk.physical_device, &devProperties);
+
+		// device limits
+		VkPhysicalDeviceLimits limits = devProperties.limits;
+		glConfig.maxTextureSize = limits.maxImageDimension2D;
+
+		// stubbed or broken drivers may have reported 0...
+		if (glConfig.maxTextureSize <= 0)
+		{
+			glConfig.maxTextureSize = 0;
+		}
+
+		// init command buffers and SMP
+		R_InitCommandBuffers();
+
+		// print info
+		GfxInfo_f();
+
+		// set default state
+		VK_SetDefaultState();
+	}
 }
 
 /*
@@ -791,6 +802,8 @@ void GL_SetDefaultState( void )
 
 void VK_SetDefaultState(void)
 {
+	vk_d.state.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
 	//qglClearDepth(1.0f);
 	vk_d.clearDepth = 1.0f;
 
@@ -1145,9 +1158,6 @@ void R_Init( void ) {
 
 	R_Register();
 
-	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) glConfig.driverType = OPENGL;
-	else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) glConfig.driverType = VULKAN;
-
 	max_polys = r_maxpolys->integer;
 	if (max_polys < MAX_POLYS)
 		max_polys = MAX_POLYS;
@@ -1170,8 +1180,8 @@ void R_Init( void ) {
 	}
 	R_ToggleSmpFrame();
 
-	if (glConfig.driverType == OPENGL) InitOpenGL();
-	else if(glConfig.driverType == VULKAN)  InitVulkan();
+	if (!Q_stricmp(r_glDriver->string, OPENGL_DRIVER_NAME)) InitOpenGL();
+	else if (!Q_stricmp(r_glDriver->string, VULKAN_DRIVER_NAME)) InitVulkan();
 
 	R_InitImages();
 
@@ -1217,8 +1227,14 @@ void RE_Shutdown( qboolean destroyWindow ) {
 		R_SyncRenderThread();
 		R_ShutdownCommandBuffers();
 		R_DeleteTextures();
+	}
 
-		if (glConfig.driverType == VULKAN) {
+	R_DoneFreeType();
+
+	// shut down platform specific OpenGL/Vulkan stuff
+	if (destroyWindow) {
+		if(glConfig.driverType == OPENGL) GLimp_Shutdown();
+		else if (glConfig.driverType == VULKAN) {
 			VK_DestroyAttribBuffer(&vk_d.indexbuffer);
 			VK_DestroyAttribBuffer(&vk_d.vertexbuffer);
 			VK_DestroyAttribBuffer(&vk_d.normalbuffer);
@@ -1230,15 +1246,9 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			VK_DestroyAllShader();
 
 			VK_Destroy();
+
+			VKimp_Shutdown();
 		}
-	}
-
-	R_DoneFreeType();
-
-	// shut down platform specific OpenGL/Vulkan stuff
-	if (destroyWindow) {
-		if(glConfig.driverType == OPENGL) GLimp_Shutdown();
-		else if (glConfig.driverType == VULKAN) VKimp_Shutdown();
 	}
 
 	tr.registered = qfalse;

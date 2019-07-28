@@ -763,7 +763,13 @@ static vkimage_t upload_vk_image(const struct Image_Upload_Data* upload_data, in
 		(upload_data->mip_levels > 1) ? VK_FILTER_LINEAR : VK_FILTER_LINEAR,
         (upload_data->mip_levels > 1) ? VK_SAMPLER_MIPMAP_MODE_NEAREST : VK_SAMPLER_MIPMAP_MODE_NEAREST,
 		texture_address_mode == GL_REPEAT ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+
+	VK_AddSampler(&image.descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
+	VK_SetSampler(&image.descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image.sampler, image.view);
+	VK_FinishDescriptor(&image.descriptor_set);
     
+	//vk_d.images[tr.numImages-1] = image;
+
     return image;
 }
 
@@ -819,11 +825,9 @@ image_t *R_CreateImage(const char *name, const byte *pic, int width, int height,
 		}
 	}
 	else if (glConfig.driverType == VULKAN) {
-        vk_d.images[image->index] = upload_vk_image(&upload_data, glWrapClampMode);
+		vk_d.images[image->index] = upload_vk_image(&upload_data, glWrapClampMode);
         
-        VK_AddSampler(&vk_d.images[image->index].descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
-        VK_SetSampler(&vk_d.images[image->index].descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, vk_d.images[image->index].sampler, vk_d.images[image->index].view);
-        VK_FinishDescriptor(&vk_d.images[image->index].descriptor_set);
+        
 	}
 	
 

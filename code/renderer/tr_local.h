@@ -1126,6 +1126,7 @@ typedef struct {
 
 typedef struct {
     VkPolygonMode                               polygonMode;
+	VkPrimitiveTopology							primitiveTopology;
     
     // cull
     int                                         faceCulling;
@@ -1176,6 +1177,21 @@ typedef struct {
 
 extern vkinstance_t		vk;
 extern vkdata_t         vk_d;
+
+/*
+==============================================================================
+
+RENDER API ABSTRACTION
+
+==============================================================================
+*/
+typedef struct {
+	void(*State)(unsigned long);
+	void(*SetViewportAndScissor)(void);
+	void(*RB_Set2D)(void);
+} trApi_t;
+
+extern trApi_t	tr_api;
 
 //
 // cvars

@@ -118,7 +118,50 @@ void VKimp_Init( void ) {
 	VKW_StartVulkan();
 
 	// get our config strings
+	VkPhysicalDeviceProperties deviceProp;
+	VK_GetDeviceProperties(&deviceProp);
 
+	const char* vendor_name = "unknown";
+	if (deviceProp.vendorID == 0x1002) {
+		vendor_name = "Advanced Micro Devices, Inc.";
+	}
+	else if (deviceProp.vendorID == 0x10DE) {
+		vendor_name = "NVIDIA Corporation";
+	}
+	else if (deviceProp.vendorID == 0x8086) {
+		vendor_name = "Intel Corporation";
+	}
+	Q_strncpyz(glConfig.vendor_string, (const char*)vendor_name, sizeof(glConfig.vendor_string));
+	Q_strncpyz(glConfig.renderer_string, (const char*)deviceProp.deviceName, sizeof(glConfig.renderer_string));
+
+	uint32_t major = VK_VERSION_MAJOR(deviceProp.apiVersion);
+	uint32_t minor = VK_VERSION_MINOR(deviceProp.apiVersion);
+	uint32_t patch = VK_VERSION_PATCH(deviceProp.apiVersion);
+	const char* version[20];
+	snprintf(version, sizeof(version), "%d.%d.%d", major, minor, patch);
+	Q_strncpyz(glConfig.version_string, (const char*)version, sizeof(glConfig.version_string));
+
+	uint32_t extensionCount = 0;
+	vkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &extensionCount, NULL);
+	VkExtensionProperties* extensions = malloc(extensionCount * sizeof(VkExtensionProperties));
+	vkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &extensionCount, &extensions[0]);
+	uint32_t offset = 0;
+	for (uint32_t i = 0; i < extensionCount; i++) {
+		Q_strncpyz(glConfig.extensions_string + offset, (const char*)extensions[i].extensionName, strlen(extensions[i].extensionName) + 1);
+		offset += strlen(extensions[i].extensionName);
+		Q_strncpyz(glConfig.extensions_string + offset, " ", 2);
+		offset += 1;
+	}
+	free(extensions);
+
+	// store surface bits
+	if (vk.swapchain.imageFormat == VK_FORMAT_B8G8R8A8_UNORM) {
+		glConfig.colorBits = (int)8;
+	}
+	if (vk.swapchain.depthStencilFormat == VK_FORMAT_D24_UNORM_S8_UINT) {
+		glConfig.depthBits = (int)24;
+		glConfig.stencilBits = (int)8;
+	}
 }
 
 void VKimp_Shutdown(void) {

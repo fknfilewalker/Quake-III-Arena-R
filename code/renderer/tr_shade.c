@@ -311,9 +311,9 @@ Draws triangle outlines for debugging
 static void DrawTris (shaderCommands_t *input) {
 	if (glConfig.driverType == OPENGL) {
 		GL_Bind(tr.whiteImage);
-		qglColor3f(1, 1, 1);
+		//qglColor3f(1, 1, 1);
 
-		GL_State(GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE);
+		tr_api.State(GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE);
 		qglDepthRange(0, 0);
 
 		qglDisableClientState(GL_COLOR_ARRAY);
@@ -337,12 +337,23 @@ static void DrawTris (shaderCommands_t *input) {
 	else if (glConfig.driverType == VULKAN) {
 		VK_Bind(tr.whiteImage);
 
-		VK_State(GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE);
-		vk_d.state.dsBlend.minDepthBounds = 0;
-		vk_d.state.dsBlend.maxDepthBounds = 0;
+		tr_api.State(GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE);
+		vk_d.viewport.minDepth = 0;
+		vk_d.viewport.maxDepth = 0;
 
-		vk_d.state.dsBlend.minDepthBounds = 0;
-		vk_d.state.dsBlend.maxDepthBounds = 1;
+		Com_Memset(tess.svars.colors, tr.identityLightByte, tess.numVertexes * sizeof(color4ub_t));
+		//Com_Memset(tess.svars.texcoords, tr.identityLightByte, tess.numVertexes * sizeof(color4ub_t));
+		VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), input->numVertexes * sizeof(vec4_t), (void*)&input->xyz[0]);
+		VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), input->numVertexes * sizeof(color4ub_t), (void*)& tess.svars.colors[0]);
+
+		R_DrawElements(input->numIndexes, input->indexes);
+
+		vk_d.viewport.minDepth = 0;
+		vk_d.viewport.maxDepth = 1;
+		vk_d.state.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+		vk_d.offset += input->numVertexes;
+		vk_d.offsetIdx += input->numIndexes;
 	}
 	
 }
@@ -359,20 +370,59 @@ static void DrawNormals (shaderCommands_t *input) {
 	int		i;
 	vec3_t	temp;
 
-	GL_Bind( tr.whiteImage );
-	qglColor3f (1,1,1);
-	qglDepthRange( 0, 0 );	// never occluded
-	GL_State( GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE );
+	if (glConfig.driverType == OPENGL) {
+		GL_Bind(tr.whiteImage);
+		qglColor3f(1, 1, 1);
+		qglDepthRange(0, 0);	// never occluded
+		tr_api.State(GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE);
 
-	qglBegin (GL_LINES);
-	for (i = 0 ; i < input->numVertexes ; i++) {
-		qglVertex3fv (input->xyz[i]);
-		VectorMA (input->xyz[i], 2, input->normal[i], temp);
-		qglVertex3fv (temp);
+		qglBegin(GL_LINES);
+		for (i = 0; i < input->numVertexes; i++) {
+			qglVertex3fv(input->xyz[i]);
+			VectorMA(input->xyz[i], 2, input->normal[i], temp);
+			qglVertex3fv(temp);
+		}
+		qglEnd();
+
+		qglDepthRange(0, 1);
 	}
-	qglEnd ();
+	else if (glConfig.driverType == VULKAN) {
+		VK_Bind(tr.whiteImage);
+		tr_api.State(GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE);
+		vk_d.viewport.minDepth = 0;
+		vk_d.viewport.maxDepth = 0;
+		vk_d.state.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
-	qglDepthRange( 0, 1 );
+		vec4_t *xyz = malloc(4 * input->numVertexes * sizeof(vec4_t));
+		uint32_t *indexes = malloc(4 * input->numVertexes * sizeof(uint32_t));
+
+		int count = 0;
+		for (i = 0; i < input->numVertexes; i++) {
+			Com_Memcpy(&xyz[count], &input->xyz[i], sizeof(vec4_t));
+			VectorMA(input->xyz[i], 2, input->normal[i], temp);
+			Com_Memcpy(&xyz[count + 1], &temp, sizeof(vec3_t));
+			xyz[count + i][3] = 0;
+			indexes[count] = count;
+			indexes[count + 1] = count + 1;
+			count += 2;
+		}
+
+		Com_Memset(tess.svars.colors, tr.identityLightByte, count * sizeof(color4ub_t));
+
+		VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), count * sizeof(color4ub_t), (void*) &tess.svars.colors[0]);
+		VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), count * sizeof(vec4_t), (void*) &xyz[0]);
+		R_DrawElements(count, indexes);
+
+		free(xyz);
+		free(indexes);
+
+		vk_d.viewport.minDepth = 0;
+		vk_d.viewport.maxDepth = 1;
+		vk_d.state.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+		vk_d.offset += count;
+		vk_d.offsetIdx += count;
+	}
 }
 
 /*
@@ -420,7 +470,7 @@ static void DrawMultitextured( shaderCommands_t *input, int stage ) {
 
 	pStage = tess.xstages[stage];
 
-	GL_State( pStage->stateBits );
+	tr_api.State( pStage->stateBits );
 
 	// this is an ugly hack to work around a GeForce driver
 	// bug with multitexture and clip planes
@@ -670,10 +720,10 @@ static void ProjectDlightTexture( void ) {
 		// include GLS_DEPTHFUNC_EQUAL so alpha tested surfaces don't add light
 		// where they aren't rendered
 		if ( dl->additive ) {
-			GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
+			tr_api.State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
 		}
 		else {
-			GL_State( GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
+			tr_api.State( GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
 		}
 		R_DrawElements( numIndexes, hitIndexes );
 		backEnd.pc.c_totalIndexes += numIndexes;
@@ -710,9 +760,9 @@ static void RB_FogPass( void ) {
 	GL_Bind( tr.fogImage );
 
 	if ( tess.shader->fogPass == FP_EQUAL ) {
-		GL_State( GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_EQUAL );
+		tr_api.State( GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_EQUAL );
 	} else {
-		GL_State( GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
+		tr_api.State( GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
 	}
 
 	R_DrawElements( tess.numIndexes, tess.indexes );
@@ -1064,7 +1114,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
                 else
                     R_BindAnimatedImage( &pStage->bundle[0] );
 
-                GL_State( pStage->stateBits );
+				tr_api.State( pStage->stateBits );
 
                 //
                 // draw
@@ -1092,10 +1142,8 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
                 DrawMultitextured( input, stage );
             }else
             {
-                //if ( !setArraysOnce )
-                {
-                    VK_UploadAttribDataOffset(&vk_d.uvbuffer, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &input->svars.texcoords[0]);
-                }
+                VK_UploadAttribDataOffset(&vk_d.uvbuffer, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &input->svars.texcoords[0]);
+                
                 //
                 // set state
                 //
@@ -1107,7 +1155,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
                     R_BindAnimatedImage( &pStage->bundle[0] );
                 }
             
-                VK_State( pStage->stateBits );
+				tr_api.State( pStage->stateBits );
  
 				// set mvp
 				myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
@@ -1115,7 +1163,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 					int b = 3;
 				}
 				R_DrawElements(input->numIndexes, input->indexes);
-				vk_d.offset += tess.numVertexes;
+				vk_d.offset += input->numVertexes;
 				vk_d.offsetIdx += input->numIndexes;
 	
             }
@@ -1372,7 +1420,7 @@ void RB_StageIteratorVertexLitTexture( void )
 	// call special shade routine
 	//
 	R_BindAnimatedImage( &tess.xstages[0]->bundle[0] );
-	GL_State( tess.xstages[0]->stateBits );
+	tr_api.State( tess.xstages[0]->stateBits );
 	R_DrawElements( input->numIndexes, input->indexes );
 
 	// 
@@ -1423,7 +1471,7 @@ void RB_StageIteratorLightmappedMultitexture( void ) {
 	//
 	// set color, pointers, and lock
 	//
-	GL_State( GLS_DEFAULT );
+	tr_api.State( GLS_DEFAULT );
 	qglVertexPointer( 3, GL_FLOAT, 16, input->xyz );
 
 #ifdef REPLACE_MODE

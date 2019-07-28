@@ -223,6 +223,7 @@ static void VK_CreateLogicalDevice()
 
 	// activate features
 	VkPhysicalDeviceFeatures deviceFeatures = { 0 };
+	deviceFeatures.fillModeNonSolid = qtrue;
 	deviceFeatures.multiDrawIndirect = qfalse;
 	deviceFeatures.drawIndirectFirstInstance = qfalse;
 

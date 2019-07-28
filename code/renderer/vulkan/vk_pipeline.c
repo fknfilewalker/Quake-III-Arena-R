@@ -158,7 +158,7 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline)
 
     VkPipelineInputAssemblyStateCreateInfo ia = {0};
     ia.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    ia.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    ia.topology = vk_d.state.primitiveTopology;
 	ia.primitiveRestartEnable = VK_FALSE;
     pipelineInfo.pInputAssemblyState = &ia;
 
