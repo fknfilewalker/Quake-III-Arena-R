@@ -249,11 +249,11 @@ static void InitVulkan(void)
 
 		VKimp_Init();
 
-		VK_CreateIndexBuffer(&vk_d.indexbuffer, 20 * SHADER_MAX_INDEXES * sizeof(uint32_t));
-		VK_CreateVertexBuffer(&vk_d.vertexbuffer, 20 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
-		VK_CreateVertexBuffer(&vk_d.normalbuffer, 20 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
-		VK_CreateVertexBuffer(&vk_d.uvbuffer, 20 * SHADER_MAX_VERTEXES * sizeof(vec2_t));
-		VK_CreateVertexBuffer(&vk_d.colorbuffer, 20 * SHADER_MAX_VERTEXES * sizeof(color4ub_t));
+		VK_CreateIndexBuffer(&vk_d.indexbuffer, 30 * SHADER_MAX_INDEXES * sizeof(uint32_t));
+		VK_CreateVertexBuffer(&vk_d.vertexbuffer, 30 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
+		VK_CreateVertexBuffer(&vk_d.normalbuffer, 30 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
+		VK_CreateVertexBuffer(&vk_d.uvbuffer, 30 * SHADER_MAX_VERTEXES * sizeof(vec2_t));
+		VK_CreateVertexBuffer(&vk_d.colorbuffer, 30 * SHADER_MAX_VERTEXES * sizeof(color4ub_t));
 
 		// device infos
 		VkPhysicalDeviceProperties devProperties;
@@ -1264,8 +1264,11 @@ Touch all images to make sure they are resident
 */
 void RE_EndRegistration( void ) {
 	R_SyncRenderThread();
-	if (!Sys_LowPhysicalMemory()) {
-		RB_ShowImages();
+
+	if (glConfig.driverType == OPENGL) {
+		if (!Sys_LowPhysicalMemory()) {
+			RB_ShowImages();
+		}
 	}
 }
 

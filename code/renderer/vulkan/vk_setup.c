@@ -226,6 +226,7 @@ static void VK_CreateLogicalDevice()
 	deviceFeatures.fillModeNonSolid = qtrue;
 	deviceFeatures.multiDrawIndirect = qfalse;
 	deviceFeatures.drawIndirectFirstInstance = qfalse;
+	deviceFeatures.shaderClipDistance = qtrue;
 
 	VkDeviceCreateInfo desc = { 0 };
 	desc.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

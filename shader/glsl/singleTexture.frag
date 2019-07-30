@@ -1,7 +1,7 @@
 #version 450
 
 layout(push_constant) uniform PushConstant {
-    layout(offset = 64) int discardModeAlpha;
+    layout(offset = 192) int discardModeAlpha;
 };
 layout(binding = 0) uniform sampler2D tex;
 

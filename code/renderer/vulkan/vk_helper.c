@@ -67,6 +67,7 @@ void endRender()
 }
 
 void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean clear_color, vec4_t color) {
+	//return;
     if (!clear_depth && !clear_stencil && !clear_color)
         return;
     

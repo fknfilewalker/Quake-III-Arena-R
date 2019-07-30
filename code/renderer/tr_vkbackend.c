@@ -8,7 +8,7 @@ static void State(unsigned long stateBits)
 
 	if (!diff)
 	{
-		return;
+		//return;
 	}
 
 	//

@@ -169,7 +169,7 @@ void VKimp_Shutdown(void) {
 	const char* success[] = { "failed", "success" };
 	int retVal;
 
-	ri.Printf(PRINT_ALL, "Shutting down OpenGL subsystem\n");
+	ri.Printf(PRINT_ALL, "Shutting down Vulkan subsystem\n");
 
 	// restore gamma.  We do this first because 3Dfx's extension needs a valid OGL subsystem
 	WG_RestoreGamma();

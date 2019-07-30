@@ -149,8 +149,6 @@ static void R_DrawStripElements( int numIndexes, const glIndex_t *indexes, void 
 	qglEnd();
 }
 
-
-
 /*
 ==================
 R_DrawElements
@@ -201,8 +199,7 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 		VK_UploadAttribDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*) &indexes[0]);
 
 		//int aaa = pStage->bundle[0].image[0]->index;
-		vkshader_t s = { 0 };
-		VK_SingleTextureShader(&s);
+		
 
 		//vkimage_t image = {0};
 
@@ -219,6 +216,12 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 		vkpipeline_t p = { 0 };
 		if (!getPipeline(&p)) {
 			
+			vkshader_t s = { 0 };
+			if (vk_d.state.clip == qtrue) {
+				VK_SingleTextureClipShader(&s);
+			}
+			else VK_SingleTextureShader(&s);
+
 			VK_SetDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
 			VK_SetShader(&p, &s);
 			VK_AddBindingDescription(&p, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
@@ -227,8 +230,12 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 			VK_AddAttributeDescription(&p, 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 0 * sizeof(float));
 			VK_AddAttributeDescription(&p, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 0 * sizeof(float));
 			VK_AddAttributeDescription(&p, 2, 2, VK_FORMAT_R32G32_SFLOAT, 0 * sizeof(float));
-			VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp));
-			VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha));
+			VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, 192);//sizeof(vk_d.mvp));
+			VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 3 * sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha));
+			/*if (vk_d.state.clip == qtrue) {
+				VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, 12 * sizeof(float));
+				VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 192, 4 * sizeof(float));
+			}*/
 			VK_FinishPipeline(&p);
 			addPipeline(&p);
 
@@ -240,7 +247,12 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 		VK_BindAttribBuffer(&vk_d.uvbuffer, 2, vk_d.offset * sizeof(vec2_t));
 		VK_BindDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
 		VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp), &vk_d.mvp);
-		VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha), &vk_d.discardModeAlpha);
+		VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 3 * sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha), &vk_d.discardModeAlpha);
+
+		if (vk_d.state.clip == qtrue) {
+			VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 64, sizeof(vk_d.modelViewMatrix), &vk_d.modelViewMatrix);
+			VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, sizeof(vk_d.clipPlane), &vk_d.clipPlane);
+		}
 		//Com_Printf("%d", vk_d.discardModeAlpha);
 		VK_DrawIndexed(&p, &vk_d.indexbuffer, numIndexes, vk_d.offsetIdx * sizeof(uint32_t));
 		//VK_Draw(&p, 6);
@@ -743,29 +755,32 @@ static void RB_FogPass( void ) {
 	fog_t		*fog;
 	int			i;
 
-	qglEnableClientState( GL_COLOR_ARRAY );
-	qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, tess.svars.colors );
+	if (glConfig.driverType == OPENGL) {
+		qglEnableClientState(GL_COLOR_ARRAY);
+		qglColorPointer(4, GL_UNSIGNED_BYTE, 0, tess.svars.colors);
 
-	qglEnableClientState( GL_TEXTURE_COORD_ARRAY);
-	qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoords[0] );
+		qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		qglTexCoordPointer(2, GL_FLOAT, 0, tess.svars.texcoords[0]);
 
-	fog = tr.world->fogs + tess.fogNum;
+		fog = tr.world->fogs + tess.fogNum;
 
-	for ( i = 0; i < tess.numVertexes; i++ ) {
-		* ( int * )&tess.svars.colors[i] = fog->colorInt;
+		for (i = 0; i < tess.numVertexes; i++) {
+			*(int*)& tess.svars.colors[i] = fog->colorInt;
+		}
+
+		RB_CalcFogTexCoords((float*)tess.svars.texcoords[0]);
+
+		GL_Bind(tr.fogImage);
+
+		if (tess.shader->fogPass == FP_EQUAL) {
+			tr_api.State(GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_EQUAL);
+		}
+		else {
+			tr_api.State(GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA);
+		}
+
+		R_DrawElements(tess.numIndexes, tess.indexes);
 	}
-
-	RB_CalcFogTexCoords( ( float * ) tess.svars.texcoords[0] );
-
-	GL_Bind( tr.fogImage );
-
-	if ( tess.shader->fogPass == FP_EQUAL ) {
-		tr_api.State( GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_EQUAL );
-	} else {
-		tr_api.State( GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
-	}
-
-	R_DrawElements( tess.numIndexes, tess.indexes );
 }
 
 /*
@@ -1157,14 +1172,26 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
             
 				tr_api.State( pStage->stateBits );
  
+				/*if (backEnd.viewParms.isMirror) {
+					if (vk_d.state.cullMode == VK_CULL_MODE_FRONT_BIT) vk_d.state.cullMode = VK_CULL_MODE_BACK_BIT;
+					else vk_d.state.cullMode = VK_CULL_MODE_FRONT_BIT;
+				}*/
+
+				if (vk_d.state.clip == qtrue) {
+					a = 2;
+				}
+
 				// set mvp
 				myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
-				if (a == 21) {
-					int b = 3;
-				}
+
 				R_DrawElements(input->numIndexes, input->indexes);
 				vk_d.offset += input->numVertexes;
 				vk_d.offsetIdx += input->numIndexes;
+
+				/*if (backEnd.viewParms.isMirror) {
+					if (vk_d.state.cullMode == VK_CULL_MODE_FRONT_BIT) vk_d.state.cullMode = VK_CULL_MODE_BACK_BIT;
+					else vk_d.state.cullMode = VK_CULL_MODE_FRONT_BIT;
+				}*/
 	
             }
             

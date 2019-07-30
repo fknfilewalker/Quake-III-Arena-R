@@ -115,6 +115,7 @@ static void VK_CreateSwapChain() {
 	createInfo.imageExtent = vk.swapchain.extent;
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	createInfo.clipped = VK_TRUE;
 
 	uint32_t queueFamilyIndices[] = {	vk.queryFamilyIndices.graphicsFamily, 
 										vk.queryFamilyIndices.presentFamily };

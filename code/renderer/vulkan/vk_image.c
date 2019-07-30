@@ -96,7 +96,7 @@ void VK_CreateSampler(	vkimage_t* image, VkFilter magFilter, VkFilter minFilter,
 	desc.compareEnable = VK_FALSE;
 	desc.compareOp = VK_COMPARE_OP_ALWAYS;
 	desc.minLod = 0.0f;
-	desc.maxLod = 0.25f;
+	desc.maxLod = 12.00f;
 	desc.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 	desc.unnormalizedCoordinates = VK_FALSE;
 	VK_CHECK(vkCreateSampler(vk.device, &desc, NULL, &image->sampler), "failed to create Sampler!");

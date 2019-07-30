@@ -1139,7 +1139,6 @@ typedef struct {
     
     // clip
     qboolean                                    clip;
-    double                                      plane[4];
     
 } vkrenderState_t;
 
@@ -1168,6 +1167,7 @@ typedef struct {
 	float               projectionMatrix[16];
     float               mvp[16];
     int                 discardModeAlpha;
+	float				clipPlane[4];
     
     // texture
     int                 currentTexture[2];

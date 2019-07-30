@@ -188,7 +188,7 @@ void GL_Cull( int cullType ) {
 
 void VK_Cull( int cullType ) {
     if ( vk_d.state.faceCulling == cullType ) {
-        return;
+        //return;
     }
     
     vk_d.state.faceCulling = cullType;
@@ -384,11 +384,11 @@ void RB_BeginDrawingView (void) {
             qglClipPlane (GL_CLIP_PLANE0, plane2);
             qglEnable (GL_CLIP_PLANE0);
         } else if ( glConfig.driverType == VULKAN ) {
-            //Com_Memcpy(vk_d.state.plane, plane2, 16);
-            vk_d.state.plane[0] = -plane2[1];
-            vk_d.state.plane[1] =  plane2[2];
-            vk_d.state.plane[2] = -plane2[0];
-            vk_d.state.plane[3] =  plane2[3];
+            // multiply plane with s_flipMatrix
+            vk_d.clipPlane[0] = -plane2[1];
+            vk_d.clipPlane[1] =  plane2[2];
+            vk_d.clipPlane[2] = -plane2[0];
+            vk_d.clipPlane[3] =  plane2[3];
             vk_d.state.clip = qtrue;
         }
 	} else {
