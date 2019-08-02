@@ -46,3 +46,4 @@ void VK_DestroyAttribBuffer(vkattribbuffer_t* buffer)
 	}
 	memset(buffer, 0, sizeof(vkattribbuffer_t));
 }
+

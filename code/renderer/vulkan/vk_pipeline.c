@@ -5,8 +5,19 @@ typedef struct {
     vkrenderState_t     state;
 } vkpipe_t;
 
+typedef struct {
+	vkpipeline_t        pipeline;
+	qboolean			clearColor;
+	qboolean			clearDepth;
+	qboolean			clearStencil;
+} vkattachmentClearPipe_t;
+
 static uint8_t pipelineListSize;
 static vkpipe_t pipelineList[100];
+
+static vkattachmentClearPipe_t attachmentClearPipelineList[8];
+
+
 
 qboolean getPipeline(vkpipeline_t *p){
     for (uint8_t i = 0; i < pipelineListSize; ++i) {
@@ -248,12 +259,15 @@ void VK_BindAttribBuffer(vkattribbuffer_t *attribBuffer, uint32_t binding, VkDev
 void VK_Draw(vkpipeline_t *pipeline, int count)
 {
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+	vkCmdSetViewport(commandBuffer, 0, 1, &vk_d.viewport);
+	vkCmdSetScissor(commandBuffer, 0, 1, &vk_d.scissor);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
     vkCmdDraw(commandBuffer, count, 1, 0, 0);
 }
 
 void VK_DrawIndexed(vkpipeline_t *pipeline, vkattribbuffer_t *idxBuffer, int count, VkDeviceSize offset)
 {
+	//return;
 	VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
 	vkCmdSetViewport(commandBuffer, 0, 1, &vk_d.viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &vk_d.scissor);
@@ -267,4 +281,97 @@ void VK_DrawIndexed(vkpipeline_t *pipeline, vkattribbuffer_t *idxBuffer, int cou
     VkDeviceSize bOffset = 0;
     vkCmdBindIndexBuffer(commandBuffer, idxBuffer->buffer, offset, VK_INDEX_TYPE_UINT32);
     vkCmdDrawIndexed(commandBuffer, count, 1, 0, 0, 0);
+}
+
+qboolean VK_GetAttachmentClearPipelines(vkpipeline_t *pipeline, qboolean clearColor, qboolean clearDepth, qboolean clearStencil) {
+	for (uint8_t i = 0; i < 8; ++i) {
+		vkattachmentClearPipe_t p = attachmentClearPipelineList[i];
+
+		if (p.clearColor == clearColor && p.clearDepth == clearDepth && p.clearStencil == clearStencil) {
+			Com_Memcpy(pipeline, &p.pipeline, sizeof(vkpipeline_t));
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
+void VK_InitPipelines() {
+	int clearColor = 0;
+	int clearDepth = 0;
+	int clearStencil = 0;
+
+	int attachmentClearPipelinePos = 0;
+	for (clearColor = 0; clearColor < 2; ++clearColor) {
+		for (clearDepth = 0; clearDepth < 2; ++clearDepth) {
+			for (clearStencil = 0; clearStencil < 2; ++clearStencil) {
+				vkattachmentClearPipe_t pipeline;
+
+				//memset(&vk_d.state.dsBlend, 0, sizeof(vk_d.state.dsBlend));
+				//memset(&vk_d.state.colorBlend, 0, sizeof(vk_d.state.colorBlend));
+				vk_d.state.polygonMode = VK_POLYGON_MODE_FILL;
+				vk_d.state.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+				vk_d.state.cullMode = VK_CULL_MODE_NONE;
+				if (clearColor) {
+					vk_d.state.colorBlend.blendEnable = VK_FALSE;
+				}
+				else {
+					vk_d.state.colorBlend.blendEnable = VK_TRUE;
+					vk_d.state.colorBlend.colorBlendOp = VK_BLEND_OP_ADD;
+					vk_d.state.colorBlend.alphaBlendOp = VK_BLEND_OP_ADD;
+					vk_d.state.colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+					vk_d.state.colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+					vk_d.state.colorBlend.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+					vk_d.state.colorBlend.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+				}
+
+				if (clearDepth) {
+					vk_d.state.dsBlend.depthTestEnable = VK_TRUE;
+					vk_d.state.dsBlend.depthWriteEnable = VK_TRUE;
+					vk_d.state.dsBlend.depthCompareOp = VK_COMPARE_OP_ALWAYS;
+				}
+				else {
+					vk_d.state.dsBlend.depthTestEnable = VK_FALSE;
+					vk_d.state.dsBlend.depthWriteEnable = VK_FALSE;
+				}
+
+				vk_d.state.dsBlend.stencilTestEnable = VK_FALSE;
+				if (clearStencil) {
+					vk_d.state.dsBlend.stencilTestEnable = VK_TRUE;
+					VkStencilOpState stencilSettings = { 0 };
+					stencilSettings.failOp = VK_STENCIL_OP_ZERO;
+					stencilSettings.passOp = VK_STENCIL_OP_ZERO;
+					stencilSettings.compareOp = VK_COMPARE_OP_ALWAYS;
+					stencilSettings.writeMask = 0x00;
+
+					vk_d.state.dsBlend.back = stencilSettings;
+					vk_d.state.dsBlend.c = stencilSettings;
+
+				}
+				else {
+				}
+
+
+				vkpipeline_t p = { 0 };
+				vkshader_t s = { 0 };
+				VK_ClearAttachmentShader(&s);
+				vkdescriptor_t d = { 0 };
+
+				VK_SetDescriptorSet(&p, &d);
+				VK_SetShader(&p, &s);
+				VK_AddBindingDescription(&p, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
+				VK_AddAttributeDescription(&p, 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 0 * sizeof(float));
+				VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(vec4_t));
+				VK_FinishPipeline(&p);
+
+
+				pipeline.pipeline = p;
+				pipeline.clearColor = clearColor;
+				pipeline.clearDepth = clearDepth;
+				pipeline.clearStencil = clearStencil;
+				attachmentClearPipelineList[attachmentClearPipelinePos] = pipeline;
+				attachmentClearPipelinePos++;
+			}
+		}
+	}
+	return;
 }

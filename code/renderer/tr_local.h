@@ -1153,6 +1153,8 @@ typedef struct {
     vkattribbuffer_t    normalbuffer;
     vkattribbuffer_t    uvbuffer;
     vkattribbuffer_t    colorbuffer;
+
+	vkattribbuffer_t    fullscreenquadbuffer;
     
     //
     qboolean            renderBegan;

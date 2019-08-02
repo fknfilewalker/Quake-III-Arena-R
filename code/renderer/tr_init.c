@@ -249,11 +249,22 @@ static void InitVulkan(void)
 
 		VKimp_Init();
 
+		VK_InitPipelines();
+
 		VK_CreateIndexBuffer(&vk_d.indexbuffer, 30 * SHADER_MAX_INDEXES * sizeof(uint32_t));
 		VK_CreateVertexBuffer(&vk_d.vertexbuffer, 30 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
 		VK_CreateVertexBuffer(&vk_d.normalbuffer, 30 * SHADER_MAX_VERTEXES * sizeof(vec4_t));
 		VK_CreateVertexBuffer(&vk_d.uvbuffer, 30 * SHADER_MAX_VERTEXES * sizeof(vec2_t));
 		VK_CreateVertexBuffer(&vk_d.colorbuffer, 30 * SHADER_MAX_VERTEXES * sizeof(color4ub_t));
+
+		float vFullscreenQuad[24] = { -1.0, -1.0, 1.0, 0,
+								 1.0, -1.0, 1.0, 0,
+								-1.0,  1.0, 1.0, 0,
+								-1.0,  1.0, 1.0, 0,
+								 1.0, -1.0, 1.0, 0,
+								 1.0,  1.0, 1.0, 0 };
+		VK_CreateVertexBuffer(&vk_d.fullscreenquadbuffer, sizeof(vFullscreenQuad));
+		VK_UploadAttribData(&vk_d.fullscreenquadbuffer, &vFullscreenQuad[0]);
 
 		// device infos
 		VkPhysicalDeviceProperties devProperties;
