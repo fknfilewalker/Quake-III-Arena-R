@@ -53,6 +53,11 @@ void beginRenderClear()
     
     float constRGBA[4] = {0, 0, 0, 0};
     vkCmdSetBlendConstants(cmdBuf, &constRGBA);
+    
+    VK_BindIndexBuffer(&vk_d.indexbuffer, 0);
+    VK_BindAttribBuffer(&vk_d.vertexbuffer, 0, 0);
+    VK_BindAttribBuffer(&vk_d.colorbuffer, 1, 0);
+    VK_BindAttribBuffer(&vk_d.uvbuffer, 2, 0);
 }
 
 void beginRender()
@@ -66,9 +71,15 @@ void endRender()
 
 }
 
+static float vFullscreenQuad[24] = { -1.0, -1.0, 1.0, 0,
+    1.0, -1.0, 1.0, 0,
+    -1.0,  1.0, 1.0, 0,
+    1.0,  1.0, 1.0, 0 };
+
+static uint32_t idxFullscreenQuad[6] = {0, 1, 2, 2, 1, 3};
 
 void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean clear_color, vec4_t color) {
-	//return;
+    //return;
     if (!clear_depth && !clear_stencil && !clear_color)
         return;
     
@@ -146,7 +157,9 @@ void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean 
 		vk_d.state.colorBlend.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 	}*/
 
-	
+    VK_UploadAttribDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]) * sizeof(uint32_t), (void*) &idxFullscreenQuad[0]);
+	VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), sizeof(vFullscreenQuad)/sizeof(vFullscreenQuad[0]) * sizeof(vec4_t), (void*)&vFullscreenQuad[0]);
+    
 	
 
 	vkpipeline_t p = { 0 };
@@ -172,13 +185,20 @@ void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean 
 		//Com_Printf("new pipe \n");
 	
 
-	VK_BindAttribBuffer(&vk_d.fullscreenquadbuffer, 0, 0);
+	//VK_BindAttribBuffer(&vk_d.fullscreenquadbuffer, 0, 0);
+    
+    
+    
+    
 	VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(color), &color);
 
 	//Com_Printf("%d", vk_d.discardModeAlpha);
-	VK_Draw(&p, 6);
+	//VK_Draw(&p, 6);
+    VK_DrawIndexed(&p, &vk_d.indexbuffer, sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]), vk_d.offsetIdx, vk_d.offset);
 
-
+    vk_d.offsetIdx += sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]);
+    vk_d.offset += sizeof(vFullscreenQuad)/sizeof(vFullscreenQuad[0]);
+    
 	Com_Memcpy(&vk_d.viewport, &vpSave, sizeof(vk_d.viewport));
 	Com_Memcpy(&vk_d.scissor, &sSave, sizeof(vk_d.scissor));
 

@@ -21,6 +21,8 @@ qboolean VK_LoadGlobalFunctions(void)
 
 qboolean VK_LoadInstanceFunctions(void)
 {
+    vkDestroyInstance = VK_INSTANCE_LEVEL_FUNCTION("vkDestroyInstance");
+    
 	vkEnumeratePhysicalDevices = VK_INSTANCE_LEVEL_FUNCTION("vkEnumeratePhysicalDevices");
 	vkEnumerateDeviceExtensionProperties = VK_INSTANCE_LEVEL_FUNCTION("vkEnumerateDeviceExtensionProperties");
 	vkGetPhysicalDeviceMemoryProperties = VK_INSTANCE_LEVEL_FUNCTION("vkGetPhysicalDeviceMemoryProperties");
@@ -33,6 +35,7 @@ qboolean VK_LoadInstanceFunctions(void)
 #elif defined( __linux__ )
     
 #endif
+    vkDestroySurfaceKHR = VK_INSTANCE_LEVEL_FUNCTION("vkDestroySurfaceKHR");
 	
 	/* Physical Device */
 	vkGetPhysicalDeviceProperties = VK_INSTANCE_LEVEL_FUNCTION("vkGetPhysicalDeviceProperties");
@@ -46,6 +49,12 @@ qboolean VK_LoadInstanceFunctions(void)
 	/* Device */
 	vkGetDeviceProcAddr = VK_INSTANCE_LEVEL_FUNCTION("vkGetDeviceProcAddr");
 	vkCreateDevice = VK_INSTANCE_LEVEL_FUNCTION("vkCreateDevice");
+    
+    /* Debug */
+#ifndef NDEBUG
+    vkCreateDebugUtilsMessengerEXT = VK_INSTANCE_LEVEL_FUNCTION("vkCreateDebugUtilsMessengerEXT");
+    vkDestroyDebugUtilsMessengerEXT = VK_INSTANCE_LEVEL_FUNCTION("vkDestroyDebugUtilsMessengerEXT");
+#endif
 
 	return qtrue;
 }
@@ -135,10 +144,8 @@ qboolean VK_LoadDeviceFunctions(void)
 	vkDestroySwapchainKHR = VK_DEVICE_LEVEL_FUNCTION("vkDestroySwapchainKHR");
 	vkDestroySemaphore = VK_DEVICE_LEVEL_FUNCTION("vkDestroySemaphore");
 	vkDestroyFence = VK_DEVICE_LEVEL_FUNCTION("vkDestroyFence");
-	vkDestroyInstance = VK_DEVICE_LEVEL_FUNCTION("vkDestroyInstance");
 	vkDestroyCommandPool = VK_DEVICE_LEVEL_FUNCTION("vkDestroyCommandPool");
 	vkDestroyDevice = VK_DEVICE_LEVEL_FUNCTION("vkDestroyDevice");
-	vkDestroySurfaceKHR = VK_DEVICE_LEVEL_FUNCTION("vkDestroySurfaceKHR");
 
 	vkDeviceWaitIdle = VK_DEVICE_LEVEL_FUNCTION("vkDeviceWaitIdle");
 	vkWaitForFences = VK_DEVICE_LEVEL_FUNCTION("vkWaitForFences");
@@ -148,10 +155,6 @@ qboolean VK_LoadDeviceFunctions(void)
 	vkDestroyPipeline = VK_DEVICE_LEVEL_FUNCTION("vkDestroyPipeline");
 	vkDestroyPipelineLayout = VK_DEVICE_LEVEL_FUNCTION("vkDestroyPipelineLayout");
 	vkDestroyPipelineCache = VK_DEVICE_LEVEL_FUNCTION("vkDestroyPipelineCache");
-	/* Debug */
-#ifndef NDEBUG
-	vkCreateDebugUtilsMessengerEXT = VK_DEVICE_LEVEL_FUNCTION("vkCreateDebugUtilsMessengerEXT");
-	vkDestroyDebugUtilsMessengerEXT = VK_DEVICE_LEVEL_FUNCTION("vkDestroyDebugUtilsMessengerEXT");
-#endif
+
     return qtrue;
 }

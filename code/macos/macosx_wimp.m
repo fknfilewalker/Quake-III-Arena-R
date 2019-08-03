@@ -3,6 +3,7 @@
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
 
+
 // Needs to be visible to Q3Controller.m.
 void Sys_UpdateWindowMouseInputRect(NSWindow *window)
 {

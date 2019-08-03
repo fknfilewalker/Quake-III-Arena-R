@@ -196,6 +196,7 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 		// anything else will cause no drawing
 	}
 	else if (glConfig.driverType == VULKAN) {
+        
 		VK_UploadAttribDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*) &indexes[0]);
 
 		//int aaa = pStage->bundle[0].image[0]->index;
@@ -220,8 +221,9 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 			if (vk_d.state.clip == qtrue) {
 				VK_SingleTextureClipShader(&s);
 			}
-			else VK_SingleTextureShader(&s);
-
+            else {
+                VK_SingleTextureShader(&s);
+            }
 			VK_SetDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
 			VK_SetShader(&p, &s);
 			VK_AddBindingDescription(&p, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
@@ -231,7 +233,7 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 			VK_AddAttributeDescription(&p, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 0 * sizeof(float));
 			VK_AddAttributeDescription(&p, 2, 2, VK_FORMAT_R32G32_SFLOAT, 0 * sizeof(float));
 			VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, 192);//sizeof(vk_d.mvp));
-			VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 3 * sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha));
+			VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 192, sizeof(vk_d.discardModeAlpha));
 			/*if (vk_d.state.clip == qtrue) {
 				VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, 12 * sizeof(float));
 				VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 192, 4 * sizeof(float));
@@ -242,19 +244,19 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 			Com_Printf("new pipe \n");
 		}
 
-		VK_BindAttribBuffer(&vk_d.vertexbuffer, 0, vk_d.offset * sizeof(vec4_t));
-		VK_BindAttribBuffer(&vk_d.colorbuffer, 1, vk_d.offset * sizeof(color4ub_t));
-		VK_BindAttribBuffer(&vk_d.uvbuffer, 2, vk_d.offset * sizeof(vec2_t));
+//        VK_BindAttribBuffer(&vk_d.vertexbuffer, 0, 0);//vk_d.offset * sizeof(vec4_t));
+//        VK_BindAttribBuffer(&vk_d.colorbuffer, 1, 0);//vk_d.offset * sizeof(color4ub_t));
+//        VK_BindAttribBuffer(&vk_d.uvbuffer, 2, 0);//vk_d.offset * sizeof(vec2_t));
 		VK_BindDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
 		VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp), &vk_d.mvp);
-		VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 3 * sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha), &vk_d.discardModeAlpha);
+		VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 192, sizeof(vk_d.discardModeAlpha), &vk_d.discardModeAlpha);
 
 		if (vk_d.state.clip == qtrue) {
 			VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 64, sizeof(vk_d.modelViewMatrix), &vk_d.modelViewMatrix);
 			VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, sizeof(vk_d.clipPlane), &vk_d.clipPlane);
 		}
 		//Com_Printf("%d", vk_d.discardModeAlpha);
-		VK_DrawIndexed(&p, &vk_d.indexbuffer, numIndexes, vk_d.offsetIdx * sizeof(uint32_t));
+		VK_DrawIndexed(&p, &vk_d.indexbuffer, numIndexes, vk_d.offsetIdx, vk_d.offset);
 		//VK_Draw(&p, 6);
 		//VK_DestroyPipeline(&p);
 		//VK_DestroyShader(&s);
@@ -1141,14 +1143,29 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
         else if (glConfig.driverType == VULKAN) {
 			int a = tess.shader->index;
 			//if (a != 21) return;
-
-			VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
-
-            //if ( !setArraysOnce )
-            {
-                VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+            //return;
+            if (backEnd.viewParms.isMirror) {
+                //if (a > 20) return;
+                //return;
             }
+            if (backEnd.viewParms.isPortal) {
+                //if (a > 20) return;
+                //return;
+            }
+            if (vk_d.state.clip == qtrue) {
+                //`a = 2;
+                //return;
+            }
+            if(pStage->bundle[0].isLightmap){
+                //Com_Printf("%d\n", a);
+                //return;
+            }
+
             
+			VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
+            VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+            
+           
             //
             // do multitexture
             //
@@ -1172,15 +1189,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
             
 				tr_api.State( pStage->stateBits );
  
-				/*if (backEnd.viewParms.isMirror) {
-					if (vk_d.state.cullMode == VK_CULL_MODE_FRONT_BIT) vk_d.state.cullMode = VK_CULL_MODE_BACK_BIT;
-					else vk_d.state.cullMode = VK_CULL_MODE_FRONT_BIT;
-				}*/
-
-				if (vk_d.state.clip == qtrue) {
-					a = 2;
-				}
-
+	
 				// set mvp
 				myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
 
@@ -1188,10 +1197,6 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 				vk_d.offset += input->numVertexes;
 				vk_d.offsetIdx += input->numIndexes;
 
-				/*if (backEnd.viewParms.isMirror) {
-					if (vk_d.state.cullMode == VK_CULL_MODE_FRONT_BIT) vk_d.state.cullMode = VK_CULL_MODE_BACK_BIT;
-					else vk_d.state.cullMode = VK_CULL_MODE_FRONT_BIT;
-				}*/
 	
             }
             

@@ -1036,7 +1036,7 @@ typedef struct {
     //uint16_t elementSize;
     VkDeviceSize allocSize;
     VkBool32 onGpu;
-    
+    byte* p;
     VkBuffer buffer;
     VkDeviceMemory memory;
 } vkattribbuffer_t;
@@ -1149,12 +1149,11 @@ typedef struct {
 	VkDeviceSize		offsetIdx;
     vkattribbuffer_t    indexbuffer;
 	VkDeviceSize		offset;
+    vkattribbuffer_t    attributeBuffer;
     vkattribbuffer_t    vertexbuffer;
     vkattribbuffer_t    normalbuffer;
     vkattribbuffer_t    uvbuffer;
     vkattribbuffer_t    colorbuffer;
-
-	vkattribbuffer_t    fullscreenquadbuffer;
     
     //
     qboolean            renderBegan;

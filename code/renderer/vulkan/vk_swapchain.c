@@ -378,13 +378,13 @@ void VK_BeginFrame()
 	VK_CHECK(vkBeginCommandBuffer(vk.swapchain.commandBuffers[vk.swapchain.currentImage], &beginInfo), "failed to begin recording command buffer!");
 
 	// Ensure visibility of geometry buffers writes.
-	record_buffer_memory_barrier(vk.swapchain.commandBuffers[vk.swapchain.currentImage], vk_d.vertexbuffer.buffer,
-		VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-		VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
-
-	record_buffer_memory_barrier(vk.swapchain.commandBuffers[vk.swapchain.currentImage], vk_d.indexbuffer.buffer,
-		VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-		VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_INDEX_READ_BIT);
+//    record_buffer_memory_barrier(vk.swapchain.commandBuffers[vk.swapchain.currentImage], vk_d.vertexbuffer.buffer,
+//        VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+//        VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+//
+//    record_buffer_memory_barrier(vk.swapchain.commandBuffers[vk.swapchain.currentImage], vk_d.indexbuffer.buffer,
+//        VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+//        VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_INDEX_READ_BIT);
 }
 
 void VK_EndFrame()

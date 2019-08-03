@@ -44,6 +44,11 @@ void destroyAllPipeline() {
 	}
 	pipelineListSize = 0;
 	memset(&pipelineList[0], 0, sizeof(pipelineList));
+    
+    for (uint8_t i = 0; i < 8; ++i) {
+        VK_DestroyPipeline(&attachmentClearPipelineList[i].pipeline);
+    }
+    memset(&attachmentClearPipelineList[0], 0, sizeof(attachmentClearPipelineList));
 }
 
 static void VK_CreatePipelineCache(vkpipeline_t *pipeline);
@@ -109,14 +114,14 @@ void VK_DestroyPipeline(vkpipeline_t* pipeline) {
 	free(pipeline->attributeDescription.p);
 	free(pipeline->bindingDescription.p);
 
+    if (pipeline->layout) {
+        vkDestroyPipelineLayout(vk.device, pipeline->layout, NULL);
+        pipeline->layout = VK_NULL_HANDLE;
+    }
+    
 	if (pipeline->handle) {
 		vkDestroyPipeline(vk.device, pipeline->handle, NULL);
 		pipeline->handle = VK_NULL_HANDLE;
-	}
-
-	if (pipeline->layout) {
-		vkDestroyPipelineLayout(vk.device, pipeline->layout, NULL);
-		pipeline->layout = VK_NULL_HANDLE;
 	}
 
 	if (pipeline->cache) {
@@ -222,12 +227,17 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline)
     vk_d.state.dsBlend.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     pipelineInfo.pDepthStencilState = &vk_d.state.dsBlend;
 
-    VkDynamicState dynEnable[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_DEPTH_BIAS, VK_DYNAMIC_STATE_BLEND_CONSTANTS};
+    VkDynamicState dynEnable[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_DEPTH_BIAS};
     VkPipelineDynamicStateCreateInfo dyn = {0};
     dyn.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dyn.dynamicStateCount = sizeof(dynEnable) / sizeof(VkDynamicState);
     dyn.pDynamicStates = dynEnable;
     pipelineInfo.pDynamicState = &dyn;
+    
+    rs.depthBiasEnable = VK_TRUE;
+    rs.depthBiasConstantFactor = 0.0f; // dynamic depth bias state
+    rs.depthBiasClamp = 0.0f; // dynamic depth bias state
+    rs.depthBiasSlopeFactor = 0.0f; // dynamic depth bias state
     
     pipelineInfo.layout = pipeline->layout;
 
@@ -250,6 +260,12 @@ void VK_SetPushConstant(vkpipeline_t *pipeline, VkShaderStageFlags stage, uint32
     vkCmdPushConstants(commandBuffer, pipeline->layout, stage, offset, size, data);
 }
 
+void VK_BindIndexBuffer(vkattribbuffer_t *idxBuffer, VkDeviceSize offset){
+    VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+    VkDeviceSize bOffset = 0;
+    vkCmdBindIndexBuffer(commandBuffer, idxBuffer->buffer, offset, VK_INDEX_TYPE_UINT32);
+}
+
 void VK_BindAttribBuffer(vkattribbuffer_t *attribBuffer, uint32_t binding, VkDeviceSize offset){
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
     VkDeviceSize bOffset = 0;
@@ -265,7 +281,7 @@ void VK_Draw(vkpipeline_t *pipeline, int count)
     vkCmdDraw(commandBuffer, count, 1, 0, 0);
 }
 
-void VK_DrawIndexed(vkpipeline_t *pipeline, vkattribbuffer_t *idxBuffer, int count, VkDeviceSize offset)
+void VK_DrawIndexed(vkpipeline_t *pipeline, vkattribbuffer_t *idxBuffer, int count, uint32_t firstIndex, uint32_t vertexOffset)
 {
 	//return;
 	VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
@@ -274,13 +290,12 @@ void VK_DrawIndexed(vkpipeline_t *pipeline, vkattribbuffer_t *idxBuffer, int cou
 	if (vk_d.polygonOffset)
 	{
 		vkCmdSetDepthBias(commandBuffer, r_offsetUnits->value, 0.0f, r_offsetFactor->value);
-	}
+	} else vkCmdSetDepthBias(commandBuffer, 0.0f, 0.0f, 0.0f);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
 
     VkDeviceSize bOffset = 0;
-    vkCmdBindIndexBuffer(commandBuffer, idxBuffer->buffer, offset, VK_INDEX_TYPE_UINT32);
-    vkCmdDrawIndexed(commandBuffer, count, 1, 0, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, count, 1, firstIndex, vertexOffset, 0);
 }
 
 qboolean VK_GetAttachmentClearPipelines(vkpipeline_t *pipeline, qboolean clearColor, qboolean clearDepth, qboolean clearStencil) {
@@ -344,7 +359,7 @@ void VK_InitPipelines() {
 					stencilSettings.writeMask = 0x00;
 
 					vk_d.state.dsBlend.back = stencilSettings;
-					vk_d.state.dsBlend.c = stencilSettings;
+					vk_d.state.dsBlend.front = stencilSettings;
 
 				}
 				else {
@@ -358,8 +373,12 @@ void VK_InitPipelines() {
 
 				VK_SetDescriptorSet(&p, &d);
 				VK_SetShader(&p, &s);
-				VK_AddBindingDescription(&p, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
-				VK_AddAttributeDescription(&p, 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 0 * sizeof(float));
+                VK_AddBindingDescription(&p, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
+                VK_AddBindingDescription(&p, 1, sizeof(color4ub_t), VK_VERTEX_INPUT_RATE_VERTEX);
+                VK_AddBindingDescription(&p, 2, sizeof(vec2_t), VK_VERTEX_INPUT_RATE_VERTEX);
+                VK_AddAttributeDescription(&p, 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 0 * sizeof(float));
+                VK_AddAttributeDescription(&p, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 0 * sizeof(float));
+                VK_AddAttributeDescription(&p, 2, 2, VK_FORMAT_R32G32_SFLOAT, 0 * sizeof(float));
 				VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(vec4_t));
 				VK_FinishPipeline(&p);
 

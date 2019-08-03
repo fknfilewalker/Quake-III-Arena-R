@@ -37,8 +37,6 @@ cvar_t	*r_allowSoftwareGL;		// don't abort out if the pixelformat claims softwar
 cvar_t  *r_enablerender;                // Enable actual rendering
 cvar_t  *r_appleTransformHint;          // Enable Apple transform hint
 
-NSWindow *_window; // keep window handle so we don't need to recreate a window all the time
-
 static void GLW_InitExtensions( void );
 static qboolean CreateGameWindow( qboolean isSecondTry );
 static GLint Sys_QueryVideoMemory();

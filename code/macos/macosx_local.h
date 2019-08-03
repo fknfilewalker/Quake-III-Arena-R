@@ -87,6 +87,8 @@ typedef struct
 
 extern glwstate_t glw_state;
 
+NSWindow *_window; // keep window handle so we don't need to recreate a window all the time
+    
 #define OSX_SetGLContext(context) \
 do { \
     NSOpenGLContext *_context = (context); \

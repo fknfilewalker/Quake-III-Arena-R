@@ -54,6 +54,8 @@ PFN_vkEnumerateInstanceLayerProperties			vkEnumerateInstanceLayerProperties;
 /*
 ** INSTANCE
 */
+PFN_vkDestroyInstance                           vkDestroyInstance;
+
 PFN_vkEnumeratePhysicalDevices					vkEnumeratePhysicalDevices;
 PFN_vkEnumerateDeviceExtensionProperties		vkEnumerateDeviceExtensionProperties;
 PFN_vkGetPhysicalDeviceMemoryProperties			vkGetPhysicalDeviceMemoryProperties;
@@ -66,6 +68,7 @@ PFN_vkCreateMacOSSurfaceMVK                     vkCreateMacOSSurfaceMVK;
 #elif defined( __linux__ )
 
 #endif
+PFN_vkDestroySurfaceKHR                         vkDestroySurfaceKHR;
 
 /* Physical Device */
 PFN_vkGetPhysicalDeviceProperties				vkGetPhysicalDeviceProperties;
@@ -79,6 +82,12 @@ PFN_vkGetPhysicalDeviceSurfaceFormatsKHR		vkGetPhysicalDeviceSurfaceFormatsKHR;
 /* Device */
 PFN_vkGetDeviceProcAddr							vkGetDeviceProcAddr;
 PFN_vkCreateDevice								vkCreateDevice;
+
+/* Debug */
+#ifndef NDEBUG
+PFN_vkCreateDebugUtilsMessengerEXT              vkCreateDebugUtilsMessengerEXT;
+PFN_vkDestroyDebugUtilsMessengerEXT             vkDestroyDebugUtilsMessengerEXT;
+#endif
 
 /*
 ** DEVICE
@@ -166,10 +175,8 @@ PFN_vkDestroyRenderPass							vkDestroyRenderPass;
 PFN_vkDestroySwapchainKHR						vkDestroySwapchainKHR;
 PFN_vkDestroySemaphore							vkDestroySemaphore;
 PFN_vkDestroyFence								vkDestroyFence;
-PFN_vkDestroyInstance							vkDestroyInstance;
 PFN_vkDestroyCommandPool 						vkDestroyCommandPool;
 PFN_vkDestroyDevice								vkDestroyDevice;
-PFN_vkDestroySurfaceKHR							vkDestroySurfaceKHR;
 
 PFN_vkDeviceWaitIdle							vkDeviceWaitIdle;
 PFN_vkWaitForFences								vkWaitForFences;
@@ -179,11 +186,5 @@ PFN_vkDestroyShaderModule						vkDestroyShaderModule;
 PFN_vkDestroyPipeline							vkDestroyPipeline;
 PFN_vkDestroyPipelineLayout						vkDestroyPipelineLayout;
 PFN_vkDestroyPipelineCache						vkDestroyPipelineCache;
-
-/* Debug */
-#ifndef NDEBUG
-PFN_vkCreateDebugUtilsMessengerEXT				vkCreateDebugUtilsMessengerEXT;
-PFN_vkDestroyDebugUtilsMessengerEXT				vkDestroyDebugUtilsMessengerEXT;
-#endif
 
 #endif

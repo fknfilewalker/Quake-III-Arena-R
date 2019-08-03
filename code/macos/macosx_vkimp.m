@@ -1,8 +1,10 @@
 
 #include "tr_local.h"
 
+#import "macosx_local.h"
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
+#import <QuartzCore/QuartzCore.h>
 
 #import <mach-o/dyld.h>
 #import <mach/mach.h>
@@ -11,7 +13,6 @@
 
 cvar_t  *r_enablerender;                // Enable actual rendering
 
-NSWindow *_window; // keep window handle so we don't need to recreate a window all the time
 /*
  =================
  CreateGameWindow
@@ -160,7 +161,12 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
     {
         ri.Printf( PRINT_ERROR, " Could not load Metal Layer");
     }
-    id metalLayer = [[bundle classNamed:@"CAMetalLayer"] layer];
+    
+    CAMetalLayer *metalLayer = [[bundle classNamed:@"CAMetalLayer"] layer];
+    metalLayer.displaySyncEnabled = YES;
+    metalLayer.drawsAsynchronously = YES;
+    
+    //[metalLayer displaySyncEnabled:NO];
     
     //NSView *view = [[NSView alloc] initWithFrame:windowRect];
     //[_window setContentView:view];
@@ -168,12 +174,18 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
     //[view setWantsLayer:YES];
     //[a setContentsScale:[_window backingScaleFactor]];
     //[view setLayer:a];
-    
+
     [[_window contentView] setWantsLayer:YES];
     [[_window contentView] setLayer:metalLayer];
+    //[[_window contentView] canDrawConcurrently:TRUE];
+    
     
     // Setup Vulkan
     VK_Setup((void*) [_window contentView], NULL);
+    
+//    MVKConfiguration mvkConfig;
+//    size_t configSize;
+//    vkGetMoltenVKConfigurationMVK(vk.instance, &mvkConfig, &configSize);
     
     //glw_state.window = _window;
     // Sync input rect with where the window actually is...
@@ -335,6 +347,7 @@ void VKimp_Init( void )
     ri.Printf( PRINT_ALL, "  r_fullscreen = %d\n", r_fullscreen->integer);
     
     memset( &glConfig, 0, sizeof( glConfig ) );
+    glConfig.driverType = VULKAN;
     
     // We only allow changing the gamma if we are full screen
     glConfig.deviceSupportsGamma = false;//(r_fullscreen->integer != 0);
@@ -412,6 +425,30 @@ void VKimp_Init( void )
 //        OSX_GLContextClearCurrent();
 //#endif
 //
+}
+
+void VKimp_Shutdown( void ) {
+    CGDisplayCount displayIndex;
+    
+    Com_Printf("----- Shutting down VK -----\n");
+    
+    
+    
+    // Restore the original gamma if needed.
+    if (glConfig.deviceSupportsGamma) {
+        Com_Printf("Restoring ColorSync settings\n");
+        CGDisplayRestoreColorSyncSettings();
+    }
+
+    if(_window) {
+        [_window close];
+        _window = nil;
+    }
+    
+    memset(&glConfig, 0, sizeof(glConfig));
+    memset(&glState, 0, sizeof(glState));
+    
+    Com_Printf("----- Done shutting down VK -----\n");
 }
 
 
