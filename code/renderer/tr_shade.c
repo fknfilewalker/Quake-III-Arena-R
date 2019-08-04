@@ -724,13 +724,15 @@ static void ProjectDlightTexture( void ) {
 			continue;
 		}
 
-		qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
-		qglTexCoordPointer( 2, GL_FLOAT, 0, texCoordsArray[0] );
+        if (glConfig.driverType == OPENGL) {
+            qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+            qglTexCoordPointer( 2, GL_FLOAT, 0, texCoordsArray[0] );
 
-		qglEnableClientState( GL_COLOR_ARRAY );
-		qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, colorArray );
+            qglEnableClientState( GL_COLOR_ARRAY );
+            qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, colorArray );
 
-		GL_Bind( tr.dlightImage );
+            GL_Bind( tr.dlightImage );
+        }
 		// include GLS_DEPTHFUNC_EQUAL so alpha tested surfaces don't add light
 		// where they aren't rendered
 		if ( dl->additive ) {
@@ -742,6 +744,11 @@ static void ProjectDlightTexture( void ) {
 		R_DrawElements( numIndexes, hitIndexes );
 		backEnd.pc.c_totalIndexes += numIndexes;
 		backEnd.pc.c_dlightIndexes += numIndexes;
+        
+        if (glConfig.driverType == VULKAN) {
+            vk_d.offset += tess.numVertexes;
+            vk_d.offsetIdx += numIndexes;
+        }
 	}
 }
 
@@ -1095,7 +1102,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 		{
 			break;
 		}
-
+ 
 		ComputeColors( pStage );
 		ComputeTexCoords( pStage );
 
@@ -1146,7 +1153,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
             //return;
             if (backEnd.viewParms.isMirror) {
                 //if (a > 20) return;
-                //return;
+                //return;backEnd.viewParms.viewportX
             }
             if (backEnd.viewParms.isPortal) {
                 //if (a > 20) return;
@@ -1189,7 +1196,6 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
             
 				tr_api.State( pStage->stateBits );
  
-	
 				// set mvp
 				myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
 
