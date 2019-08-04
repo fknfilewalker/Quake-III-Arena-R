@@ -732,6 +732,11 @@ static void ProjectDlightTexture( void ) {
             qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, colorArray );
 
             GL_Bind( tr.dlightImage );
+        } else {
+            VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*) &tess.xyz[0]);
+            VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &colorArray[0]);
+            VK_UploadAttribDataOffset(&vk_d.uvbuffer, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &texCoordsArray[0]);
+            VK_Bind( tr.dlightImage );
         }
 		// include GLS_DEPTHFUNC_EQUAL so alpha tested surfaces don't add light
 		// where they aren't rendered
@@ -741,13 +746,14 @@ static void ProjectDlightTexture( void ) {
 		else {
 			tr_api.State( GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
 		}
+
 		R_DrawElements( numIndexes, hitIndexes );
 		backEnd.pc.c_totalIndexes += numIndexes;
 		backEnd.pc.c_dlightIndexes += numIndexes;
         
         if (glConfig.driverType == VULKAN) {
             vk_d.offset += tess.numVertexes;
-            vk_d.offsetIdx += numIndexes;
+            vk_d.offsetIdx += tess.numIndexes;
         }
 	}
 }
