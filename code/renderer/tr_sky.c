@@ -498,7 +498,7 @@ static void DrawSkyBox( shader_t *shader )
 
 			VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)& tess.xyz[0]);
 			VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void*)& tess.svars.colors[0]);
-			VK_UploadAttribDataOffset(&vk_d.uvbuffer, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void*)& tess.svars.texcoords[0]);
+			VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void*)& tess.svars.texcoords[0]);
 
 			VK_UploadAttribDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), tess.numIndexes * sizeof(uint32_t), (void*)& tess.indexes[0]);
 			// set mvp
@@ -533,9 +533,9 @@ static void DrawSkyBox( shader_t *shader )
 				Com_Printf("new pipe \n");
 			}
 
-			VK_BindAttribBuffer(&vk_d.vertexbuffer, 0, vk_d.offset * sizeof(vec4_t));
-			VK_BindAttribBuffer(&vk_d.colorbuffer, 1, vk_d.offset * sizeof(color4ub_t));
-			VK_BindAttribBuffer(&vk_d.uvbuffer, 2, vk_d.offset * sizeof(vec2_t));
+			//VK_BindAttribBuffer(&vk_d.vertexbuffer, 0, vk_d.offset * sizeof(vec4_t));
+			//VK_BindAttribBuffer(&vk_d.colorbuffer, 1, vk_d.offset * sizeof(color4ub_t));
+			//VK_BindAttribBuffer(&vk_d.uvbuffer1, 2, vk_d.offset * sizeof(vec2_t));
 			VK_BindDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
 			VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp), &vk_d.mvp);
 			VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 3 * sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha), &vk_d.discardModeAlpha);
@@ -945,6 +945,7 @@ void RB_StageIteratorSky( void ) {
 		backEnd.skyRenderedThisView = qtrue;
 	}
 	if (glConfig.driverType == VULKAN) {
+        //return;
 		if (r_fastsky->integer) {
 			return;
 		}

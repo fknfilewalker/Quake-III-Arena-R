@@ -1152,7 +1152,8 @@ typedef struct {
     vkattribbuffer_t    attributeBuffer;
     vkattribbuffer_t    vertexbuffer;
     vkattribbuffer_t    normalbuffer;
-    vkattribbuffer_t    uvbuffer;
+    vkattribbuffer_t    uvbuffer1;
+    vkattribbuffer_t    uvbuffer2;
     vkattribbuffer_t    colorbuffer;
     
     //

@@ -254,7 +254,8 @@ static void InitVulkan(void)
 		VK_CreateIndexBuffer(&vk_d.indexbuffer, 1024 * 1024 * sizeof(uint32_t));
 		VK_CreateVertexBuffer(&vk_d.vertexbuffer, 512 * 1024 * sizeof(vec4_t));
 		VK_CreateVertexBuffer(&vk_d.normalbuffer, 512 * 1024 * sizeof(vec4_t));
-		VK_CreateVertexBuffer(&vk_d.uvbuffer, 512 * 1024 * sizeof(vec2_t));
+		VK_CreateVertexBuffer(&vk_d.uvbuffer1, 512 * 1024 * sizeof(vec2_t));
+        VK_CreateVertexBuffer(&vk_d.uvbuffer2, 512 * 1024 * sizeof(vec2_t));
 		VK_CreateVertexBuffer(&vk_d.colorbuffer, 512 * 1024 * sizeof(color4ub_t));
 
 		// device infos
@@ -1240,7 +1241,8 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			VK_DestroyAttribBuffer(&vk_d.indexbuffer);
 			VK_DestroyAttribBuffer(&vk_d.vertexbuffer);
 			VK_DestroyAttribBuffer(&vk_d.normalbuffer);
-			VK_DestroyAttribBuffer(&vk_d.uvbuffer);
+			VK_DestroyAttribBuffer(&vk_d.uvbuffer1);
+            VK_DestroyAttribBuffer(&vk_d.uvbuffer2);
 			VK_DestroyAttribBuffer(&vk_d.colorbuffer);
             
 			destroyAllPipeline();

@@ -57,7 +57,8 @@ void beginRenderClear()
     VK_BindIndexBuffer(&vk_d.indexbuffer, 0);
     VK_BindAttribBuffer(&vk_d.vertexbuffer, 0, 0);
     VK_BindAttribBuffer(&vk_d.colorbuffer, 1, 0);
-    VK_BindAttribBuffer(&vk_d.uvbuffer, 2, 0);
+    VK_BindAttribBuffer(&vk_d.uvbuffer1, 2, 0);
+    VK_BindAttribBuffer(&vk_d.uvbuffer2, 3, 0);
 }
 
 void beginRender()
@@ -71,14 +72,12 @@ void endRender()
 
 }
 
-static float vFullscreenQuad[24] = { -1.0, -1.0, 1.0, 0,
-    1.0, -1.0, 1.0, 0,
-    -1.0,  1.0, 1.0, 0,
-    1.0,  1.0, 1.0, 0 };
-
-static uint32_t idxFullscreenQuad[6] = {0, 1, 2, 2, 1, 3};
-
 void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean clear_color, vec4_t color) {
+    static float vFullscreenQuad[24] = {    -1.0f, -1.0f, 1.0f, 0.0f,
+                                             1.0f, -1.0f, 1.0f, 0.0f,
+                                            -1.0f,  1.0f, 1.0f, 0.0f,
+                                             1.0f,  1.0f, 1.0f, 0.0f};
+    static uint32_t idxFullscreenQuad[6] = {0, 1, 2, 2, 1, 3};
     //return;
     if (!clear_depth && !clear_stencil && !clear_color)
         return;

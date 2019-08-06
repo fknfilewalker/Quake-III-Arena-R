@@ -73,9 +73,9 @@ void VK_Bind( image_t *image ) {
         index = tr.dlightImage->index;
     }
     
-    if ( vk_d.currentTexture[0] != index ) {
+    if ( vk_d.currentTexture[glState.currenttmu] != index ) {
         image->frameUsed = tr.frameCount;
-        vk_d.currentTexture[0] = index;
+        vk_d.currentTexture[glState.currenttmu] = index;
     }
 //    if ( glState.currenttextures[glState.currenttmu] != texnum ) {
 //        image->frameUsed = tr.frameCount;

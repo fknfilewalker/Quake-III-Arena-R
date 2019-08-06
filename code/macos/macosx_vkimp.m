@@ -163,8 +163,8 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
     }
     
     CAMetalLayer *metalLayer = [[bundle classNamed:@"CAMetalLayer"] layer];
-    metalLayer.displaySyncEnabled = YES;
-    metalLayer.drawsAsynchronously = YES;
+    //metalLayer.displaySyncEnabled = YES;
+    //metalLayer.drawsAsynchronously = YES;
     
     //[metalLayer displaySyncEnabled:NO];
     
@@ -351,6 +351,7 @@ void VKimp_Init( void )
     
     // We only allow changing the gamma if we are full screen
     glConfig.deviceSupportsGamma = false;//(r_fullscreen->integer != 0);
+    glConfig.textureEnvAddAvailable = qtrue;
     
     r_enablerender = ri.Cvar_Get("r_enablerender", "1", 0 );
     

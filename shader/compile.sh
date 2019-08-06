@@ -1,16 +1,23 @@
-rem Generate spv from glsl
+#!/bin/zsh
 
-set glslDir=glsl
-set spvDir=spv
 
-set glslangValidator=%VULKAN_SDK%\bin\glslangValidator %1
+glslDir="glsl"
+spvDir="spv"
 
-for %%f in (%glslDir%\*.vert) do (
-    %glslangValidator% -V %glslDir%\%%~nxf -o %spvDir%\%%~nxf.spv
-)
+glslangValidator=$VULKAN_SDK/bin/glslangValidator
 
-for %%f in (%glslDir%\*.frag) do (
-    %glslangValidator% -V %glslDir%\%%~nxf -o %spvDir%\%%~nxf.spv
-)
-$VULKAN_SDK/bin/glslangValidator  -V glsl/singleTextureClip.vert -o spv/singleTextureClip.vert.spv 
-:quit
+echo vert:
+for f in $glslDir/*.vert; do
+	echo $(basename "$f")
+	$glslangValidator -V $f -o $spvDir/$(basename "$f").spv
+done
+
+echo frag:
+for f in $glslDir/*.frag; do
+	echo $(basename "$f")
+	$glslangValidator -V $f -o $spvDir/$(basename "$f").spv
+done
+
+#for f in $glslDir\*.frag; do
+#    $glslangValidator -V $glslDir\~nxf -o $spvDir\~nxf.spv
+#done

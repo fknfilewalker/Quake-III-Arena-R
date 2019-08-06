@@ -735,7 +735,7 @@ static void ProjectDlightTexture( void ) {
         } else {
             VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*) &tess.xyz[0]);
             VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &colorArray[0]);
-            VK_UploadAttribDataOffset(&vk_d.uvbuffer, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &texCoordsArray[0]);
+            VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &texCoordsArray[0]);
             VK_Bind( tr.dlightImage );
         }
 		// include GLS_DEPTHFUNC_EQUAL so alpha tested surfaces don't add light
@@ -795,7 +795,32 @@ static void RB_FogPass( void ) {
 		}
 
 		R_DrawElements(tess.numIndexes, tess.indexes);
-	}
+    } else if (glConfig.driverType == VULKAN) {
+        fog = tr.world->fogs + tess.fogNum;
+        
+        for (i = 0; i < tess.numVertexes; i++) {
+            *(int*)& tess.svars.colors[i] = fog->colorInt;
+        }
+        
+        RB_CalcFogTexCoords((float*)tess.svars.texcoords[0]);
+        
+        VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*) &tess.xyz[0]);
+        VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+        VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &tess.svars.texcoords[0]);
+        
+        VK_Bind(tr.fogImage);
+        
+        if (tess.shader->fogPass == FP_EQUAL) {
+            tr_api.State(GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_EQUAL);
+        }
+        else {
+            tr_api.State(GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA);
+        }
+        
+        R_DrawElements(tess.numIndexes, tess.indexes);
+        vk_d.offset += tess.numVertexes;
+        vk_d.offsetIdx += tess.numIndexes;
+    }
 }
 
 /*
@@ -1154,6 +1179,15 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
         
         }
         else if (glConfig.driverType == VULKAN) {
+            
+//            if( pStage->bundle[0].isLightmap){
+//                if(stage != 1) continue;
+//                //break;
+//            }else {
+//                if(stage != 0) continue;
+//            }
+            
+            
 			int a = tess.shader->index;
 			//if (a != 21) return;
             //return;
@@ -1171,9 +1205,9 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
             }
             if(pStage->bundle[0].isLightmap){
                 //Com_Printf("%d\n", a);
-                //return;
+                //break;
             }
-
+            //if(stage != 3) continue;
             
 			VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
             VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
@@ -1184,10 +1218,12 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
             //
             if ( pStage->bundle[1].image[0] != 0 )
             {
-                DrawMultitextured( input, stage );
+                //Com_Printf("%d\n", a);
+                //DrawMultitextured( input, stage );
+                //continue;
             }else
             {
-                VK_UploadAttribDataOffset(&vk_d.uvbuffer, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &input->svars.texcoords[0]);
+                VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &input->svars.texcoords[0]);
                 
                 //
                 // set state
@@ -1202,15 +1238,23 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
             
 				tr_api.State( pStage->stateBits );
  
+                if(tess.xstages[3]){
+                    int c = stage;
+                }
+                
 				// set mvp
 				myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
 
 				R_DrawElements(input->numIndexes, input->indexes);
 				vk_d.offset += input->numVertexes;
 				vk_d.offsetIdx += input->numIndexes;
-
+                
+                //Com_Printf("%d\n", stage);
+                
+                //if(stage == 0) return;
 	
             }
+            //if(stage == 0) return;
             
         }
         
@@ -1615,7 +1659,7 @@ void RB_EndSurface( void ) {
 	}
 
 	if ( tess.shader == tr.shadowShader ) {
-		RB_ShadowTessEnd();
+		//RB_ShadowTessEnd();
 		return;
 	}
 

@@ -194,6 +194,7 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline)
     
     VkPipelineMultisampleStateCreateInfo ms = {0};
     ms.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    ms.minSampleShading = 1.0f;
     // Enable multisampling.
     ms.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
     pipelineInfo.pMultisampleState = &ms;
