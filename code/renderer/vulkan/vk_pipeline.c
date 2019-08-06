@@ -252,7 +252,7 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline)
 void VK_BindDescriptorSet(vkpipeline_t *pipeline, vkdescriptor_t *descriptor){
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1,
-                            &descriptor->sets[vk.swapchain.currentFrame], 0, NULL);
+                            &descriptor->set, 0, NULL);
 }
 
 void VK_SetPushConstant(vkpipeline_t *pipeline, VkShaderStageFlags stage, uint32_t offset, uint32_t size, void* data)

@@ -41,12 +41,12 @@ void VK_FinishDescriptor(vkdescriptor_t *descriptor){
 
 void VK_UpdateDescriptorSet(vkdescriptor_t *descriptor) {
     
-    for (uint32_t i = 0; i < vk.swapchain.imageCount; ++i) {
+    //for (uint32_t i = 0; i < vk.swapchain.imageCount; ++i) {
         VkWriteDescriptorSet *descWrite = calloc(descriptor->size, sizeof(VkWriteDescriptorSet));
         for (int j = 0; j < descriptor->size; ++j) {
             descWrite[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             if(descriptor->bindings[j].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER){
-                descWrite[j].dstSet = descriptor->sets[i];
+                descWrite[j].dstSet = descriptor->set;
                 descWrite[j].dstBinding = descriptor->bindings[j].binding;
                 descWrite[j].descriptorCount = 1;
                 descWrite[j].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -57,7 +57,7 @@ void VK_UpdateDescriptorSet(vkdescriptor_t *descriptor) {
         }
         vkUpdateDescriptorSets(vk.device, descriptor->size, &descWrite[0], 0, NULL);
         free(descWrite);
-    }
+    //}
 }
 
 static void VK_CreateDescriptorSetLayout(vkdescriptor_t *descriptor) {
@@ -90,28 +90,28 @@ static void VK_CreateDescriptorPool(vkdescriptor_t *descriptor) {
 }
 
 void VK_CreateDescriptorSet(vkdescriptor_t *descriptor) {
-    descriptor->sets = calloc(vk.swapchain.imageCount,  sizeof(VkDescriptorSet));
+    //descriptor->sets = calloc(vk.swapchain.imageCount,  sizeof(VkDescriptorSet));
     
     for(int i = 0; i < vk.swapchain.imageCount; ++i){
-        if(descriptor->sets[i]) vkFreeDescriptorSets(vk.device, &descriptor->pool, descriptor->size, &descriptor->sets[i]);
+        if(descriptor->set) vkFreeDescriptorSets(vk.device, &descriptor->pool, descriptor->size, &descriptor->set);
     }
     
-    for (uint32_t i = 0; i < vk.swapchain.imageCount; ++i) {
+    //for (uint32_t i = 0; i < vk.swapchain.imageCount; ++i) {
         VkDescriptorSetAllocateInfo descSetAllocInfo = {0};
         descSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         descSetAllocInfo.descriptorSetCount = 1;
         descSetAllocInfo.descriptorPool = descriptor->pool;
         descSetAllocInfo.pSetLayouts = &descriptor->layout;
         
-        VK_CHECK(vkAllocateDescriptorSets(vk.device, &descSetAllocInfo, &descriptor->sets[i]), " failed to allocate Descriptor Set!");
-    }
+        VK_CHECK(vkAllocateDescriptorSets(vk.device, &descSetAllocInfo, &descriptor->set), " failed to allocate Descriptor Set!");
+    //}
 }
 
 void VK_DestroyDescriptor(vkdescriptor_t* descriptor){
     //for(int i = 0; i < vk.swapchain.imageCount; ++i){
         //if(descriptor->sets[i] != NULL) {
-            vkFreeDescriptorSets(vk.device, descriptor->pool, descriptor->size, &descriptor->sets[0]);
-			free(descriptor->sets);
+            vkFreeDescriptorSets(vk.device, descriptor->pool, descriptor->size, &descriptor->set);
+			//free(descriptor->set);
         //}
     //}
     //if(descriptor->layout != NULL) {

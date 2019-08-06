@@ -992,7 +992,7 @@ typedef struct {
     VkDescriptorSetLayoutBinding *bindings; // length = size
     vkdescriptorData_t *data; // length = size
 
-    VkDescriptorSet *sets; // length = swapchain images
+    VkDescriptorSet set;
     
     VkDescriptorSetLayout layout;
     VkDescriptorPool pool;
