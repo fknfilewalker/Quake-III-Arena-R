@@ -247,7 +247,7 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 //        VK_BindAttribBuffer(&vk_d.vertexbuffer, 0, 0);//vk_d.offset * sizeof(vec4_t));
 //        VK_BindAttribBuffer(&vk_d.colorbuffer, 1, 0);//vk_d.offset * sizeof(color4ub_t));
 //        VK_BindAttribBuffer(&vk_d.uvbuffer, 2, 0);//vk_d.offset * sizeof(vec2_t));
-		VK_BindDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
+		VK_Bind1DescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
 		VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp), &vk_d.mvp);
 		VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 192, sizeof(vk_d.discardModeAlpha), &vk_d.discardModeAlpha);
 

@@ -26,8 +26,4 @@ void main() {
 
     frag_color = in_color;
     v_uv = uv;
-
-
 }
-
-
