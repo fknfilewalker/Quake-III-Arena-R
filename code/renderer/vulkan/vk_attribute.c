@@ -13,7 +13,9 @@ void VK_CreateIndexBuffer(vkattribbuffer_t *buffer, VkDeviceSize allocSize){
 }
 
 void VK_UploadAttribDataOffset(vkattribbuffer_t* buffer, VkDeviceSize offset, VkDeviceSize size, const byte* data) {
-	if (offset + size > buffer->allocSize) ri.Error(ERR_FATAL, "Vulkan: Buffer to small!");
+    if (offset + size > buffer->allocSize) {
+        ri.Error(ERR_FATAL, "Vulkan: Buffer to small!");
+    }
 
     byte*p = buffer->p + offset;
     Com_Memcpy(p, data, (size_t)(size));

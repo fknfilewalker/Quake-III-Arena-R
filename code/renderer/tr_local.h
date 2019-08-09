@@ -1129,7 +1129,6 @@ typedef struct {
 	VkPrimitiveTopology							primitiveTopology;
     
     // cull
-    int                                         faceCulling;
     VkCullModeFlags                             cullMode;
     
     // blend
@@ -1191,6 +1190,7 @@ typedef struct {
 	void(*State)(unsigned long);
 	void(*SetViewportAndScissor)(void);
 	void(*RB_Set2D)(void);
+    void(*R_DrawElements)( int, const glIndex_t*);
 } trApi_t;
 
 extern trApi_t	tr_api;

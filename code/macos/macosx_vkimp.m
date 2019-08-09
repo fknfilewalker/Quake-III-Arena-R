@@ -197,6 +197,14 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
     //OSX_GLContextSetCurrent();
 #endif
     
+    // store surface bits
+    if (vk.swapchain.imageFormat == VK_FORMAT_B8G8R8A8_UNORM) {
+        glConfig.colorBits = (int)8;
+    }
+    if (vk.swapchain.depthStencilFormat == VK_FORMAT_D24_UNORM_S8_UINT) {
+        glConfig.depthBits = (int)24;
+        glConfig.stencilBits = (int)8;
+    }
 //    // Store off the pixel format attributes that we actually got
 //    [pixelFormat getValues: (GLint *) &glConfig.colorBits forAttribute: NSOpenGLPFAColorSize forVirtualScreen: 0];
 //    [pixelFormat getValues: (GLint *) &glConfig.depthBits forAttribute: NSOpenGLPFADepthSize forVirtualScreen: 0];

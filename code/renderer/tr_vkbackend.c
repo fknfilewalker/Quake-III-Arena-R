@@ -255,6 +255,76 @@ static void SetViewportAndScissor(void) {
 	vk_d.scissor.extent.height = backEnd.viewParms.viewportHeight;
 }
 
+static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
+    int        primitives;
+    
+    primitives = r_primitives->integer;
+
+    VK_UploadAttribDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*) &indexes[0]);
+    
+    //int aaa = pStage->bundle[0].image[0]->index;
+    
+    
+    //vkimage_t image = {0};
+    
+    //uint8_t data[4] = { 255,255,0,125 };
+    //VK_CreateImage(&image, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 1);
+    //VK_UploadImageData(&image, 1, 1, data, 4, 0); // rows wise
+    //VK_CreateSampler(&image, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+    
+    //vkdescriptor_t d = { 0 };
+    //VK_AddSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
+    //VK_SetSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image.sampler, image.view);
+    //VK_FinishDescriptor(&d);
+    
+    vkpipeline_t p = { 0 };
+    if (!getPipeline(&p)) {
+        
+        vkshader_t s = { 0 };
+        if (vk_d.state.clip == qtrue) {
+            VK_SingleTextureClipShader(&s);
+        }
+        else {
+            VK_SingleTextureShader(&s);
+        }
+        VK_SetDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
+        VK_SetShader(&p, &s);
+        VK_AddBindingDescription(&p, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
+        VK_AddBindingDescription(&p, 1, sizeof(color4ub_t), VK_VERTEX_INPUT_RATE_VERTEX);
+        VK_AddBindingDescription(&p, 2, sizeof(vec2_t), VK_VERTEX_INPUT_RATE_VERTEX);
+        VK_AddAttributeDescription(&p, 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 0 * sizeof(float));
+        VK_AddAttributeDescription(&p, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 0 * sizeof(float));
+        VK_AddAttributeDescription(&p, 2, 2, VK_FORMAT_R32G32_SFLOAT, 0 * sizeof(float));
+        VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, 192);//sizeof(vk_d.mvp));
+        VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 192, sizeof(vk_d.discardModeAlpha));
+        /*if (vk_d.state.clip == qtrue) {
+         VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, 12 * sizeof(float));
+         VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 192, 4 * sizeof(float));
+         }*/
+        VK_FinishPipeline(&p);
+        addPipeline(&p);
+        
+        Com_Printf("new pipe \n");
+    }
+    
+    //        VK_BindAttribBuffer(&vk_d.vertexbuffer, 0, 0);//vk_d.offset * sizeof(vec4_t));
+    //        VK_BindAttribBuffer(&vk_d.colorbuffer, 1, 0);//vk_d.offset * sizeof(color4ub_t));
+    //        VK_BindAttribBuffer(&vk_d.uvbuffer, 2, 0);//vk_d.offset * sizeof(vec2_t));
+    VK_Bind1DescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
+    VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp), &vk_d.mvp);
+    VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 192, sizeof(vk_d.discardModeAlpha), &vk_d.discardModeAlpha);
+    
+    if (vk_d.state.clip == qtrue) {
+        VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 64, sizeof(vk_d.modelViewMatrix), &vk_d.modelViewMatrix);
+        VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, sizeof(vk_d.clipPlane), &vk_d.clipPlane);
+    }
+    //Com_Printf("%d", vk_d.discardModeAlpha);
+    VK_DrawIndexed(&p, &vk_d.indexbuffer, numIndexes, vk_d.offsetIdx, vk_d.offset);
+    //VK_Draw(&p, 6);
+    //VK_DestroyPipeline(&p);
+    //VK_DestroyShader(&s);
+}
+
 /*
 ============================================================================
 
@@ -314,4 +384,5 @@ void R_SetVulkanApi( trApi_t *api ) {
 	api->State = State;
 	api->SetViewportAndScissor = SetViewportAndScissor;
 	api->RB_Set2D = RB_Set2D;
+    api->R_DrawElements = R_DrawElements;
 }

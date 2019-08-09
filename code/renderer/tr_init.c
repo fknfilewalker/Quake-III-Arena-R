@@ -841,8 +841,8 @@ void VK_SetDefaultState(void)
 	//
 	// make sure our VK state vector is set correctly
 	//
-	glState.glStateBits = GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_TRUE;
-	vk_d.state.blendBits = GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_TRUE;
+	//glState.glStateBits = GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_TRUE;
+	//vk_d.state.blendBits = GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_TRUE;
 
 	
 	//qglPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

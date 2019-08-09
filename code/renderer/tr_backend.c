@@ -187,11 +187,6 @@ void GL_Cull( int cullType ) {
 }
 
 void VK_Cull( int cullType ) {
-    if ( vk_d.state.faceCulling == cullType ) {
-        //return;
-    }
-    
-    vk_d.state.faceCulling = cullType;
     
     if ( cullType == CT_TWO_SIDED )
     {

@@ -44,6 +44,8 @@ typedef struct {
 static	edgeDef_t	edgeDefs[SHADER_MAX_VERTEXES][MAX_EDGE_DEFS];
 static	int			numEdgeDefs[SHADER_MAX_VERTEXES];
 static	int			facing[SHADER_MAX_INDEXES/3];
+static  vec4_t      extrudedEdges[SHADER_MAX_VERTEXES * 4];
+static  int         numExtrudedEdges;
 
 void R_AddEdgeDef( int i1, int i2, int facing ) {
 	int		c;
@@ -58,85 +60,83 @@ void R_AddEdgeDef( int i1, int i2, int facing ) {
 	numEdgeDefs[ i1 ]++;
 }
 
+static void R_ExtrudeShadowEdges( void ) {
+    int        i;
+    int        c, c2;
+    int        j, k;
+    int        i2;
+    
+    numExtrudedEdges = 0;
+    
+    // an edge is NOT a silhouette edge if its face doesn't face the light,
+    // or if it has a reverse paired edge that also faces the light.
+    // A well behaved polyhedron would have exactly two faces for each edge,
+    // but lots of models have dangling edges or overfanned edges
+    for ( i = 0 ; i < tess.numVertexes ; i++ ) {
+        c = numEdgeDefs[ i ];
+        for ( j = 0 ; j < c ; j++ ) {
+            if ( !edgeDefs[ i ][ j ].facing ) {
+                continue;
+            }
+            
+            bool sil_edge = true;
+            i2 = edgeDefs[ i ][ j ].i2;
+            c2 = numEdgeDefs[ i2 ];
+            for ( k = 0 ; k < c2 ; k++ ) {
+                if ( edgeDefs[ i2 ][ k ].i2 == i && edgeDefs[ i2 ][ k ].facing) {
+                    sil_edge = false;
+                    break;
+                }
+            }
+            
+            // if it doesn't share the edge with another front facing
+            // triangle, it is a sil edge
+            if ( sil_edge ) {
+                VectorCopy(tess.xyz[ i ],                        extrudedEdges[numExtrudedEdges * 4 + 0]);
+                VectorCopy(tess.xyz[ i + tess.numVertexes ],    extrudedEdges[numExtrudedEdges * 4 + 1]);
+                VectorCopy(tess.xyz[ i2 ],                        extrudedEdges[numExtrudedEdges * 4 + 2]);
+                VectorCopy(tess.xyz[ i2 + tess.numVertexes ],    extrudedEdges[numExtrudedEdges * 4 + 3]);
+                numExtrudedEdges++;
+            }
+        }
+    }
+}
+
 void R_RenderShadowEdges( void ) {
-	int		i;
+    if(glConfig.driverType == OPENGL){
+        qglBegin( GL_QUADS);
+        for (int i = 0; i < numExtrudedEdges; i++) {
+            qglVertex3fv(extrudedEdges[i*4 + 0]);
+            qglVertex3fv(extrudedEdges[i*4 + 1]);
+            qglVertex3fv(extrudedEdges[i*4 + 3]);
+            qglVertex3fv(extrudedEdges[i*4 + 2]);
+        }
+        qglEnd();
+    } else if(glConfig.driverType == VULKAN){
+        color4ub_t c = {50, 50, 50, 255};
+        Com_Memcpy(tess.svars.colors, c, numExtrudedEdges * 4);
 
-#if 0
-	int		numTris;
-
-	// dumb way -- render every triangle's edges
-	numTris = tess.numIndexes / 3;
-
-	for ( i = 0 ; i < numTris ; i++ ) {
-		int		i1, i2, i3;
-
-		if ( !facing[i] ) {
-			continue;
-		}
-
-		i1 = tess.indexes[ i*3 + 0 ];
-		i2 = tess.indexes[ i*3 + 1 ];
-		i3 = tess.indexes[ i*3 + 2 ];
-
-		qglBegin( GL_TRIANGLE_STRIP );
-		qglVertex3fv( tess.xyz[ i1 ] );
-		qglVertex3fv( tess.xyz[ i1 + tess.numVertexes ] );
-		qglVertex3fv( tess.xyz[ i2 ] );
-		qglVertex3fv( tess.xyz[ i2 + tess.numVertexes ] );
-		qglVertex3fv( tess.xyz[ i3 ] );
-		qglVertex3fv( tess.xyz[ i3 + tess.numVertexes ] );
-		qglVertex3fv( tess.xyz[ i1 ] );
-		qglVertex3fv( tess.xyz[ i1 + tess.numVertexes ] );
-		qglEnd();
-	}
-#else
-	int		c, c2;
-	int		j, k;
-	int		i2;
-	int		c_edges, c_rejected;
-	int		hit[2];
-
-	// an edge is NOT a silhouette edge if its face doesn't face the light,
-	// or if it has a reverse paired edge that also faces the light.
-	// A well behaved polyhedron would have exactly two faces for each edge,
-	// but lots of models have dangling edges or overfanned edges
-	c_edges = 0;
-	c_rejected = 0;
-
-	for ( i = 0 ; i < tess.numVertexes ; i++ ) {
-		c = numEdgeDefs[ i ];
-		for ( j = 0 ; j < c ; j++ ) {
-			if ( !edgeDefs[ i ][ j ].facing ) {
-				continue;
-			}
-
-			hit[0] = 0;
-			hit[1] = 0;
-
-			i2 = edgeDefs[ i ][ j ].i2;
-			c2 = numEdgeDefs[ i2 ];
-			for ( k = 0 ; k < c2 ; k++ ) {
-				if ( edgeDefs[ i2 ][ k ].i2 == i ) {
-					hit[ edgeDefs[ i2 ][ k ].facing ]++;
-				}
-			}
-
-			// if it doesn't share the edge with another front facing
-			// triangle, it is a sil edge
-			if ( hit[ 1 ] == 0 ) {
-				qglBegin( GL_TRIANGLE_STRIP );
-				qglVertex3fv( tess.xyz[ i ] );
-				qglVertex3fv( tess.xyz[ i + tess.numVertexes ] );
-				qglVertex3fv( tess.xyz[ i2 ] );
-				qglVertex3fv( tess.xyz[ i2 + tess.numVertexes ] );
-				qglEnd();
-				c_edges++;
-			} else {
-				c_rejected++;
-			}
-		}
-	}
-#endif
+        tess.numVertexes = numExtrudedEdges * 4;
+        for (int i = 0; i < numExtrudedEdges; i++) {
+            tess.indexes[i*6 + 0] = i*4 + 0;
+            tess.indexes[i*6 + 1] = i*4 + 2;
+            tess.indexes[i*6 + 2] = i*4 + 1;
+            tess.indexes[i*6 + 3] = i*4 + 2;
+            tess.indexes[i*6 + 4] = i*4 + 3;
+            tess.indexes[i*6 + 5] = i*4 + 1;
+        }
+        tess.numIndexes = numExtrudedEdges * 6;
+        
+        VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&extrudedEdges[0]);
+        VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+        VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &tess.svars.texcoords[0]);
+        
+        myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
+        tr_api.R_DrawElements(tess.numIndexes, tess.indexes);
+        
+        vk_d.offset += tess.numVertexes;
+        vk_d.offsetIdx += tess.numIndexes;
+    }
 }
 
 /*
@@ -207,45 +207,104 @@ void RB_ShadowTessEnd( void ) {
 		R_AddEdgeDef( i3, i1, facing[ i ] );
 	}
 
-	// draw the silhouette edges
+    R_ExtrudeShadowEdges();
+    if(glConfig.driverType == OPENGL){
+        // draw the silhouette edges
+        GL_Bind( tr.whiteImage );
+        qglEnable( GL_CULL_FACE );
+        tr_api.State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
+        qglColor3f( 0.2f, 0.2f, 0.2f );
 
-	GL_Bind( tr.whiteImage );
-	qglEnable( GL_CULL_FACE );
-	tr_api.State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
-	qglColor3f( 0.2f, 0.2f, 0.2f );
+        // don't write to the color buffer
+        qglColorMask( GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE );
 
-	// don't write to the color buffer
-	qglColorMask( GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE );
+        qglEnable( GL_STENCIL_TEST );
+        qglStencilFunc( GL_ALWAYS, 1, 255 );
 
-	qglEnable( GL_STENCIL_TEST );
-	qglStencilFunc( GL_ALWAYS, 1, 255 );
+        // mirrors have the culling order reversed
+        if ( backEnd.viewParms.isMirror ) {
+            qglCullFace( GL_FRONT );
+            qglStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
 
-	// mirrors have the culling order reversed
-	if ( backEnd.viewParms.isMirror ) {
-		qglCullFace( GL_FRONT );
-		qglStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
+            R_RenderShadowEdges();
 
-		R_RenderShadowEdges();
+            qglCullFace( GL_BACK );
+            qglStencilOp( GL_KEEP, GL_KEEP, GL_DECR );
 
-		qglCullFace( GL_BACK );
-		qglStencilOp( GL_KEEP, GL_KEEP, GL_DECR );
+            R_RenderShadowEdges();
+        } else {
+            qglCullFace( GL_BACK );
+            qglStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
 
-		R_RenderShadowEdges();
-	} else {
-		qglCullFace( GL_BACK );
-		qglStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
+            R_RenderShadowEdges();
 
-		R_RenderShadowEdges();
+            qglCullFace( GL_FRONT );
+            qglStencilOp( GL_KEEP, GL_KEEP, GL_DECR );
 
-		qglCullFace( GL_FRONT );
-		qglStencilOp( GL_KEEP, GL_KEEP, GL_DECR );
-
-		R_RenderShadowEdges();
-	}
+            R_RenderShadowEdges();
+        }
 
 
-	// reenable writing to the color buffer
-	qglColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
+        // reenable writing to the color buffer
+        qglColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
+    } else if (glConfig.driverType == VULKAN){
+        //return;
+        // draw the silhouette edges
+        VK_Bind( tr.whiteImage );
+        tr_api.State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
+        //qglColor3f( 0.2f, 0.2f, 0.2f );
+        
+        // don't write to the color buffer
+        vk_d.state.colorBlend.blendEnable = VK_TRUE;
+        vk_d.state.colorBlend.colorBlendOp = VK_BLEND_OP_ADD;
+        vk_d.state.colorBlend.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        vk_d.state.colorBlend.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        vk_d.state.colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+        vk_d.state.colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+         //vk_d.state.dsBlend.depthTestEnable = VK_FALSE;
+        
+        vk_d.state.dsBlend.stencilTestEnable = VK_TRUE;
+        VkStencilOpState stencil = {0};
+        stencil.compareOp = VK_COMPARE_OP_ALWAYS;
+        stencil.reference = 1;
+        stencil.writeMask = 255;
+        stencil.compareMask = 255;
+        
+        // mirrors have the culling order reversed
+        if ( backEnd.viewParms.isMirror ) {
+            vk_d.state.cullMode = VK_CULL_MODE_FRONT_BIT;
+            stencil.failOp = VK_STENCIL_OP_KEEP;
+            stencil.depthFailOp = VK_STENCIL_OP_KEEP;
+            stencil.passOp = VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+            vk_d.state.dsBlend.front = vk_d.state.dsBlend.back = stencil;
+  
+            R_RenderShadowEdges();
+            
+            vk_d.state.cullMode = VK_CULL_MODE_BACK_BIT;
+            stencil.failOp = VK_STENCIL_OP_KEEP;
+            stencil.depthFailOp = VK_STENCIL_OP_KEEP;
+            stencil.passOp = VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+            vk_d.state.dsBlend.front = vk_d.state.dsBlend.back = stencil;
+    
+            R_RenderShadowEdges();
+        } else {
+            vk_d.state.cullMode = VK_CULL_MODE_BACK_BIT;
+            stencil.failOp = VK_STENCIL_OP_KEEP;
+            stencil.depthFailOp = VK_STENCIL_OP_KEEP;
+            stencil.passOp = VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+            vk_d.state.dsBlend.front = vk_d.state.dsBlend.back = stencil;
+
+            R_RenderShadowEdges();
+            
+            vk_d.state.cullMode = VK_CULL_MODE_FRONT_BIT;
+            stencil.failOp = VK_STENCIL_OP_KEEP;
+            stencil.depthFailOp = VK_STENCIL_OP_KEEP;
+            stencil.passOp = VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+            vk_d.state.dsBlend.front = vk_d.state.dsBlend.back = stencil;
+
+            R_RenderShadowEdges();
+        }
+    }
 }
 
 
@@ -266,31 +325,91 @@ void RB_ShadowFinish( void ) {
 	if ( glConfig.stencilBits < 4 ) {
 		return;
 	}
-	qglEnable( GL_STENCIL_TEST );
-	qglStencilFunc( GL_NOTEQUAL, 0, 255 );
+    if(glConfig.driverType == OPENGL){
+        
+        qglEnable( GL_STENCIL_TEST );
+        qglStencilFunc( GL_NOTEQUAL, 0, 255 );
 
-	qglDisable (GL_CLIP_PLANE0);
-	qglDisable (GL_CULL_FACE);
+        qglDisable (GL_CLIP_PLANE0);
+        qglDisable (GL_CULL_FACE);
 
-	GL_Bind( tr.whiteImage );
+        GL_Bind( tr.whiteImage );
 
-    qglLoadIdentity ();
+        qglLoadIdentity ();
 
-	qglColor3f( 0.6f, 0.6f, 0.6f );
-	tr_api.State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO );
+        qglColor3f( 0.6f, 0.6f, 0.6f );
+        tr_api.State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO );
 
-//	qglColor3f( 1, 0, 0 );
-//	GL_State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
+    //	qglColor3f( 1, 0, 0 );
+    //	GL_State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
 
-	qglBegin( GL_QUADS );
-	qglVertex3f( -100, 100, -10 );
-	qglVertex3f( 100, 100, -10 );
-	qglVertex3f( 100, -100, -10 );
-	qglVertex3f( -100, -100, -10 );
-	qglEnd ();
+        qglBegin( GL_QUADS );
+        qglVertex3f( -100, 100, -10 );
+        qglVertex3f( 100, 100, -10 );
+        qglVertex3f( 100, -100, -10 );
+        qglVertex3f( -100, -100, -10 );
+        qglEnd ();
 
-	qglColor4f(1,1,1,1);
-	qglDisable( GL_STENCIL_TEST );
+        qglColor4f(1,1,1,1);
+        qglDisable( GL_STENCIL_TEST );
+    } else if(glConfig.driverType == VULKAN){
+        //return;
+        vk_d.state.dsBlend.stencilTestEnable = VK_TRUE;
+        VkStencilOpState stencil = {0};
+        stencil.compareOp = VK_COMPARE_OP_NOT_EQUAL;
+        stencil.reference = 0;
+        stencil.writeMask = 255;
+        stencil.compareMask = 255;
+        vk_d.state.dsBlend.front = vk_d.state.dsBlend.back = stencil;
+        
+        vk_d.state.cullMode = VK_CULL_MODE_NONE;
+        vk_d.state.clip = qfalse;
+        
+        VK_Bind( tr.whiteImage );
+        
+        tr_api.State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO );
+
+        tess.indexes[0] = 0;
+        tess.indexes[1] = 1;
+        tess.indexes[2] = 2;
+        tess.indexes[3] = 0;
+        tess.indexes[4] = 2;
+        tess.indexes[5] = 3;
+        tess.numIndexes = 6;
+        
+        VectorSet(tess.xyz[0], -100,  100, -10);
+        VectorSet(tess.xyz[1],  100,  100, -10);
+        VectorSet(tess.xyz[2],  100, -100, -10);
+        VectorSet(tess.xyz[3], -100, -100, -10);
+        tess.numVertexes = 4;
+        
+        color4ub_t c = {153, 153, 153, 255};
+        Com_Memcpy(tess.svars.colors, c, tess.numVertexes * 4);
+        
+        
+        VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
+        VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+        VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &tess.svars.texcoords[0]);
+        
+        float tmp[16];
+        Com_Memcpy(tmp, vk_d.modelViewMatrix, 64);
+        Com_Memset(vk_d.modelViewMatrix, 0, 64);
+        vk_d.modelViewMatrix[0] = 1.0f;
+        vk_d.modelViewMatrix[5] = 1.0f;
+        vk_d.modelViewMatrix[10] = 1.0f;
+        vk_d.modelViewMatrix[15] = 1.0f;
+
+        myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
+        tr_api.R_DrawElements(tess.numIndexes, tess.indexes);
+        
+        vk_d.offset += tess.numVertexes;
+        vk_d.offsetIdx += tess.numIndexes;
+        
+        vk_d.state.dsBlend.stencilTestEnable = VK_FALSE;
+        tess.numIndexes = 0;
+        tess.numVertexes = 0;
+        Com_Memcpy(vk_d.modelViewMatrix, tmp, 64);
+    }
 }
 
 

@@ -202,6 +202,9 @@ static NSOpenGLPixelFormatAttribute *GetPixelAttributes()
     if (r_stencilbits->integer) {
         ADD_ATTR(NSOpenGLPFAStencilSize);
         ADD_ATTR(r_stencilbits->integer);
+    } else {
+        ADD_ATTR(NSOpenGLPFAStencilSize);
+        ADD_ATTR(8);
     }
 
     // Terminate the list

@@ -13,7 +13,7 @@ typedef struct {
 } vkattachmentClearPipe_t;
 
 static uint8_t pipelineListSize;
-static vkpipe_t pipelineList[100];
+static vkpipe_t pipelineList[300];
 
 static vkattachmentClearPipe_t attachmentClearPipelineList[8];
 
@@ -307,8 +307,9 @@ void VK_DrawIndexed(vkpipeline_t *pipeline, vkattribbuffer_t *idxBuffer, int cou
 }
 
 qboolean VK_GetAttachmentClearPipelines(vkpipeline_t *pipeline, qboolean clearColor, qboolean clearDepth, qboolean clearStencil) {
-	for (uint8_t i = 0; i < 8; ++i) {
-		vkattachmentClearPipe_t p = attachmentClearPipelineList[i];
+    vkattachmentClearPipe_t p;
+    for (uint8_t i = 0; i < 8; ++i) {
+		 p = attachmentClearPipelineList[i];
 
 		if (p.clearColor == clearColor && p.clearDepth == clearDepth && p.clearStencil == clearStencil) {
 			Com_Memcpy(pipeline, &p.pipeline, sizeof(vkpipeline_t));
@@ -362,10 +363,12 @@ void VK_InitPipelines() {
 					vk_d.state.dsBlend.stencilTestEnable = VK_TRUE;
 					VkStencilOpState stencilSettings = { 0 };
 					stencilSettings.failOp = VK_STENCIL_OP_ZERO;
+                    stencilSettings.depthFailOp = VK_STENCIL_OP_ZERO;
 					stencilSettings.passOp = VK_STENCIL_OP_ZERO;
 					stencilSettings.compareOp = VK_COMPARE_OP_ALWAYS;
-					stencilSettings.writeMask = 0x00;
-
+					stencilSettings.reference = 0xFF;
+                    stencilSettings.writeMask = 0xFF;
+                    stencilSettings.compareMask = 0xFF;
 					vk_d.state.dsBlend.back = stencilSettings;
 					vk_d.state.dsBlend.front = stencilSettings;
 

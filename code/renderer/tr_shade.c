@@ -30,238 +30,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
   This file deals with applying shaders to surface data in the tess struct.
 */
 
-/*
-================
-R_ArrayElementDiscrete
-
-This is just for OpenGL conformance testing, it should never be the fastest
-================
-*/
-static void APIENTRY R_ArrayElementDiscrete( GLint index ) {
-	qglColor4ubv( tess.svars.colors[ index ] );
-	if ( glState.currenttmu ) {
-		qglMultiTexCoord2fARB( 0, tess.svars.texcoords[ 0 ][ index ][0], tess.svars.texcoords[ 0 ][ index ][1] );
-		qglMultiTexCoord2fARB( 1, tess.svars.texcoords[ 1 ][ index ][0], tess.svars.texcoords[ 1 ][ index ][1] );
-	} else {
-		qglTexCoord2fv( tess.svars.texcoords[ 0 ][ index ] );
-	}
-	qglVertex3fv( tess.xyz[ index ] );
-}
-
-/*
-===================
-R_DrawStripElements
-
-===================
-*/
-static int		c_vertexes;		// for seeing how long our average strips are
-static int		c_begins;
-static void R_DrawStripElements( int numIndexes, const glIndex_t *indexes, void ( APIENTRY *element )(GLint) ) {
-	int i;
-	int last[3] = { -1, -1, -1 };
-	qboolean even;
-
-	c_begins++;
-
-	if ( numIndexes <= 0 ) {
-		return;
-	}
-
-	qglBegin( GL_TRIANGLE_STRIP );
-
-	// prime the strip
-	element( indexes[0] );
-	element( indexes[1] );
-	element( indexes[2] );
-	c_vertexes += 3;
-
-	last[0] = indexes[0];
-	last[1] = indexes[1];
-	last[2] = indexes[2];
-
-	even = qfalse;
-
-	for ( i = 3; i < numIndexes; i += 3 )
-	{
-		// odd numbered triangle in potential strip
-		if ( !even )
-		{
-			// check previous triangle to see if we're continuing a strip
-			if ( ( indexes[i+0] == last[2] ) && ( indexes[i+1] == last[1] ) )
-			{
-				element( indexes[i+2] );
-				c_vertexes++;
-				assert( indexes[i+2] < tess.numVertexes );
-				even = qtrue;
-			}
-			// otherwise we're done with this strip so finish it and start
-			// a new one
-			else
-			{
-				qglEnd();
-
-				qglBegin( GL_TRIANGLE_STRIP );
-				c_begins++;
-
-				element( indexes[i+0] );
-				element( indexes[i+1] );
-				element( indexes[i+2] );
-
-				c_vertexes += 3;
-
-				even = qfalse;
-			}
-		}
-		else
-		{
-			// check previous triangle to see if we're continuing a strip
-			if ( ( last[2] == indexes[i+1] ) && ( last[0] == indexes[i+0] ) )
-			{
-				element( indexes[i+2] );
-				c_vertexes++;
-
-				even = qfalse;
-			}
-			// otherwise we're done with this strip so finish it and start
-			// a new one
-			else
-			{
-				qglEnd();
-
-				qglBegin( GL_TRIANGLE_STRIP );
-				c_begins++;
-
-				element( indexes[i+0] );
-				element( indexes[i+1] );
-				element( indexes[i+2] );
-				c_vertexes += 3;
-
-				even = qfalse;
-			}
-		}
-
-		// cache the last three vertices
-		last[0] = indexes[i+0];
-		last[1] = indexes[i+1];
-		last[2] = indexes[i+2];
-	}
-
-	qglEnd();
-}
-
-/*
-==================
-R_DrawElements
-
-Optionally performs our own glDrawElements that looks for strip conditions
-instead of using the single glDrawElements call that may be inefficient
-without compiled vertex arrays.
-==================
-*/
-static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
-	int		primitives;
-
-	primitives = r_primitives->integer;
-
-	if (glConfig.driverType == OPENGL) {
-		// default is to use triangles if compiled vertex arrays are present
-		if (primitives == 0) {
-			if (qglLockArraysEXT) {
-				primitives = 2;
-			}
-			else {
-				primitives = 1;
-			}
-		}
 
 
-		if (primitives == 2) {
-			qglDrawElements(GL_TRIANGLES,
-				numIndexes,
-				GL_INDEX_TYPE,
-				indexes);
-			return;
-		}
-
-		if (primitives == 1) {
-			R_DrawStripElements(numIndexes, indexes, qglArrayElement);
-			return;
-		}
-
-		if (primitives == 3) {
-			R_DrawStripElements(numIndexes, indexes, R_ArrayElementDiscrete);
-			return;
-		}
-
-		// anything else will cause no drawing
-	}
-	else if (glConfig.driverType == VULKAN) {
-        
-		VK_UploadAttribDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*) &indexes[0]);
-
-		//int aaa = pStage->bundle[0].image[0]->index;
-		
-
-		//vkimage_t image = {0};
-
-		//uint8_t data[4] = { 255,255,0,125 };
-		//VK_CreateImage(&image, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 1);
-		//VK_UploadImageData(&image, 1, 1, data, 4, 0); // rows wise
-		//VK_CreateSampler(&image, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-
-		//vkdescriptor_t d = { 0 };
-		//VK_AddSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
-		//VK_SetSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image.sampler, image.view);
-		//VK_FinishDescriptor(&d);
-
-		vkpipeline_t p = { 0 };
-		if (!getPipeline(&p)) {
-			
-			vkshader_t s = { 0 };
-			if (vk_d.state.clip == qtrue) {
-				VK_SingleTextureClipShader(&s);
-			}
-            else {
-                VK_SingleTextureShader(&s);
-            }
-			VK_SetDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
-			VK_SetShader(&p, &s);
-			VK_AddBindingDescription(&p, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
-			VK_AddBindingDescription(&p, 1, sizeof(color4ub_t), VK_VERTEX_INPUT_RATE_VERTEX);
-			VK_AddBindingDescription(&p, 2, sizeof(vec2_t), VK_VERTEX_INPUT_RATE_VERTEX);
-			VK_AddAttributeDescription(&p, 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 0 * sizeof(float));
-			VK_AddAttributeDescription(&p, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 0 * sizeof(float));
-			VK_AddAttributeDescription(&p, 2, 2, VK_FORMAT_R32G32_SFLOAT, 0 * sizeof(float));
-			VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, 192);//sizeof(vk_d.mvp));
-			VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 192, sizeof(vk_d.discardModeAlpha));
-			/*if (vk_d.state.clip == qtrue) {
-				VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, 12 * sizeof(float));
-				VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 192, 4 * sizeof(float));
-			}*/
-			VK_FinishPipeline(&p);
-			addPipeline(&p);
-
-			Com_Printf("new pipe \n");
-		}
-
-//        VK_BindAttribBuffer(&vk_d.vertexbuffer, 0, 0);//vk_d.offset * sizeof(vec4_t));
-//        VK_BindAttribBuffer(&vk_d.colorbuffer, 1, 0);//vk_d.offset * sizeof(color4ub_t));
-//        VK_BindAttribBuffer(&vk_d.uvbuffer, 2, 0);//vk_d.offset * sizeof(vec2_t));
-		VK_Bind1DescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
-		VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp), &vk_d.mvp);
-		VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 192, sizeof(vk_d.discardModeAlpha), &vk_d.discardModeAlpha);
-
-		if (vk_d.state.clip == qtrue) {
-			VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 64, sizeof(vk_d.modelViewMatrix), &vk_d.modelViewMatrix);
-			VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, sizeof(vk_d.clipPlane), &vk_d.clipPlane);
-		}
-		//Com_Printf("%d", vk_d.discardModeAlpha);
-		VK_DrawIndexed(&p, &vk_d.indexbuffer, numIndexes, vk_d.offsetIdx, vk_d.offset);
-		//VK_Draw(&p, 6);
-		//VK_DestroyPipeline(&p);
-		//VK_DestroyShader(&s);
-	}
-}
 
 
 /*
@@ -340,7 +110,8 @@ static void DrawTris (shaderCommands_t *input) {
 			GLimp_LogComment("glLockArraysEXT\n");
 		}
 
-		R_DrawElements(input->numIndexes, input->indexes);
+        
+		tr_api.R_DrawElements(input->numIndexes, input->indexes);
 
 		if (qglUnlockArraysEXT) {
 			qglUnlockArraysEXT();
@@ -360,7 +131,7 @@ static void DrawTris (shaderCommands_t *input) {
 		VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), input->numVertexes * sizeof(vec4_t), (void*)&input->xyz[0]);
 		VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), input->numVertexes * sizeof(color4ub_t), (void*)& tess.svars.colors[0]);
 
-		R_DrawElements(input->numIndexes, input->indexes);
+		tr_api.R_DrawElements(input->numIndexes, input->indexes);
 
 		vk_d.viewport.minDepth = 0;
 		vk_d.viewport.maxDepth = 1;
@@ -425,7 +196,7 @@ static void DrawNormals (shaderCommands_t *input) {
 
 		VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), count * sizeof(color4ub_t), (void*) &tess.svars.colors[0]);
 		VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), count * sizeof(vec4_t), (void*) &xyz[0]);
-		R_DrawElements(count, indexes);
+		tr_api.R_DrawElements(count, indexes);
 
 		free(xyz);
 		free(indexes);
@@ -516,7 +287,7 @@ static void DrawMultitextured( shaderCommands_t *input, int stage ) {
 
 	R_BindAnimatedImage( &pStage->bundle[1] );
 
-	R_DrawElements( input->numIndexes, input->indexes );
+	tr_api.R_DrawElements( input->numIndexes, input->indexes );
 
 	//
 	// disable texturing on TEXTURE1, then select TEXTURE0
@@ -747,7 +518,7 @@ static void ProjectDlightTexture( void ) {
 			tr_api.State( GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
 		}
 
-		R_DrawElements( numIndexes, hitIndexes );
+		tr_api.R_DrawElements( numIndexes, hitIndexes );
 		backEnd.pc.c_totalIndexes += numIndexes;
 		backEnd.pc.c_dlightIndexes += numIndexes;
         
@@ -794,7 +565,7 @@ static void RB_FogPass( void ) {
 			tr_api.State(GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA);
 		}
 
-		R_DrawElements(tess.numIndexes, tess.indexes);
+		tr_api.R_DrawElements(tess.numIndexes, tess.indexes);
     } else if (glConfig.driverType == VULKAN) {
         fog = tr.world->fogs + tess.fogNum;
         
@@ -817,7 +588,7 @@ static void RB_FogPass( void ) {
             tr_api.State(GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA);
         }
         
-        R_DrawElements(tess.numIndexes, tess.indexes);
+        tr_api.R_DrawElements(tess.numIndexes, tess.indexes);
         vk_d.offset += tess.numVertexes;
         vk_d.offsetIdx += tess.numIndexes;
     }
@@ -1174,7 +945,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
                 //
                 // draw
                 //
-                R_DrawElements( input->numIndexes, input->indexes );
+                tr_api.R_DrawElements( input->numIndexes, input->indexes );
             }
         
         }
@@ -1245,7 +1016,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 				// set mvp
 				myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
 
-				R_DrawElements(input->numIndexes, input->indexes);
+				tr_api.R_DrawElements(input->numIndexes, input->indexes);
 				vk_d.offset += input->numVertexes;
 				vk_d.offsetIdx += input->numIndexes;
                 
@@ -1509,7 +1280,7 @@ void RB_StageIteratorVertexLitTexture( void )
 	//
 	R_BindAnimatedImage( &tess.xstages[0]->bundle[0] );
 	tr_api.State( tess.xstages[0]->stateBits );
-	R_DrawElements( input->numIndexes, input->indexes );
+	tr_api.R_DrawElements( input->numIndexes, input->indexes );
 
 	// 
 	// now do any dynamic lighting needed
@@ -1602,7 +1373,7 @@ void RB_StageIteratorLightmappedMultitexture( void ) {
 		GLimp_LogComment( "glLockArraysEXT\n" );
 	}
 
-	R_DrawElements( input->numIndexes, input->indexes );
+	tr_api.R_DrawElements( input->numIndexes, input->indexes );
 
 	//
 	// disable texturing on TEXTURE1, then select TEXTURE0
@@ -1659,7 +1430,7 @@ void RB_EndSurface( void ) {
 	}
 
 	if ( tess.shader == tr.shadowShader ) {
-		//RB_ShadowTessEnd();
+		RB_ShadowTessEnd();
 		return;
 	}
 
