@@ -113,29 +113,70 @@ void R_RenderShadowEdges( void ) {
         }
         qglEnd();
     } else if(glConfig.driverType == VULKAN){
-        color4ub_t c = {50, 50, 50, 255};
-        Com_Memcpy(tess.svars.colors, c, numExtrudedEdges * 4);
-
-        tess.numVertexes = numExtrudedEdges * 4;
-        for (int i = 0; i < numExtrudedEdges; i++) {
-            tess.indexes[i*6 + 0] = i*4 + 0;
-            tess.indexes[i*6 + 1] = i*4 + 2;
-            tess.indexes[i*6 + 2] = i*4 + 1;
-            tess.indexes[i*6 + 3] = i*4 + 2;
-            tess.indexes[i*6 + 4] = i*4 + 3;
-            tess.indexes[i*6 + 5] = i*4 + 1;
-        }
-        tess.numIndexes = numExtrudedEdges * 6;
+                int i = 0;
+                while (i < numExtrudedEdges) {
+                    int count = numExtrudedEdges - i;
+                    if (count > (SHADER_MAX_VERTEXES - 1) / 4)
+                        count = (SHADER_MAX_VERTEXES - 1) / 4;
         
-        VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&extrudedEdges[0]);
-        VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
-        VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &tess.svars.texcoords[0]);
+                    Com_Memcpy(tess.xyz, extrudedEdges[i*4], 4 * count * sizeof(vec4_t));
+                    tess.numVertexes = count * 4;
         
-        myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
-        tr_api.R_DrawElements(tess.numIndexes, tess.indexes);
+                    for (int k = 0; k < count; k++) {
+                        tess.indexes[k * 6 + 0] = k * 4 + 0;
+                        tess.indexes[k * 6 + 1] = k * 4 + 2;
+                        tess.indexes[k * 6 + 2] = k * 4 + 1;
         
-        vk_d.offset += tess.numVertexes;
-        vk_d.offsetIdx += tess.numIndexes;
+                        tess.indexes[k * 6 + 3] = k * 4 + 2;
+                        tess.indexes[k * 6 + 4] = k * 4 + 3;
+                        tess.indexes[k * 6 + 5] = k * 4 + 1;
+                    }
+                    tess.numIndexes = count * 6;
+        
+                    for (int k = 0; k < tess.numVertexes; k++) {
+                        VectorSet(tess.svars.colors[k], 51, 51, 51);
+                        tess.svars.colors[k][3] = 255;
+                    }
+        
+                    VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&extrudedEdges[0]);
+                    VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+                    VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &tess.svars.texcoords[0]);
+        
+                    myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
+                    tr_api.R_DrawElements(tess.numIndexes, tess.indexes);
+        
+                    vk_d.offset += tess.numVertexes;
+                    vk_d.offsetIdx += tess.numIndexes;
+        
+        
+                    i += count;
+                }
+        
+        
+        
+        //        color4ub_t c = {50, 50, 50, 255};
+//        Com_Memcpy(tess.svars.colors, c, numExtrudedEdges * 4);
+//
+//        tess.numVertexes = numExtrudedEdges * 4;
+//        for (int i = 0; i < numExtrudedEdges; i++) {
+//            tess.indexes[i*6 + 0] = i*4 + 0;
+//            tess.indexes[i*6 + 1] = i*4 + 2;
+//            tess.indexes[i*6 + 2] = i*4 + 1;
+//            tess.indexes[i*6 + 3] = i*4 + 2;
+//            tess.indexes[i*6 + 4] = i*4 + 3;
+//            tess.indexes[i*6 + 5] = i*4 + 1;
+//        }
+//        tess.numIndexes = numExtrudedEdges * 6;
+//
+//        VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&extrudedEdges[0]);
+//        VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+//        VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &tess.svars.texcoords[0]);
+//
+//        myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
+//        tr_api.R_DrawElements(tess.numIndexes, tess.indexes);
+//
+//        vk_d.offset += tess.numVertexes;
+//        vk_d.offsetIdx += tess.numIndexes;
     }
 }
 

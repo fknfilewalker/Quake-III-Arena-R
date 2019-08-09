@@ -14,6 +14,8 @@ typedef struct {
 
 static uint8_t pipelineListSize;
 static vkpipe_t pipelineList[300];
+static uint8_t pipelineListMultiSize;
+static vkpipe_t pipelineListMulti[300];
 
 static vkattachmentClearPipe_t attachmentClearPipelineList[8];
 
@@ -37,6 +39,24 @@ void addPipeline(vkpipeline_t *p){
     pipelineListSize++;
 }
 
+qboolean getPipelineMulti(vkpipeline_t *p){
+    for (uint8_t i = 0; i < pipelineListMultiSize; ++i) {
+        vkrenderState_t *state = &pipelineListMulti[i].state;
+        vkpipeline_t *found_p = &pipelineListMulti[i].pipeline;
+        if(memcmp(&vk_d.state, state, sizeof(vkrenderState_t)) == 0) {
+            //p = found_p;
+            Com_Memcpy(p, found_p, sizeof(vkpipeline_t));
+            return qtrue;
+        }
+    }
+    return qfalse;
+}
+
+void addPipelineMulti(vkpipeline_t *p){
+    pipelineListMulti[pipelineListMultiSize] = (vkpipe_t){*p, vk_d.state};
+    pipelineListMultiSize++;
+}
+
 void VK_DestroyPipeline(vkpipeline_t* pipeline);
 void destroyAllPipeline() {
 	for (uint8_t i = 0; i < pipelineListSize; ++i) {
@@ -44,6 +64,12 @@ void destroyAllPipeline() {
 	}
 	pipelineListSize = 0;
 	memset(&pipelineList[0], 0, sizeof(pipelineList));
+    
+    for (uint8_t i = 0; i < pipelineListMultiSize; ++i) {
+        VK_DestroyPipeline(&pipelineListMulti[i].pipeline);
+    }
+    pipelineListMultiSize = 0;
+    memset(&pipelineListMulti[0], 0, sizeof(pipelineListMulti));
     
     for (uint8_t i = 0; i < 8; ++i) {
         VK_DestroyPipeline(&attachmentClearPipelineList[i].pipeline);
@@ -60,6 +86,10 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline);
  */
 void VK_SetDescriptorSet(vkpipeline_t *pipeline, vkdescriptor_t *descriptor){
     pipeline->descriptor = descriptor;
+}
+void VK_Set2DescriptorSets(vkpipeline_t *pipeline, vkdescriptor_t *descriptor, vkdescriptor_t *descriptor2){
+    pipeline->descriptor = descriptor;
+    pipeline->descriptor2 = descriptor2;
 }
 
 void VK_SetShader(vkpipeline_t *pipeline, vkshader_t *shader){
@@ -144,8 +174,16 @@ static void VK_CreatePipelineLayout(vkpipeline_t *pipeline)
     // Pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = { 0 };
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = pipeline->descriptor->size;
-    pipelineLayoutInfo.pSetLayouts = &pipeline->descriptor->layout;
+    
+    VkDescriptorSetLayout dLayout[2];
+    dLayout[0] = pipeline->descriptor->layout;
+    if(pipeline->descriptor2 != NULL){
+        dLayout[1] = pipeline->descriptor2->layout;
+        pipelineLayoutInfo.setLayoutCount = 2;
+    }else {
+        pipelineLayoutInfo.setLayoutCount = pipeline->descriptor->size;
+    }
+    pipelineLayoutInfo.pSetLayouts = &dLayout[0];
     pipelineLayoutInfo.pushConstantRangeCount = pipeline->pushConstantRange.size;
     pipelineLayoutInfo.pPushConstantRanges = &pipeline->pushConstantRange.p[0];
 
@@ -257,7 +295,7 @@ void VK_Bind1DescriptorSet(vkpipeline_t *pipeline, vkdescriptor_t *descriptor){
 void VK_Bind2DescriptorSets(vkpipeline_t *pipeline, vkdescriptor_t *descriptor1, vkdescriptor_t *descriptor2){
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
     
-    VkDescriptorSet sets[2] = {&descriptor1->set, &descriptor2->set};
+    VkDescriptorSet sets[2] = {descriptor1->set, descriptor2->set};
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 2,
                             &sets[0], 0, NULL);
 }

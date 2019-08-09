@@ -109,7 +109,6 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
         [_window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
         [_window setFrame:windowRect display:YES];
     } else {
-        
 //        err = CGDisplaySwitchToMode(glw_state.display, (CFDictionaryRef)glw_state.desktopMode);
         
         NSSize size;
@@ -133,6 +132,11 @@ static qboolean CreateGameWindow( qboolean isSecondTry )
     
     [_window orderFront: nil];
     
+//    NSColorSpace *acs = [NSColorSpace adobeRGB1998ColorSpace];
+//    NSColorSpace *scs = [NSColorSpace sRGBColorSpace];
+//    NSColorSpace *dcs = [NSColorSpace deviceRGBColorSpace];
+//    
+//    [_window setColorSpace:dcs];
 
     // Always get mouse moved events (if mouse support is turned off (rare)
     // the event system will filter them out.

@@ -1011,6 +1011,7 @@ typedef struct {
     VkPipeline handle;
     
     vkdescriptor_t *descriptor;
+    vkdescriptor_t *descriptor2;
     vkshader_t *shader;
     
     struct {

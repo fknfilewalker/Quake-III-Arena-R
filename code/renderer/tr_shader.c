@@ -1746,7 +1746,7 @@ static qboolean CollapseMultitexture( void ) {
 	int abits, bbits;
 	int i;
 	textureBundle_t tmpBundle;
-    return qfalse;
+    //return qfalse;
     if(glConfig.driverType == OPENGL){
         if ( !qglActiveTextureARB ) {
             return qfalse;

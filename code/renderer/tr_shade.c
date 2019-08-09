@@ -257,45 +257,117 @@ static void DrawMultitextured( shaderCommands_t *input, int stage ) {
 
 	tr_api.State( pStage->stateBits );
 
-	// this is an ugly hack to work around a GeForce driver
-	// bug with multitexture and clip planes
-	if ( backEnd.viewParms.isPortal ) {
-		qglPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-	}
+    if (glConfig.driverType == OPENGL) {
+        // this is an ugly hack to work around a GeForce driver
+        // bug with multitexture and clip planes
+        if ( backEnd.viewParms.isPortal ) {
+            qglPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+        }
 
-	//
-	// base
-	//
-	GL_SelectTexture( 0 );
-	qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[0] );
-	R_BindAnimatedImage( &pStage->bundle[0] );
+        //
+        // base
+        //
+        GL_SelectTexture( 0 );
+        qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[0] );
+        R_BindAnimatedImage( &pStage->bundle[0] );
 
-	//
-	// lightmap/secondary pass
-	//
-	GL_SelectTexture( 1 );
-	qglEnable( GL_TEXTURE_2D );
-	qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+        //
+        // lightmap/secondary pass
+        //
+        GL_SelectTexture( 1 );
+        qglEnable( GL_TEXTURE_2D );
+        qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
-	if ( r_lightmap->integer ) {
-		GL_TexEnv( GL_REPLACE );
-	} else {
-		GL_TexEnv( tess.shader->multitextureEnv );
-	}
+        if ( r_lightmap->integer ) {
+            GL_TexEnv( GL_REPLACE );
+        } else {
+            GL_TexEnv( tess.shader->multitextureEnv );
+        }
 
-	qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[1] );
+        qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[1] );
 
-	R_BindAnimatedImage( &pStage->bundle[1] );
+        R_BindAnimatedImage( &pStage->bundle[1] );
 
-	tr_api.R_DrawElements( input->numIndexes, input->indexes );
+        tr_api.R_DrawElements( input->numIndexes, input->indexes );
 
-	//
-	// disable texturing on TEXTURE1, then select TEXTURE0
-	//
-	//qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
-	qglDisable( GL_TEXTURE_2D );
+        //
+        // disable texturing on TEXTURE1, then select TEXTURE0
+        //
+        //qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+        qglDisable( GL_TEXTURE_2D );
 
-	GL_SelectTexture( 0 );
+        GL_SelectTexture( 0 );
+    } else if (glConfig.driverType == VULKAN) {
+        
+        VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
+        VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+        VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &input->svars.texcoords[0]);
+        VK_UploadAttribDataOffset(&vk_d.uvbuffer2, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &input->svars.texcoords[1]);
+
+        VK_UploadAttribDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), input->numIndexes * sizeof(uint32_t), (void*) &input->indexes[0]);
+
+        //R_BindAnimatedImage( &pStage->bundle[0] );
+        //R_BindAnimatedImage( &pStage->bundle[1] );
+        
+        vk_d.currentTexture[0] = pStage->bundle[0].image[0]->index;
+        vk_d.currentTexture[1] = pStage->bundle[1].image[0]->index;
+        //return;
+        vkpipeline_t p = { 0 };
+        if (!getPipelineMulti(&p)) {
+
+            vkshader_t s = { 0 };
+            if (vk_d.state.clip == qtrue) {
+                VK_MultiTextureMulClipShader(&s);
+            }
+            else {
+                VK_MultiTextureMulShader(&s);
+            }
+            
+//            vkdescriptor_t d;
+//            VK_AddSampler(d, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
+//
+//            VK_SetSampler(d, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image.sampler, image.view);
+//            VK_FinishDescriptor(d);
+            
+            VK_Set2DescriptorSets(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set, &vk_d.images[vk_d.currentTexture[1]].descriptor_set);
+            VK_SetShader(&p, &s);
+            VK_AddBindingDescription(&p, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
+            VK_AddBindingDescription(&p, 1, sizeof(color4ub_t), VK_VERTEX_INPUT_RATE_VERTEX);
+            VK_AddBindingDescription(&p, 2, sizeof(vec2_t), VK_VERTEX_INPUT_RATE_VERTEX);
+            VK_AddBindingDescription(&p, 3, sizeof(vec2_t), VK_VERTEX_INPUT_RATE_VERTEX);
+            VK_AddAttributeDescription(&p, 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 0 * sizeof(float));
+            VK_AddAttributeDescription(&p, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 0 * sizeof(float));
+            VK_AddAttributeDescription(&p, 2, 2, VK_FORMAT_R32G32_SFLOAT, 0 * sizeof(float));
+            VK_AddAttributeDescription(&p, 3, 3, VK_FORMAT_R32G32_SFLOAT, 0 * sizeof(float));
+            VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, 192);//sizeof(vk_d.mvp));
+            VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 192, sizeof(vk_d.discardModeAlpha));
+            /*if (vk_d.state.clip == qtrue) {
+             VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, 12 * sizeof(float));
+             VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 192, 4 * sizeof(float));
+             }*/
+            VK_FinishPipeline(&p);
+            addPipelineMulti(&p);
+
+            Com_Printf("new pipe \n");
+        }
+
+        //        VK_BindAttribBuffer(&vk_d.vertexbuffer, 0, 0);//vk_d.offset * sizeof(vec4_t));
+        //        VK_BindAttribBuffer(&vk_d.colorbuffer, 1, 0);//vk_d.offset * sizeof(color4ub_t));
+        //        VK_BindAttribBuffer(&vk_d.uvbuffer, 2, 0);//vk_d.offset * sizeof(vec2_t));
+        VK_Bind2DescriptorSets(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set, &vk_d.images[vk_d.currentTexture[1]].descriptor_set);
+        VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp), &vk_d.mvp);
+        VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 192, sizeof(vk_d.discardModeAlpha), &vk_d.discardModeAlpha);
+
+        if (vk_d.state.clip == qtrue) {
+            VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 64, sizeof(vk_d.modelViewMatrix), &vk_d.modelViewMatrix);
+            VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, sizeof(vk_d.clipPlane), &vk_d.clipPlane);
+        }
+        //Com_Printf("%d", vk_d.discardModeAlpha);
+        VK_DrawIndexed(&p, &vk_d.indexbuffer, input->numIndexes, vk_d.offsetIdx, vk_d.offset);
+        
+        vk_d.offset += input->numVertexes;
+        vk_d.offsetIdx += input->numIndexes;
+    }
 }
 
 
@@ -990,7 +1062,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
             if ( pStage->bundle[1].image[0] != 0 )
             {
                 //Com_Printf("%d\n", a);
-                //DrawMultitextured( input, stage );
+                DrawMultitextured( input, stage );
                 //continue;
             }else
             {
