@@ -3058,19 +3058,9 @@ static void UI_Update(const char *name) {
  	} else if (Q_stricmp(name, "ui_GetName") == 0) {
 		trap_Cvar_Set( "ui_Name", UI_Cvar_VariableString("name"));
  	} else if (Q_stricmp(name, "r_colorbits") == 0) {
-		switch (val) {
-			case 0:
-				trap_Cvar_SetValue( "r_depthbits", 0 );
-				trap_Cvar_SetValue( "r_stencilbits", 0 );
-			break;
-			case 16:
-				trap_Cvar_SetValue( "r_depthbits", 16 );
-				trap_Cvar_SetValue( "r_stencilbits", 0 );
-			break;
-			case 32:
-				trap_Cvar_SetValue( "r_depthbits", 24 );
-			break;
-		}
+		trap_Cvar_SetValue("r_colorbits", 32 );
+		trap_Cvar_SetValue( "r_depthbits", 24 );
+		trap_Cvar_SetValue("r_stencilbits", 8 );
 	} else if (Q_stricmp(name, "r_lodbias") == 0) {
 		switch (val) {
 			case 0:

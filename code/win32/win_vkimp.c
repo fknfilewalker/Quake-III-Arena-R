@@ -156,7 +156,7 @@ void VKimp_Init( void ) {
 
 	// store surface bits
 	if (vk.swapchain.imageFormat == VK_FORMAT_B8G8R8A8_UNORM) {
-		glConfig.colorBits = (int)8;
+		glConfig.colorBits = (int)32;
 	}
 	if (vk.swapchain.depthStencilFormat == VK_FORMAT_D24_UNORM_S8_UINT) {
 		glConfig.depthBits = (int)24;

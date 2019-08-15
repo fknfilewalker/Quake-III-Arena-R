@@ -424,7 +424,7 @@ static int GLW_MakeContext( PIXELFORMATDESCRIPTOR *pPFD )
 		ri.Printf( PRINT_ALL, "succeeded\n" );
 	}
 
-	if ( colorbits == 0 )
+	if ( colorbits != 32 )
 	{
 		colorbits = glw_state.desktopBitsPixel;
 	}
