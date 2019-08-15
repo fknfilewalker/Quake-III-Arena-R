@@ -79,12 +79,12 @@ static void R_ExtrudeShadowEdges( void ) {
                 continue;
             }
             
-            bool sil_edge = true;
+            qboolean sil_edge = qtrue;
             i2 = edgeDefs[ i ][ j ].i2;
             c2 = numEdgeDefs[ i2 ];
             for ( k = 0 ; k < c2 ; k++ ) {
                 if ( edgeDefs[ i2 ][ k ].i2 == i && edgeDefs[ i2 ][ k ].facing) {
-                    sil_edge = false;
+                    sil_edge = qfalse;
                     break;
                 }
             }
