@@ -299,8 +299,8 @@ static void DrawMultitextured( shaderCommands_t *input, int stage ) {
         GL_SelectTexture( 0 );
     } else if (glConfig.driverType == VULKAN) {
         
-        VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
-        VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+        //VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
+        //VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
         VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &input->svars.texcoords[0]);
         VK_UploadAttribDataOffset(&vk_d.uvbuffer2, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &input->svars.texcoords[1]);
 
@@ -311,6 +311,35 @@ static void DrawMultitextured( shaderCommands_t *input, int stage ) {
         
         vk_d.currentTexture[0] = pStage->bundle[0].image[0]->index;
         vk_d.currentTexture[1] = pStage->bundle[1].image[0]->index;
+
+		if (r_lightmap->integer) {
+			tr_api.R_DrawElements(input->numIndexes, &input->indexes[0]);
+
+				vk_d.offset += tess.numVertexes;
+				vk_d.offsetIdx += tess.numIndexes;
+				return;
+		}
+		else {
+			int x = 0;
+			switch (tess.shader->multitextureEnv)
+			{
+			case GL_MODULATE:
+				x = 1;
+				break;
+			case GL_REPLACE:
+				x = 4;
+				break;
+			case GL_DECAL:
+				x = 2;
+				break;
+			case GL_ADD:
+				x = 3;
+				break;
+			default:
+				break;
+			}
+		}
+
         //return;
         vkpipeline_t p = { 0 };
         if (!getPipelineMulti(&p)) {
@@ -1054,7 +1083,9 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
             
 			VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
             VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
-            
+           
+			// set mvp
+			myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
            
             //
             // do multitexture
@@ -1085,8 +1116,6 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
                     int c = stage;
                 }
                 
-				// set mvp
-				myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
 
 				tr_api.R_DrawElements(input->numIndexes, input->indexes);
 				vk_d.offset += input->numVertexes;

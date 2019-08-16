@@ -14,7 +14,7 @@ void beginRenderClear()
 	vk_d.offset = 0;
 
 	VkClearColorValue cc = { 0.1f,0.1f,0.1f,1.0f };
-    VkClearDepthStencilValue dsc = { vk_d.clearDepth, 0};
+    VkClearDepthStencilValue dsc = { 1, 0};
 
     VkClearValue clearValues[2] ={0};
 	//clearValues[0].color = cc;
