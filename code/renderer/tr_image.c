@@ -735,20 +735,49 @@ static vkimage_t upload_vk_image(const struct Image_Upload_Data* upload_data, in
 	}
 
     VkFormat internal_format = VK_FORMAT_R8G8B8A8_UNORM;
+	uint8_t bytesPerPixel = 4;
 	if (glConfig.textureCompression && !has_alpha) {
 		//internal_format = GL_RGB4_S3TC;
 	}
 	else if (r_texturebits->integer <= 16) {
-		internal_format = has_alpha ? VK_FORMAT_R4G4B4A4_UNORM_PACK16 : VK_FORMAT_R5G5B5A1_UNORM_PACK16; // GL_RGBA4 : GL_RGB5;
+		internal_format = has_alpha ? VK_FORMAT_R4G4B4A4_UNORM_PACK16 : VK_FORMAT_A1R5G5B5_UNORM_PACK16;
+		bytesPerPixel = 2;
 	}
 
 	vkimage_t image = { 0 };
 	VK_CreateImage(&image, (uint32_t)w, (uint32_t)h, internal_format, (uint32_t)upload_data->mip_levels);
 
 	byte* buffer = upload_data->buffer;
+	uint16_t* p = (uint16_t*)buffer;
 	for (int i = 0; i < upload_data->mip_levels; i++) {
-		VK_UploadImageData(&image, w, h, buffer, 4, i);
-		//qglTexImage2D(GL_TEXTURE_2D, i, internal_format, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+
+		// less than 32 bits -> rearrange data
+		if (r_texturebits->integer <= 16) {
+			p = (uint16_t*)buffer;
+			for (int i = 0; i < w * h * 4; i += 4, p++) {
+				byte r = buffer[i + 0];
+				byte g = buffer[i + 1];
+				byte b = buffer[i + 2];
+				byte a = buffer[i + 3];
+
+				if (has_alpha) {
+					*p = (uint16_t)((a / 255.0) * 15.0) |
+						((uint16_t)((b / 255.0) * 15.0) << 4) |
+						((uint16_t)((g / 255.0) * 15.0) << 8) |
+						((uint16_t)((r / 255.0) * 15.0) << 12);
+				}
+				else {
+					*p = (uint16_t)((b / 255.0) * 31.0) |
+						((uint16_t)((g / 255.0) * 31.0) << 5) |
+						((uint16_t)((r / 255.0) * 31.0) << 10) |
+						(1 << 15);
+				}
+			}
+		}
+
+		// upload data
+		VK_UploadImageData(&image, w, h, buffer, bytesPerPixel, i);
+
 		buffer += w * h * 4;
 
 		w >>= 1;
