@@ -7,7 +7,7 @@
 ** This routine is responsible for setting the most commonly changed state
 ** in Q3.
 */
-static void State(unsigned long stateBits)
+static void GL_State(unsigned long stateBits)
 {
 	unsigned long diff = stateBits ^ glState.glStateBits;
 
@@ -190,6 +190,49 @@ static void State(unsigned long stateBits)
 	}
 
 	glState.glStateBits = stateBits;
+}
+
+/*
+** GL_Cull
+*/
+static void GL_Cull(int cullType) {
+	if (glState.faceCulling == cullType) {
+		return;
+	}
+
+	glState.faceCulling = cullType;
+
+	if (cullType == CT_TWO_SIDED)
+	{
+		qglDisable(GL_CULL_FACE);
+	}
+	else
+	{
+		qglEnable(GL_CULL_FACE);
+
+		if (cullType == CT_BACK_SIDED)
+		{
+			if (backEnd.viewParms.isMirror)
+			{
+				qglCullFace(GL_FRONT);
+			}
+			else
+			{
+				qglCullFace(GL_BACK);
+			}
+		}
+		else
+		{
+			if (backEnd.viewParms.isMirror)
+			{
+				qglCullFace(GL_BACK);
+			}
+			else
+			{
+				qglCullFace(GL_FRONT);
+			}
+		}
+	}
 }
 
 static void SetViewportAndScissor(void) {
@@ -388,7 +431,7 @@ static void RB_Set2D(void) {
 	qglMatrixMode(GL_MODELVIEW);
 	qglLoadIdentity();
 
-	State(GLS_DEPTHTEST_DISABLE |
+	GL_State(GLS_DEPTHTEST_DISABLE |
 		GLS_SRCBLEND_SRC_ALPHA |
 		GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA);
 
@@ -401,7 +444,8 @@ static void RB_Set2D(void) {
 }
 
 void R_SetOpenGLApi(trApi_t* api) {
-	api->State = State;
+	api->Cull = GL_Cull;
+	api->State = GL_State;
 	api->SetViewportAndScissor = SetViewportAndScissor;
 	api->RB_Set2D = RB_Set2D;
     api->R_DrawElements = R_DrawElements;

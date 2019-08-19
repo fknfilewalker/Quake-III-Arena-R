@@ -223,6 +223,46 @@ static void State(unsigned long stateBits)
 	vk_d.state.blendBits = stateBits;
 }
 
+static void VK_Cull(int cullType) {
+
+	if (cullType == CT_TWO_SIDED)
+	{
+		vk_d.state.cullMode = VK_CULL_MODE_NONE;
+		//qglDisable( GL_CULL_FACE );
+	}
+	else
+	{
+		//qglEnable( GL_CULL_FACE );
+
+		if (cullType == CT_FRONT_SIDED)
+		{
+			if (backEnd.viewParms.isMirror)
+			{
+				vk_d.state.cullMode = VK_CULL_MODE_FRONT_BIT;
+				//qglCullFace( GL_FRONT );
+			}
+			else
+			{
+				vk_d.state.cullMode = VK_CULL_MODE_BACK_BIT;
+				//qglCullFace( GL_BACK );
+			}
+		}
+		else
+		{
+			if (backEnd.viewParms.isMirror)
+			{
+				vk_d.state.cullMode = VK_CULL_MODE_BACK_BIT;
+				//qglCullFace( GL_BACK );
+			}
+			else
+			{
+				vk_d.state.cullMode = VK_CULL_MODE_FRONT_BIT;
+				//qglCullFace( GL_FRONT );
+			}
+		}
+	}
+}
+
 static void SetViewportAndScissor(void) {
 	
 	const float* p = backEnd.viewParms.projectionMatrix;
@@ -381,6 +421,7 @@ static void RB_Set2D(void) {
 }
 
 void R_SetVulkanApi( trApi_t *api ) {
+	api->Cull = VK_Cull;
 	api->State = State;
 	api->SetViewportAndScissor = SetViewportAndScissor;
 	api->RB_Set2D = RB_Set2D;

@@ -1444,7 +1444,7 @@ void R_DebugGraphics( void ) {
 	R_SyncRenderThread();
 
 	GL_Bind( tr.whiteImage);
-	GL_Cull( CT_FRONT_SIDED );
+	tr_api.Cull( CT_FRONT_SIDED );
 	ri.CM_DrawDebugSurface( R_DebugPolygon );
 }
 

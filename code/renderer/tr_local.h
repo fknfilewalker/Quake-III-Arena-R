@@ -1188,6 +1188,7 @@ RENDER API ABSTRACTION
 ==============================================================================
 */
 typedef struct {
+	void (*Cull)(int);
 	void(*State)(unsigned long);
 	void(*SetViewportAndScissor)(void);
 	void(*RB_Set2D)(void);
