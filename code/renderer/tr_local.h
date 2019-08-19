@@ -1139,8 +1139,22 @@ typedef struct {
     
     // clip
     qboolean                                    clip;
+	qboolean									add;
+	qboolean									mul;
     
 } vkrenderState_t;
+
+typedef struct {
+	vkpipeline_t        pipeline;
+	vkrenderState_t     state;
+} vkpipe_t;
+
+typedef struct {
+	vkpipeline_t        pipeline;
+	qboolean			clearColor;
+	qboolean			clearDepth;
+	qboolean			clearStencil;
+} vkattachmentClearPipe_t;
 
 typedef struct {
     size_t              size; // images
@@ -1174,6 +1188,10 @@ typedef struct {
     // texture
     int                 currentTexture[2];
     
+	// pipeline
+	uint32_t pipelineListSize;
+	vkpipe_t pipelineList[400];
+
     vkrenderState_t     state;
 } vkdata_t;
 

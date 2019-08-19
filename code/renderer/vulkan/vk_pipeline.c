@@ -1,43 +1,11 @@
 #include "../tr_local.h"
 
-typedef struct {
-    vkpipeline_t        pipeline;
-    vkrenderState_t     state;
-} vkpipe_t;
 
-typedef struct {
-	vkpipeline_t        pipeline;
-	qboolean			clearColor;
-	qboolean			clearDepth;
-	qboolean			clearStencil;
-} vkattachmentClearPipe_t;
-
-static uint8_t pipelineListSize;
-static vkpipe_t pipelineList[300];
 static uint8_t pipelineListMultiSize;
 static vkpipe_t pipelineListMulti[300];
 
 static vkattachmentClearPipe_t attachmentClearPipelineList[8];
 
-
-
-qboolean getPipeline(vkpipeline_t *p){
-    for (uint8_t i = 0; i < pipelineListSize; ++i) {
-        vkrenderState_t *state = &pipelineList[i].state;
-        vkpipeline_t *found_p = &pipelineList[i].pipeline;
-        if(memcmp(&vk_d.state, state, sizeof(vkrenderState_t)) == 0) {
-			//p = found_p;
-			Com_Memcpy(p, found_p, sizeof(vkpipeline_t));
-			return qtrue;
-        }
-    }
-    return qfalse;
-}
-
-void addPipeline(vkpipeline_t *p){
-    pipelineList[pipelineListSize] = (vkpipe_t){*p, vk_d.state};
-    pipelineListSize++;
-}
 
 qboolean getPipelineMulti(vkpipeline_t *p){
     for (uint8_t i = 0; i < pipelineListMultiSize; ++i) {
@@ -58,12 +26,12 @@ void addPipelineMulti(vkpipeline_t *p){
 }
 
 void VK_DestroyPipeline(vkpipeline_t* pipeline);
-void destroyAllPipeline() {
-	for (uint8_t i = 0; i < pipelineListSize; ++i) {
-		VK_DestroyPipeline(&pipelineList[i].pipeline);
+void VK_DestroyAllPipelines() {
+	for (uint32_t i = 0; i < vk_d.pipelineListSize; ++i) {
+		VK_DestroyPipeline(&vk_d.pipelineList[i].pipeline);
 	}
-	pipelineListSize = 0;
-	memset(&pipelineList[0], 0, sizeof(pipelineList));
+	vk_d.pipelineListSize = 0;
+	memset(&vk_d.pipelineList[0], 0, sizeof(vk_d.pipelineList));
     
     for (uint8_t i = 0; i < pipelineListMultiSize; ++i) {
         VK_DestroyPipeline(&pipelineListMulti[i].pipeline);

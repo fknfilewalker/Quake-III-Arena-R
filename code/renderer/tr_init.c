@@ -1244,9 +1244,9 @@ void RE_Shutdown( qboolean destroyWindow ) {
             VK_DestroyAttribBuffer(&vk_d.uvbuffer2);
 			VK_DestroyAttribBuffer(&vk_d.colorbuffer);
             
-			destroyAllPipeline();
+			VK_DestroyAllPipelines();
 
-			VK_DestroyAllShader();
+			VK_DestroyAllShaders();
 
 			VK_Destroy();
 

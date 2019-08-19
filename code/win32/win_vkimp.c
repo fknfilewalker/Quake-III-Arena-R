@@ -162,6 +162,8 @@ void VKimp_Init( void ) {
 		glConfig.depthBits = (int)24;
 		glConfig.stencilBits = (int)8;
 	}
+
+	glConfig.textureEnvAddAvailable = qtrue;
 }
 
 void VKimp_Shutdown(void) {

@@ -81,7 +81,7 @@ void VK_DestroyShader(vkshader_t* shader) {
 	memset(shader, 0, sizeof(vkshader_t));
 }
 
-void VK_DestroyAllShader() {
+void VK_DestroyAllShaders() {
 	if (singleTexture != NULL) {
 		VK_DestroyShader(singleTexture);
 		free(singleTexture);

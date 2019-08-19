@@ -175,6 +175,28 @@ void GL_TexEnv( int env )
 	}
 }
 
+void VK_TexEnv(int env)
+{
+
+	vk_d.state.mul = qfalse;
+	vk_d.state.add = qfalse;
+	switch (env)
+	{
+	case GL_MODULATE:
+		vk_d.state.mul = qtrue;
+		break;
+	case GL_REPLACE:
+		break;
+	case GL_DECAL:
+		break;
+	case GL_ADD:
+		vk_d.state.add = qtrue;
+		break;
+	default:
+		ri.Error(ERR_DROP, "GL_TexEnv: invalid env '%d' passed\n", env);
+		break;
+	}
+}
 
 /*
 ================

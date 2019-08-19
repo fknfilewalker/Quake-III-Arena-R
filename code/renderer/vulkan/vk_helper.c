@@ -72,6 +72,10 @@ void endRender()
 
 }
 
+/*
+** CLEAR ATTACHMENT
+*/
+
 void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean clear_color, vec4_t color) {
     static float vFullscreenQuad[24] = {    -1.0f, -1.0f, 1.0f, 0.0f,
                                              1.0f, -1.0f, 1.0f, 0.0f,
@@ -249,6 +253,29 @@ void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean 
 	//VkCommandBuffer cmdBuf = vk.swapchain.CurrentCommandBuffer();
  //   vkCmdClearAttachments(cmdBuf, attachment_count, attachments, rect_count, clear_rect);
 }
+
+/*
+** PIPELINE LIST
+*/
+qboolean VK_FindPipeline() {
+	for (uint32_t i = 0; i < vk_d.pipelineListSize; ++i) {
+		vkrenderState_t* state = &vk_d.pipelineList[i].state;
+		vkpipeline_t* found_p = &vk_d.pipelineList[i].pipeline;
+		if (memcmp(&vk_d.state, state, sizeof(vkrenderState_t)) == 0) {
+			//p = found_p;
+			//Com_Memcpy(p, found_p, sizeof(vkpipeline_t));
+			return i;
+		}
+	}
+	return -1;
+}
+
+uint32_t VK_AddPipeline(vkpipeline_t* p) {
+	vk_d.pipelineList[vk_d.pipelineListSize] = (vkpipe_t){ *p, vk_d.state };
+	vk_d.pipelineListSize++;
+	return vk_d.pipelineListSize - 1;
+}
+
 
 /*
 ** CMD RECORD
