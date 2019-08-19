@@ -25,18 +25,6 @@ typedef enum {
 /*static*/ qboolean VKW_InitDriver(const char* drivername, int colorbits)
 {
 	VK_Setup((void*)glw_state.hinstVulkan, (void*)wv.hWnd);
-
-
-
-	//VK_BeginFrame();
-	//beginRenderClear();
-	//endRender();
-	//VK_EndFrame();
-
-	//VK_BeginFrame();
-	//beginRenderClear();
-	//endRender();
-	//VK_EndFrame();
 	
 	return qtrue;
 };

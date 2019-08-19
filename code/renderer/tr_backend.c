@@ -738,7 +738,7 @@ const void	*RB_DrawBuffer( const void *data ) {
         }
     } else if (glConfig.driverType == VULKAN) {
         VK_BeginFrame();
-        beginRenderClear();
+		VK_BeginRenderClear();
         if ( r_clear->integer ) {
             VK_ClearAttachments(qfalse, qfalse, qtrue, (vec4_t){1, 0, 0.5, 1});
         }
@@ -856,7 +856,7 @@ const void	*RB_SwapBuffers( const void *data ) {
 
         GLimp_EndFrame();
     } else if (glConfig.driverType == VULKAN) {
-        endRender();
+        VK_EndRender();
         VK_EndFrame();
     }
 
@@ -907,10 +907,6 @@ void RB_ExecuteRenderCommands( const void *data ) {
 
 		case RC_END_OF_LIST:
 		default:
-            /*if (glConfig.driverType == VULKAN && com_errorEntered && vk.swapchain.frameStarted) {
-                endRender();
-                VK_EndFrame();
-            }*/
 			// stop rendering on this thread
 			t2 = ri.Milliseconds ();
 			backEnd.pc.msec = t2 - t1;

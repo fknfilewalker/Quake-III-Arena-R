@@ -366,17 +366,9 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 
         VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, 192);//sizeof(vk_d.mvp));
         VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 192, sizeof(vk_d.discardModeAlpha));
-        /*if (vk_d.state.clip == qtrue) {
-         VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, 12 * sizeof(float));
-         VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 192, 4 * sizeof(float));
-			VK_Set2DescriptorSets(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set, &vk_d.images[vk_d.currentTexture[1]].descriptor_set);
-			VK_Bind2DescriptorSets(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set, &vk_d.images[vk_d.currentTexture[1]].descriptor_set);
-
-         }*/
         VK_FinishPipeline(&p);
         index = VK_AddPipeline(&p);
-        
-        Com_Printf("new pipe \n");
+
     }
 	p = vk_d.pipelineList[index].pipeline;
     //        VK_BindAttribBuffer(&vk_d.vertexbuffer, 0, 0);//vk_d.offset * sizeof(vec4_t));
@@ -396,11 +388,9 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
         VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 64, sizeof(vk_d.modelViewMatrix), &vk_d.modelViewMatrix);
         VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, sizeof(vk_d.clipPlane), &vk_d.clipPlane);
     }
-    //Com_Printf("%d", vk_d.discardModeAlpha);
+
     VK_DrawIndexed(&p, &vk_d.indexbuffer, numIndexes, vk_d.offsetIdx, vk_d.offset);
-    //VK_Draw(&p, 6);
-    //VK_DestroyPipeline(&p);
-    //VK_DestroyShader(&s);
+
 }
 
 /*

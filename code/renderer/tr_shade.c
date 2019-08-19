@@ -615,6 +615,8 @@ static void ProjectDlightTexture( void ) {
 			tr_api.State( GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_EQUAL );
 		}
 
+		// set mvp
+		if (glConfig.driverType == VULKAN) myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
 		tr_api.R_DrawElements( numIndexes, hitIndexes );
 		backEnd.pc.c_totalIndexes += numIndexes;
 		backEnd.pc.c_dlightIndexes += numIndexes;
@@ -685,6 +687,8 @@ static void RB_FogPass( void ) {
             tr_api.State(GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA);
         }
         
+		// set mvp
+		myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
         tr_api.R_DrawElements(tess.numIndexes, tess.indexes);
         vk_d.offset += tess.numVertexes;
         vk_d.offsetIdx += tess.numIndexes;

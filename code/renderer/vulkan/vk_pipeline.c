@@ -1,29 +1,6 @@
 #include "../tr_local.h"
 
-
-static uint8_t pipelineListMultiSize;
-static vkpipe_t pipelineListMulti[300];
-
 static vkattachmentClearPipe_t attachmentClearPipelineList[8];
-
-
-qboolean getPipelineMulti(vkpipeline_t *p){
-    for (uint8_t i = 0; i < pipelineListMultiSize; ++i) {
-        vkrenderState_t *state = &pipelineListMulti[i].state;
-        vkpipeline_t *found_p = &pipelineListMulti[i].pipeline;
-        if(memcmp(&vk_d.state, state, sizeof(vkrenderState_t)) == 0) {
-            //p = found_p;
-            Com_Memcpy(p, found_p, sizeof(vkpipeline_t));
-            return qtrue;
-        }
-    }
-    return qfalse;
-}
-
-void addPipelineMulti(vkpipeline_t *p){
-    pipelineListMulti[pipelineListMultiSize] = (vkpipe_t){*p, vk_d.state};
-    pipelineListMultiSize++;
-}
 
 void VK_DestroyPipeline(vkpipeline_t* pipeline);
 void VK_DestroyAllPipelines() {
@@ -32,12 +9,6 @@ void VK_DestroyAllPipelines() {
 	}
 	vk_d.pipelineListSize = 0;
 	memset(&vk_d.pipelineList[0], 0, sizeof(vk_d.pipelineList));
-    
-    for (uint8_t i = 0; i < pipelineListMultiSize; ++i) {
-        VK_DestroyPipeline(&pipelineListMulti[i].pipeline);
-    }
-    pipelineListMultiSize = 0;
-    memset(&pipelineListMulti[0], 0, sizeof(pipelineListMulti));
     
     for (uint8_t i = 0; i < 8; ++i) {
         VK_DestroyPipeline(&attachmentClearPipelineList[i].pipeline);
@@ -196,34 +167,16 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline)
     rs.cullMode = vk_d.state.cullMode;//VK_CULL_MODE_BACK_BIT; // we want the back face as well
     rs.frontFace = VK_FRONT_FACE_CLOCKWISE;//VK_FRONT_FACE_CLOCKWISE;
     rs.lineWidth = 1.0f;
+	rs.depthBiasEnable = VK_TRUE;
     pipelineInfo.pRasterizationState = &rs;
     
     VkPipelineMultisampleStateCreateInfo ms = {0};
     ms.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     ms.minSampleShading = 1.0f;
-    // Enable multisampling.
     ms.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
     pipelineInfo.pMultisampleState = &ms;
 
-//    VkPipelineDepthStencilStateCreateInfo depthStencil = { 0 };
-//    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-//    depthStencil.depthTestEnable = VK_TRUE;
-//    depthStencil.depthWriteEnable = VK_TRUE;
-//    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-
-//
-//    VkPipelineColorBlendAttachmentState colorBlend = {0};
-//    colorBlend.colorWriteMask = 0xF;
-//    colorBlend.blendEnable = VK_TRUE;
-//    colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-//    colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-//    colorBlend.colorBlendOp = VK_BLEND_OP_ADD;
-//    colorBlend.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-//    colorBlend.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-//    colorBlend.alphaBlendOp = VK_BLEND_OP_ADD;
-    
     vk_d.state.colorBlend.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	//vk_d.state.colorBlend.colorWriteMask = 0xF;
 
     VkPipelineColorBlendStateCreateInfo cb = { 0 };
     cb.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -240,12 +193,7 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline)
     dyn.dynamicStateCount = sizeof(dynEnable) / sizeof(VkDynamicState);
     dyn.pDynamicStates = dynEnable;
     pipelineInfo.pDynamicState = &dyn;
-    
-    rs.depthBiasEnable = VK_TRUE;
-    rs.depthBiasConstantFactor = 0.0f; // dynamic depth bias state
-    rs.depthBiasClamp = 0.0f; // dynamic depth bias state
-    rs.depthBiasSlopeFactor = 0.0f; // dynamic depth bias state
-    
+
     pipelineInfo.layout = pipeline->layout;
 
     // EDIT

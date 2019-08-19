@@ -1190,7 +1190,7 @@ typedef struct {
     
 	// pipeline
 	uint32_t pipelineListSize;
-	vkpipe_t pipelineList[400];
+	vkpipe_t pipelineList[500];
 
     vkrenderState_t     state;
 } vkdata_t;
