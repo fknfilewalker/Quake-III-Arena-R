@@ -64,97 +64,97 @@ void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean 
     if (!clear_depth && !clear_stencil && !clear_color)
         return;
     
-	//if (clear_depth) clear_depth = 1;
-	//if (clear_stencil) clear_stencil = 1;
-	//if (clear_color) clear_color = 1;
+    if (clear_depth) clear_depth = 1;
+    if (clear_stencil) clear_stencil = 1;
+    if (clear_color) clear_color = 1;
 
-	//// backup state
-	//VkViewport vpSave = { 0 };
-	//VkRect2D sSave = { 0 };
-	//Com_Memcpy(&vpSave, &vk_d.viewport, sizeof(vk_d.viewport));
-	//Com_Memcpy(&sSave, &vk_d.scissor, sizeof(vk_d.scissor));
-
-
-	//qboolean set[2] = { clear_color, clear_depth };
-
-	//memset(&vk_d.viewport, 0, sizeof(vk_d.viewport));
-	//memset(&vk_d.scissor, 0, sizeof(vk_d.scissor));
-
-	//vk_d.viewport.x = 0;
-	//vk_d.viewport.y = 0;
-	//vk_d.viewport.height = glConfig.vidHeight;
-	//vk_d.viewport.width = glConfig.vidWidth;
-	//vk_d.viewport.minDepth = 0.0f;
-	//vk_d.viewport.maxDepth = 1.0f;
-
-	//vk_d.scissor.offset.x = 0;
-	//vk_d.scissor.offset.y = 0;
-	//vk_d.scissor.extent.height = glConfig.vidHeight;
-	//vk_d.scissor.extent.width = glConfig.vidWidth;
-
- //   VK_UploadAttribDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]) * sizeof(uint32_t), (void*) &idxFullscreenQuad[0]);
-	//VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), sizeof(vFullscreenQuad)/sizeof(vFullscreenQuad[0]) * sizeof(vec4_t), (void*)&vFullscreenQuad[0]);
- //   
-	//vkpipeline_t p = { 0 };
-	//VK_GetAttachmentClearPipelines(&p, clear_color, clear_depth, clear_stencil);
-
-	//VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(color), &color);
- //   VK_DrawIndexed(&p, &vk_d.indexbuffer, sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]), vk_d.offsetIdx, vk_d.offset);
-
- //   vk_d.offsetIdx += sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]);
- //   vk_d.offset += sizeof(vFullscreenQuad)/sizeof(vFullscreenQuad[0]);
- //   
-	//// restore state
-	//Com_Memcpy(&vk_d.viewport, &vpSave, sizeof(vk_d.viewport));
-	//Com_Memcpy(&vk_d.scissor, &sSave, sizeof(vk_d.scissor));
+    // backup state
+    VkViewport vpSave = { 0 };
+    VkRect2D sSave = { 0 };
+    Com_Memcpy(&vpSave, &vk_d.viewport, sizeof(vk_d.viewport));
+    Com_Memcpy(&sSave, &vk_d.scissor, sizeof(vk_d.scissor));
 
 
-    VkClearAttachment attachments[2];
-    uint32_t attachment_count = 0;
+    qboolean set[2] = { clear_color, clear_depth };
+
+    memset(&vk_d.viewport, 0, sizeof(vk_d.viewport));
+    memset(&vk_d.scissor, 0, sizeof(vk_d.scissor));
+
+    vk_d.viewport.x = 0;
+    vk_d.viewport.y = 0;
+    vk_d.viewport.height = glConfig.vidHeight;
+    vk_d.viewport.width = glConfig.vidWidth;
+    vk_d.viewport.minDepth = 0.0f;
+    vk_d.viewport.maxDepth = 1.0f;
+
+    vk_d.scissor.offset.x = 0;
+    vk_d.scissor.offset.y = 0;
+    vk_d.scissor.extent.height = glConfig.vidHeight;
+    vk_d.scissor.extent.width = glConfig.vidWidth;
+
+    VK_UploadAttribDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]) * sizeof(uint32_t), (void*) &idxFullscreenQuad[0]);
+    VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), sizeof(vFullscreenQuad)/sizeof(vFullscreenQuad[0]) * sizeof(vec4_t), (void*)&vFullscreenQuad[0]);
     
-    if (clear_depth || clear_stencil){
-        if (clear_depth) {
-            attachments[0].aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            attachments[0].clearValue.depthStencil.depth = 1.0f;
-        }
-        if (clear_stencil) {
-            attachments[0].aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-            attachments[0].clearValue.depthStencil.stencil = 0;
-        }
-        attachment_count = 1;
-    }
+    vkpipeline_t p = { 0 };
+    VK_GetAttachmentClearPipelines(&p, clear_color, clear_depth, clear_stencil);
+
+    VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(color), &color);
+    VK_DrawIndexed(&p, &vk_d.indexbuffer, sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]), vk_d.offsetIdx, vk_d.offset);
+
+    vk_d.offsetIdx += sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]);
+    vk_d.offset += sizeof(vFullscreenQuad)/sizeof(vFullscreenQuad[0]);
     
-    if (clear_color) {
-        attachments[attachment_count].aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        attachments[attachment_count].colorAttachment = 0;
-        attachments[attachment_count].clearValue.color = (VkClearColorValue) { color[0], color[1], color[2], color[3] };
-        attachment_count++;
-    }
-    
-    VkClearRect clear_rect[2] = {0};
-    clear_rect[0].rect.extent.width = vk.swapchain.extent.width;
-    clear_rect[0].rect.extent.height = vk.swapchain.extent.height;
-    clear_rect[0].baseArrayLayer = 0;
-    clear_rect[0].layerCount = 1;
-    int rect_count = 1;
-    
-    // Split viewport rectangle into two non-overlapping rectangles.
-    // It's a HACK to prevent Vulkan validation layer's performance warning:
-    //        "vkCmdClearAttachments() issued on command buffer object XXX prior to any Draw Cmds.
-    //         It is recommended you use RenderPass LOAD_OP_CLEAR on Attachments prior to any Draw."
-    //
-    // NOTE: we don't use LOAD_OP_CLEAR for color attachment when we begin renderpass
-    // since at that point we don't know whether we need collor buffer clear (usually we don't).
-    if (clear_color) {
-        uint32_t h = clear_rect[0].rect.extent.height / 2;
-        clear_rect[0].rect.extent.height = h;
-        clear_rect[1] = clear_rect[0];
-        clear_rect[1].rect.offset.y = h;
-        rect_count = 2;
-    }
-    
-	VkCommandBuffer cmdBuf = vk.swapchain.CurrentCommandBuffer();
-    vkCmdClearAttachments(cmdBuf, attachment_count, attachments, rect_count, clear_rect);
+    // restore state
+    Com_Memcpy(&vk_d.viewport, &vpSave, sizeof(vk_d.viewport));
+    Com_Memcpy(&vk_d.scissor, &sSave, sizeof(vk_d.scissor));
+
+//
+//    VkClearAttachment attachments[2];
+//    uint32_t attachment_count = 0;
+//
+//    if (clear_depth || clear_stencil){
+//        if (clear_depth) {
+//            attachments[0].aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+//            attachments[0].clearValue.depthStencil.depth = 1.0f;
+//        }
+//        if (clear_stencil) {
+//            attachments[0].aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+//            attachments[0].clearValue.depthStencil.stencil = 0;
+//        }
+//        attachment_count = 1;
+//    }
+//
+//    if (clear_color) {
+//        attachments[attachment_count].aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+//        attachments[attachment_count].colorAttachment = 0;
+//        attachments[attachment_count].clearValue.color = (VkClearColorValue) { color[0], color[1], color[2], color[3] };
+//        attachment_count++;
+//    }
+//
+//    VkClearRect clear_rect[2] = {0};
+//    clear_rect[0].rect.extent.width = vk.swapchain.extent.width;
+//    clear_rect[0].rect.extent.height = vk.swapchain.extent.height;
+//    clear_rect[0].baseArrayLayer = 0;
+//    clear_rect[0].layerCount = 1;
+//    int rect_count = 1;
+//
+//    // Split viewport rectangle into two non-overlapping rectangles.
+//    // It's a HACK to prevent Vulkan validation layer's performance warning:
+//    //        "vkCmdClearAttachments() issued on command buffer object XXX prior to any Draw Cmds.
+//    //         It is recommended you use RenderPass LOAD_OP_CLEAR on Attachments prior to any Draw."
+//    //
+//    // NOTE: we don't use LOAD_OP_CLEAR for color attachment when we begin renderpass
+//    // since at that point we don't know whether we need collor buffer clear (usually we don't).
+//    if (clear_color) {
+//        uint32_t h = clear_rect[0].rect.extent.height / 2;
+//        clear_rect[0].rect.extent.height = h;
+//        clear_rect[1] = clear_rect[0];
+//        clear_rect[1].rect.offset.y = h;
+//        rect_count = 2;
+//    }
+//
+//    VkCommandBuffer cmdBuf = vk.swapchain.CurrentCommandBuffer();
+//    vkCmdClearAttachments(cmdBuf, attachment_count, attachments, rect_count, clear_rect);
 }
 
 /*
