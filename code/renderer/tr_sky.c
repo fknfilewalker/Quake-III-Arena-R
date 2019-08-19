@@ -386,7 +386,6 @@ static void DrawSkySide( struct image_s *image, const int mins[2], const int max
 
 static void DrawSkyBox( shader_t *shader )
 {
-	
 	int		i;
 
 	sky_min = 0;
@@ -453,13 +452,10 @@ static void DrawSkyBox( shader_t *shader )
 				sky_maxs_subd);
 		} else if (glConfig.driverType == VULKAN) {
 
-			for (i = 0; i < 6; i++)
-			{
-				VK_Bind(shader->sky.outerbox[sky_texorder[i]]);
-			}
+			VK_Bind(shader->sky.outerbox[sky_texorder[i]]);
+			
 			tess.numVertexes = 0;
 			tess.numIndexes = 0;
-
 			for (t = sky_mins_subd[1] + HALF_SKY_SUBDIVISIONS; t < sky_maxs_subd[1] + HALF_SKY_SUBDIVISIONS; t++)
 			{
 				for (s = sky_mins_subd[0] + HALF_SKY_SUBDIVISIONS; s < sky_maxs_subd[0] + HALF_SKY_SUBDIVISIONS; s++)
@@ -494,63 +490,20 @@ static void DrawSkyBox( shader_t *shader )
 					tess.numVertexes += 4;
 				}
 			}
+
 			Com_Memset(tess.svars.colors, tr.identityLightByte, tess.numVertexes * 4);
 
 			VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)& tess.xyz[0]);
 			VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void*)& tess.svars.colors[0]);
 			VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void*)& tess.svars.texcoords[0]);
 
-            VK_UploadAttribDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), tess.numIndexes * sizeof(uint32_t), (void*)& tess.indexes[0]);
             // set mvp
             myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
 
-//            vkpipeline_t p = { 0 };
-//            if (!getPipeline(&p)) {
-//
-//                vkshader_t s = { 0 };
-//                if (vk_d.state.clip == qtrue) {
-//                    VK_SingleTextureClipShader(&s);
-//                }
-//                else VK_SingleTextureShader(&s);
-//
-//                VK_SetDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
-//                VK_SetShader(&p, &s);
-//                VK_AddBindingDescription(&p, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
-//                VK_AddBindingDescription(&p, 1, sizeof(color4ub_t), VK_VERTEX_INPUT_RATE_VERTEX);
-//                VK_AddBindingDescription(&p, 2, sizeof(vec2_t), VK_VERTEX_INPUT_RATE_VERTEX);
-//                VK_AddAttributeDescription(&p, 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 0 * sizeof(float));
-//                VK_AddAttributeDescription(&p, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 0 * sizeof(float));
-//                VK_AddAttributeDescription(&p, 2, 2, VK_FORMAT_R32G32_SFLOAT, 0 * sizeof(float));
-//                VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, 192);//sizeof(vk_d.mvp));
-//                VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 3 * sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha));
-//                /*if (vk_d.state.clip == qtrue) {
-//                    VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, 12 * sizeof(float));
-//                    VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 192, 4 * sizeof(float));
-//                }*/
-//                VK_FinishPipeline(&p);
-//                addPipeline(&p);
-//
-//                Com_Printf("new pipe \n");
-//            }
-//
-//            //VK_BindAttribBuffer(&vk_d.vertexbuffer, 0, vk_d.offset * sizeof(vec4_t));
-//            //VK_BindAttribBuffer(&vk_d.colorbuffer, 1, vk_d.offset * sizeof(color4ub_t));
-//            //VK_BindAttribBuffer(&vk_d.uvbuffer1, 2, vk_d.offset * sizeof(vec2_t));
-//            VK_Bind1DescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
-//            VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp), &vk_d.mvp);
-//            VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 3 * sizeof(vk_d.mvp), sizeof(vk_d.discardModeAlpha), &vk_d.discardModeAlpha);
-//
-//            if (vk_d.state.clip == qtrue) {
-//                VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 64, sizeof(vk_d.modelViewMatrix), &vk_d.modelViewMatrix);
-//                VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, sizeof(vk_d.clipPlane), &vk_d.clipPlane);
-//            }
-//
-//            VK_DrawIndexed(&p, &vk_d.indexbuffer, tess.numIndexes, vk_d.offsetIdx * sizeof(uint32_t));
-//            
             tr_api.R_DrawElements(tess.numIndexes, tess.indexes);
             
 			vk_d.offset += tess.numVertexes;
-			vk_d.offsetIdx += tess.numVertexes;
+			vk_d.offsetIdx += tess.numIndexes;
 		}
 	}
 
@@ -977,8 +930,22 @@ void RB_StageIteratorSky( void ) {
 
 		// draw the outer skybox
 		if (tess.shader->sky.outerbox[0] && tess.shader->sky.outerbox[0] != tr.defaultImage) {
+			float tmp[16];
+			Com_Memcpy(tmp, vk_d.modelViewMatrix, sizeof(float[16]));
+
+			float skyboxTranslate[16] = {
+				1, 0, 0, 0,
+				0, 1, 0, 0,
+				0, 0, 1, 0,
+				backEnd.viewParms.or.origin[0], backEnd.viewParms.or.origin[1], backEnd.viewParms.or.origin[2], 1
+			};
+
+			myGlMultMatrix(skyboxTranslate, tmp, vk_d.modelViewMatrix);
+
 			tr_api.State(0);
 			DrawSkyBox(tess.shader);
+
+			Com_Memcpy(vk_d.modelViewMatrix, tmp, sizeof(float[16]));
 		}
 
 		// generate the vertexes for all the clouds, which will be drawn

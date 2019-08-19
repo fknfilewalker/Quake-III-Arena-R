@@ -113,70 +113,31 @@ void R_RenderShadowEdges( void ) {
         }
         qglEnd();
     } else if(glConfig.driverType == VULKAN){
-                int i = 0;
-                while (i < numExtrudedEdges) {
-                    int count = numExtrudedEdges - i;
-                    if (count > (SHADER_MAX_VERTEXES - 1) / 4)
-                        count = (SHADER_MAX_VERTEXES - 1) / 4;
+        tess.numVertexes = numExtrudedEdges * 4;
+		tess.numIndexes = numExtrudedEdges * 6;
+        for (int i = 0; i < numExtrudedEdges; i++) {
+            tess.indexes[i*6 + 0] = i*4 + 0;
+            tess.indexes[i*6 + 1] = i*4 + 2;
+            tess.indexes[i*6 + 2] = i*4 + 1;
+            tess.indexes[i*6 + 3] = i*4 + 2;
+            tess.indexes[i*6 + 4] = i*4 + 3;
+            tess.indexes[i*6 + 5] = i*4 + 1;
+        }
         
-                    Com_Memcpy(tess.xyz, extrudedEdges[i*4], 4 * count * sizeof(vec4_t));
-                    tess.numVertexes = count * 4;
-        
-                    for (int k = 0; k < count; k++) {
-                        tess.indexes[k * 6 + 0] = k * 4 + 0;
-                        tess.indexes[k * 6 + 1] = k * 4 + 2;
-                        tess.indexes[k * 6 + 2] = k * 4 + 1;
-        
-                        tess.indexes[k * 6 + 3] = k * 4 + 2;
-                        tess.indexes[k * 6 + 4] = k * 4 + 3;
-                        tess.indexes[k * 6 + 5] = k * 4 + 1;
-                    }
-                    tess.numIndexes = count * 6;
-        
-                    for (int k = 0; k < tess.numVertexes; k++) {
-                        VectorSet(tess.svars.colors[k], 51, 51, 51);
-                        tess.svars.colors[k][3] = 255;
-                    }
-        
-                    VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&extrudedEdges[0]);
-                    VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
-                    VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &tess.svars.texcoords[0]);
-        
-                    myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
-                    tr_api.R_DrawElements(tess.numIndexes, tess.indexes);
-        
-                    vk_d.offset += tess.numVertexes;
-                    vk_d.offsetIdx += tess.numIndexes;
-        
-        
-                    i += count;
-                }
-        
-        
-        
-        //        color4ub_t c = {50, 50, 50, 255};
-//        Com_Memcpy(tess.svars.colors, c, numExtrudedEdges * 4);
-//
-//        tess.numVertexes = numExtrudedEdges * 4;
-//        for (int i = 0; i < numExtrudedEdges; i++) {
-//            tess.indexes[i*6 + 0] = i*4 + 0;
-//            tess.indexes[i*6 + 1] = i*4 + 2;
-//            tess.indexes[i*6 + 2] = i*4 + 1;
-//            tess.indexes[i*6 + 3] = i*4 + 2;
-//            tess.indexes[i*6 + 4] = i*4 + 3;
-//            tess.indexes[i*6 + 5] = i*4 + 1;
-//        }
-//        tess.numIndexes = numExtrudedEdges * 6;
-//
-//        VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&extrudedEdges[0]);
-//        VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
-//        VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &tess.svars.texcoords[0]);
-//
-//        myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
-//        tr_api.R_DrawElements(tess.numIndexes, tess.indexes);
-//
-//        vk_d.offset += tess.numVertexes;
-//        vk_d.offsetIdx += tess.numIndexes;
+		for (int k = 0; k < tess.numVertexes; k++) {
+			VectorSet(tess.svars.colors[k], 51, 51, 51);
+			tess.svars.colors[k][3] = 255;
+		}
+
+        VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&extrudedEdges[0]);
+        VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+        VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &tess.svars.texcoords[0]);
+
+        myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
+        tr_api.R_DrawElements(tess.numIndexes, tess.indexes);
+
+        vk_d.offset += tess.numVertexes;
+        vk_d.offsetIdx += tess.numIndexes;
     }
 }
 
@@ -285,11 +246,9 @@ void RB_ShadowTessEnd( void ) {
             R_RenderShadowEdges();
         }
 
-
         // reenable writing to the color buffer
         qglColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
     } else if (glConfig.driverType == VULKAN){
-        //return;
         // draw the silhouette edges
         VK_Bind( tr.whiteImage );
         tr_api.State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
@@ -302,7 +261,6 @@ void RB_ShadowTessEnd( void ) {
         vk_d.state.colorBlend.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
         vk_d.state.colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
         vk_d.state.colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-         //vk_d.state.dsBlend.depthTestEnable = VK_FALSE;
         
         vk_d.state.dsBlend.stencilTestEnable = VK_TRUE;
         VkStencilOpState stencil = {0};
@@ -360,6 +318,7 @@ overlap and double darken.
 =================
 */
 void RB_ShadowFinish( void ) {
+
 	if ( r_shadows->integer != 2 ) {
 		return;
 	}
@@ -380,9 +339,6 @@ void RB_ShadowFinish( void ) {
 
         qglColor3f( 0.6f, 0.6f, 0.6f );
         tr_api.State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO );
-
-    //	qglColor3f( 1, 0, 0 );
-    //	GL_State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
 
         qglBegin( GL_QUADS );
         qglVertex3f( -100, 100, -10 );
@@ -424,9 +380,10 @@ void RB_ShadowFinish( void ) {
         VectorSet(tess.xyz[3], -100, -100, -10);
         tess.numVertexes = 4;
         
-        color4ub_t c = {153, 153, 153, 255};
-        Com_Memcpy(tess.svars.colors, c, tess.numVertexes * 4);
-        
+		for (int k = 0; k < tess.numVertexes; k++) {
+			VectorSet(tess.svars.colors[k], 153, 153, 153);
+			tess.svars.colors[k][3] = 255;
+		}
         
         VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
         VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
