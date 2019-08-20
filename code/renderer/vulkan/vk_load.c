@@ -149,6 +149,7 @@ qboolean VK_LoadDeviceFunctions(void)
 
 	vkDeviceWaitIdle = VK_DEVICE_LEVEL_FUNCTION("vkDeviceWaitIdle");
 	vkWaitForFences = VK_DEVICE_LEVEL_FUNCTION("vkWaitForFences");
+    vkGetFenceStatus = VK_DEVICE_LEVEL_FUNCTION("vkGetFenceStatus");
 	vkAllocateDescriptorSets = VK_DEVICE_LEVEL_FUNCTION("vkAllocateDescriptorSets");
 
 	vkDestroyShaderModule = VK_DEVICE_LEVEL_FUNCTION("vkDestroyShaderModule");

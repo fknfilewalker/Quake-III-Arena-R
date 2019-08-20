@@ -331,7 +331,6 @@ static void VK_CreateSyncObjects()
 		VK_CHECK(vkCreateFence(vk.device, &fenceInfo, NULL, &vk.swapchain.inFlightFences[i]), "failed to create Fence!");
 	}
 
-	vk.swapchain.currentFrame = vk.swapchain.imageCount - 1;
 }
 
 void record_buffer_memory_barrier(VkCommandBuffer cb, VkBuffer buffer,
@@ -357,19 +356,27 @@ void VK_BeginFrame()
 	if (vk.swapchain.frameStarted) return;
 	vk.swapchain.frameStarted = qtrue;
 
-	// wait for command buffer submission for last image
-	vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentFrame], VK_TRUE, UINT64_MAX);
-	vkResetFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentFrame]);
+    // wait for command buffer submission for last imageclock_t start = clock();
+    
+    
+	vkAcquireNextImageKHR(vk.device, vk.swapchain.handle, UINT64_MAX, vk.swapchain.imageAvailableSemaphores[vk.swapchain.currentFrame], VK_NULL_HANDLE, &vk.swapchain.currentImage);
 
-	vkAcquireNextImageKHR(vk.device, vk.swapchain.handle, UINT64_MAX, vk.swapchain.imageAvailableSemaphores[vk.swapchain.currentFrame], vk.swapchain.inFlightFences[vk.swapchain.currentFrame], &vk.swapchain.currentImage);
-
-	vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentImage], VK_TRUE, UINT64_MAX);
-	vkResetFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentImage]);
-
-	vkFreeCommandBuffers(vk.device, vk.commandPool, 1, &vk.swapchain.commandBuffers[vk.swapchain.currentImage]);
-	VkCommandBufferAllocateInfo cmdBufInfo = {
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, NULL, vk.commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1 };
-	VkResult err = vkAllocateCommandBuffers(vk.device, &cmdBufInfo, &vk.swapchain.commandBuffers[vk.swapchain.currentImage]);
+    //Com_Printf("fence %d %d %d\n", vkGetFenceStatus(vk.device, vk.swapchain.inFlightFences[0]) == VK_SUCCESS,
+    //           vkGetFenceStatus(vk.device, vk.swapchain.inFlightFences[1]) == VK_SUCCESS,
+    //           vkGetFenceStatus(vk.device, vk.swapchain.inFlightFences[2]) == VK_SUCCESS);
+    clock_t start = clock();
+    vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentImage], VK_TRUE, UINT64_MAX);
+    vkResetFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentImage]);
+    clock_t end = clock();
+    float seconds = (float)(end - start) / CLOCKS_PER_SEC;
+    //Com_Printf("new pipe %f\n", seconds);
+    
+    
+    
+//    vkFreeCommandBuffers(vk.device, vk.commandPool, 1, &vk.swapchain.commandBuffers[vk.swapchain.currentImage]);
+//    VkCommandBufferAllocateInfo cmdBufInfo = {
+//        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, NULL, vk.commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1 };
+//    VkResult err = vkAllocateCommandBuffers(vk.device, &cmdBufInfo, &vk.swapchain.commandBuffers[vk.swapchain.currentImage]);
 
 	VkCommandBufferBeginInfo beginInfo = { 0 };
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

@@ -180,6 +180,7 @@ PFN_vkDestroyDevice								vkDestroyDevice;
 
 PFN_vkDeviceWaitIdle							vkDeviceWaitIdle;
 PFN_vkWaitForFences								vkWaitForFences;
+PFN_vkGetFenceStatus                            vkGetFenceStatus;
 PFN_vkAllocateDescriptorSets					vkAllocateDescriptorSets;
 
 PFN_vkDestroyShaderModule						vkDestroyShaderModule;
