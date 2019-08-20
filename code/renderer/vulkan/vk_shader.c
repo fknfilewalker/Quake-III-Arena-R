@@ -13,7 +13,6 @@ void VK_LoadShader(vkshader_t *shader, const char *vertexSPV, const char *fragme
 
 void VK_SingleTextureShader(vkshader_t *shader){
     if (singleTexture == NULL) {
-        Com_Printf("new shader \n");
         singleTexture = malloc(sizeof(vkshader_t));
         VK_LoadShader(singleTexture, "../../shader/spv/singleTexture.vert.spv", "../../shader/spv/singleTexture.frag.spv");
     }
@@ -22,7 +21,6 @@ void VK_SingleTextureShader(vkshader_t *shader){
 
 void VK_SingleTextureClipShader(vkshader_t* shader) {
     if (singleTextureClip == NULL) {
-        Com_Printf("new shader \n");
         singleTextureClip = malloc(sizeof(vkshader_t));
         VK_LoadShader(singleTextureClip, "../../shader/spv/singleTextureClip.vert.spv", "../../shader/spv/singleTexture.frag.spv");
     }
@@ -31,7 +29,6 @@ void VK_SingleTextureClipShader(vkshader_t* shader) {
 
 void VK_MultiTextureMulShader(vkshader_t *shader){
     if (multiTextureMul == NULL) {
-        Com_Printf("new shader \n");
         multiTextureMul = malloc(sizeof(vkshader_t));
         VK_LoadShader(multiTextureMul, "../../shader/spv/multiTexture.vert.spv", "../../shader/spv/multiTextureMul.frag.spv");
     }
@@ -40,7 +37,6 @@ void VK_MultiTextureMulShader(vkshader_t *shader){
 
 void VK_MultiTextureMulClipShader(vkshader_t* shader) {
     if (multiTextureMulClip == NULL) {
-        Com_Printf("new shader \n");
         multiTextureMulClip = malloc(sizeof(vkshader_t));
         VK_LoadShader(multiTextureMulClip, "../../shader/spv/multiTextureClip.vert.spv", "../../shader/spv/multiTextureMul.frag.spv");
     }
@@ -49,7 +45,6 @@ void VK_MultiTextureMulClipShader(vkshader_t* shader) {
 
 void VK_MultiTextureAddShader(vkshader_t *shader){
     if (multiTextureAdd == NULL) {
-        Com_Printf("new shader \n");
         multiTextureAdd = malloc(sizeof(vkshader_t));
         VK_LoadShader(multiTextureAdd, "../../shader/spv/multiTexture.vert.spv", "../../shader/spv/multiTextureAdd.frag.spv");
     }
@@ -58,7 +53,6 @@ void VK_MultiTextureAddShader(vkshader_t *shader){
 
 void VK_MultiTextureAddClipShader(vkshader_t* shader) {
     if (multiTextureAddClip == NULL) {
-        Com_Printf("new shader \n");
         multiTextureAddClip = malloc(sizeof(vkshader_t));
         VK_LoadShader(multiTextureAddClip, "../../shader/spv/multiTextureClip.vert.spv", "../../shader/spv/multiTextureAdd.frag.spv");
     }
@@ -67,7 +61,6 @@ void VK_MultiTextureAddClipShader(vkshader_t* shader) {
 
 void VK_ClearAttachmentShader(vkshader_t* shader) {
     if (clearAttachment == NULL) {
-        Com_Printf("new shader \n");
         clearAttachment = malloc(sizeof(vkshader_t));
         VK_LoadShader(clearAttachment, "../../shader/spv/clearAttachment.vert.spv", "../../shader/spv/clearAttachment.frag.spv");
     }
