@@ -127,6 +127,7 @@ PFN_vkCmdClearAttachments                       vkCmdClearAttachments;
 PFN_vkCreateImage								vkCreateImage;
 PFN_vkGetImageMemoryRequirements				vkGetImageMemoryRequirements;
 PFN_vkGetBufferMemoryRequirements				vkGetBufferMemoryRequirements;
+PFN_vkGetImageSubresourceLayout					vkGetImageSubresourceLayout;
 
 PFN_vkCreateBuffer								vkCreateBuffer;
 PFN_vkAllocateMemory							vkAllocateMemory;
@@ -154,6 +155,7 @@ PFN_vkCmdPushConstants                          vkCmdPushConstants;
 PFN_vkCmdClearAttachments                       vkCmdClearAttachments;
 PFN_vkCmdSetDepthBias                           vkCmdSetDepthBias;
 PFN_vkCmdSetBlendConstants                      vkCmdSetBlendConstants;
+PFN_vkCmdCopyImage								vkCmdCopyImage;
 
 PFN_vkCreatePipelineCache                       vkCreatePipelineCache;
 PFN_vkCreatePipelineLayout                      vkCreatePipelineLayout;

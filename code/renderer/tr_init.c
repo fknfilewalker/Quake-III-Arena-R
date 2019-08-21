@@ -439,7 +439,9 @@ void RB_TakeScreenshot( int x, int y, int width, int height, char *fileName ) {
 	buffer[15] = height >> 8;
 	buffer[16] = 24;	// pixel size
 
-	qglReadPixels( x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, buffer+18 ); 
+	if(glConfig.driverType == OPENGL) qglReadPixels( x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, buffer+18 ); 
+	else if (glConfig.driverType == VULKAN)	VK_ReadPixelsScreen(qfalse, buffer + 18);
+
 
 	// swap rgb to bgr
 	c = 18 + width * height * 3;
@@ -469,7 +471,8 @@ void RB_TakeScreenshotJPEG( int x, int y, int width, int height, char *fileName 
 
 	buffer = ri.Hunk_AllocateTempMemory(glConfig.vidWidth*glConfig.vidHeight*4);
 
-	qglReadPixels( x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer ); 
+	if (glConfig.driverType == OPENGL) qglReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	else if (glConfig.driverType == VULKAN)	VK_ReadPixelsScreen(qtrue, buffer);
 
 	// gamma correct
 	if ( ( tr.overbrightBits > 0 ) && glConfig.deviceSupportsGamma ) {

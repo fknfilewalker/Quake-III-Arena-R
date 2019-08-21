@@ -97,6 +97,7 @@ qboolean VK_LoadDeviceFunctions(void)
 	vkCreateImage = VK_DEVICE_LEVEL_FUNCTION("vkCreateImage");
 	vkGetImageMemoryRequirements = VK_DEVICE_LEVEL_FUNCTION("vkGetImageMemoryRequirements");
 	vkGetBufferMemoryRequirements = VK_DEVICE_LEVEL_FUNCTION("vkGetBufferMemoryRequirements");
+	vkGetImageSubresourceLayout = VK_DEVICE_LEVEL_FUNCTION("vkGetImageSubresourceLayout");
 
 	vkCreateBuffer = VK_DEVICE_LEVEL_FUNCTION("vkCreateBuffer");
 	vkAllocateMemory = VK_DEVICE_LEVEL_FUNCTION("vkAllocateMemory");
@@ -123,6 +124,7 @@ qboolean VK_LoadDeviceFunctions(void)
     vkCmdClearAttachments = VK_DEVICE_LEVEL_FUNCTION("vkCmdClearAttachments");
     vkCmdSetDepthBias = VK_DEVICE_LEVEL_FUNCTION("vkCmdSetDepthBias");
     vkCmdSetBlendConstants = VK_DEVICE_LEVEL_FUNCTION("vkCmdSetBlendConstants");
+	vkCmdCopyImage = VK_DEVICE_LEVEL_FUNCTION("vkCmdCopyImage");
 
     vkCreatePipelineCache = VK_DEVICE_LEVEL_FUNCTION("vkCreatePipelineCache");
     vkCreatePipelineLayout = VK_DEVICE_LEVEL_FUNCTION("vkCreatePipelineLayout");
