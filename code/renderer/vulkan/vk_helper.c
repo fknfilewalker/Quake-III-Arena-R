@@ -98,7 +98,7 @@ void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean 
     vkpipeline_t p = { 0 };
     VK_GetAttachmentClearPipelines(&p, clear_color, clear_depth, clear_stencil);
 
-    VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(color), &color);
+    VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(vec4_t), &color);
     VK_DrawIndexed(&p, &vk_d.indexbuffer, sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]), vk_d.offsetIdx, vk_d.offset);
 
     vk_d.offsetIdx += sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]);

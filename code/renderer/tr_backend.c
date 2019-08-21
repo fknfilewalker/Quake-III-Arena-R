@@ -217,7 +217,10 @@ static void RB_Hyperspace( void ) {
         qglClearColor( c, c, c, 1 );
         qglClear( GL_COLOR_BUFFER_BIT );
     } else if ( glConfig.driverType == VULKAN ) {
-        VK_ClearAttachments(qfalse, qfalse, qtrue, (vec4_t){c, c, c, 1});
+		vec4_t color;
+		color[0] = color[1] = color[2] = c;
+		color[3] = 1;
+        VK_ClearAttachments(qfalse, qfalse, qtrue, color);
     }
 
 	backEnd.isHyperspace = qtrue;
