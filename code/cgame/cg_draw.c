@@ -770,8 +770,8 @@ CG_DrawFPS
 */
 #define	FPS_FRAMES	4
 static float CG_DrawFPS( float y ) {
-	char		*s;
-	int			w;
+	char		*s,*s2;
+	int			w, w2;
 	static int	previousTimes[FPS_FRAMES];
 	static int	index;
 	int		i, total;
@@ -797,11 +797,15 @@ static float CG_DrawFPS( float y ) {
 			total = 1;
 		}
 		fps = 1000 * FPS_FRAMES / total;
+		frameTime =  total / FPS_FRAMES;
 
 		s = va( "%ifps", fps );
+		s2 = va("%ims", frameTime);
 		w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
+		w2 = CG_DrawStrlen( s2 ) * BIGCHAR_WIDTH;
 
 		CG_DrawBigString( 635 - w, y + 2, s, 1.0F);
+		CG_DrawBigString(635 - w2, y + 4 + BIGCHAR_WIDTH, s2, 1.0F);
 	}
 
 	return y + BIGCHAR_HEIGHT + 4;
