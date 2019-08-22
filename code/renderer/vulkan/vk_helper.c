@@ -12,6 +12,7 @@ void VK_BeginRenderClear()
 {
 	vk_d.offsetIdx = 0;
 	vk_d.offset = 0;
+	vk_d.currentPipeline = -1;
 
 	VkClearColorValue cc = { 0.1f,0.1f,0.1f,1.0f };
     VkClearDepthStencilValue dsc = { 1, 0};
@@ -99,7 +100,8 @@ void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean 
     VK_GetAttachmentClearPipelines(&p, clear_color, clear_depth, clear_stencil);
 
     VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(vec4_t), &color);
-    VK_DrawIndexed(&p, &vk_d.indexbuffer, sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]), vk_d.offsetIdx, vk_d.offset);
+	VK_BindPipeline(&p);
+    VK_DrawIndexed(&vk_d.indexbuffer, sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]), vk_d.offsetIdx, vk_d.offset);
 
     vk_d.offsetIdx += sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]);
     vk_d.offset += sizeof(vFullscreenQuad)/sizeof(vFullscreenQuad[0]);

@@ -110,7 +110,6 @@ static void DrawTris (shaderCommands_t *input) {
 			GLimp_LogComment("glLockArraysEXT\n");
 		}
 
-        
 		tr_api.R_DrawElements(input->numIndexes, input->indexes);
 
 		if (qglUnlockArraysEXT) {

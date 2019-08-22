@@ -389,7 +389,9 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
         VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, sizeof(vk_d.clipPlane), &vk_d.clipPlane);
     }
 
-    VK_DrawIndexed(&p, &vk_d.indexbuffer, numIndexes, vk_d.offsetIdx, vk_d.offset);
+	if (index != vk_d.currentPipeline) VK_BindPipeline(&p);
+
+    VK_DrawIndexed(&vk_d.indexbuffer, numIndexes, vk_d.offsetIdx, vk_d.offset);
 
 }
 

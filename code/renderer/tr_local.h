@@ -1189,8 +1189,9 @@ typedef struct {
     int                 currentTexture[2];
     
 	// pipeline
-	uint32_t pipelineListSize;
-	vkpipe_t pipelineList[500];
+	uint32_t			currentPipeline;
+	uint32_t			pipelineListSize;
+	vkpipe_t			pipelineList[500];
 
     vkrenderState_t     state;
 } vkdata_t;

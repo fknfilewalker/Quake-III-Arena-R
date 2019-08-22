@@ -234,6 +234,11 @@ void VK_BindAttribBuffer(vkattribbuffer_t *attribBuffer, uint32_t binding, VkDev
     vkCmdBindVertexBuffers(commandBuffer, binding, 1, &attribBuffer->buffer, &offset);
 }
 
+void VK_BindPipeline(vkpipeline_t* pipeline) {
+	VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
+}
+
 void VK_Draw(int count)
 {
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
@@ -243,7 +248,7 @@ void VK_Draw(int count)
     vkCmdDraw(commandBuffer, count, 1, 0, 0);
 }
 
-void VK_DrawIndexed(vkpipeline_t *pipeline, vkattribbuffer_t *idxBuffer, int count, uint32_t firstIndex, uint32_t vertexOffset)
+void VK_DrawIndexed(vkattribbuffer_t *idxBuffer, int count, uint32_t firstIndex, uint32_t vertexOffset)
 {
 	//return;
 	VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
@@ -253,8 +258,6 @@ void VK_DrawIndexed(vkpipeline_t *pipeline, vkattribbuffer_t *idxBuffer, int cou
 	{
 		vkCmdSetDepthBias(commandBuffer, r_offsetUnits->value, 0.0f, r_offsetFactor->value - 3);
 	} else vkCmdSetDepthBias(commandBuffer, 0.0f, 0.0f, 0.0f);
-
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
 
     VkDeviceSize bOffset = 0;
     vkCmdDrawIndexed(commandBuffer, count, 1, firstIndex, vertexOffset, 0);
