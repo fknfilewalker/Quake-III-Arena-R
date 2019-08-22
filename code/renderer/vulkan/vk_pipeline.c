@@ -234,12 +234,12 @@ void VK_BindAttribBuffer(vkattribbuffer_t *attribBuffer, uint32_t binding, VkDev
     vkCmdBindVertexBuffers(commandBuffer, binding, 1, &attribBuffer->buffer, &offset);
 }
 
-void VK_Draw(vkpipeline_t *pipeline, int count)
+void VK_Draw(int count)
 {
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
 	vkCmdSetViewport(commandBuffer, 0, 1, &vk_d.viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &vk_d.scissor);
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);
+	vkCmdSetDepthBias(commandBuffer, 0.0f, 0.0f, 0.0f);
     vkCmdDraw(commandBuffer, count, 1, 0, 0);
 }
 
@@ -251,7 +251,7 @@ void VK_DrawIndexed(vkpipeline_t *pipeline, vkattribbuffer_t *idxBuffer, int cou
 	vkCmdSetScissor(commandBuffer, 0, 1, &vk_d.scissor);
 	if (vk_d.polygonOffset)
 	{
-		vkCmdSetDepthBias(commandBuffer, r_offsetUnits->value, 0.0f, r_offsetFactor->value);
+		vkCmdSetDepthBias(commandBuffer, r_offsetUnits->value, 0.0f, r_offsetFactor->value - 3);
 	} else vkCmdSetDepthBias(commandBuffer, 0.0f, 0.0f, 0.0f);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle);

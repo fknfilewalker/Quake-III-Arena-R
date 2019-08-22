@@ -80,6 +80,11 @@ void VK_CreateSampler(	vkimage_t* image, VkFilter magFilter, VkFilter minFilter,
         image->sampler = VK_NULL_HANDLE;
     }
     
+	qboolean lod25 = qfalse;
+	if ((minFilter == VK_FILTER_NEAREST || minFilter == VK_FILTER_LINEAR) && mipmapMode == VK_SAMPLER_MIPMAP_MODE_NEAREST) {
+		lod25 = qtrue;
+	}
+
 	VkSamplerCreateInfo desc = { 0 };
 	desc.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	desc.pNext = NULL;
@@ -96,7 +101,7 @@ void VK_CreateSampler(	vkimage_t* image, VkFilter magFilter, VkFilter minFilter,
 	desc.compareEnable = VK_FALSE;
 	desc.compareOp = VK_COMPARE_OP_ALWAYS;
 	desc.minLod = 0.0f;
-	desc.maxLod = 12.00f;
+	desc.maxLod = lod25 ? 0.25f : 12.0f;
 	desc.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 	desc.unnormalizedCoordinates = VK_FALSE;
 	VK_CHECK(vkCreateSampler(vk.device, &desc, NULL, &image->sampler), "failed to create Sampler!");

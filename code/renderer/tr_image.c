@@ -790,7 +790,7 @@ static vkimage_t upload_vk_image(const struct Image_Upload_Data* upload_data, in
 	VK_CreateSampler(&image,
 		(upload_data->mip_levels > 1) ? VK_FILTER_LINEAR : VK_FILTER_LINEAR,
 		(upload_data->mip_levels > 1) ? VK_FILTER_LINEAR : VK_FILTER_LINEAR,
-        (upload_data->mip_levels > 1) ? VK_SAMPLER_MIPMAP_MODE_NEAREST : VK_SAMPLER_MIPMAP_MODE_NEAREST,
+        (upload_data->mip_levels > 1) ? VK_SAMPLER_MIPMAP_MODE_LINEAR : VK_SAMPLER_MIPMAP_MODE_NEAREST,
 		texture_address_mode == GL_REPEAT ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 
 	VK_AddSampler(&image.descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);

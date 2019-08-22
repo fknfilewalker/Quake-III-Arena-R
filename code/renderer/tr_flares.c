@@ -260,11 +260,22 @@ void RB_TestFlare( flare_t *f ) {
 	// don't bother with another sync
 	glState.finishCalled = qfalse;
 
-	// read back the z buffer contents
-	qglReadPixels( f->windowX, f->windowY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth );
+	if (glConfig.driverType == OPENGL) {
+		// read back the z buffer contents
+		qglReadPixels( f->windowX, f->windowY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth );
 
-	screenZ = backEnd.viewParms.projectionMatrix[14] / 
-		( ( 2*depth - 1 ) * backEnd.viewParms.projectionMatrix[11] - backEnd.viewParms.projectionMatrix[10] );
+		screenZ = backEnd.viewParms.projectionMatrix[14] /
+			( ( 2*depth - 1 ) * backEnd.viewParms.projectionMatrix[11] - backEnd.viewParms.projectionMatrix[10] );
+
+		Com_Printf("new pipe %f \n", screenZ);
+	} else if (glConfig.driverType == VULKAN) {
+		// read back the z buffer contents
+		//qglReadPixels( f->windowX, f->windowY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth );
+		depth = 1;
+
+		screenZ = backEnd.viewParms.projectionMatrix[14] /
+			( (2 * depth - 1) * backEnd.viewParms.projectionMatrix[11] - backEnd.viewParms.projectionMatrix[10]);
+	}
 
 	visible = ( -f->eyeZ - -screenZ ) < 24;
 
@@ -390,6 +401,9 @@ void RB_RenderFlares (void) {
 		return;
 	}
 
+	if (glConfig.driverType == VULKAN) Com_Memcpy(backEnd.viewParms.projectionMatrix, vk_d.projectionMatrix, sizeof(float[16]));
+	
+
 	RB_AddDlightFlares();
 
 	// perform z buffer readback on each flare in this view
@@ -428,17 +442,49 @@ void RB_RenderFlares (void) {
 	}
 
 	if ( backEnd.viewParms.isPortal ) {
-		qglDisable (GL_CLIP_PLANE0);
+		if (glConfig.driverType == OPENGL) qglDisable(GL_CLIP_PLANE0);
+		else if (glConfig.driverType == VULKAN) vk_d.state.clip = qfalse;
 	}
 
-	qglPushMatrix();
-    qglLoadIdentity();
-	qglMatrixMode( GL_PROJECTION );
-	qglPushMatrix();
-    qglLoadIdentity();
-	qglOrtho( backEnd.viewParms.viewportX, backEnd.viewParms.viewportX + backEnd.viewParms.viewportWidth,
-			  backEnd.viewParms.viewportY, backEnd.viewParms.viewportY + backEnd.viewParms.viewportHeight,
-			  -99999, 99999 );
+	float tmpModel[16];
+	float tmpProj[16];
+	if (glConfig.driverType == OPENGL) {
+		qglPushMatrix();
+		qglLoadIdentity();
+		qglMatrixMode(GL_PROJECTION);
+		qglPushMatrix();
+		qglLoadIdentity();
+		qglOrtho(backEnd.viewParms.viewportX, backEnd.viewParms.viewportX + backEnd.viewParms.viewportWidth,
+			backEnd.viewParms.viewportY, backEnd.viewParms.viewportY + backEnd.viewParms.viewportHeight,
+			-99999, 99999);
+	}
+	else if (glConfig.driverType == VULKAN) {
+		Com_Memcpy(tmpModel, vk_d.modelViewMatrix, sizeof(float[16]));
+		Com_Memcpy(tmpProj, vk_d.projectionMatrix, sizeof(float[16]));
+
+		Com_Memset(vk_d.modelViewMatrix, 0, 64);
+		vk_d.modelViewMatrix[0] = vk_d.modelViewMatrix[5] = vk_d.modelViewMatrix[10] = vk_d.modelViewMatrix[15] = 1;
+		
+		float top = backEnd.viewParms.viewportY;
+		float bottom = backEnd.viewParms.viewportY + backEnd.viewParms.viewportHeight;
+		float left = backEnd.viewParms.viewportX;
+		float right = backEnd.viewParms.viewportX + backEnd.viewParms.viewportWidth;
+		float zNear = -99999;
+		float zFar = 99999;
+
+		float mvp0 = 2.0f / (right - left);
+		float mvp5 = 2.0f / (bottom - top);
+		float mvp10 = 1.0f / (zNear - zFar);
+		float mvp12 = -(right - left) / (right - left);
+		float mvp13 = -(bottom + top) / (bottom - top);
+		float mvp14 = zNear / (zNear - zFar);
+
+		vk_d.projectionMatrix[0] = mvp0; vk_d.projectionMatrix[1] = 0.0f; vk_d.projectionMatrix[2] = 0.0f; vk_d.projectionMatrix[3] = 0.0f;
+		vk_d.projectionMatrix[4] = 0.0f; vk_d.projectionMatrix[5] = mvp5; vk_d.projectionMatrix[6] = 0.0f; vk_d.projectionMatrix[7] = 0.0f;
+		vk_d.projectionMatrix[8] = 0.0f; vk_d.projectionMatrix[9] = 0.0f; vk_d.projectionMatrix[10] = 1.0f; vk_d.projectionMatrix[11] = 0.0f;
+		vk_d.projectionMatrix[12] = mvp12; vk_d.projectionMatrix[13] = mvp13; vk_d.projectionMatrix[14] = mvp14; vk_d.projectionMatrix[15] = 1.0f;
+		
+	}
 
 	for ( f = r_activeFlares ; f ; f = f->next ) {
 		if ( f->frameSceneNum == backEnd.viewParms.frameSceneNum
@@ -448,8 +494,14 @@ void RB_RenderFlares (void) {
 		}
 	}
 
-	qglPopMatrix();
-	qglMatrixMode( GL_MODELVIEW );
-	qglPopMatrix();
+	if (glConfig.driverType == OPENGL) {
+		qglPopMatrix();
+		qglMatrixMode(GL_MODELVIEW);
+		qglPopMatrix();
+	}
+	else if (glConfig.driverType == VULKAN) {
+		Com_Memcpy(vk_d.modelViewMatrix, tmpModel, sizeof(float[16]));
+		Com_Memcpy(vk_d.projectionMatrix, tmpProj, sizeof(float[16]));
+	}
 }
 
