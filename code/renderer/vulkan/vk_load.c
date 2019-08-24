@@ -5,9 +5,9 @@
 /*
 ** vkGetInstanceProcAddr needs to be set by platform specific implementation
 */ 
-#define VK_GLOBAL_LEVEL_FUNCTION( a ) vkGetInstanceProcAddr( NULL, a )
-#define VK_INSTANCE_LEVEL_FUNCTION( a ) vkGetInstanceProcAddr( vk.instance , a )
-#define VK_DEVICE_LEVEL_FUNCTION( a ) vkGetDeviceProcAddr( vk.device , a )
+#define VK_GLOBAL_LEVEL_FUNCTION( a ) vkGetInstanceProcAddr( NULL, a ); if(!a) return qfalse
+#define VK_INSTANCE_LEVEL_FUNCTION( a ) vkGetInstanceProcAddr( vk.instance , a ); if(!a) return qfalse
+#define VK_DEVICE_LEVEL_FUNCTION( a ) vkGetDeviceProcAddr( vk.device , a ); if(!a) return qfalse
 
 
 qboolean VK_LoadGlobalFunctions(void)
@@ -158,6 +158,19 @@ qboolean VK_LoadDeviceFunctions(void)
 	vkDestroyPipeline = VK_DEVICE_LEVEL_FUNCTION("vkDestroyPipeline");
 	vkDestroyPipelineLayout = VK_DEVICE_LEVEL_FUNCTION("vkDestroyPipelineLayout");
 	vkDestroyPipelineCache = VK_DEVICE_LEVEL_FUNCTION("vkDestroyPipelineCache");
+
+	/*
+	** NV RTX
+	*/
+	vkCreateAccelerationStructureNV = VK_DEVICE_LEVEL_FUNCTION("vkvkCreateAccelerationStructureNV");
+	vkDestroyAccelerationStructureNV = VK_DEVICE_LEVEL_FUNCTION("vkDestroyAccelerationStructure");
+	vkBindAccelerationStructureMemoryNV = VK_DEVICE_LEVEL_FUNCTION("vkBindAccelerationStructureMemory");
+	vkGetAccelerationStructureHandleNV = VK_DEVICE_LEVEL_FUNCTION("vkGetAccelerationStructureHandle");
+	vkGetAccelerationStructureMemoryRequirementsNV = VK_DEVICE_LEVEL_FUNCTION("vkGetAccelerationStructureMemoryRequirements");
+	vkCmdBuildAccelerationStructureNV = VK_DEVICE_LEVEL_FUNCTION("vkCmdBuildAccelerationStructure");
+	vkCreateRayTracingPipelinesNV = VK_DEVICE_LEVEL_FUNCTION("vkCreateRayTracingPipelines");
+	vkGetRayTracingShaderGroupHandlesNV = VK_DEVICE_LEVEL_FUNCTION("vkGetRayTracingShaderGroupHandles");
+	vkCmdTraceRaysNV = VK_DEVICE_LEVEL_FUNCTION("vkCmdTraceRays");
 
     return qtrue;
 }

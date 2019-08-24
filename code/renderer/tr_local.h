@@ -1033,8 +1033,6 @@ typedef struct {
 // ----------------
 
 typedef struct {
-    //uint32_t dataSize;
-    //uint16_t elementSize;
     VkDeviceSize allocSize;
     VkBool32 onGpu;
     byte* p;
@@ -1047,6 +1045,12 @@ typedef struct {
 	uint32_t presentFamily;
 } vkqueueFamilyIndices_t;
 
+// RTX
+typedef struct {
+	VkDeviceMemory memory;
+	VkAccelerationStructureNV accelerationStructure;
+	uint64_t handle;
+} vkaccelerationStructure_t;
 
 typedef struct {
 	VkSwapchainKHR				handle;
@@ -1169,6 +1173,10 @@ typedef struct {
     vkattribbuffer_t    uvbuffer1;
     vkattribbuffer_t    uvbuffer2;
     vkattribbuffer_t    colorbuffer;
+
+	// RTX
+	vkaccelerationStructure_t bottomLevelAS;
+	vkaccelerationStructure_t topLevelAS;
     
     //
     qboolean            renderBegan;

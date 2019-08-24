@@ -190,4 +190,17 @@ PFN_vkDestroyPipeline							vkDestroyPipeline;
 PFN_vkDestroyPipelineLayout						vkDestroyPipelineLayout;
 PFN_vkDestroyPipelineCache						vkDestroyPipelineCache;
 
+/*
+** NV RTX
+*/
+PFN_vkCreateAccelerationStructureNV				vkCreateAccelerationStructureNV;
+PFN_vkDestroyAccelerationStructureNV			vkDestroyAccelerationStructureNV;
+PFN_vkBindAccelerationStructureMemoryNV			vkBindAccelerationStructureMemoryNV;
+PFN_vkGetAccelerationStructureHandleNV			vkGetAccelerationStructureHandleNV;
+PFN_vkGetAccelerationStructureMemoryRequirementsNV vkGetAccelerationStructureMemoryRequirementsNV;
+PFN_vkCmdBuildAccelerationStructureNV			vkCmdBuildAccelerationStructureNV;
+PFN_vkCreateRayTracingPipelinesNV				vkCreateRayTracingPipelinesNV;
+PFN_vkGetRayTracingShaderGroupHandlesNV			vkGetRayTracingShaderGroupHandlesNV;
+PFN_vkCmdTraceRaysNV							vkCmdTraceRaysNV;
+
 #endif

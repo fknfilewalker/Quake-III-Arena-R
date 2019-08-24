@@ -253,13 +253,13 @@ void VK_CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
 
 uint32_t VK_FindMemoryTypeIndex(uint32_t memoryTypeBits, VkMemoryPropertyFlags properties)
 {
-	VkPhysicalDeviceMemoryProperties prop = {0};
+	VkPhysicalDeviceMemoryProperties prop = { 0 };
 	vkGetPhysicalDeviceMemoryProperties(vk.physical_device, &prop);
 
 	for (int32_t i = 0; i < prop.memoryTypeCount; ++i)
 	{
-		if ((memoryTypeBits & (1 << i)) &&
-			((prop.memoryTypes[i].propertyFlags & properties) == properties))
+		if ( (memoryTypeBits & (1 << i)) &&
+			((prop.memoryTypes[i].propertyFlags & properties) == properties) )
 			return i;
 	}
 	return -1;
@@ -269,8 +269,9 @@ uint32_t VK_HostVisibleMemoryIndex()
 {
 	uint32_t hostVisibleMemIndex = 0;
 	VkPhysicalDeviceMemoryProperties physDevMemProps = { 0 };
-	qboolean hostVisibleMemIndexSet = qfalse;
 	vkGetPhysicalDeviceMemoryProperties(vk.physical_device, &physDevMemProps);
+
+	qboolean hostVisibleMemIndexSet = qfalse;
 	for (uint32_t i = 0; i < physDevMemProps.memoryTypeCount; ++i) {
 		const VkMemoryType* memType = physDevMemProps.memoryTypes;
 		// Find a host visible, host coherent memtype. If there is one that is
