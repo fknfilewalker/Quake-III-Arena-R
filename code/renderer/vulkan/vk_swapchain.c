@@ -184,22 +184,8 @@ static void VK_CreateDepthStencil()
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	VK_CHECK(vkCreateImage(vk.device, &imageInfo, NULL, &vk.swapchain.depthImage), "failed to create DepthStencil Image for Swapchain!");
-	
-	VkMemoryRequirements memRequirements = {0};
-	vkGetImageMemoryRequirements(vk.device, vk.swapchain.depthImage, &memRequirements);
-
-	int32_t memoryTypeIndex = VK_FindMemoryTypeIndex(vk.physical_device, memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	VkMemoryAllocateInfo allocInfo = {0};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = memoryTypeIndex != -1 ? memoryTypeIndex : VK_DeviceLocalMemoryIndex(vk.physical_device);
-
-	VK_CHECK(vkAllocateMemory(vk.device, &allocInfo, NULL, &vk.swapchain.depthImageMemory), "failed to allocate DepthStencil image memory for Swapchain!");
-	
-
-	VK_CHECK(vkBindImageMemory(vk.device, vk.swapchain.depthImage, vk.swapchain.depthImageMemory, 0), "failed to bind DepthStencil image memory for Swapchain!");
+	VK_CHECK(vkCreateImage(vk.device, &imageInfo, NULL, &vk.swapchain.depthImage), "failed to create DepthStencil Image for Swapchain!");	
+	VK_CreateImageMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &vk.swapchain.depthImage, &vk.swapchain.depthImageMemory);
 
 	// Image View
 	VkImageViewCreateInfo viewInfo = {0};

@@ -1,6 +1,5 @@
 #include "../tr_local.h"
 
-static void VK_AllocateMemory(vkimage_t* image, VkMemoryPropertyFlags properties);
 void VK_CreateSampler(vkimage_t* image, VkFilter magFilter, VkFilter minFilter,
 	VkSamplerMipmapMode mipmapMode, VkSamplerAddressMode addressMode);
 static void VK_CopyBufferToImage(vkimage_t* image, uint32_t width, uint32_t height, VkBuffer *buffer, uint32_t mipLevel);
@@ -31,7 +30,7 @@ void VK_CreateImage(vkimage_t *image, uint32_t width, uint32_t height, VkFormat 
 		desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 		VK_CHECK(vkCreateImage(vk.device, &desc, NULL, &image->handle), "failed to create Image!");
-		VK_AllocateMemory(image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		VK_CreateImageMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &image->handle, &image->memory);
 	}
 
 	// create image view
@@ -54,22 +53,6 @@ void VK_CreateImage(vkimage_t *image, uint32_t width, uint32_t height, VkFormat 
 		desc.subresourceRange.layerCount = 1;
 		VK_CHECK(vkCreateImageView(vk.device, &desc, NULL, &image->view), "failed to create Image View!");
 	}
-}
-
-static void VK_AllocateMemory(vkimage_t *image, VkMemoryPropertyFlags properties) {
-	VkMemoryRequirements memRequirements = {0};
-	vkGetImageMemoryRequirements(vk.device, image->handle, &memRequirements);
-
-	int32_t memoryTypeIndex = VK_FindMemoryTypeIndex(vk.physical_device, memRequirements.memoryTypeBits, properties);
-
-	VkMemoryAllocateInfo allocInfo = {0};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = memoryTypeIndex != -1 ? memoryTypeIndex : VK_DeviceLocalMemoryIndex(vk.physical_device);
-
-	VK_CHECK(vkAllocateMemory(vk.device, &allocInfo, NULL, &image->memory), "failed to allocate Image Memory!");
-
-	VK_CHECK(vkBindImageMemory(vk.device, image->handle, image->memory, 0), "failed to bind Image Memory!");
 }
 
 void VK_CreateSampler(	vkimage_t* image, VkFilter magFilter, VkFilter minFilter, 
@@ -114,7 +97,7 @@ void VK_UploadImageData(vkimage_t* image, uint32_t width, uint32_t height, const
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
-	VK_CreateBuffer( imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_HostVisibleMemoryIndex(), &stagingBuffer, &stagingBufferMemory);
+	VK_CreateBufferMemory( imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer, &stagingBufferMemory);
 
 	// write data to buffer
 	uint8_t* p;

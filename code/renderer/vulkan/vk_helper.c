@@ -223,8 +223,8 @@ void VK_EndSingleTimeCommands(VkCommandBuffer *commandBuffer) {
 /*
 ** MEMORY
 */
-void VK_CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
-	uint32_t memIndex, VkBuffer* buffer, VkDeviceMemory* bufferMemory) {
+void VK_CreateBufferMemory(VkDeviceSize size, VkBufferUsageFlags usage,
+	VkMemoryPropertyFlags properties, VkBuffer* buffer, VkDeviceMemory* bufferMemory) {
 
 
 	VkBufferCreateInfo bufInfo = { 0 };
@@ -243,12 +243,26 @@ void VK_CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
 		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		NULL,
 		memReq.size,
-		memIndex
+		VK_FindMemoryTypeIndex(memReq.memoryTypeBits, properties)
 	};
 
 	VK_CHECK(vkAllocateMemory(vk.device, &memAllocInfo, NULL, bufferMemory), "failed to allocate Memory!");
-
 	VK_CHECK(vkBindBufferMemory(vk.device, *buffer, *bufferMemory, 0), "failed to bind Buffer Memory!");
+}
+
+void VK_CreateImageMemory(VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* bufferMemory) {
+	VkMemoryRequirements memRequirements = { 0 };
+	vkGetImageMemoryRequirements(vk.device, *image, &memRequirements);
+
+	int32_t memoryTypeIndex = VK_FindMemoryTypeIndex(memRequirements.memoryTypeBits, properties);
+
+	VkMemoryAllocateInfo allocInfo = { 0 };
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = memoryTypeIndex != -1 ? memoryTypeIndex : VK_DeviceLocalMemoryIndex();
+
+	VK_CHECK(vkAllocateMemory(vk.device, &allocInfo, NULL, bufferMemory), "failed to allocate Image Memory!");
+	VK_CHECK(vkBindImageMemory(vk.device, *image, *bufferMemory, 0), "failed to bind Image Memory!");
 }
 
 uint32_t VK_FindMemoryTypeIndex(uint32_t memoryTypeBits, VkMemoryPropertyFlags properties)
@@ -267,7 +281,7 @@ uint32_t VK_FindMemoryTypeIndex(uint32_t memoryTypeBits, VkMemoryPropertyFlags p
 
 uint32_t VK_HostVisibleMemoryIndex()
 {
-	uint32_t hostVisibleMemIndex = 0;
+	uint32_t hostVisibleMemIndex = -1;
 	VkPhysicalDeviceMemoryProperties physDevMemProps = { 0 };
 	vkGetPhysicalDeviceMemoryProperties(vk.physical_device, &physDevMemProps);
 
@@ -290,7 +304,7 @@ uint32_t VK_HostVisibleMemoryIndex()
 
 uint32_t VK_DeviceLocalMemoryIndex()
 {
-	uint32_t deviceLocalMemIndex = 0;
+	uint32_t deviceLocalMemIndex = -1;
 	VkPhysicalDeviceMemoryProperties physDevMemProps = { 0 };
 	vkGetPhysicalDeviceMemoryProperties(vk.physical_device, &physDevMemProps);
 	for (uint32_t i = 0; i < physDevMemProps.memoryTypeCount; ++i) {

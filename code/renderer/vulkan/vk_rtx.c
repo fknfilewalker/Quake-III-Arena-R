@@ -23,7 +23,7 @@ void VK_CreateBottomLevelAccelerationStructure(const VkGeometryNV* geometries)
 
 	VkMemoryAllocateInfo memoryAllocateInfo = { 0 };
 	memoryAllocateInfo.allocationSize = memoryRequirements2.memoryRequirements.size;
-	memoryAllocateInfo.memoryTypeIndex = VK_FindMemoryTypeIndex(vk.physical_device, memoryRequirements2.memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	memoryAllocateInfo.memoryTypeIndex = VK_FindMemoryTypeIndex(memoryRequirements2.memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	VK_CHECK(vkAllocateMemory(vk.device, &memoryAllocateInfo, NULL, &vk_d.bottomLevelAS.memory), "failed to Allocate Memory NV");
 
 	VkBindAccelerationStructureMemoryInfoNV accelerationStructureMemoryInfo = { 0 };
