@@ -300,7 +300,7 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
     
     primitives = r_primitives->integer;
 
-    VK_UploadAttribDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*) &indexes[0]);
+    VK_UploadBufferDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*) &indexes[0]);
     
     //int aaa = pStage->bundle[0].image[0]->index;
     

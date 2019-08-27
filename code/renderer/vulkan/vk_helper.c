@@ -5,7 +5,7 @@
  */
 void VK_GetDeviceProperties(VkPhysicalDeviceProperties *devProperties)
 {
-    vkGetPhysicalDeviceProperties(vk.physical_device, devProperties);
+    vkGetPhysicalDeviceProperties(vk.physicalDevice, devProperties);
 }
 
 void VK_BeginRenderClear()
@@ -38,6 +38,8 @@ void VK_BeginRenderClear()
     VK_BindAttribBuffer(&vk_d.colorbuffer, 1, 0);
     VK_BindAttribBuffer(&vk_d.uvbuffer1, 2, 0);
     VK_BindAttribBuffer(&vk_d.uvbuffer2, 3, 0);
+
+	//if(!vk_d.accelerationStructures.init) VK_UploadScene(&vk_d.accelerationStructures);
 }
 
 void beginRender()
@@ -61,7 +63,7 @@ void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean 
                                             -1.0f,  1.0f, 1.0f, 0.0f,
                                              1.0f,  1.0f, 1.0f, 0.0f};
     static uint32_t idxFullscreenQuad[6] = {0, 1, 2, 2, 1, 3};
-    //return;
+
     if (!clear_depth && !clear_stencil && !clear_color)
         return;
     
@@ -93,8 +95,8 @@ void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean 
     vk_d.scissor.extent.height = glConfig.vidHeight;
     vk_d.scissor.extent.width = glConfig.vidWidth;
 
-    VK_UploadAttribDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]) * sizeof(uint32_t), (void*) &idxFullscreenQuad[0]);
-    VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), sizeof(vFullscreenQuad)/sizeof(vFullscreenQuad[0]) * sizeof(vec4_t), (void*)&vFullscreenQuad[0]);
+    VK_UploadBufferDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), sizeof(idxFullscreenQuad)/sizeof(idxFullscreenQuad[0]) * sizeof(uint32_t), (void*) &idxFullscreenQuad[0]);
+    VK_UploadBufferDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), sizeof(vFullscreenQuad)/sizeof(vFullscreenQuad[0]) * sizeof(vec4_t), (void*)&vFullscreenQuad[0]);
     
     vkpipeline_t p = { 0 };
     VK_GetAttachmentClearPipelines(&p, clear_color, clear_depth, clear_stencil);
@@ -219,6 +221,28 @@ void VK_EndSingleTimeCommands(VkCommandBuffer *commandBuffer) {
 	vkFreeCommandBuffers(vk.device, vk.commandPool, 1, commandBuffer);
 }
 
+//void VK_FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free)
+//{
+//	if (commandBuffer == VK_NULL_HANDLE)
+//	{
+//		return;
+//	}
+//
+//	VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
+//
+//	VkSubmitInfo submitInfo = {};
+//	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+//	submitInfo.commandBufferCount = 1;
+//	submitInfo.pCommandBuffers = &commandBuffer;
+//
+//	VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+//	VK_CHECK_RESULT(vkQueueWaitIdle(queue));
+//
+//	if (free)
+//	{
+//		vkFreeCommandBuffers(device, cmdPool, 1, &commandBuffer);
+//	}
+//}
 
 /*
 ** MEMORY
@@ -268,7 +292,7 @@ void VK_CreateImageMemory(VkMemoryPropertyFlags properties, VkImage* image, VkDe
 uint32_t VK_FindMemoryTypeIndex(uint32_t memoryTypeBits, VkMemoryPropertyFlags properties)
 {
 	VkPhysicalDeviceMemoryProperties prop = { 0 };
-	vkGetPhysicalDeviceMemoryProperties(vk.physical_device, &prop);
+	vkGetPhysicalDeviceMemoryProperties(vk.physicalDevice, &prop);
 
 	for (int32_t i = 0; i < prop.memoryTypeCount; ++i)
 	{
@@ -283,7 +307,7 @@ uint32_t VK_HostVisibleMemoryIndex()
 {
 	uint32_t hostVisibleMemIndex = -1;
 	VkPhysicalDeviceMemoryProperties physDevMemProps = { 0 };
-	vkGetPhysicalDeviceMemoryProperties(vk.physical_device, &physDevMemProps);
+	vkGetPhysicalDeviceMemoryProperties(vk.physicalDevice, &physDevMemProps);
 
 	qboolean hostVisibleMemIndexSet = qfalse;
 	for (uint32_t i = 0; i < physDevMemProps.memoryTypeCount; ++i) {
@@ -306,7 +330,7 @@ uint32_t VK_DeviceLocalMemoryIndex()
 {
 	uint32_t deviceLocalMemIndex = -1;
 	VkPhysicalDeviceMemoryProperties physDevMemProps = { 0 };
-	vkGetPhysicalDeviceMemoryProperties(vk.physical_device, &physDevMemProps);
+	vkGetPhysicalDeviceMemoryProperties(vk.physicalDevice, &physDevMemProps);
 	for (uint32_t i = 0; i < physDevMemProps.memoryTypeCount; ++i) {
 		const VkMemoryType* memType = physDevMemProps.memoryTypes;
 		// Just pick the first device local memtype.

@@ -129,9 +129,9 @@ void R_RenderShadowEdges( void ) {
 			tess.svars.colors[k][3] = 255;
 		}
 
-        VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&extrudedEdges[0]);
-        VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
-        VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &tess.svars.texcoords[0]);
+        VK_UploadBufferDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&extrudedEdges[0]);
+        VK_UploadBufferDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+        VK_UploadBufferDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &tess.svars.texcoords[0]);
 
         myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
         tr_api.R_DrawElements(tess.numIndexes, tess.indexes);
@@ -385,9 +385,9 @@ void RB_ShadowFinish( void ) {
 			tess.svars.colors[k][3] = 255;
 		}
         
-        VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
-        VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
-        VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &tess.svars.texcoords[0]);
+        VK_UploadBufferDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
+        VK_UploadBufferDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+        VK_UploadBufferDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &tess.svars.texcoords[0]);
         
         float tmp[16];
         Com_Memcpy(tmp, vk_d.modelViewMatrix, 64);

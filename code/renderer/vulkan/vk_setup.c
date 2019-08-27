@@ -5,6 +5,10 @@ vkinstance_t vk;
 vkdata_t     vk_d;
 
 static const char* deviceExtensions[] = {
+#if defined( _WIN32 )
+		VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
+		VK_NV_RAY_TRACING_EXTENSION_NAME,
+#endif
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
@@ -19,7 +23,8 @@ static const char* instanceExtensions[] = {
 #endif
 		VK_KHR_SURFACE_EXTENSION_NAME,
 #if defined( _WIN32 )
-		VK_KHR_WIN32_SURFACE_EXTENSION_NAME
+		VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+		VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
 #elif defined(__APPLE__)
 		VK_MVK_MACOS_SURFACE_EXTENSION_NAME
 #elif defined( __linux__ )
@@ -168,21 +173,21 @@ static void VK_PickPhysicalDevice()
 
 		for (int i = 0; i < deviceCount; i++) {
 			if (VK_IsDeviceSuitable(devices[i], vk.surface)) {
-				vk.physical_device = devices[i];
+				vk.physicalDevice = devices[i];
 				break;
 			}
 		}
 	}
 
-	if (vk.physical_device == VK_NULL_HANDLE) {
+	if (vk.physicalDevice == VK_NULL_HANDLE) {
 		ri.Error(ERR_FATAL, "Vulkan: failed to find a suitable GPU!");
 	}
 
 	{
 		uint32_t extensionCount = 0;
-		vkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &extensionCount, NULL);
+		vkEnumerateDeviceExtensionProperties(vk.physicalDevice, NULL, &extensionCount, NULL);
 		VkExtensionProperties *extensions = malloc(extensionCount * sizeof(VkExtensionProperties));
-		vkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &extensionCount, &extensions[0]);
+		vkEnumerateDeviceExtensionProperties(vk.physicalDevice, NULL, &extensionCount, &extensions[0]);
 		//std::cout << "LogicalDeviceExtensions..." << std::endl;
 
 		//for (const auto& extension : extensions) {
@@ -190,12 +195,17 @@ static void VK_PickPhysicalDevice()
 		//}
 		free(extensions);
 	}
-	// device infos
-	VkPhysicalDeviceProperties devProperties;
-	vkGetPhysicalDeviceProperties(vk.physical_device, &devProperties);
+	// device properties
+	vkGetPhysicalDeviceProperties(vk.physicalDevice, &vk.deviceProperties);
+
+	// rtx properties
+	vk.rayTracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV;
+	vk.deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	vk.deviceProperties2.pNext = &vk.rayTracingProperties;
+	vkGetPhysicalDeviceProperties2(vk.physicalDevice, &vk.deviceProperties2);
 
 	// device limits
-	VkPhysicalDeviceLimits limits = devProperties.limits;
+	VkPhysicalDeviceLimits limits = vk.deviceProperties.limits;
 
 	//std::cout << "GPU in use..." << std::endl;
 	//std::cout << "\t" << devProperties.deviceName << std::endl;
@@ -239,7 +249,7 @@ static void VK_CreateLogicalDevice()
 	desc.enabledExtensionCount = (uint32_t)(sizeof(deviceExtensions) / sizeof(deviceExtensions[0]));
 	desc.ppEnabledExtensionNames = &deviceExtensions[0];
 
-	VK_CHECK(vkCreateDevice(vk.physical_device, &desc, NULL, &vk.device), "failed to create logical device!")
+	VK_CHECK(vkCreateDevice(vk.physicalDevice, &desc, NULL, &vk.device), "failed to create logical device!")
 }
 
 static void VK_CreateCommandPool() {

@@ -130,9 +130,9 @@ void VKimp_Init( void ) {
 	Q_strncpyz(glConfig.version_string, (const char*)version, sizeof(glConfig.version_string));
 
 	uint32_t extensionCount = 0;
-	vkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &extensionCount, NULL);
+	vkEnumerateDeviceExtensionProperties(vk.physicalDevice, NULL, &extensionCount, NULL);
 	VkExtensionProperties* extensions = malloc(extensionCount * sizeof(VkExtensionProperties));
-	vkEnumerateDeviceExtensionProperties(vk.physical_device, NULL, &extensionCount, &extensions[0]);
+	vkEnumerateDeviceExtensionProperties(vk.physicalDevice, NULL, &extensionCount, &extensions[0]);
 	uint32_t offset = 0;
 	for (uint32_t i = 0; i < extensionCount; i++) {
 		Q_strncpyz(glConfig.extensions_string + offset, (const char*)extensions[i].extensionName, strlen(extensions[i].extensionName) + 1);

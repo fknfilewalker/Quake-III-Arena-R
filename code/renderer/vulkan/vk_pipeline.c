@@ -19,6 +19,8 @@ void VK_DestroyAllPipelines() {
 static void VK_CreatePipelineCache(vkpipeline_t *pipeline);
 static void VK_CreatePipelineLayout(vkpipeline_t *pipeline);
 static void VK_CreatePipeline(vkpipeline_t *pipeline);
+// RTX
+static void VK_CreateRayTracingPipeline(vkpipeline_t* pipeline);
 
 /*
  * Use these functions to define pipeline before calling VK_FinishPipeline
@@ -79,6 +81,12 @@ void VK_FinishPipeline(vkpipeline_t *pipeline){
     VK_CreatePipeline(pipeline);
 }
 
+void VK_FinishRayTracingPipeline(vkpipeline_t* pipeline) {
+	VK_CreatePipelineCache(pipeline);
+	VK_CreatePipelineLayout(pipeline);
+	VK_CreateRayTracingPipeline(pipeline);
+}
+
 void VK_DestroyPipeline(vkpipeline_t* pipeline) {
 	free(pipeline->attributeDescription.p);
 	free(pipeline->bindingDescription.p);
@@ -119,8 +127,11 @@ static void VK_CreatePipelineLayout(vkpipeline_t *pipeline)
     if(pipeline->descriptor2 != NULL){
         dLayout[1] = pipeline->descriptor2->layout;
         pipelineLayoutInfo.setLayoutCount = 2;
-    }else {
-        pipelineLayoutInfo.setLayoutCount = pipeline->descriptor->size;
+    } else if (pipeline->descriptor->layout != VK_NULL_HANDLE) {
+		pipelineLayoutInfo.setLayoutCount = 1;
+	}
+	else {
+        pipelineLayoutInfo.setLayoutCount = 0;
     }
     pipelineLayoutInfo.pSetLayouts = &dLayout[0];
     pipelineLayoutInfo.pushConstantRangeCount = pipeline->pushConstantRange.size;
@@ -203,6 +214,30 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline)
     
 }
 
+// rtx
+static void VK_CreateRayTracingPipeline(vkpipeline_t* pipeline)
+{
+	VkRayTracingShaderGroupCreateInfoNV groups[3] = { 0 };
+	groups[0].type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV;
+	groups[0].generalShader = 0;
+	groups[1].type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV;
+	groups[1].generalShader = 1;
+	groups[2].type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_NV;
+	groups[2].generalShader = VK_SHADER_UNUSED_NV;
+	groups[2].closestHitShader = 2;
+
+	VkRayTracingPipelineCreateInfoNV rayPipelineInfo = { 0 };
+	rayPipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_NV;
+	rayPipelineInfo.stageCount = pipeline->shader->size;
+	rayPipelineInfo.pStages = &pipeline->shader->shaderStageCreateInfos[0];
+	rayPipelineInfo.groupCount = 3;
+	rayPipelineInfo.pGroups = &groups[0];
+	rayPipelineInfo.maxRecursionDepth = 1;
+	rayPipelineInfo.layout = pipeline->layout;
+	VK_CHECK(vkCreateRayTracingPipelinesNV(vk.device, VK_NULL_HANDLE, 1, &rayPipelineInfo, NULL, &pipeline->handle), " failed to create Ray Tracing Pipeline");
+
+}
+
 void VK_Bind1DescriptorSet(vkpipeline_t *pipeline, vkdescriptor_t *descriptor){
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1,
@@ -222,13 +257,13 @@ void VK_SetPushConstant(vkpipeline_t *pipeline, VkShaderStageFlags stage, uint32
     vkCmdPushConstants(commandBuffer, pipeline->layout, stage, offset, size, data);
 }
 
-void VK_BindIndexBuffer(vkattribbuffer_t *idxBuffer, VkDeviceSize offset){
+void VK_BindIndexBuffer(vkbuffer_t *idxBuffer, VkDeviceSize offset){
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
     VkDeviceSize bOffset = 0;
     vkCmdBindIndexBuffer(commandBuffer, idxBuffer->buffer, offset, VK_INDEX_TYPE_UINT32);
 }
 
-void VK_BindAttribBuffer(vkattribbuffer_t *attribBuffer, uint32_t binding, VkDeviceSize offset){
+void VK_BindAttribBuffer(vkbuffer_t *attribBuffer, uint32_t binding, VkDeviceSize offset){
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
     VkDeviceSize bOffset = 0;
     vkCmdBindVertexBuffers(commandBuffer, binding, 1, &attribBuffer->buffer, &offset);
@@ -248,7 +283,7 @@ void VK_Draw(int count)
     vkCmdDraw(commandBuffer, count, 1, 0, 0);
 }
 
-void VK_DrawIndexed(vkattribbuffer_t *idxBuffer, int count, uint32_t firstIndex, uint32_t vertexOffset)
+void VK_DrawIndexed(vkbuffer_t *idxBuffer, int count, uint32_t firstIndex, uint32_t vertexOffset)
 {
 	//return;
 	VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];

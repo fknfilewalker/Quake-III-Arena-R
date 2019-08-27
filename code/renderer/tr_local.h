@@ -985,6 +985,7 @@ Vulkan
 typedef union {
     VkDescriptorImageInfo descImageInfo;
     VkDescriptorBufferInfo descBufferInfo;
+	VkWriteDescriptorSetAccelerationStructureNV descAccelerationStructureInfo;
 } vkdescriptorData_t;
 
 typedef struct {
@@ -1038,7 +1039,7 @@ typedef struct {
     byte* p;
     VkBuffer buffer;
     VkDeviceMemory memory;
-} vkattribbuffer_t;
+} vkbuffer_t;
 
 typedef struct {
 	uint32_t graphicsFamily;
@@ -1051,6 +1052,13 @@ typedef struct {
 	VkAccelerationStructureNV accelerationStructure;
 	uint64_t handle;
 } vkaccelerationStructure_t;
+typedef struct {
+	qboolean					init;
+	vkaccelerationStructure_t	bottom;
+	vkaccelerationStructure_t	top;
+	vkbuffer_t			instanceBuffer;
+	vkbuffer_t			scratchBuffer;
+} vkaccelerationStructures_t;
 
 typedef struct {
 	VkSwapchainKHR				handle;
@@ -1090,8 +1098,12 @@ typedef struct {
 */
 typedef struct {
 	VkInstance					instance;
-	VkPhysicalDevice			physical_device;
+	VkPhysicalDevice			physicalDevice;
 	VkSurfaceKHR				surface;
+
+	VkPhysicalDeviceProperties	deviceProperties;
+	VkPhysicalDeviceProperties2 deviceProperties2;
+	VkPhysicalDeviceRayTracingPropertiesNV rayTracingProperties;
 
 	vkqueueFamilyIndices_t		queryFamilyIndices;
 
@@ -1165,18 +1177,17 @@ typedef struct {
     vkimage_t           images[MAX_DRAWIMAGES];
 
 	VkDeviceSize		offsetIdx;
-    vkattribbuffer_t    indexbuffer;
+    vkbuffer_t    indexbuffer;
 	VkDeviceSize		offset;
-    vkattribbuffer_t    attributeBuffer;
-    vkattribbuffer_t    vertexbuffer;
-    vkattribbuffer_t    normalbuffer;
-    vkattribbuffer_t    uvbuffer1;
-    vkattribbuffer_t    uvbuffer2;
-    vkattribbuffer_t    colorbuffer;
+    vkbuffer_t    attributeBuffer;
+    vkbuffer_t    vertexbuffer;
+    vkbuffer_t    normalbuffer;
+    vkbuffer_t    uvbuffer1;
+    vkbuffer_t    uvbuffer2;
+    vkbuffer_t    colorbuffer;
 
 	// RTX
-	vkaccelerationStructure_t bottomLevelAS;
-	vkaccelerationStructure_t topLevelAS;
+	vkaccelerationStructures_t accelerationStructures;
     
     //
     qboolean            renderBegan;

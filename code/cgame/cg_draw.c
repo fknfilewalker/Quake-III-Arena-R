@@ -768,7 +768,7 @@ static float CG_DrawSnapshot( float y ) {
 CG_DrawFPS
 ==================
 */
-#define	FPS_FRAMES	4
+#define	FPS_FRAMES	10
 static float CG_DrawFPS( float y ) {
 	char		*s,*s2;
 	int			w, w2;

@@ -261,7 +261,7 @@ static void InitVulkan(void)
 
 		// device infos
 		VkPhysicalDeviceProperties devProperties;
-		vkGetPhysicalDeviceProperties(vk.physical_device, &devProperties);
+		vkGetPhysicalDeviceProperties(vk.physicalDevice, &devProperties);
 
 		// device limits
 		VkPhysicalDeviceLimits limits = devProperties.limits;
@@ -1240,12 +1240,12 @@ void RE_Shutdown( qboolean destroyWindow ) {
 	if (destroyWindow) {
 		if(glConfig.driverType == OPENGL) GLimp_Shutdown();
 		else if (glConfig.driverType == VULKAN) {
-			VK_DestroyAttribBuffer(&vk_d.indexbuffer);
-			VK_DestroyAttribBuffer(&vk_d.vertexbuffer);
-			VK_DestroyAttribBuffer(&vk_d.normalbuffer);
-			VK_DestroyAttribBuffer(&vk_d.uvbuffer1);
-            VK_DestroyAttribBuffer(&vk_d.uvbuffer2);
-			VK_DestroyAttribBuffer(&vk_d.colorbuffer);
+			VK_DestroyBuffer(&vk_d.indexbuffer);
+			VK_DestroyBuffer(&vk_d.vertexbuffer);
+			VK_DestroyBuffer(&vk_d.normalbuffer);
+			VK_DestroyBuffer(&vk_d.uvbuffer1);
+            VK_DestroyBuffer(&vk_d.uvbuffer2);
+			VK_DestroyBuffer(&vk_d.colorbuffer);
             
 			VK_DestroyAllPipelines();
 

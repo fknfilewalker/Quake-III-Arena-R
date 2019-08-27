@@ -39,6 +39,7 @@ qboolean VK_LoadInstanceFunctions(void)
 	
 	/* Physical Device */
 	vkGetPhysicalDeviceProperties = VK_INSTANCE_LEVEL_FUNCTION("vkGetPhysicalDeviceProperties");
+	vkGetPhysicalDeviceProperties2 = VK_INSTANCE_LEVEL_FUNCTION("vkGetPhysicalDeviceProperties2");
 	vkGetPhysicalDeviceSurfaceSupportKHR = VK_INSTANCE_LEVEL_FUNCTION("vkGetPhysicalDeviceSurfaceSupportKHR");
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR = VK_INSTANCE_LEVEL_FUNCTION("vkGetPhysicalDeviceSurfaceCapabilitiesKHR");
 	vkGetPhysicalDeviceSurfaceSupportKHR = VK_INSTANCE_LEVEL_FUNCTION("vkGetPhysicalDeviceSurfaceSupportKHR");
@@ -162,15 +163,15 @@ qboolean VK_LoadDeviceFunctions(void)
 	/*
 	** NV RTX
 	*/
-	vkCreateAccelerationStructureNV = VK_DEVICE_LEVEL_FUNCTION("vkvkCreateAccelerationStructureNV");
-	vkDestroyAccelerationStructureNV = VK_DEVICE_LEVEL_FUNCTION("vkDestroyAccelerationStructure");
-	vkBindAccelerationStructureMemoryNV = VK_DEVICE_LEVEL_FUNCTION("vkBindAccelerationStructureMemory");
-	vkGetAccelerationStructureHandleNV = VK_DEVICE_LEVEL_FUNCTION("vkGetAccelerationStructureHandle");
-	vkGetAccelerationStructureMemoryRequirementsNV = VK_DEVICE_LEVEL_FUNCTION("vkGetAccelerationStructureMemoryRequirements");
-	vkCmdBuildAccelerationStructureNV = VK_DEVICE_LEVEL_FUNCTION("vkCmdBuildAccelerationStructure");
-	vkCreateRayTracingPipelinesNV = VK_DEVICE_LEVEL_FUNCTION("vkCreateRayTracingPipelines");
-	vkGetRayTracingShaderGroupHandlesNV = VK_DEVICE_LEVEL_FUNCTION("vkGetRayTracingShaderGroupHandles");
-	vkCmdTraceRaysNV = VK_DEVICE_LEVEL_FUNCTION("vkCmdTraceRays");
+	vkCreateAccelerationStructureNV = VK_DEVICE_LEVEL_FUNCTION("vkCreateAccelerationStructureNV");
+	vkDestroyAccelerationStructureNV = VK_DEVICE_LEVEL_FUNCTION("vkDestroyAccelerationStructureNV");
+	vkBindAccelerationStructureMemoryNV = VK_DEVICE_LEVEL_FUNCTION("vkBindAccelerationStructureMemoryNV");
+	vkGetAccelerationStructureHandleNV = VK_DEVICE_LEVEL_FUNCTION("vkGetAccelerationStructureHandleNV");
+	vkGetAccelerationStructureMemoryRequirementsNV = VK_DEVICE_LEVEL_FUNCTION("vkGetAccelerationStructureMemoryRequirementsNV");
+	vkCmdBuildAccelerationStructureNV = VK_DEVICE_LEVEL_FUNCTION("vkCmdBuildAccelerationStructureNV");
+	vkCreateRayTracingPipelinesNV = VK_DEVICE_LEVEL_FUNCTION("vkCreateRayTracingPipelinesNV");
+	vkGetRayTracingShaderGroupHandlesNV = VK_DEVICE_LEVEL_FUNCTION("vkGetRayTracingShaderGroupHandlesNV");
+	vkCmdTraceRaysNV = VK_DEVICE_LEVEL_FUNCTION("vkCmdTraceRaysNV");
 
     return qtrue;
 }

@@ -89,7 +89,7 @@ void VK_DestroySwapchain() {
 static void VK_CreateSwapChain() {
 	vk.swapchain.depthStencilFormat = VK_FORMAT_D24_UNORM_S8_UINT;
 
-	swapChainSupportDetails_t swapChainSupport = querySwapChainSupport(vk.physical_device, vk.surface);
+	swapChainSupportDetails_t swapChainSupport = querySwapChainSupport(vk.physicalDevice, vk.surface);
 
 	VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(&swapChainSupport.formats[0], swapChainSupport.formatCount);
 	VkPresentModeKHR presentMode = chooseSwapPresentMode(&swapChainSupport.presentModes[0], swapChainSupport.presentModeCount);

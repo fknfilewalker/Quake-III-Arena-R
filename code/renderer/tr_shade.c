@@ -127,8 +127,8 @@ static void DrawTris (shaderCommands_t *input) {
 
 		Com_Memset(tess.svars.colors, tr.identityLightByte, tess.numVertexes * sizeof(color4ub_t));
 		//Com_Memset(tess.svars.texcoords, tr.identityLightByte, tess.numVertexes * sizeof(color4ub_t));
-		VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), input->numVertexes * sizeof(vec4_t), (void*)&input->xyz[0]);
-		VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), input->numVertexes * sizeof(color4ub_t), (void*)& tess.svars.colors[0]);
+		VK_UploadBufferDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), input->numVertexes * sizeof(vec4_t), (void*)&input->xyz[0]);
+		VK_UploadBufferDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), input->numVertexes * sizeof(color4ub_t), (void*)& tess.svars.colors[0]);
 
 		tr_api.R_DrawElements(input->numIndexes, input->indexes);
 
@@ -193,8 +193,8 @@ static void DrawNormals (shaderCommands_t *input) {
 
 		Com_Memset(tess.svars.colors, tr.identityLightByte, count * sizeof(color4ub_t));
 
-		VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), count * sizeof(color4ub_t), (void*) &tess.svars.colors[0]);
-		VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), count * sizeof(vec4_t), (void*) &xyz[0]);
+		VK_UploadBufferDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), count * sizeof(color4ub_t), (void*) &tess.svars.colors[0]);
+		VK_UploadBufferDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), count * sizeof(vec4_t), (void*) &xyz[0]);
 		tr_api.R_DrawElements(count, indexes);
 
 		free(xyz);
@@ -298,12 +298,12 @@ static void DrawMultitextured( shaderCommands_t *input, int stage ) {
         GL_SelectTexture( 0 );
     } else if (glConfig.driverType == VULKAN) {
         
-        //VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
-        //VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
-        VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &input->svars.texcoords[0]);
-        VK_UploadAttribDataOffset(&vk_d.uvbuffer2, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &input->svars.texcoords[1]);
+        //VK_UploadBufferDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
+        //VK_UploadBufferDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+        VK_UploadBufferDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &input->svars.texcoords[0]);
+        VK_UploadBufferDataOffset(&vk_d.uvbuffer2, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &input->svars.texcoords[1]);
 
-        VK_UploadAttribDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), input->numIndexes * sizeof(uint32_t), (void*) &input->indexes[0]);
+        VK_UploadBufferDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), input->numIndexes * sizeof(uint32_t), (void*) &input->indexes[0]);
 
         //R_BindAnimatedImage( &pStage->bundle[0] );
         //R_BindAnimatedImage( &pStage->bundle[1] );
@@ -600,9 +600,9 @@ static void ProjectDlightTexture( void ) {
 
             GL_Bind( tr.dlightImage );
         } else {
-            VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*) &tess.xyz[0]);
-            VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &colorArray[0]);
-            VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &texCoordsArray[0]);
+            VK_UploadBufferDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*) &tess.xyz[0]);
+            VK_UploadBufferDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &colorArray[0]);
+            VK_UploadBufferDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &texCoordsArray[0]);
             VK_Bind( tr.dlightImage );
         }
 		// include GLS_DEPTHFUNC_EQUAL so alpha tested surfaces don't add light
@@ -673,9 +673,9 @@ static void RB_FogPass( void ) {
         
         RB_CalcFogTexCoords((float*)tess.svars.texcoords[0]);
         
-        VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*) &tess.xyz[0]);
-        VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
-        VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &tess.svars.texcoords[0]);
+        VK_UploadBufferDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*) &tess.xyz[0]);
+        VK_UploadBufferDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+        VK_UploadBufferDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &tess.svars.texcoords[0]);
         
         VK_Bind(tr.fogImage);
         
@@ -1080,8 +1080,8 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
             }
             //if(stage != 3) continue;
             
-			VK_UploadAttribDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
-            VK_UploadAttribDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
+			VK_UploadBufferDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), tess.numVertexes * sizeof(vec4_t), (void*)&tess.xyz[0]);
+            VK_UploadBufferDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), tess.numVertexes * sizeof(color4ub_t), (void *) &tess.svars.colors[0]);
            
 			// set mvp
 			myGlMultMatrix(vk_d.modelViewMatrix, vk_d.projectionMatrix, vk_d.mvp);
@@ -1096,7 +1096,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
                 //continue;
             }else
             {
-                VK_UploadAttribDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &input->svars.texcoords[0]);
+                VK_UploadBufferDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), tess.numVertexes * sizeof(vec2_t), (void *) &input->svars.texcoords[0]);
                 
                 //
                 // set state
@@ -1278,14 +1278,14 @@ void RB_StageIteratorGeneric( void )
         //else
         //{
             /*setArraysOnce = qtrue;
-            VK_UploadAttribData(&vk_d.colorbuffer, (void *) &tess.svars.colors[0]);
-            VK_UploadAttribData(&vk_d.uvbuffer, (void *) &tess.svars.texcoords[0]);*/
+            VK_UploadBufferData(&vk_d.colorbuffer, (void *) &tess.svars.colors[0]);
+            VK_UploadBufferData(&vk_d.uvbuffer, (void *) &tess.svars.texcoords[0]);*/
         //}
 
         //
         // lock XYZ
         //
-		//VK_UploadAttribData(&vk_d.vertexbuffer, (void*)& input->xyz[0]);
+		//VK_UploadBufferData(&vk_d.vertexbuffer, (void*)& input->xyz[0]);
         //VK_UploadAttribDataStride(&vk_d.vertexbuffer, sizeof(vec3_t), sizeof(vec4_t), (void *) &input->xyz[0]); // padded for SIMD
         
         //
@@ -1295,8 +1295,8 @@ void RB_StageIteratorGeneric( void )
         //{
         //    //qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
         //    //qglEnableClientState( GL_COLOR_ARRAY );
-        //    VK_UploadAttribData(&vk_d.colorbuffer, (void *) &tess.svars.colors[0]);
-        //    VK_UploadAttribData(&vk_d.uvbuffer, (void *) &tess.svars.texcoords[0]);
+        //    VK_UploadBufferData(&vk_d.colorbuffer, (void *) &tess.svars.colors[0]);
+        //    VK_UploadBufferData(&vk_d.uvbuffer, (void *) &tess.svars.texcoords[0]);
         //}
 
         //

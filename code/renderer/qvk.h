@@ -72,6 +72,7 @@ PFN_vkDestroySurfaceKHR                         vkDestroySurfaceKHR;
 
 /* Physical Device */
 PFN_vkGetPhysicalDeviceProperties				vkGetPhysicalDeviceProperties;
+PFN_vkGetPhysicalDeviceProperties2				vkGetPhysicalDeviceProperties2;
 PFN_vkGetPhysicalDeviceSurfaceSupportKHR		vkGetPhysicalDeviceSurfaceSupportKHR;
 PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR	vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
 PFN_vkGetPhysicalDeviceSurfaceSupportKHR		vkGetPhysicalDeviceSurfaceSupportKHR;
