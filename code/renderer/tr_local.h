@@ -1046,20 +1046,6 @@ typedef struct {
 	uint32_t presentFamily;
 } vkqueueFamilyIndices_t;
 
-// RTX
-typedef struct {
-	VkDeviceMemory memory;
-	VkAccelerationStructureNV accelerationStructure;
-	uint64_t handle;
-} vkaccelerationStructure_t;
-typedef struct {
-	qboolean					init;
-	vkaccelerationStructure_t	bottom;
-	vkaccelerationStructure_t	top;
-	vkbuffer_t			instanceBuffer;
-	vkbuffer_t			scratchBuffer;
-} vkaccelerationStructures_t;
-
 typedef struct {
 	VkSwapchainKHR				handle;
 	VkExtent2D					extent;
@@ -1132,6 +1118,39 @@ typedef struct {
 	// It is updated only once during image initialization.
 	vkdescriptor_t descriptor_set;
 }vkimage_t;
+
+// RTX
+typedef struct {
+	VkPipelineCache cache;
+	VkPipelineLayout layout;
+	VkPipeline handle;
+
+	vkdescriptor_t* descriptor;
+	vkshader_t* shader;
+
+	struct {
+		size_t size;
+		VkPushConstantRange* p;
+	} pushConstantRange;
+} vkrtpipeline_t;
+
+typedef struct {
+	VkDeviceMemory memory;
+	VkAccelerationStructureNV accelerationStructure;
+	uint64_t handle;
+} vkaccelerationStructure_t;
+typedef struct {
+	qboolean					init;
+	vkaccelerationStructure_t	bottom;
+	vkaccelerationStructure_t	top;
+	vkbuffer_t					instanceBuffer;
+	vkbuffer_t					scratchBuffer;
+	vkbuffer_t					uniformBuffer;
+	vkbuffer_t					shaderBindingTableBuffer;
+	vkimage_t					resultImage;
+	vkrtpipeline_t				pipeline;
+	vkdescriptor_t				descriptor;
+} vkaccelerationStructures_t;
 
 typedef struct {
 	VkSurfaceCapabilitiesKHR	capabilities;

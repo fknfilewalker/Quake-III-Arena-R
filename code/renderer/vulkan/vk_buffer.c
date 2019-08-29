@@ -12,6 +12,13 @@ void VK_CreateIndexBuffer(vkbuffer_t *buffer, VkDeviceSize allocSize){
     VK_CHECK(vkMapMemory(vk.device, buffer->memory, 0, buffer->allocSize, 0, (byte**)(&buffer->p)), "failed to Map Memory!");
 }
 
+void VK_CreateUniformBuffer(vkbuffer_t* buffer, VkDeviceSize allocSize) {
+	buffer->allocSize = allocSize;
+	VK_CreateBufferMemory(allocSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &buffer->buffer, &buffer->memory);
+	VK_CHECK(vkMapMemory(vk.device, buffer->memory, 0, buffer->allocSize, 0, (byte * *)(&buffer->p)), "failed to Map Memory!");
+}
+
+// RTX
 void VK_CreateRayTracingBuffer(vkbuffer_t* buffer, VkDeviceSize allocSize) {
 	buffer->allocSize = allocSize;
 	VK_CreateBufferMemory(allocSize, VK_BUFFER_USAGE_RAY_TRACING_BIT_NV, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &buffer->buffer, &buffer->memory);
@@ -20,6 +27,11 @@ void VK_CreateRayTracingBuffer(vkbuffer_t* buffer, VkDeviceSize allocSize) {
 void VK_CreateRayTracingScratchBuffer(vkbuffer_t* buffer, VkDeviceSize allocSize) {
 	buffer->allocSize = allocSize;
 	VK_CreateBufferMemory(allocSize, VK_BUFFER_USAGE_RAY_TRACING_BIT_NV, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &buffer->buffer, &buffer->memory);
+}
+void VK_CreateShaderBindingTableBuffer(vkbuffer_t* buffer, VkDeviceSize allocSize) {
+	buffer->allocSize = allocSize;
+	VK_CreateBufferMemory(allocSize, VK_BUFFER_USAGE_RAY_TRACING_BIT_NV, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &buffer->buffer, &buffer->memory);
+	VK_CHECK(vkMapMemory(vk.device, buffer->memory, 0, buffer->allocSize, 0, (byte * *)(&buffer->p)), "failed to Map Memory!");
 }
 
 void VK_UploadBufferDataOffset(vkbuffer_t* buffer, VkDeviceSize offset, VkDeviceSize size, const byte* data) {
@@ -36,6 +48,10 @@ void VK_UploadBufferDataOffset(vkbuffer_t* buffer, VkDeviceSize offset, VkDevice
 
 void VK_UploadBufferData(vkbuffer_t* buffer, const byte* data) {
 	VK_UploadBufferDataOffset(buffer, 0, buffer->allocSize, data);
+}
+
+void VK_UnmapBuffer(vkbuffer_t* buffer) {
+	if (buffer->p) vkUnmapMemory(vk.device, buffer->memory);
 }
 
 void VK_DestroyBuffer(vkbuffer_t* buffer)

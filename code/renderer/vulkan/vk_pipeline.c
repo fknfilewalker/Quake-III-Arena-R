@@ -19,8 +19,7 @@ void VK_DestroyAllPipelines() {
 static void VK_CreatePipelineCache(vkpipeline_t *pipeline);
 static void VK_CreatePipelineLayout(vkpipeline_t *pipeline);
 static void VK_CreatePipeline(vkpipeline_t *pipeline);
-// RTX
-static void VK_CreateRayTracingPipeline(vkpipeline_t* pipeline);
+
 
 /*
  * Use these functions to define pipeline before calling VK_FinishPipeline
@@ -79,12 +78,6 @@ void VK_FinishPipeline(vkpipeline_t *pipeline){
     VK_CreatePipelineCache(pipeline);
     VK_CreatePipelineLayout(pipeline);
     VK_CreatePipeline(pipeline);
-}
-
-void VK_FinishRayTracingPipeline(vkpipeline_t* pipeline) {
-	VK_CreatePipelineCache(pipeline);
-	VK_CreatePipelineLayout(pipeline);
-	VK_CreateRayTracingPipeline(pipeline);
 }
 
 void VK_DestroyPipeline(vkpipeline_t* pipeline) {
@@ -214,28 +207,20 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline)
     
 }
 
-// rtx
-static void VK_CreateRayTracingPipeline(vkpipeline_t* pipeline)
-{
-	VkRayTracingShaderGroupCreateInfoNV groups[3] = { 0 };
-	groups[0].type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV;
-	groups[0].generalShader = 0;
-	groups[1].type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV;
-	groups[1].generalShader = 1;
-	groups[2].type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_NV;
-	groups[2].generalShader = VK_SHADER_UNUSED_NV;
-	groups[2].closestHitShader = 2;
 
-	VkRayTracingPipelineCreateInfoNV rayPipelineInfo = { 0 };
-	rayPipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_NV;
-	rayPipelineInfo.stageCount = pipeline->shader->size;
-	rayPipelineInfo.pStages = &pipeline->shader->shaderStageCreateInfos[0];
-	rayPipelineInfo.groupCount = 3;
-	rayPipelineInfo.pGroups = &groups[0];
-	rayPipelineInfo.maxRecursionDepth = 1;
-	rayPipelineInfo.layout = pipeline->layout;
-	VK_CHECK(vkCreateRayTracingPipelinesNV(vk.device, VK_NULL_HANDLE, 1, &rayPipelineInfo, NULL, &pipeline->handle), " failed to create Ray Tracing Pipeline");
+static void VK_CreateShaderBindingTable(vkpipeline_t* pipeline) {
 
+	const uint32_t sbtSize = vk.rayTracingProperties.shaderGroupHandleSize * 3;
+	VK_CreateShaderBindingTableBuffer(&vk_d.accelerationStructures.shaderBindingTableBuffer, sbtSize);
+
+
+	uint8_t* shaderHandleStorage = calloc(sbtSize, sizeof(uint8_t));
+	// Get shader identifiers
+	VK_CHECK(vkGetRayTracingShaderGroupHandlesNV(vk.device, pipeline->handle, 0, 3, sbtSize, shaderHandleStorage), "failed to get shader handels");
+	VK_UploadBufferData(&vk_d.accelerationStructures.shaderBindingTableBuffer, (void*)shaderHandleStorage);
+
+	VK_UnmapBuffer(&vk_d.accelerationStructures.shaderBindingTableBuffer);
+	free(shaderHandleStorage);
 }
 
 void VK_Bind1DescriptorSet(vkpipeline_t *pipeline, vkdescriptor_t *descriptor){

@@ -245,8 +245,8 @@ void VK_LoadRayTracingShadersFromVariable(vkshader_t* shader, const char* rgenSP
 																const char* rmissSPV, const uint32_t sizeRMISS,
 																const char* rhitSPV, const uint32_t sizeRHIT) {
 	shader->size = 3;
-	shader->modules = malloc(shader->size * sizeof(VkShaderModule));
-	shader->flags = malloc(shader->size * sizeof(VkShaderStageFlagBits));
+	shader->modules = calloc(shader->size, sizeof(VkShaderModule));
+	shader->flags = calloc(shader->size, sizeof(VkShaderStageFlagBits));
 	shader->shaderStageCreateInfos = calloc(shader->size, sizeof(VkPipelineShaderStageCreateInfo));
 
 	shader->flags[0] = VK_SHADER_STAGE_RAYGEN_BIT_NV;
@@ -267,9 +267,9 @@ void VK_LoadRayTracingShadersFromVariable(vkshader_t* shader, const char* rgenSP
 	shader->shaderStageCreateInfos[1].module = shader->modules[1];
 	shader->shaderStageCreateInfos[1].pName = "main";
 
-	shader->shaderStageCreateInfos[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	shader->shaderStageCreateInfos[1].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV;
-	shader->shaderStageCreateInfos[1].module = shader->modules[2];
-	shader->shaderStageCreateInfos[1].pName = "main";
+	shader->shaderStageCreateInfos[2].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shader->shaderStageCreateInfos[2].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV;
+	shader->shaderStageCreateInfos[2].module = shader->modules[2];
+	shader->shaderStageCreateInfos[2].pName = "main";
 
 }

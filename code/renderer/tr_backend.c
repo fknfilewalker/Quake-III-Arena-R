@@ -583,7 +583,7 @@ void RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int
             vkimage_t *image = &vk_d.images[tr.scratchImage[client]->index];
             VK_DestroyImage(image);
             
-            VK_CreateImage(image, cols, rows, VK_FORMAT_R8G8B8A8_UNORM, 1);
+            VK_CreateImage(image, cols, rows, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
             VK_UploadImageData(image, cols, rows, data, 4, 0); // rows wise
             VK_CreateSampler(image, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
             

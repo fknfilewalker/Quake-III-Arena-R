@@ -31,6 +31,41 @@ void VK_BeginRenderClear()
 	rpBeginInfo.pClearValues = clearValues;
 
 	VkCommandBuffer cmdBuf = vk.swapchain.CurrentCommandBuffer();
+
+	if (!vk_d.accelerationStructures.init) {
+		VK_UploadScene(&vk_d.accelerationStructures);
+
+		struct UniformData {
+			float viewInverse[16];
+			float projInverse[16];
+		} uniformData;
+
+		VK_CreateUniformBuffer(&vk_d.accelerationStructures.uniformBuffer, sizeof(uniformData));
+
+		VK_CreateImage(&vk_d.accelerationStructures.resultImage, vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, 1);
+		VK_TransitionImage(&vk_d.accelerationStructures.resultImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+
+		vkshader_t s = { 0 };
+		VK_RayTracingShader(&s);
+
+
+		VK_AddAccelerationStructure(&vk_d.accelerationStructures.descriptor, 0, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_AddStorageImage(&vk_d.accelerationStructures.descriptor, 1, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		//VK_AddUniformBuffer(&vk_d.accelerationStructures.descriptor, 2, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_SetAccelerationStructure(&vk_d.accelerationStructures.descriptor, 0, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.accelerationStructures.top.accelerationStructure);
+		VK_SetStorageImage(&vk_d.accelerationStructures.descriptor, 1, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultImage.view);
+		//VK_SetUniformBuffer(&vk_d.accelerationStructures.descriptor, 2, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.uniformBuffer.buffer);
+		VK_FinishDescriptor(&vk_d.accelerationStructures.descriptor);
+
+
+		VK_SetRayTracingDescriptorSet(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor);
+		VK_SetRayTracingShader(&vk_d.accelerationStructures.pipeline, &s);
+		VK_FinishRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
+	}
+	
+
+
 	vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     VK_BindIndexBuffer(&vk_d.indexbuffer, 0);
@@ -38,8 +73,6 @@ void VK_BeginRenderClear()
     VK_BindAttribBuffer(&vk_d.colorbuffer, 1, 0);
     VK_BindAttribBuffer(&vk_d.uvbuffer1, 2, 0);
     VK_BindAttribBuffer(&vk_d.uvbuffer2, 3, 0);
-
-	//if(!vk_d.accelerationStructures.init) VK_UploadScene(&vk_d.accelerationStructures);
 }
 
 void beginRender()
@@ -50,7 +83,12 @@ void beginRender()
 void VK_EndRender()
 {
 	vkCmdEndRenderPass(vk.swapchain.CurrentCommandBuffer());
-
+	if (vk_d.accelerationStructures.init) {
+		VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
+		VK_BindRayTracingDescriptorSet(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor);
+		VK_TraceRays();
+		//VK_CopyImageToSwapchain(&vk_d.accelerationStructures.resultImage);
+	}
 }
 
 /*

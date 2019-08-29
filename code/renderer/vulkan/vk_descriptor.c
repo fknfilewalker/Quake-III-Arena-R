@@ -100,7 +100,7 @@ void VK_SetUniformBuffer(vkdescriptor_t* descriptor, uint32_t binding, VkShaderS
 		}
 	}
 }
-void VK_SetAccelerationStructure(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage, const VkAccelerationStructureNV* as) {
+void VK_SetAccelerationStructure(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage, VkAccelerationStructureNV* as) {
 	for (int i = 0; i < descriptor->size; ++i) {
 		if (descriptor->bindings[i].binding == binding &&
 			descriptor->bindings[i].stageFlags == stage) {

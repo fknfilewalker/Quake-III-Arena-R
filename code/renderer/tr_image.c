@@ -745,7 +745,7 @@ static vkimage_t upload_vk_image(const struct Image_Upload_Data* upload_data, in
 	}
 
 	vkimage_t image = { 0 };
-	VK_CreateImage(&image, (uint32_t)w, (uint32_t)h, internal_format, (uint32_t)upload_data->mip_levels);
+	VK_CreateImage(&image, (uint32_t)w, (uint32_t)h, internal_format, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, (uint32_t)upload_data->mip_levels);
 
 	byte* buffer = upload_data->buffer;
 	uint16_t* p = (uint16_t*)buffer;

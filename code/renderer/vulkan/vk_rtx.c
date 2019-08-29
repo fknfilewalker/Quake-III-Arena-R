@@ -96,13 +96,11 @@ void VK_UploadScene(vkaccelerationStructures_t* as) {
 
 	VK_BuildAccelerationStructure(as, &geometry);
 
-	VK_DestroyBuffer(&as->instanceBuffer);
-	VK_DestroyBuffer(&as->scratchBuffer);
+	//VK_DestroyBuffer(&as->instanceBuffer);
+	//VK_DestroyBuffer(&as->scratchBuffer);
 
 	as->init = qtrue;
 
-	vkshader_t s;
-	VK_RayTracingShader(&s);
 }
 
 static void VK_CreateBottomLevelAccelerationStructure(vkaccelerationStructure_t *bottomLevelAS, const VkGeometryNV* geometries)
