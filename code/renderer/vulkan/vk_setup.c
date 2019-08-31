@@ -8,6 +8,8 @@ static const char* deviceExtensions[] = {
 #if defined( _WIN32 )
 		VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
 		VK_NV_RAY_TRACING_EXTENSION_NAME,
+		VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+		VK_KHR_MAINTENANCE3_EXTENSION_NAME,
 #endif
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
@@ -238,9 +240,15 @@ static void VK_CreateLogicalDevice()
 	deviceFeatures.drawIndirectFirstInstance = qfalse;
 	deviceFeatures.shaderClipDistance = qtrue;
 
+	VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures = { 0 };
+	indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+	indexingFeatures.runtimeDescriptorArray = qtrue;
+	indexingFeatures.descriptorBindingVariableDescriptorCount = qtrue;
+	indexingFeatures.descriptorBindingUpdateUnusedWhilePending = qtrue;
+
 	VkDeviceCreateInfo desc = { 0 };
 	desc.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-
+	desc.pNext = &indexingFeatures;
 	desc.queueCreateInfoCount = queueCreateInfosCount;
 	desc.pQueueCreateInfos = &queueCreateInfos[0];
 

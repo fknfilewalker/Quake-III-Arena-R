@@ -982,10 +982,14 @@ Vulkan
 
 
 // --Pipeline parts--
-typedef union {
-    VkDescriptorImageInfo descImageInfo;
-    VkDescriptorBufferInfo descBufferInfo;
-	VkWriteDescriptorSetAccelerationStructureNV descAccelerationStructureInfo;
+typedef struct {
+	union {
+		VkDescriptorImageInfo*						descImageInfo;
+		VkDescriptorBufferInfo						descBufferInfo;
+		VkWriteDescriptorSetAccelerationStructureNV descAccelerationStructureInfo;
+	};
+	uint32_t										size;
+	uint32_t										updateSize;
 } vkdescriptorData_t;
 
 typedef struct {
@@ -1225,7 +1229,9 @@ typedef struct {
     
     // texture
     int                 currentTexture[2];
-    
+    // imagedescriptor
+	vkdescriptor_t		imageDescriptor;
+
 	// pipeline
 	uint32_t			currentPipeline;
 	uint32_t			pipelineListSize;

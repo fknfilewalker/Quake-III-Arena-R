@@ -259,6 +259,11 @@ static void InitVulkan(void)
         VK_CreateVertexBuffer(&vk_d.uvbuffer2, 512 * 1024 * sizeof(vec2_t));
 		VK_CreateVertexBuffer(&vk_d.colorbuffer, 512 * 1024 * sizeof(color4ub_t));
 
+		VK_AddSamplerCount(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT, MAX_DRAWIMAGES);
+		VK_FinishDescriptorWithoutUpdate(&vk_d.imageDescriptor);
+		//VK_SetUpdateSize(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT, 0);
+		//VK_UpdateDescriptor(&vk_d.imageDescriptor);
+
 		// device infos
 		VkPhysicalDeviceProperties devProperties;
 		vkGetPhysicalDeviceProperties(vk.physicalDevice, &devProperties);
@@ -1246,7 +1251,8 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			VK_DestroyBuffer(&vk_d.uvbuffer1);
             VK_DestroyBuffer(&vk_d.uvbuffer2);
 			VK_DestroyBuffer(&vk_d.colorbuffer);
-            
+			VK_DestroyDescriptor(&vk_d.imageDescriptor);
+
 			VK_DestroyAllPipelines();
 
 			VK_DestroyAllShaders();

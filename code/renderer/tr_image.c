@@ -186,6 +186,9 @@ void VK_TextureMode(const char *string) {
                             glt->wrapClampMode == GL_REPEAT ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
             VK_SetSampler(&image->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image->sampler, image->view);
             VK_UpdateDescriptorSet(&image->descriptor_set);
+
+			VK_SetSamplerPosition(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image->sampler, image->view, glt->index);
+			VK_UpdateDescriptorSet(&vk_d.imageDescriptor);
         }
     }
 }
@@ -796,8 +799,6 @@ static vkimage_t upload_vk_image(const struct Image_Upload_Data* upload_data, in
 	VK_AddSampler(&image.descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
 	VK_SetSampler(&image.descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image.sampler, image.view);
 	VK_FinishDescriptor(&image.descriptor_set);
-    
-	//vk_d.images[tr.numImages-1] = image;
 
     return image;
 }
@@ -855,8 +856,10 @@ image_t *R_CreateImage(const char *name, const byte *pic, int width, int height,
 	}
 	else if (glConfig.driverType == VULKAN) {
 		vk_d.images[image->index] = upload_vk_image(&upload_data, glWrapClampMode);
-        
-        
+		
+		VK_SetSamplerPosition(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT, vk_d.images[image->index].sampler, vk_d.images[image->index].view, image->index);
+		VK_SetUpdateSize(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image->index+1);
+		VK_UpdateDescriptorSet(&vk_d.imageDescriptor);
 	}
 	
 
@@ -1930,6 +1933,7 @@ void	R_InitImages(void) {
 
 	// create default texture and white texture
 	R_CreateBuiltinImages();
+
 }
 
 /*

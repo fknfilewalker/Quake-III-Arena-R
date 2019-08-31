@@ -590,6 +590,9 @@ void RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int
             VK_AddSampler(&image->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
             VK_SetSampler(&image->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image->sampler, image->view);
             VK_FinishDescriptor(&image->descriptor_set);
+
+			VK_SetSamplerPosition(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image->sampler, image->view, tr.scratchImage[client]->index);
+			VK_UpdateDescriptorSet(&vk_d.imageDescriptor);
         }
         else {
             if (dirty) {

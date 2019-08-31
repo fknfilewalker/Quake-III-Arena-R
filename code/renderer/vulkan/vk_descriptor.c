@@ -4,23 +4,35 @@ static void VK_CreateDescriptorSetLayout(vkdescriptor_t *descriptor);
 static void VK_CreateDescriptorPool(vkdescriptor_t *descriptor);
 void VK_CreateDescriptorSet(vkdescriptor_t *descriptor);
 void VK_UpdateDescriptorSet(vkdescriptor_t *descriptor);
+void VK_SetUpdateSize(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage, uint32_t updateSize);
 
 // add descriptor binding (right now without data)
-void VK_AddSampler(vkdescriptor_t *descriptor, uint32_t binding, VkShaderStageFlagBits stage){
-    descriptor->size++;
-    descriptor->bindings = realloc(descriptor->bindings, descriptor->size * sizeof(VkDescriptorSetLayoutBinding));
-    descriptor->data = realloc(descriptor->data, descriptor->size * sizeof(vkdescriptorData_t));
+void VK_AddSamplerCount(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage, uint32_t count) {
+	descriptor->size++;
+	descriptor->bindings = realloc(descriptor->bindings, descriptor->size * sizeof(VkDescriptorSetLayoutBinding));
+	descriptor->data = realloc(descriptor->data, descriptor->size * sizeof(vkdescriptorData_t));
 
-    descriptor->bindings[descriptor->size - 1].binding = binding;
-    descriptor->bindings[descriptor->size - 1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptor->bindings[descriptor->size - 1].descriptorCount = 1;
-    descriptor->bindings[descriptor->size - 1].stageFlags = stage;
-    descriptor->bindings[descriptor->size - 1].pImmutableSamplers = NULL;
-    
-    descriptor->data[descriptor->size - 1].descImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    descriptor->data[descriptor->size - 1].descImageInfo.imageView = VK_NULL_HANDLE;
-    descriptor->data[descriptor->size - 1].descImageInfo.sampler = VK_NULL_HANDLE;
+	descriptor->bindings[descriptor->size - 1].binding = binding;
+	descriptor->bindings[descriptor->size - 1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptor->bindings[descriptor->size - 1].descriptorCount = count;
+	descriptor->bindings[descriptor->size - 1].stageFlags = stage;
+	descriptor->bindings[descriptor->size - 1].pImmutableSamplers = NULL;
+
+	descriptor->data[descriptor->size - 1].size = count;
+	descriptor->data[descriptor->size - 1].descImageInfo = malloc(count * sizeof(VkDescriptorImageInfo));
+	for (int i = 0; i < count; i++) {
+		descriptor->data[descriptor->size - 1].descImageInfo[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		descriptor->data[descriptor->size - 1].descImageInfo[i].imageView = VK_NULL_HANDLE;
+		descriptor->data[descriptor->size - 1].descImageInfo[i].sampler = VK_NULL_HANDLE;
+	}
+    //descriptor->data[descriptor->size - 1].descImageInfo.imageView = VK_NULL_HANDLE;
+    //descriptor->data[descriptor->size - 1].descImageInfo.sampler = VK_NULL_HANDLE;
 }
+void VK_AddSampler(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage) {
+	VK_AddSamplerCount(descriptor, binding, stage, 1);
+	VK_SetUpdateSize(descriptor, binding, stage, 1);
+}
+
 void VK_AddStorageImage(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage) {
 	descriptor->size++;
 	descriptor->bindings = realloc(descriptor->bindings, descriptor->size * sizeof(VkDescriptorSetLayoutBinding));
@@ -32,9 +44,19 @@ void VK_AddStorageImage(vkdescriptor_t* descriptor, uint32_t binding, VkShaderSt
 	descriptor->bindings[descriptor->size - 1].stageFlags = stage;
 	descriptor->bindings[descriptor->size - 1].pImmutableSamplers = NULL;
 
+	int count = 1;
+	descriptor->data[descriptor->size - 1].size = count;
+	descriptor->data[descriptor->size - 1].descImageInfo = malloc(count * sizeof(VkDescriptorImageInfo));
+	for (int i = 0; i < count; i++) {
+		descriptor->data[descriptor->size - 1].descImageInfo[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		descriptor->data[descriptor->size - 1].descImageInfo[i].imageView = VK_NULL_HANDLE;
+		descriptor->data[descriptor->size - 1].descImageInfo[i].sampler = VK_NULL_HANDLE;
+	}
+
+	/*descriptor->data[descriptor->size - 1].size = 1;
 	descriptor->data[descriptor->size - 1].descImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	descriptor->data[descriptor->size - 1].descImageInfo.imageView = VK_NULL_HANDLE;
-	descriptor->data[descriptor->size - 1].descImageInfo.sampler = VK_NULL_HANDLE;
+	descriptor->data[descriptor->size - 1].descImageInfo.sampler = VK_NULL_HANDLE;*/
 }
 void VK_AddUniformBuffer(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage) {
 	descriptor->size++;
@@ -69,22 +91,26 @@ void VK_AddAccelerationStructure(vkdescriptor_t* descriptor, uint32_t binding, V
 }
 
 // set descriptor data
-void VK_SetSampler(vkdescriptor_t *descriptor, uint32_t binding, VkShaderStageFlagBits stage, VkSampler sampler, VkImageView imageView){
+void VK_SetSamplerPosition(vkdescriptor_t *descriptor, uint32_t binding, VkShaderStageFlagBits stage, VkSampler sampler, VkImageView imageView, uint32_t pos){
     for (int i = 0; i < descriptor->size; ++i) {
         if(descriptor->bindings[i].binding == binding &&
            descriptor->bindings[i].stageFlags == stage){
-            descriptor->data[i].descImageInfo.sampler = sampler;
-            descriptor->data[i].descImageInfo.imageView = imageView;
+            descriptor->data[i].descImageInfo[pos].sampler = sampler;
+            descriptor->data[i].descImageInfo[pos].imageView = imageView;
             return;
         }
     }
 }
+void VK_SetSampler(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage, VkSampler sampler, VkImageView imageView) {
+	VK_SetSamplerPosition(descriptor, binding, stage, sampler, imageView, 0);
+}
+
 void VK_SetStorageImage(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage, VkImageView imageView) {
 	for (int i = 0; i < descriptor->size; ++i) {
 		if (descriptor->bindings[i].binding == binding &&
 			descriptor->bindings[i].stageFlags == stage) {
-			descriptor->data[i].descImageInfo.sampler = VK_NULL_HANDLE;
-			descriptor->data[i].descImageInfo.imageView = imageView;
+			descriptor->data[i].descImageInfo[0].sampler = VK_NULL_HANDLE;
+			descriptor->data[i].descImageInfo[0].imageView = imageView;
 			return;
 		}
 	}
@@ -112,14 +138,36 @@ void VK_SetAccelerationStructure(vkdescriptor_t* descriptor, uint32_t binding, V
 	}
 }
 
+void VK_SetUpdateSize(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage, uint32_t updateSize) {
+	for (int i = 0; i < descriptor->size; ++i) {
+		if (descriptor->bindings[i].binding == binding &&
+			descriptor->bindings[i].stageFlags == stage) {
+			descriptor->data[i].updateSize = updateSize;
+			return;
+		}
+	}
+}
+
 static void VK_CreateDescriptorSetLayout(vkdescriptor_t *descriptor) {
     
+	VkDescriptorBindingFlagBitsEXT *flags = calloc(descriptor->size, sizeof(VkDescriptorBindingFlagBitsEXT));
+	flags[0] = VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT_EXT | VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT;
+
+	VkDescriptorSetLayoutBindingFlagsCreateInfoEXT layoutCreateInfo = { 0 };
+	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT;
+	layoutCreateInfo.pNext = VK_NULL_HANDLE;
+	layoutCreateInfo.bindingCount = descriptor->size;
+	layoutCreateInfo.pBindingFlags = &flags[0];
+
     VkDescriptorSetLayoutCreateInfo descLayoutInfo = { 0 };
     descLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	descLayoutInfo.pNext = &layoutCreateInfo;
     descLayoutInfo.bindingCount = descriptor->size;
     descLayoutInfo.pBindings = &descriptor->bindings[0];
     
     VK_CHECK(vkCreateDescriptorSetLayout(vk.device, &descLayoutInfo, NULL, &descriptor->layout), " failed to create Descriptor Set Layout!");
+
+	free(flags);
 }
 
 static void VK_CreateDescriptorPool(vkdescriptor_t *descriptor) {
@@ -166,6 +214,12 @@ void VK_FinishDescriptor(vkdescriptor_t* descriptor) {
 	VK_UpdateDescriptorSet(descriptor);
 }
 
+void VK_FinishDescriptorWithoutUpdate(vkdescriptor_t* descriptor) {
+	VK_CreateDescriptorSetLayout(descriptor);
+	VK_CreateDescriptorPool(descriptor);
+	VK_CreateDescriptorSet(descriptor);
+}
+
 void VK_UpdateDescriptorSet(vkdescriptor_t* descriptor) {
 
 	//for (uint32_t i = 0; i < vk.swapchain.imageCount; ++i) {
@@ -176,18 +230,18 @@ void VK_UpdateDescriptorSet(vkdescriptor_t* descriptor) {
 		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
 			descWrite[j].dstSet = descriptor->set;
 			descWrite[j].dstBinding = descriptor->bindings[j].binding;
-			descWrite[j].descriptorCount = 1;
+			descWrite[j].descriptorCount = descriptor->data[j].updateSize;
 			descWrite[j].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descWrite[j].pImageInfo = &descriptor->data[j].descImageInfo;
-			assert(descriptor->data[j].descImageInfo.imageView != NULL);
+			descWrite[j].pImageInfo = &descriptor->data[j].descImageInfo[0];
+			assert(descriptor->data[j].descImageInfo[0].imageView != NULL);
 			break;
 		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 			descWrite[j].dstSet = descriptor->set;
 			descWrite[j].dstBinding = descriptor->bindings[j].binding;
 			descWrite[j].descriptorCount = 1;
 			descWrite[j].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			descWrite[j].pImageInfo = &descriptor->data[j].descImageInfo;
-			assert(descriptor->data[j].descImageInfo.imageView != NULL);
+			descWrite[j].pImageInfo = &descriptor->data[j].descImageInfo[0];
+			assert(descriptor->data[j].descImageInfo[0].imageView != NULL);
 			break;
 		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
 			descWrite[j].dstSet = descriptor->set;
@@ -230,6 +284,7 @@ void VK_DestroyDescriptor(vkdescriptor_t* descriptor){
     //}
     
     free(descriptor->bindings);
+	for (int i = 0; i < descriptor->size; ++i) free(descriptor->data[i].descImageInfo);
     free(descriptor->data);
     
 	memset(descriptor, 0, sizeof(vkdescriptor_t));

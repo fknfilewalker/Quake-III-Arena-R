@@ -316,7 +316,9 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
     //VK_AddSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
     //VK_SetSampler(&d, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image.sampler, image.view);
     //VK_FinishDescriptor(&d);
-    
+	//VK_SetUpdateSize(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT, tr.numImages);
+	//VK_UpdateDescriptorSet(&vk_d.imageDescriptor);
+	
 	uint32_t index = VK_FindPipeline();
 	vkpipeline_t p = { 0 };
     if (index == -1) {
@@ -347,10 +349,12 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 			}
 		}
 		if (vk_d.state.add || vk_d.state.mul) {
-			VK_Set2DescriptorSets(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set, &vk_d.images[vk_d.currentTexture[1]].descriptor_set);
+			VK_SetDescriptorSet(&p, &vk_d.imageDescriptor);
+			//VK_Set2DescriptorSets(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set, &vk_d.images[vk_d.currentTexture[1]].descriptor_set);
 		}
 		else {
-			VK_SetDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
+			VK_SetDescriptorSet(&p, &vk_d.imageDescriptor);
+			//VK_SetDescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
 		}
         VK_SetShader(&p, &s);
         VK_AddBindingDescription(&p, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
@@ -365,7 +369,7 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 		}
 
         VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, 192);//sizeof(vk_d.mvp));
-        VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 192, sizeof(vk_d.discardModeAlpha));
+        VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 192, 3 * sizeof(int));
         VK_FinishPipeline(&p);
         index = VK_AddPipeline(&p);
 
@@ -375,21 +379,25 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
     //        VK_BindAttribBuffer(&vk_d.colorbuffer, 1, 0);//vk_d.offset * sizeof(color4ub_t));
     //        VK_BindAttribBuffer(&vk_d.uvbuffer, 2, 0);//vk_d.offset * sizeof(vec2_t));
 	if (vk_d.state.add || vk_d.state.mul) {
-		VK_Bind2DescriptorSets(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set, &vk_d.images[vk_d.currentTexture[1]].descriptor_set);
+		//VK_Bind2DescriptorSets(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set, &vk_d.images[vk_d.currentTexture[1]].descriptor_set);
+		VK_Bind1DescriptorSet(&p, &vk_d.imageDescriptor);
 	}
 	else {
-		VK_Bind1DescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
+		VK_Bind1DescriptorSet(&p, &vk_d.imageDescriptor);
+		//VK_Bind1DescriptorSet(&p, &vk_d.images[vk_d.currentTexture[0]].descriptor_set);
 	}
     
     VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp), &vk_d.mvp);
-    VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 192, sizeof(vk_d.discardModeAlpha), &vk_d.discardModeAlpha);
-    
+    VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 192, sizeof(uint32_t), &vk_d.discardModeAlpha);
+	VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 196, sizeof(int), &vk_d.currentTexture[0]);
+	VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 200, sizeof(int), &vk_d.currentTexture[1]);
+
     if (vk_d.state.clip == qtrue) {
         VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 64, sizeof(vk_d.modelViewMatrix), &vk_d.modelViewMatrix);
         VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, sizeof(vk_d.clipPlane), &vk_d.clipPlane);
     }
-
-	if (index != vk_d.currentPipeline) VK_BindPipeline(&p);
+	VK_BindPipeline(&p);
+	//if (index != vk_d.currentPipeline) VK_BindPipeline(&p);
 
     VK_DrawIndexed(&vk_d.indexbuffer, numIndexes, vk_d.offsetIdx, vk_d.offset);
 
