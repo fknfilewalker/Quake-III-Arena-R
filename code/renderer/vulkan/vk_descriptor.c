@@ -150,21 +150,23 @@ void VK_SetUpdateSize(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStag
 
 static void VK_CreateDescriptorSetLayout(vkdescriptor_t *descriptor) {
     
-	VkDescriptorBindingFlagBitsEXT *flags = calloc(descriptor->size, sizeof(VkDescriptorBindingFlagBitsEXT));
-	flags[0] = VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT_EXT | VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT;
+	// VK_EXT_descriptor_indexing 
+	VkDescriptorBindingFlagBitsEXT* flags = calloc(descriptor->size, sizeof(VkDescriptorBindingFlagBitsEXT));
+	flags[descriptor->size-1] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT | VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT;
 
 	VkDescriptorSetLayoutBindingFlagsCreateInfoEXT layoutCreateInfo = { 0 };
 	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT;
 	layoutCreateInfo.pNext = VK_NULL_HANDLE;
 	layoutCreateInfo.bindingCount = descriptor->size;
 	layoutCreateInfo.pBindingFlags = &flags[0];
+	//
 
     VkDescriptorSetLayoutCreateInfo descLayoutInfo = { 0 };
     descLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	descLayoutInfo.pNext = &layoutCreateInfo;
+	if (descriptor->bindingExt)descLayoutInfo.pNext = &layoutCreateInfo;
     descLayoutInfo.bindingCount = descriptor->size;
     descLayoutInfo.pBindings = &descriptor->bindings[0];
-    
+  
     VK_CHECK(vkCreateDescriptorSetLayout(vk.device, &descLayoutInfo, NULL, &descriptor->layout), " failed to create Descriptor Set Layout!");
 
 	free(flags);

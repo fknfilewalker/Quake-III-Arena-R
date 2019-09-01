@@ -244,7 +244,7 @@ static void VK_CreateLogicalDevice()
 	indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
 	indexingFeatures.runtimeDescriptorArray = qtrue;
 	indexingFeatures.descriptorBindingVariableDescriptorCount = qtrue;
-	indexingFeatures.descriptorBindingUpdateUnusedWhilePending = qtrue;
+	indexingFeatures.descriptorBindingPartiallyBound = qtrue;
 
 	VkDeviceCreateInfo desc = { 0 };
 	desc.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

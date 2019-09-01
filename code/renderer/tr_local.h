@@ -993,14 +993,17 @@ typedef struct {
 } vkdescriptorData_t;
 
 typedef struct {
-    size_t size;
-    VkDescriptorSetLayoutBinding *bindings; // length = size
-    vkdescriptorData_t *data; // length = size
+    size_t								size;
+    VkDescriptorSetLayoutBinding		*bindings; // length = size
+    vkdescriptorData_t					*data; // length = size
 
-    VkDescriptorSet set;
+    VkDescriptorSet						set;
     
-    VkDescriptorSetLayout layout;
-    VkDescriptorPool pool;
+    VkDescriptorSetLayout				layout;
+    VkDescriptorPool					pool;
+
+	// ext
+	qboolean							bindingExt;
 } vkdescriptor_t;
 
 typedef struct {

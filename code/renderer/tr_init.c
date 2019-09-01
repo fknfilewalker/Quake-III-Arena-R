@@ -259,10 +259,9 @@ static void InitVulkan(void)
         VK_CreateVertexBuffer(&vk_d.uvbuffer2, 512 * 1024 * sizeof(vec2_t));
 		VK_CreateVertexBuffer(&vk_d.colorbuffer, 512 * 1024 * sizeof(color4ub_t));
 
+		vk_d.imageDescriptor.bindingExt = qtrue;
 		VK_AddSamplerCount(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT, MAX_DRAWIMAGES);
 		VK_FinishDescriptorWithoutUpdate(&vk_d.imageDescriptor);
-		//VK_SetUpdateSize(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT, 0);
-		//VK_UpdateDescriptor(&vk_d.imageDescriptor);
 
 		// device infos
 		VkPhysicalDeviceProperties devProperties;
