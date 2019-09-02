@@ -105,15 +105,13 @@ void VK_UploadImageData(vkimage_t* image, uint32_t width, uint32_t height, const
 	Com_Memcpy(p, pixels, (size_t)(imageSize));
 	vkUnmapMemory(vk.device, stagingBufferMemory);
 
-	//createImage(VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, format, textureImage, textureImageMemory);
-
 	VK_CopyBufferToImage(image, width, height, &stagingBuffer, mipLevel);
 
 	vkDestroyBuffer(vk.device, stagingBuffer, NULL);
 	vkFreeMemory(vk.device, stagingBufferMemory, NULL);
 }
 
-VK_TransitionImage(vkimage_t* image, VkImageLayout oldLayout, VkImageLayout newLayout)
+void VK_TransitionImage(vkimage_t* image, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
 	VkCommandBuffer commandBuffer;
 	VK_BeginSingleTimeCommands(&commandBuffer);
@@ -458,113 +456,11 @@ void VK_ReadPixelsScreen(qboolean alpha, byte* buffer) {
 	vkFreeMemory(vk.device, memory, NULL);
 }
 
-void VK_ReadDepthPixel(int x, int y, float* buffer) {
-	//vkDeviceWaitIdle(vk.device);
-
-	//// Create image to copy swapchain depth content to host
-	//VkImageCreateInfo desc = { 0 };
-	//desc.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	//desc.pNext = NULL;
-	//desc.flags = 0;
-	//desc.imageType = VK_IMAGE_TYPE_2D;
-	//desc.format = VK_FORMAT_D24_UNORM_S8_UINT;
-	//desc.extent.width = 1;
-	//desc.extent.height = 1;
-	//desc.extent.depth = 1;
-	//desc.mipLevels = 1;
-	//desc.arrayLayers = 1;
-	//desc.samples = VK_SAMPLE_COUNT_1_BIT;
-	//desc.tiling = VK_IMAGE_TILING_LINEAR;
-	//desc.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	//desc.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	//desc.queueFamilyIndexCount = 0;
-	//desc.pQueueFamilyIndices = NULL;
-	//desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-	//VkImage image;
-	//VK_CHECK(vkCreateImage(vk.device, &desc, NULL, &image), "failed to create image");
-
-	//VkMemoryRequirements mRequirements;
-	//vkGetImageMemoryRequirements(vk.device, image, &mRequirements);
-
-	//VkMemoryAllocateInfo alloc_info = { 0 };
-	//alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	//alloc_info.pNext = NULL;
-	//alloc_info.allocationSize = mRequirements.size;
-	//alloc_info.memoryTypeIndex = VK_HostVisibleMemoryIndex();
-
-	//VkDeviceMemory memory;
-	//VK_CHECK(vkAllocateMemory(vk.device, &alloc_info, NULL, &memory), "could not allocate Image Memory");
-	//VK_CHECK(vkBindImageMemory(vk.device, image, memory, 0), "could not bind Image Memory");
-
-	//VK_CHECK(vkAllocateMemory(vk.device, &alloc_info, NULL, &memory), "could not allocate Image Memory");
-	//VK_CHECK(vkBindImageMemory(vk.device, image, memory, 0), "could not bind Image Memory");
-
-	//VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
-	//VK_BeginSingleTimeCommands(&commandBuffer);
-
-	//// transition dst image
-	//VkImageMemoryBarrier barrier = { 0 };
-	//barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	//barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT | VK_IMAGE_ASPECT_DEPTH_BIT;
-	//barrier.subresourceRange.baseArrayLayer = 0;
-	//barrier.subresourceRange.layerCount = 1;
-	//barrier.subresourceRange.baseMipLevel = 0;
-	//barrier.subresourceRange.levelCount = 1;
-
-	//barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	//barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-	//barrier.srcAccessMask = 0;
-	//barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-	//barrier.image = image;
-
-	//vkCmdPipelineBarrier(commandBuffer,
-	//	VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-	//	VK_PIPELINE_STAGE_TRANSFER_BIT,
-	//	0, 0, NULL, 0, NULL,
-	//	1, &barrier);
-
-	//// transition swap chain image
-	//barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	//barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	//barrier.subresourceRange.baseArrayLayer = 0;
-	//barrier.subresourceRange.layerCount = 1;
-	//barrier.subresourceRange.baseMipLevel = 0;
-	//barrier.subresourceRange.levelCount = 1;
-
-	//barrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-	//barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-	//barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-	//barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-	//barrier.image = vk.swapchain.images[vk.swapchain.currentImage];
-
-	//vkCmdPipelineBarrier(commandBuffer,
-	//	VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-	//	VK_PIPELINE_STAGE_TRANSFER_BIT,
-	//	0, 0, NULL, 0, NULL,
-	//	1, &barrier);
-
-	//VkImageCopy region = { 0 };
-	//region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	//region.srcSubresource.mipLevel = 0;
-	//region.srcSubresource.baseArrayLayer = 0;
-	//region.srcSubresource.layerCount = 1;
-	//region.dstSubresource = region.srcSubresource;
-	//region.dstOffset = region.srcOffset;
-	//region.extent.width = glConfig.vidWidth;
-	//region.extent.height = glConfig.vidHeight;
-	//region.extent.depth = 1;
-
-	//vkCmdCopyImage(commandBuffer, vk.swapchain.images[vk.swapchain.currentImage], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-	//	image, VK_IMAGE_LAYOUT_GENERAL, 1, &region);
-
-	//VK_EndSingleTimeCommands(&commandBuffer);
-}
+void VK_ReadDepthPixel(int x, int y, float* buffer) {}
 
 void VK_CopyImageToSwapchain(vkimage_t *image) {
 
 	VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
-
 
 	VkImageMemoryBarrier barrier = { 0 };
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -582,7 +478,6 @@ void VK_CopyImageToSwapchain(vkimage_t *image) {
 		0, 0, NULL, 0, NULL,
 		1, &barrier);
 
-
 	barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
 	barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	barrier.image = image->handle;
@@ -591,7 +486,6 @@ void VK_CopyImageToSwapchain(vkimage_t *image) {
 		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 		0, 0, NULL, 0, NULL,
 		1, &barrier);
-
 
 	VkImageCopy copyRegion = { 0 };
 	copyRegion.srcSubresource = (VkImageSubresourceLayers){ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
@@ -618,6 +512,4 @@ void VK_CopyImageToSwapchain(vkimage_t *image) {
 		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 		0, 0, NULL, 0, NULL,
 		1, &barrier);
-
-	
 }

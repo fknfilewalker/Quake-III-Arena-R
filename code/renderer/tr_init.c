@@ -259,7 +259,7 @@ static void InitVulkan(void)
         VK_CreateVertexBuffer(&vk_d.uvbuffer2, 512 * 1024 * sizeof(vec2_t));
 		VK_CreateVertexBuffer(&vk_d.colorbuffer, 512 * 1024 * sizeof(color4ub_t));
 
-		vk_d.imageDescriptor.bindingExt = qtrue;
+		vk_d.imageDescriptor.lastBindingVariableSizeExt = qtrue;
 		VK_AddSamplerCount(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT, MAX_DRAWIMAGES);
 		VK_FinishDescriptorWithoutUpdate(&vk_d.imageDescriptor);
 
@@ -1251,6 +1251,14 @@ void RE_Shutdown( qboolean destroyWindow ) {
             VK_DestroyBuffer(&vk_d.uvbuffer2);
 			VK_DestroyBuffer(&vk_d.colorbuffer);
 			VK_DestroyDescriptor(&vk_d.imageDescriptor);
+
+			// RTX
+			VK_DestroyAccelerationStructure(&vk_d.accelerationStructures);
+			VK_DestroyBuffer(&vk_d.accelerationStructures.shaderBindingTableBuffer);
+			VK_DestroyBuffer(&vk_d.accelerationStructures.uniformBuffer);
+			VK_DestroyImage(&vk_d.accelerationStructures.resultImage);
+			VK_DestroyRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
+			VK_DestroyDescriptor(&vk_d.accelerationStructures.descriptor);
 
 			VK_DestroyAllPipelines();
 

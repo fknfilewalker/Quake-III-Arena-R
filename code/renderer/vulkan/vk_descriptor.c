@@ -6,7 +6,7 @@ void VK_CreateDescriptorSet(vkdescriptor_t *descriptor);
 void VK_UpdateDescriptorSet(vkdescriptor_t *descriptor);
 void VK_SetUpdateSize(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage, uint32_t updateSize);
 
-// add descriptor binding (right now without data)
+// add descriptor binding without data
 void VK_AddSamplerCount(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage, uint32_t count) {
 	descriptor->size++;
 	descriptor->bindings = realloc(descriptor->bindings, descriptor->size * sizeof(VkDescriptorSetLayoutBinding));
@@ -25,8 +25,6 @@ void VK_AddSamplerCount(vkdescriptor_t* descriptor, uint32_t binding, VkShaderSt
 		descriptor->data[descriptor->size - 1].descImageInfo[i].imageView = VK_NULL_HANDLE;
 		descriptor->data[descriptor->size - 1].descImageInfo[i].sampler = VK_NULL_HANDLE;
 	}
-    //descriptor->data[descriptor->size - 1].descImageInfo.imageView = VK_NULL_HANDLE;
-    //descriptor->data[descriptor->size - 1].descImageInfo.sampler = VK_NULL_HANDLE;
 }
 void VK_AddSampler(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage) {
 	VK_AddSamplerCount(descriptor, binding, stage, 1);
@@ -52,11 +50,6 @@ void VK_AddStorageImage(vkdescriptor_t* descriptor, uint32_t binding, VkShaderSt
 		descriptor->data[descriptor->size - 1].descImageInfo[i].imageView = VK_NULL_HANDLE;
 		descriptor->data[descriptor->size - 1].descImageInfo[i].sampler = VK_NULL_HANDLE;
 	}
-
-	/*descriptor->data[descriptor->size - 1].size = 1;
-	descriptor->data[descriptor->size - 1].descImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	descriptor->data[descriptor->size - 1].descImageInfo.imageView = VK_NULL_HANDLE;
-	descriptor->data[descriptor->size - 1].descImageInfo.sampler = VK_NULL_HANDLE;*/
 }
 void VK_AddUniformBuffer(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage) {
 	descriptor->size++;
@@ -163,7 +156,7 @@ static void VK_CreateDescriptorSetLayout(vkdescriptor_t *descriptor) {
 
     VkDescriptorSetLayoutCreateInfo descLayoutInfo = { 0 };
     descLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	if (descriptor->bindingExt)descLayoutInfo.pNext = &layoutCreateInfo;
+	if (descriptor->lastBindingVariableSizeExt)descLayoutInfo.pNext = &layoutCreateInfo;
     descLayoutInfo.bindingCount = descriptor->size;
     descLayoutInfo.pBindings = &descriptor->bindings[0];
   
@@ -177,13 +170,13 @@ static void VK_CreateDescriptorPool(vkdescriptor_t *descriptor) {
     
     for (int i = 0; i < descriptor->size; i++) {
         poolSizes[i].type = descriptor->bindings[i].descriptorType;
-		poolSizes[i].descriptorCount = descriptor->bindings[i].descriptorCount;//vk.swapchain.imageCount * descriptor->bindings[i].descriptorCount;
+		poolSizes[i].descriptorCount = descriptor->bindings[i].descriptorCount;
     }
     
     VkDescriptorPoolCreateInfo descPoolInfo = {0};
     descPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     descPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;//VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    descPoolInfo.maxSets = vk.swapchain.imageCount;
+    descPoolInfo.maxSets = 1;
     descPoolInfo.poolSizeCount = descriptor->size;
     descPoolInfo.pPoolSizes = &poolSizes[0];
     VK_CHECK(vkCreateDescriptorPool(vk.device, &descPoolInfo, NULL, &descriptor->pool), " failed to create Descriptor Pool!");
@@ -192,21 +185,13 @@ static void VK_CreateDescriptorPool(vkdescriptor_t *descriptor) {
 }
 
 void VK_CreateDescriptorSet(vkdescriptor_t *descriptor) {
-    //descriptor->sets = calloc(vk.swapchain.imageCount,  sizeof(VkDescriptorSet));
-    
-    for(int i = 0; i < vk.swapchain.imageCount; ++i){
-        //if(descriptor->set) vkFreeDescriptorSets(vk.device, &descriptor->pool, descriptor->size, &descriptor->set);
-    }
-    
-    //for (uint32_t i = 0; i < vk.swapchain.imageCount; ++i) {
-        VkDescriptorSetAllocateInfo descSetAllocInfo = {0};
-        descSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        descSetAllocInfo.descriptorSetCount = 1;
-        descSetAllocInfo.descriptorPool = descriptor->pool;
-        descSetAllocInfo.pSetLayouts = &descriptor->layout;
+    VkDescriptorSetAllocateInfo descSetAllocInfo = {0};
+    descSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descSetAllocInfo.descriptorSetCount = 1;
+    descSetAllocInfo.descriptorPool = descriptor->pool;
+    descSetAllocInfo.pSetLayouts = &descriptor->layout;
         
-        VK_CHECK(vkAllocateDescriptorSets(vk.device, &descSetAllocInfo, &descriptor->set), " failed to allocate Descriptor Set!");
-    //}
+    VK_CHECK(vkAllocateDescriptorSets(vk.device, &descSetAllocInfo, &descriptor->set), " failed to allocate Descriptor Set!");
 }
 
 void VK_FinishDescriptor(vkdescriptor_t* descriptor) {
@@ -223,8 +208,6 @@ void VK_FinishDescriptorWithoutUpdate(vkdescriptor_t* descriptor) {
 }
 
 void VK_UpdateDescriptorSet(vkdescriptor_t* descriptor) {
-
-	//for (uint32_t i = 0; i < vk.swapchain.imageCount; ++i) {
 	VkWriteDescriptorSet* descWrite = calloc(descriptor->size, sizeof(VkWriteDescriptorSet));
 	for (int j = 0; j < descriptor->size; ++j) {
 		descWrite[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -266,28 +249,27 @@ void VK_UpdateDescriptorSet(vkdescriptor_t* descriptor) {
 	}
 	vkUpdateDescriptorSets(vk.device, descriptor->size, &descWrite[0], 0, NULL);
 	free(descWrite);
-	//}
 }
 
 void VK_DestroyDescriptor(vkdescriptor_t* descriptor){
-    //for(int i = 0; i < vk.swapchain.imageCount; ++i){
-        //if(descriptor->sets[i] != NULL) {
-            vkFreeDescriptorSets(vk.device, descriptor->pool, descriptor->size, &descriptor->set);
-			//free(descriptor->set);
-        //}
-    //}
-    //if(descriptor->layout != NULL) {
+	if (descriptor->set != VK_NULL_HANDLE) {
+		vkFreeDescriptorSets(vk.device, descriptor->pool, 1, &descriptor->set);
+		descriptor->set = VK_NULL_HANDLE;
+	}
+    if(descriptor->layout != VK_NULL_HANDLE) {
         vkDestroyDescriptorSetLayout(vk.device, descriptor->layout, NULL);
         descriptor->layout = VK_NULL_HANDLE;
-    //}
-    //if(descriptor->pool != NULL) {
+    }
+    if(descriptor->pool != VK_NULL_HANDLE) {
         vkDestroyDescriptorPool(vk.device, descriptor->pool, NULL);
-
-    //}
+		descriptor->pool = VK_NULL_HANDLE;
+    }
     
-    free(descriptor->bindings);
-	for (int i = 0; i < descriptor->size; ++i) free(descriptor->data[i].descImageInfo);
+	for (int i = 0; i < descriptor->size; ++i) {
+		if(descriptor->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) free(descriptor->data[i].descImageInfo);
+	}
     free(descriptor->data);
+    free(descriptor->bindings);
     
 	memset(descriptor, 0, sizeof(vkdescriptor_t));
 }

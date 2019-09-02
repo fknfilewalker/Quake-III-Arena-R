@@ -1003,7 +1003,7 @@ typedef struct {
     VkDescriptorPool					pool;
 
 	// ext
-	qboolean							bindingExt;
+	qboolean							lastBindingVariableSizeExt;
 } vkdescriptor_t;
 
 typedef struct {
@@ -1151,7 +1151,6 @@ typedef struct {
 	vkaccelerationStructure_t	bottom;
 	vkaccelerationStructure_t	top;
 	vkbuffer_t					instanceBuffer;
-	vkbuffer_t					scratchBuffer;
 	vkbuffer_t					uniformBuffer;
 	vkbuffer_t					shaderBindingTableBuffer;
 	vkimage_t					resultImage;
@@ -1203,14 +1202,14 @@ typedef struct {
     vkimage_t           images[MAX_DRAWIMAGES];
 
 	VkDeviceSize		offsetIdx;
-    vkbuffer_t    indexbuffer;
+    vkbuffer_t			indexbuffer;
 	VkDeviceSize		offset;
-    vkbuffer_t    attributeBuffer;
-    vkbuffer_t    vertexbuffer;
-    vkbuffer_t    normalbuffer;
-    vkbuffer_t    uvbuffer1;
-    vkbuffer_t    uvbuffer2;
-    vkbuffer_t    colorbuffer;
+    vkbuffer_t			attributeBuffer;
+    vkbuffer_t			vertexbuffer;
+    vkbuffer_t			normalbuffer;
+    vkbuffer_t			uvbuffer1;
+    vkbuffer_t			uvbuffer2;
+    vkbuffer_t			colorbuffer;
 
 	// RTX
 	vkaccelerationStructures_t accelerationStructures;

@@ -78,26 +78,11 @@ void VK_UploadScene(vkaccelerationStructures_t* as) {
 	VK_CreateTopLevelAccelerationStructure(&as->top);
 
 	// build
-	VkAccelerationStructureMemoryRequirementsInfoNV memoryRequirementsInfo = { 0 };
-	memoryRequirementsInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV;
-	memoryRequirementsInfo.type = VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_OBJECT_NV;
-
-	VkMemoryRequirements2 memReqBottomLevelAS;
-	memoryRequirementsInfo.accelerationStructure = as->bottom.accelerationStructure;
-	vkGetAccelerationStructureMemoryRequirementsNV(vk.device, &memoryRequirementsInfo, &memReqBottomLevelAS);
-
-	VkMemoryRequirements2 memReqTopLevelAS;
-	memoryRequirementsInfo.accelerationStructure = as->top.accelerationStructure;
-	vkGetAccelerationStructureMemoryRequirementsNV(vk.device, &memoryRequirementsInfo, &memReqTopLevelAS);
-
-	const VkDeviceSize scratchBufferSize = max(memReqBottomLevelAS.memoryRequirements.size, memReqTopLevelAS.memoryRequirements.size);
-
-	VK_CreateRayTracingScratchBuffer(&as->scratchBuffer, scratchBufferSize);
-
 	VK_BuildAccelerationStructure(as, &geometry);
 
-	//VK_DestroyBuffer(&as->instanceBuffer);
-	//VK_DestroyBuffer(&as->scratchBuffer);
+	VK_DestroyBuffer(&vBuffer);
+	VK_DestroyBuffer(&iBuffer);
+	VK_DestroyBuffer(&as->instanceBuffer);
 
 	as->init = qtrue;
 
@@ -175,7 +160,24 @@ static void VK_CreateTopLevelAccelerationStructure(vkaccelerationStructure_t* to
 }
 
 static void VK_BuildAccelerationStructure(vkaccelerationStructures_t* as, const VkGeometryNV* geometries) {
+	// create scratch buffer
+	vkbuffer_t scratchBuffer = { 0 };
 
+	VkAccelerationStructureMemoryRequirementsInfoNV memoryRequirementsInfo = { 0 };
+	memoryRequirementsInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV;
+	memoryRequirementsInfo.type = VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_OBJECT_NV;
+
+	VkMemoryRequirements2 memReqBottomLevelAS;
+	memoryRequirementsInfo.accelerationStructure = as->bottom.accelerationStructure;
+	vkGetAccelerationStructureMemoryRequirementsNV(vk.device, &memoryRequirementsInfo, &memReqBottomLevelAS);
+	VkMemoryRequirements2 memReqTopLevelAS;
+	memoryRequirementsInfo.accelerationStructure = as->top.accelerationStructure;
+	vkGetAccelerationStructureMemoryRequirementsNV(vk.device, &memoryRequirementsInfo, &memReqTopLevelAS);
+
+	const VkDeviceSize scratchBufferSize = max(memReqBottomLevelAS.memoryRequirements.size, memReqTopLevelAS.memoryRequirements.size);
+	VK_CreateRayTracingScratchBuffer(&scratchBuffer, scratchBufferSize);
+
+	// record build cmds
 	VkCommandBuffer commandBuffer = { 0 };
 	VK_BeginSingleTimeCommands(&commandBuffer);
 
@@ -193,7 +195,7 @@ static void VK_BuildAccelerationStructure(vkaccelerationStructures_t* as, const 
 		VK_FALSE,
 		as->bottom.accelerationStructure,
 		VK_NULL_HANDLE,
-		as->scratchBuffer.buffer,
+		scratchBuffer.buffer,
 		0);
 
 	VkMemoryBarrier memoryBarrier = { 0 };
@@ -218,10 +220,35 @@ static void VK_BuildAccelerationStructure(vkaccelerationStructures_t* as, const 
 		VK_FALSE,
 		as->top.accelerationStructure,
 		VK_NULL_HANDLE,
-		as->scratchBuffer.buffer,
+		scratchBuffer.buffer,
 		0);
 
 	vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
 
 	VK_EndSingleTimeCommands(&commandBuffer);
+
+	// destroy scratch Buffer
+	VK_DestroyBuffer(&scratchBuffer);
+}
+
+void VK_DestroyAccelerationStructure(vkaccelerationStructures_t* as) {
+	if (as->bottom.memory != VK_NULL_HANDLE) {
+		vkFreeMemory(vk.device, as->bottom.memory, NULL);
+		as->bottom.memory = VK_NULL_HANDLE;
+	}
+	if (as->top.memory != VK_NULL_HANDLE) {
+		vkFreeMemory(vk.device, as->top.memory, NULL);
+		as->top.memory = VK_NULL_HANDLE;
+	}
+
+	if (as->bottom.accelerationStructure != VK_NULL_HANDLE) {
+		vkDestroyAccelerationStructureNV(vk.device, as->bottom.accelerationStructure, NULL);
+		as->bottom.accelerationStructure = VK_NULL_HANDLE;
+	}
+	if (as->top.accelerationStructure != VK_NULL_HANDLE) {
+		vkDestroyAccelerationStructureNV(vk.device, as->top.accelerationStructure, NULL);
+		as->top.accelerationStructure = VK_NULL_HANDLE;
+	}
+
+	
 }

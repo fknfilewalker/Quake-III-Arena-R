@@ -50,13 +50,25 @@ void VK_UploadBufferData(vkbuffer_t* buffer, const byte* data) {
 	VK_UploadBufferDataOffset(buffer, 0, buffer->allocSize, data);
 }
 
+void VK_MapBuffer(vkbuffer_t* buffer) {
+	if (!buffer->p) {
+		VK_CHECK(vkMapMemory(vk.device, buffer->memory, 0, buffer->allocSize, 0, (byte * *)(&buffer->p)), "failed to Map Memory!");
+	}
+}
+
 void VK_UnmapBuffer(vkbuffer_t* buffer) {
-	if (buffer->p) vkUnmapMemory(vk.device, buffer->memory);
+	if (buffer->p) {
+		vkUnmapMemory(vk.device, buffer->memory);
+		buffer->p = NULL;
+	}
 }
 
 void VK_DestroyBuffer(vkbuffer_t* buffer)
 {
-    if (buffer->p) vkUnmapMemory(vk.device, buffer->memory);
+	if (buffer->p) {
+		vkUnmapMemory(vk.device, buffer->memory);
+		buffer->p = NULL;
+	}
 	if (buffer->buffer != NULL) {
 		vkDestroyBuffer(vk.device, buffer->buffer, NULL);
 	}
