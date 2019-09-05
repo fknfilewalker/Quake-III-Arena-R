@@ -1,5 +1,9 @@
 #include "../tr_local.h"
 
+static void VK_BufferMemoryBarrier(VkCommandBuffer cb, VkBuffer* buffer,
+	VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages,
+	VkAccessFlags srcAccess, VkAccessFlags dstAccess);
+
 /*
  ** INFO
  */
@@ -10,12 +14,14 @@ void VK_GetDeviceProperties(VkPhysicalDeviceProperties *devProperties)
 
 void VK_BeginRenderClear()
 {
-	vk_d.offsetIdx = 0;
-	vk_d.offset = 0;
+	// buffer offset so each cmd buffer has its own range
+	vk_d.offsetIdx = vk.swapchain.currentImage * VK_INDEX_DATA_SIZE;
+	vk_d.offset = vk.swapchain.currentImage * VK_VERTEX_ATTRIBUTE_DATA_SIZE;
 	vk_d.currentPipeline = -1;
 
 	VkClearColorValue cc = { 0.1f,0.1f,0.1f,1.0f };
     VkClearDepthStencilValue dsc = { 1, 0};
+
 
     VkClearValue clearValues[2] ={0};
 	//clearValues[0].color = cc;
@@ -49,6 +55,7 @@ void VK_BeginRenderClear()
 		vkshader_t s = { 0 };
 		VK_RayTracingShader(&s);
 
+		
 
 		VK_AddAccelerationStructure(&vk_d.accelerationStructures.descriptor, 0, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_AddStorageImage(&vk_d.accelerationStructures.descriptor, 1, VK_SHADER_STAGE_RAYGEN_BIT_NV);
@@ -61,11 +68,10 @@ void VK_BeginRenderClear()
 
 		VK_SetRayTracingDescriptorSet(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor);
 		VK_SetRayTracingShader(&vk_d.accelerationStructures.pipeline, &s);
+		VK_AddRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0, sizeof(vec3_t));
 		VK_FinishRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
 	}
 	
-
-
 	vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     VK_BindIndexBuffer(&vk_d.indexbuffer, 0);
@@ -84,11 +90,25 @@ void VK_EndRender()
 {
 	vkCmdEndRenderPass(vk.swapchain.CurrentCommandBuffer());
 	if (vk_d.accelerationStructures.init) {
-		VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
-		VK_BindRayTracingDescriptorSet(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor);
-		VK_TraceRays();
+		//VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
+		//VK_BindRayTracingDescriptorSet(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor);
+		///*float pos[3];
+		//pos[0] = vk_d.modelViewMatrix[3];
+		//pos[1] = vk_d.modelViewMatrix[7];
+		//pos[2] = -1;*///backend.or.viewpos
+		////tr.viewParms.or.origin;
+		////ri.Printf(PRINT_ALL, "%f %f %f\n", tr.refdef.vieworg[0],
+		////	tr.refdef.vieworg[1],
+		////	tr.refdef.vieworg[2]);
+		////tr. or .modelMatrix
+		//	//ri.Printf(PRINT_ALL, "%f %f %f\n", tr. or .modelMatrix[3],
+		//		//tr. or .modelMatrix[7],
+		//		//tr. or .modelMatrix[11]);
+		//VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0, sizeof(vec3_t), &backEnd. or .origin);
+		////VK_TraceRays();
 		//VK_CopyImageToSwapchain(&vk_d.accelerationStructures.resultImage);
 	}
+
 }
 
 /*
@@ -115,19 +135,14 @@ void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean 
     Com_Memcpy(&vpSave, &vk_d.viewport, sizeof(vk_d.viewport));
     Com_Memcpy(&sSave, &vk_d.scissor, sizeof(vk_d.scissor));
 
-
-    qboolean set[2] = { clear_color, clear_depth };
-
     memset(&vk_d.viewport, 0, sizeof(vk_d.viewport));
     memset(&vk_d.scissor, 0, sizeof(vk_d.scissor));
-
     vk_d.viewport.x = 0;
     vk_d.viewport.y = 0;
     vk_d.viewport.height = glConfig.vidHeight;
     vk_d.viewport.width = glConfig.vidWidth;
     vk_d.viewport.minDepth = 0.0f;
     vk_d.viewport.maxDepth = 1.0f;
-
     vk_d.scissor.offset.x = 0;
     vk_d.scissor.offset.y = 0;
     vk_d.scissor.extent.height = glConfig.vidHeight;
@@ -149,54 +164,6 @@ void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean 
     // restore state
     Com_Memcpy(&vk_d.viewport, &vpSave, sizeof(vk_d.viewport));
     Com_Memcpy(&vk_d.scissor, &sSave, sizeof(vk_d.scissor));
-
-//
-//    VkClearAttachment attachments[2];
-//    uint32_t attachment_count = 0;
-//
-//    if (clear_depth || clear_stencil){
-//        if (clear_depth) {
-//            attachments[0].aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-//            attachments[0].clearValue.depthStencil.depth = 1.0f;
-//        }
-//        if (clear_stencil) {
-//            attachments[0].aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-//            attachments[0].clearValue.depthStencil.stencil = 0;
-//        }
-//        attachment_count = 1;
-//    }
-//
-//    if (clear_color) {
-//        attachments[attachment_count].aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-//        attachments[attachment_count].colorAttachment = 0;
-//        attachments[attachment_count].clearValue.color = (VkClearColorValue) { color[0], color[1], color[2], color[3] };
-//        attachment_count++;
-//    }
-//
-//    VkClearRect clear_rect[2] = {0};
-//    clear_rect[0].rect.extent.width = vk.swapchain.extent.width;
-//    clear_rect[0].rect.extent.height = vk.swapchain.extent.height;
-//    clear_rect[0].baseArrayLayer = 0;
-//    clear_rect[0].layerCount = 1;
-//    int rect_count = 1;
-//
-//    // Split viewport rectangle into two non-overlapping rectangles.
-//    // It's a HACK to prevent Vulkan validation layer's performance warning:
-//    //        "vkCmdClearAttachments() issued on command buffer object XXX prior to any Draw Cmds.
-//    //         It is recommended you use RenderPass LOAD_OP_CLEAR on Attachments prior to any Draw."
-//    //
-//    // NOTE: we don't use LOAD_OP_CLEAR for color attachment when we begin renderpass
-//    // since at that point we don't know whether we need collor buffer clear (usually we don't).
-//    if (clear_color) {
-//        uint32_t h = clear_rect[0].rect.extent.height / 2;
-//        clear_rect[0].rect.extent.height = h;
-//        clear_rect[1] = clear_rect[0];
-//        clear_rect[1].rect.offset.y = h;
-//        rect_count = 2;
-//    }
-//
-//    VkCommandBuffer cmdBuf = vk.swapchain.CurrentCommandBuffer();
-//    vkCmdClearAttachments(cmdBuf, attachment_count, attachments, rect_count, clear_rect);
 }
 
 /*
@@ -221,7 +188,6 @@ uint32_t VK_AddPipeline(vkpipeline_t* p) {
 	vk_d.pipelineListSize++;
 	return vk_d.pipelineListSize - 1;
 }
-
 
 /*
 ** CMD RECORD
@@ -258,29 +224,6 @@ void VK_EndSingleTimeCommands(VkCommandBuffer *commandBuffer) {
 
 	vkFreeCommandBuffers(vk.device, vk.commandPool, 1, commandBuffer);
 }
-
-//void VK_FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free)
-//{
-//	if (commandBuffer == VK_NULL_HANDLE)
-//	{
-//		return;
-//	}
-//
-//	VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
-//
-//	VkSubmitInfo submitInfo = {};
-//	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-//	submitInfo.commandBufferCount = 1;
-//	submitInfo.pCommandBuffers = &commandBuffer;
-//
-//	VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-//	VK_CHECK_RESULT(vkQueueWaitIdle(queue));
-//
-//	if (free)
-//	{
-//		vkFreeCommandBuffers(device, cmdPool, 1, &commandBuffer);
-//	}
-//}
 
 /*
 ** MEMORY
@@ -325,6 +268,24 @@ void VK_CreateImageMemory(VkMemoryPropertyFlags properties, VkImage* image, VkDe
 
 	VK_CHECK(vkAllocateMemory(vk.device, &allocInfo, NULL, bufferMemory), "failed to allocate Image Memory!");
 	VK_CHECK(vkBindImageMemory(vk.device, *image, *bufferMemory, 0), "failed to bind Image Memory!");
+}
+
+static void VK_BufferMemoryBarrier(VkCommandBuffer cb, VkBuffer* buffer,
+	VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages,
+	VkAccessFlags srcAccess, VkAccessFlags dstAccess) {
+
+	VkBufferMemoryBarrier barrier;
+	barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+	barrier.pNext = NULL;
+	barrier.srcAccessMask = srcAccess;
+	barrier.dstAccessMask = dstAccess;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.buffer = *buffer;
+	barrier.offset = 0;
+	barrier.size = VK_WHOLE_SIZE;
+
+	vkCmdPipelineBarrier(cb, srcStages, dstStages, 0, 0, NULL, 1, &barrier, 0, NULL);
 }
 
 uint32_t VK_FindMemoryTypeIndex(uint32_t memoryTypeBits, VkMemoryPropertyFlags properties)

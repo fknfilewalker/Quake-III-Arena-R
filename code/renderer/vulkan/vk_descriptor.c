@@ -245,7 +245,6 @@ void VK_UpdateDescriptorSet(vkdescriptor_t* descriptor) {
 			assert(descriptor->data[j].descAccelerationStructureInfo.pAccelerationStructures != NULL);
 			break;
 		}
-
 	}
 	vkUpdateDescriptorSets(vk.device, descriptor->size, &descWrite[0], 0, NULL);
 	free(descWrite);

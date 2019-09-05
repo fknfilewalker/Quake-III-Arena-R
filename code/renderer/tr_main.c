@@ -1322,6 +1322,7 @@ void R_AddEntitySurfaces (void) {
 		// simple generated models, like sprites and beams, are not culled
 		switch ( ent->e.reType ) {
 		case RT_PORTALSURFACE:
+			// rtx mirror
 			break;		// don't draw anything
 		case RT_SPRITE:
 		case RT_BEAM:

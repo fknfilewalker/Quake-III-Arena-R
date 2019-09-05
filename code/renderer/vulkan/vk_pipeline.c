@@ -20,7 +20,6 @@ static void VK_CreatePipelineCache(vkpipeline_t *pipeline);
 static void VK_CreatePipelineLayout(vkpipeline_t *pipeline);
 static void VK_CreatePipeline(vkpipeline_t *pipeline);
 
-
 /*
  * Use these functions to define pipeline before calling VK_FinishPipeline
  */
@@ -213,7 +212,6 @@ static void VK_CreateShaderBindingTable(vkpipeline_t* pipeline) {
 	const uint32_t sbtSize = vk.rayTracingProperties.shaderGroupHandleSize * 3;
 	VK_CreateShaderBindingTableBuffer(&vk_d.accelerationStructures.shaderBindingTableBuffer, sbtSize);
 
-
 	uint8_t* shaderHandleStorage = calloc(sbtSize, sizeof(uint8_t));
 	// Get shader identifiers
 	VK_CHECK(vkGetRayTracingShaderGroupHandlesNV(vk.device, pipeline->handle, 0, 3, sbtSize, shaderHandleStorage), "failed to get shader handels");
@@ -353,7 +351,6 @@ void VK_InitPipelines() {
 				else {
 				}
 
-
 				vkpipeline_t p = { 0 };
 				vkshader_t s = { 0 };
 				VK_ClearAttachmentShader(&s);
@@ -369,7 +366,6 @@ void VK_InitPipelines() {
                 VK_AddAttributeDescription(&p, 2, 2, VK_FORMAT_R32G32_SFLOAT, 0 * sizeof(float));
 				VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(vec4_t));
 				VK_FinishPipeline(&p);
-
 
 				pipeline.pipeline = p;
 				pipeline.clearColor = clearColor;

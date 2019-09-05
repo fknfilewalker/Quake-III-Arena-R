@@ -252,12 +252,12 @@ static void InitVulkan(void)
 
 		VK_InitPipelines();
 
-		VK_CreateIndexBuffer(&vk_d.indexbuffer, 1024 * 1024 * sizeof(uint32_t));
-		VK_CreateVertexBuffer(&vk_d.vertexbuffer, 512 * 1024 * sizeof(vec4_t));
-		VK_CreateVertexBuffer(&vk_d.normalbuffer, 512 * 1024 * sizeof(vec4_t));
-		VK_CreateVertexBuffer(&vk_d.uvbuffer1, 512 * 1024 * sizeof(vec2_t));
-        VK_CreateVertexBuffer(&vk_d.uvbuffer2, 512 * 1024 * sizeof(vec2_t));
-		VK_CreateVertexBuffer(&vk_d.colorbuffer, 512 * 1024 * sizeof(color4ub_t));
+		VK_CreateIndexBuffer(&vk_d.indexbuffer, vk.swapchain.imageCount * VK_INDEX_DATA_SIZE * sizeof(uint32_t));
+		VK_CreateVertexBuffer(&vk_d.vertexbuffer, vk.swapchain.imageCount * VK_VERTEX_ATTRIBUTE_DATA_SIZE * sizeof(vec4_t));
+		VK_CreateVertexBuffer(&vk_d.normalbuffer, vk.swapchain.imageCount * VK_VERTEX_ATTRIBUTE_DATA_SIZE * sizeof(vec4_t));
+		VK_CreateVertexBuffer(&vk_d.uvbuffer1, vk.swapchain.imageCount * VK_VERTEX_ATTRIBUTE_DATA_SIZE * sizeof(vec2_t));
+        VK_CreateVertexBuffer(&vk_d.uvbuffer2, vk.swapchain.imageCount * VK_VERTEX_ATTRIBUTE_DATA_SIZE * sizeof(vec2_t));
+		VK_CreateVertexBuffer(&vk_d.colorbuffer, vk.swapchain.imageCount * VK_VERTEX_ATTRIBUTE_DATA_SIZE * sizeof(color4ub_t));
 
 		vk_d.imageDescriptor.lastBindingVariableSizeExt = qtrue;
 		VK_AddSamplerCount(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT, MAX_DRAWIMAGES);

@@ -975,11 +975,9 @@ Vulkan
 
 ==============================================================================
 */
-#define MAX_SURFACE_FORMAT_ARRAY_SIZE 10
-
-#define VK_MAX_IMAGES 100
-
-
+#define VK_MAX_SURFACE_FORMAT_ARRAY_SIZE 10
+#define VK_INDEX_DATA_SIZE 1024 * 1024
+#define VK_VERTEX_ATTRIBUTE_DATA_SIZE 512 * 1024
 
 // --Pipeline parts--
 typedef struct {
@@ -1150,7 +1148,6 @@ typedef struct {
 	qboolean					init;
 	vkaccelerationStructure_t	bottom;
 	vkaccelerationStructure_t	top;
-	vkbuffer_t					instanceBuffer;
 	vkbuffer_t					uniformBuffer;
 	vkbuffer_t					shaderBindingTableBuffer;
 	vkimage_t					resultImage;
@@ -1161,9 +1158,9 @@ typedef struct {
 typedef struct {
 	VkSurfaceCapabilitiesKHR	capabilities;
 	uint32_t					formatCount;
-	VkSurfaceFormatKHR			formats[MAX_SURFACE_FORMAT_ARRAY_SIZE];
+	VkSurfaceFormatKHR			formats[VK_MAX_SURFACE_FORMAT_ARRAY_SIZE];
 	uint32_t					presentModeCount;
-	VkPresentModeKHR			presentModes[MAX_SURFACE_FORMAT_ARRAY_SIZE];
+	VkPresentModeKHR			presentModes[VK_MAX_SURFACE_FORMAT_ARRAY_SIZE];
 } swapChainSupportDetails_t;
 
 typedef struct {
