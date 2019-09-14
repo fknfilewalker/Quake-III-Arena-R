@@ -1780,6 +1780,94 @@ qboolean R_GetEntityToken( char *buffer, int size ) {
 	}
 }
 
+static	void R_BuildAccelerationStructure() {
+	int i, j;
+
+	vkgeometry_t geometry = {0};
+	VK_CreateIndexBuffer(&geometry.idx, VK_INDEX_DATA_SIZE * sizeof(uint32_t));
+	VK_CreateVertexBuffer(&geometry.xyz, VK_VERTEX_ATTRIBUTE_DATA_SIZE * VERTEXSIZE * sizeof(float));
+
+	geometry.sizeIDX = calloc(100000, sizeof(uint32_t));
+	geometry.sizeXYZ = calloc(100000, sizeof(uint32_t));
+
+	uint32_t offsetIDX = 0;
+	uint32_t offsetXYZ = 0;
+
+	uint32_t index = 0;
+	for (i = 0; i < s_worldData.numsurfaces; i++) {
+		srfSurfaceFace_t* cv = (srfSurfaceFace_t *) s_worldData.surfaces[i].data;
+		if (cv->surfaceType == SF_FACE) {
+			geometry.sizeIDX[index] = cv->numIndices;
+			geometry.sizeXYZ[index] = cv->numPoints;
+		
+			//VK_UploadBufferDataOffset(&geometry.idx, offsetIDX * sizeof(uint32_t), cv->numIndices * sizeof(uint32_t), (void*)& ((uint32_t*)((byte*)cv + cv->ofsIndices))[0]);
+			
+			for (j = 0; j < cv->numIndices; j++) {
+				//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
+				uint32_t idx = (uint32_t)(*(int*)((byte*)cv + cv->ofsIndices + (j * sizeof(int))));
+				//idx += offsetXYZ;
+				VK_UploadBufferDataOffset(&geometry.idx, offsetIDX * sizeof(uint32_t) + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)& idx);
+			}
+
+			for (j = 0; j < cv->numPoints; j++) {
+				vec3_t p = { 0 };
+				p[0] = cv->points[j][0];
+				p[1] = cv->points[j][1];
+				p[2] = cv->points[j][2];
+				VK_UploadBufferDataOffset(&geometry.xyz, offsetXYZ * sizeof(vec3_t) + (j * sizeof(vec3_t)), sizeof(vec3_t), (void*)& p);
+			}
+
+			geometry.numSurfaces += 1;
+			index += 1;
+			offsetIDX += cv->numIndices;
+			offsetXYZ += cv->numPoints;
+
+			//((int*)((byte*)cv + cv->ofsIndices))[i]
+
+			//for (j = 0; j < cv->numIndices; j++) {
+				//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
+
+			//}
+			//if(geometry.numSurfaces == 20)break;
+		}
+	}
+
+	if (!vk_d.accelerationStructures.init) {
+		//VK_UploadScene2(&vk_d.accelerationStructures);
+		VK_UploadScene(&vk_d.accelerationStructures, &geometry);
+
+		struct UniformData {
+			float viewInverse[16];
+			float projInverse[16];
+		} uniformData;
+
+		VK_CreateUniformBuffer(&vk_d.accelerationStructures.uniformBuffer, sizeof(uniformData));
+
+		VK_CreateImage(&vk_d.accelerationStructures.resultImage, vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, 1);
+		VK_TransitionImage(&vk_d.accelerationStructures.resultImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+
+		vkshader_t s = { 0 };
+		VK_RayTracingShader(&s);
+
+
+
+		VK_AddAccelerationStructure(&vk_d.accelerationStructures.descriptor, 0, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_AddStorageImage(&vk_d.accelerationStructures.descriptor, 1, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		//VK_AddUniformBuffer(&vk_d.accelerationStructures.descriptor, 2, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_SetAccelerationStructure(&vk_d.accelerationStructures.descriptor, 0, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.accelerationStructures.top.accelerationStructure);
+		VK_SetStorageImage(&vk_d.accelerationStructures.descriptor, 1, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultImage.view);
+		//VK_SetUniformBuffer(&vk_d.accelerationStructures.descriptor, 2, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.uniformBuffer.buffer);
+		VK_FinishDescriptor(&vk_d.accelerationStructures.descriptor);
+
+
+		VK_SetRayTracingDescriptorSet(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor);
+		VK_SetRayTracingShader(&vk_d.accelerationStructures.pipeline, &s);
+		VK_AddRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0, sizeof(vec3_t));
+		VK_FinishRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
+	}
+}
+
 /*
 =================
 RE_LoadWorldMap
@@ -1852,6 +1940,8 @@ void RE_LoadWorldMap( const char *name ) {
 	R_LoadVisibility( &header->lumps[LUMP_VISIBILITY] );
 	R_LoadEntities( &header->lumps[LUMP_ENTITIES] );
 	R_LoadLightGrid( &header->lumps[LUMP_LIGHTGRID] );
+
+	R_BuildAccelerationStructure();
 
 	s_worldData.dataSize = (byte *)ri.Hunk_Alloc(0, h_low) - startMarker;
 

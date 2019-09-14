@@ -38,39 +38,7 @@ void VK_BeginRenderClear()
 
 	VkCommandBuffer cmdBuf = vk.swapchain.CurrentCommandBuffer();
 
-	if (!vk_d.accelerationStructures.init) {
-		VK_UploadScene(&vk_d.accelerationStructures);
-
-		struct UniformData {
-			float viewInverse[16];
-			float projInverse[16];
-		} uniformData;
-
-		VK_CreateUniformBuffer(&vk_d.accelerationStructures.uniformBuffer, sizeof(uniformData));
-
-		VK_CreateImage(&vk_d.accelerationStructures.resultImage, vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, 1);
-		VK_TransitionImage(&vk_d.accelerationStructures.resultImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-
-		vkshader_t s = { 0 };
-		VK_RayTracingShader(&s);
-
-		
-
-		VK_AddAccelerationStructure(&vk_d.accelerationStructures.descriptor, 0, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_AddStorageImage(&vk_d.accelerationStructures.descriptor, 1, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		//VK_AddUniformBuffer(&vk_d.accelerationStructures.descriptor, 2, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetAccelerationStructure(&vk_d.accelerationStructures.descriptor, 0, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.accelerationStructures.top.accelerationStructure);
-		VK_SetStorageImage(&vk_d.accelerationStructures.descriptor, 1, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultImage.view);
-		//VK_SetUniformBuffer(&vk_d.accelerationStructures.descriptor, 2, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.uniformBuffer.buffer);
-		VK_FinishDescriptor(&vk_d.accelerationStructures.descriptor);
-
-
-		VK_SetRayTracingDescriptorSet(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor);
-		VK_SetRayTracingShader(&vk_d.accelerationStructures.pipeline, &s);
-		VK_AddRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0, sizeof(vec3_t));
-		VK_FinishRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
-	}
+	
 	
 	vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -90,12 +58,13 @@ void VK_EndRender()
 {
 	vkCmdEndRenderPass(vk.swapchain.CurrentCommandBuffer());
 	if (vk_d.accelerationStructures.init) {
-		//VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
-		//VK_BindRayTracingDescriptorSet(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor);
-		///*float pos[3];
-		//pos[0] = vk_d.modelViewMatrix[3];
-		//pos[1] = vk_d.modelViewMatrix[7];
-		//pos[2] = -1;*///backend.or.viewpos
+		VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
+		VK_BindRayTracingDescriptorSet(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor);
+		
+		float pos[3];
+		pos[0] = 0;// -650;
+		pos[1] = 0;// 630;
+		pos[2] = 1000;//140;
 		////tr.viewParms.or.origin;
 		////ri.Printf(PRINT_ALL, "%f %f %f\n", tr.refdef.vieworg[0],
 		////	tr.refdef.vieworg[1],
@@ -104,9 +73,9 @@ void VK_EndRender()
 		//	//ri.Printf(PRINT_ALL, "%f %f %f\n", tr. or .modelMatrix[3],
 		//		//tr. or .modelMatrix[7],
 		//		//tr. or .modelMatrix[11]);
-		//VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0, sizeof(vec3_t), &backEnd. or .origin);
-		////VK_TraceRays();
-		//VK_CopyImageToSwapchain(&vk_d.accelerationStructures.resultImage);
+		VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0, sizeof(vec3_t), &pos);
+		VK_TraceRays();
+		VK_CopyImageToSwapchain(&vk_d.accelerationStructures.resultImage);
 	}
 
 }

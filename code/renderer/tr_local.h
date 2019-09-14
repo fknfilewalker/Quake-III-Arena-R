@@ -1140,9 +1140,21 @@ typedef struct {
 } vkrtpipeline_t;
 
 typedef struct {
+	uint32_t numSurfaces;
+
+	vkbuffer_t xyz;
+	vkbuffer_t idx;
+
+	uint32_t* sizeXYZ;
+	uint32_t* sizeIDX;
+} vkgeometry_t;
+
+typedef struct {
 	VkDeviceMemory memory;
 	VkAccelerationStructureNV accelerationStructure;
 	uint64_t handle;
+
+	uint32_t geometryCount;		//bottom only
 } vkaccelerationStructure_t;
 typedef struct {
 	qboolean					init;

@@ -15,7 +15,68 @@ typedef struct {
 	uint64_t       accelerationStructureHandle;
 } VkGeometryInstanceNV;
 
-void VK_UploadScene(vkaccelerationStructures_t* as) {
+void VK_UploadScene(vkaccelerationStructures_t* as, vkgeometry_t* g) {
+	
+
+	// create instance buffer
+	/*vkbuffer_t transformBuffer = { 0 };
+	float transform[24] = {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+
+			1.0f, 0.0f, 0.0f, 0.3f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f
+	};
+	VK_CreateRayTracingBuffer(&transformBuffer, sizeof(transform));
+	VK_UploadBufferData(&transformBuffer, (void*)& transform);*/
+	
+	VkGeometryNV* geometrys = calloc(g->numSurfaces, sizeof(VkGeometryNV));
+
+	uint32_t offsetIDX = 0;
+	uint32_t offsetXYZ = 0;
+	for (int i = 0; i < g->numSurfaces; i++) {
+		geometrys[i].sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
+		geometrys[i].geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
+		geometrys[i].geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
+		geometrys[i].geometry.triangles.vertexData = g->xyz.buffer;
+		geometrys[i].geometry.triangles.vertexOffset = offsetXYZ * sizeof(vec3_t);;
+		geometrys[i].geometry.triangles.vertexCount = 0;//g->sizeXYZ[i];
+		geometrys[i].geometry.triangles.vertexStride = 3 * sizeof(float);
+		geometrys[i].geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+		geometrys[i].geometry.triangles.indexData = g->idx.buffer;
+		geometrys[i].geometry.triangles.indexOffset = offsetIDX * sizeof(uint32_t);
+		geometrys[i].geometry.triangles.indexCount = g->sizeIDX[i];
+		geometrys[i].geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+		geometrys[i].geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
+		geometrys[i].flags = VK_GEOMETRY_OPAQUE_BIT_NV;
+
+		offsetIDX += g->sizeIDX[i];
+		offsetXYZ += g->sizeXYZ[i];
+	}
+
+	
+	as->bottom.geometryCount = g->numSurfaces;
+	// create bottom as
+	VK_CreateBottomLevelAccelerationStructure(as, &geometrys[0]);
+	// create top as
+	VK_CreateTopLevelAccelerationStructure(as);
+	// build as
+	VK_BuildAccelerationStructure(as, &geometrys[0]);
+
+	//VK_DestroyBuffer(&transformBuffer);
+	//VK_DestroyBuffer(&vBuffer);
+	//VK_DestroyBuffer(&iBuffer);
+
+	free(geometrys);
+
+	as->init = qtrue;
+
+}
+
+
+void VK_UploadScene2(vkaccelerationStructures_t* as) {
 
 	struct Vertex {
 		float pos[3];
@@ -24,9 +85,9 @@ void VK_UploadScene(vkaccelerationStructures_t* as) {
 	vkbuffer_t iBuffer = { 0 };
 	
 	float vertices[9] = {
-		1.0f,  1.0f, 0.0f,
-		-1.0f,  1.0f, 0.0f,
-		0.0f, -1.0f, 0.0f
+		0.5f,  0.5f, 0.0f,
+		-0.5f,  0.5f, 0.0f,
+		0.0f, -0.5f, 0.0f
 	};
 
 	// Setup indices
@@ -36,6 +97,20 @@ void VK_UploadScene(vkaccelerationStructures_t* as) {
 	VK_CreateIndexBuffer(&iBuffer, sizeof(indices));
 	VK_UploadBufferData(&vBuffer, (void*) &vertices);
 	VK_UploadBufferData(&iBuffer, (void*) &indices);
+
+	// create instance buffer
+	vkbuffer_t transformBuffer = { 0 };
+	float transform[24] = {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+
+			1.0f, 0.0f, 0.0f, 0.3f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f
+	};
+	VK_CreateRayTracingBuffer(&transformBuffer, sizeof(transform));
+	VK_UploadBufferData(&transformBuffer, (void*)& transform);
 
 	VkGeometryNV geometry = { 0 };
 	geometry.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
@@ -50,19 +125,25 @@ void VK_UploadScene(vkaccelerationStructures_t* as) {
 	geometry.geometry.triangles.indexOffset = 0;
 	geometry.geometry.triangles.indexCount = 3;
 	geometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
-	geometry.geometry.triangles.transformData = VK_NULL_HANDLE;
+	geometry.geometry.triangles.transformData = transformBuffer.buffer;
 	geometry.geometry.triangles.transformOffset = 0;
 //	geometry.geometry.aabbs = { 0 };
 	geometry.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
 	geometry.flags = VK_GEOMETRY_OPAQUE_BIT_NV;
 
+	VkGeometryNV geometrys[2] = {0};
+	geometrys[0] = geometrys[1] = geometry;
+	geometrys[1].geometry.triangles.transformOffset = 12 * sizeof(float);
+
+	as->bottom.geometryCount = 2;
 	// create bottom as
-	VK_CreateBottomLevelAccelerationStructure(as, &geometry);
+	VK_CreateBottomLevelAccelerationStructure(as, &geometrys[0]);
 	// create top as
 	VK_CreateTopLevelAccelerationStructure(as);
 	// build as
-	VK_BuildAccelerationStructure(as, &geometry);
+	VK_BuildAccelerationStructure(as, &geometrys[0]);
 
+	VK_DestroyBuffer(&transformBuffer);
 	VK_DestroyBuffer(&vBuffer);
 	VK_DestroyBuffer(&iBuffer);
 
@@ -76,7 +157,7 @@ static void VK_CreateBottomLevelAccelerationStructure(vkaccelerationStructures_t
 	accelerationStructureInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
 	accelerationStructureInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV;
 	accelerationStructureInfo.instanceCount = 0;
-	accelerationStructureInfo.geometryCount = 1;
+	accelerationStructureInfo.geometryCount = as->bottom.geometryCount;
 	accelerationStructureInfo.pGeometries = geometries;
 
 	VkAccelerationStructureCreateInfoNV accelerationStructureCI = { 0 };
@@ -109,7 +190,6 @@ static void VK_CreateBottomLevelAccelerationStructure(vkaccelerationStructures_t
 static void VK_CreateTopLevelAccelerationStructure(vkaccelerationStructures_t* as)
 {
 	// create top as
-
 	VkAccelerationStructureInfoNV accelerationStructureInfo = { 0 };
 	accelerationStructureInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
 	accelerationStructureInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_NV;
@@ -167,7 +247,7 @@ static void VK_BuildAccelerationStructure(vkaccelerationStructures_t* as, const 
 	float transform[12] = {
 			1.0f, 0.0f, 0.0f, 0.0f,
 			0.0f, 1.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f
 	};
 
 	VkGeometryInstanceNV geometryInstance = { 0 };
@@ -188,7 +268,7 @@ static void VK_BuildAccelerationStructure(vkaccelerationStructures_t* as, const 
 	VkAccelerationStructureInfoNV buildInfo = { 0 };
 	buildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
 	buildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV;
-	buildInfo.geometryCount = 1;
+	buildInfo.geometryCount = as->bottom.geometryCount;
 	buildInfo.pGeometries = geometries;
 
 	vkCmdBuildAccelerationStructureNV(
