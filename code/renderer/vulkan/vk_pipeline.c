@@ -207,20 +207,6 @@ static void VK_CreatePipeline(vkpipeline_t *pipeline)
 }
 
 
-static void VK_CreateShaderBindingTable(vkpipeline_t* pipeline) {
-
-	const uint32_t sbtSize = vk.rayTracingProperties.shaderGroupHandleSize * 3;
-	VK_CreateShaderBindingTableBuffer(&vk_d.accelerationStructures.shaderBindingTableBuffer, sbtSize);
-
-	uint8_t* shaderHandleStorage = calloc(sbtSize, sizeof(uint8_t));
-	// Get shader identifiers
-	VK_CHECK(vkGetRayTracingShaderGroupHandlesNV(vk.device, pipeline->handle, 0, 3, sbtSize, shaderHandleStorage), "failed to get shader handels");
-	VK_UploadBufferData(&vk_d.accelerationStructures.shaderBindingTableBuffer, (void*)shaderHandleStorage);
-
-	VK_UnmapBuffer(&vk_d.accelerationStructures.shaderBindingTableBuffer);
-	free(shaderHandleStorage);
-}
-
 void VK_Bind1DescriptorSet(vkpipeline_t *pipeline, vkdescriptor_t *descriptor){
     VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1,

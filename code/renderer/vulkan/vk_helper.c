@@ -34,7 +34,7 @@ void VK_BeginRenderClear()
 	rpBeginInfo.renderArea.extent.width = vk.swapchain.extent.width;
 	rpBeginInfo.renderArea.extent.height = vk.swapchain.extent.height;
 	rpBeginInfo.clearValueCount = 2;//m_window->sampleCountFlagBits() > VK_SAMPLE_COUNT_1_BIT ? 3 : 2;
-	rpBeginInfo.pClearValues = clearValues;
+	rpBeginInfo.pClearValues = &clearValues;
 
 	VkCommandBuffer cmdBuf = vk.swapchain.CurrentCommandBuffer();
 
@@ -59,12 +59,12 @@ void VK_EndRender()
 	vkCmdEndRenderPass(vk.swapchain.CurrentCommandBuffer());
 	if (vk_d.accelerationStructures.init) {
 		VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
-		VK_BindRayTracingDescriptorSet(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor);
+		VK_Bind2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor, &vk_d.imageDescriptor);
 		
 		float pos[3];
 		pos[0] = 0;// -650;
 		pos[1] = 0;// 630;
-		pos[2] = 1000;//140;
+		pos[2] = 2000;//140;
 		////tr.viewParms.or.origin;
 		////ri.Printf(PRINT_ALL, "%f %f %f\n", tr.refdef.vieworg[0],
 		////	tr.refdef.vieworg[1],

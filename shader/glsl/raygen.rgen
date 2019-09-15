@@ -18,7 +18,7 @@ void main()
 
 	//vec4 origin = vec4(0,0,-1,1);
 	vec4 origin = vec4(position,1);
-	vec4 direction = vec4(normalize(vec3(d.x, d.y, 1)),1);
+	vec4 direction = vec4(normalize(vec3(d.x, d.y, -1)),1);
 
 	uint rayFlags = gl_RayFlagsOpaqueNV;
 	uint cullMask = 0xff;

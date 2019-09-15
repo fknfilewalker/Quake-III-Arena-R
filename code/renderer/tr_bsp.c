@@ -1784,8 +1784,8 @@ static	void R_BuildAccelerationStructure() {
 	int i, j;
 
 	vkgeometry_t geometry = {0};
-	VK_CreateIndexBuffer(&geometry.idx, VK_INDEX_DATA_SIZE * sizeof(uint32_t));
-	VK_CreateVertexBuffer(&geometry.xyz, VK_VERTEX_ATTRIBUTE_DATA_SIZE * VERTEXSIZE * sizeof(float));
+	VK_CreateAttributeBuffer(&geometry.idx, VK_INDEX_DATA_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	VK_CreateAttributeBuffer(&geometry.xyz, VK_VERTEX_ATTRIBUTE_DATA_SIZE * 8 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
 	geometry.sizeIDX = calloc(100000, sizeof(uint32_t));
 	geometry.sizeXYZ = calloc(100000, sizeof(uint32_t));
@@ -1796,6 +1796,8 @@ static	void R_BuildAccelerationStructure() {
 	uint32_t index = 0;
 	for (i = 0; i < s_worldData.numsurfaces; i++) {
 		srfSurfaceFace_t* cv = (srfSurfaceFace_t *) s_worldData.surfaces[i].data;
+		shader_t* s = tr.shaders[s_worldData.surfaces[i].shader->index];
+		//s_worldData.surfaces[i].shader->numStates
 		if (cv->surfaceType == SF_FACE) {
 			geometry.sizeIDX[index] = cv->numIndices;
 			geometry.sizeXYZ[index] = cv->numPoints;
@@ -1805,30 +1807,35 @@ static	void R_BuildAccelerationStructure() {
 			for (j = 0; j < cv->numIndices; j++) {
 				//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
 				uint32_t idx = (uint32_t)(*(int*)((byte*)cv + cv->ofsIndices + (j * sizeof(int))));
-				//idx += offsetXYZ;
+				idx += offsetXYZ;
 				VK_UploadBufferDataOffset(&geometry.idx, offsetIDX * sizeof(uint32_t) + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)& idx);
 			}
 
 			for (j = 0; j < cv->numPoints; j++) {
-				vec3_t p = { 0 };
-				p[0] = cv->points[j][0];
-				p[1] = cv->points[j][1];
-				p[2] = cv->points[j][2];
-				VK_UploadBufferDataOffset(&geometry.xyz, offsetXYZ * sizeof(vec3_t) + (j * sizeof(vec3_t)), sizeof(vec3_t), (void*)& p);
+				float p[6] = {
+					p[0] = cv->points[j][0],
+					p[1] = cv->points[j][1],
+					p[2] = cv->points[j][2],
+					p[3] = (float)s->stages[0]->bundle[0].image[0]->index,//->stages[0].bundle[0].image[0]->index, // texture id
+					p[4] = cv->points[j][3 + 0],
+					p[5] = cv->points[j][3 + 1]
+				};
+				//cv->points[i][3 + j] = LittleFloat(verts[i].st[j]);
+				VK_UploadBufferDataOffset(&geometry.xyz, offsetXYZ * 8 * sizeof(float) + (j * 8 * sizeof(float)), 6 * sizeof(float), (void*)& p);
 			}
-
+			//ri.Printf(PRINT_ALL, "Brightest lightmap value: %d\n", (int)(s->stages[0]->bundle[0].image[0]->index));
 			geometry.numSurfaces += 1;
 			index += 1;
 			offsetIDX += cv->numIndices;
 			offsetXYZ += cv->numPoints;
-
+			
 			//((int*)((byte*)cv + cv->ofsIndices))[i]
 
 			//for (j = 0; j < cv->numIndices; j++) {
 				//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
 
 			//}
-			//if(geometry.numSurfaces == 20)break;
+			//if(geometry.numSurfaces == 1)break;
 		}
 	}
 
@@ -1854,14 +1861,20 @@ static	void R_BuildAccelerationStructure() {
 
 		VK_AddAccelerationStructure(&vk_d.accelerationStructures.descriptor, 0, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_AddStorageImage(&vk_d.accelerationStructures.descriptor, 1, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor, 2, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor, 3, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV);
+		//VK_AddSamplerCount(&vk_d.accelerationStructures.descriptor, 2, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, MAX_DRAWIMAGES);
 		//VK_AddUniformBuffer(&vk_d.accelerationStructures.descriptor, 2, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetAccelerationStructure(&vk_d.accelerationStructures.descriptor, 0, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.accelerationStructures.top.accelerationStructure);
 		VK_SetStorageImage(&vk_d.accelerationStructures.descriptor, 1, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultImage.view);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor, 2, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, geometry.xyz.buffer);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor, 3, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, geometry.idx.buffer);
+		//VK_SetDescriptorSet(&p, &vk_d.imageDescriptor);
 		//VK_SetUniformBuffer(&vk_d.accelerationStructures.descriptor, 2, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.uniformBuffer.buffer);
 		VK_FinishDescriptor(&vk_d.accelerationStructures.descriptor);
 
 
-		VK_SetRayTracingDescriptorSet(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor);
+		VK_Set2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor, &vk_d.imageDescriptor);
 		VK_SetRayTracingShader(&vk_d.accelerationStructures.pipeline, &s);
 		VK_AddRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0, sizeof(vec3_t));
 		VK_FinishRayTracingPipeline(&vk_d.accelerationStructures.pipeline);

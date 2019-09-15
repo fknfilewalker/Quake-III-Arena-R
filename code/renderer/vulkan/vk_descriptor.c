@@ -51,6 +51,21 @@ void VK_AddStorageImage(vkdescriptor_t* descriptor, uint32_t binding, VkShaderSt
 		descriptor->data[descriptor->size - 1].descImageInfo[i].sampler = VK_NULL_HANDLE;
 	}
 }
+void VK_AddStorageBuffer(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage) {
+	descriptor->size++;
+	descriptor->bindings = realloc(descriptor->bindings, descriptor->size * sizeof(VkDescriptorSetLayoutBinding));
+	descriptor->data = realloc(descriptor->data, descriptor->size * sizeof(vkdescriptorData_t));
+
+	descriptor->bindings[descriptor->size - 1].binding = binding;
+	descriptor->bindings[descriptor->size - 1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	descriptor->bindings[descriptor->size - 1].descriptorCount = 1;
+	descriptor->bindings[descriptor->size - 1].stageFlags = stage;
+	descriptor->bindings[descriptor->size - 1].pImmutableSamplers = NULL;
+
+	descriptor->data[descriptor->size - 1].descBufferInfo.buffer = VK_NULL_HANDLE;
+	descriptor->data[descriptor->size - 1].descBufferInfo.offset = 0;
+	descriptor->data[descriptor->size - 1].descBufferInfo.range = 0;
+}
 void VK_AddUniformBuffer(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage) {
 	descriptor->size++;
 	descriptor->bindings = realloc(descriptor->bindings, descriptor->size * sizeof(VkDescriptorSetLayoutBinding));
@@ -104,6 +119,17 @@ void VK_SetStorageImage(vkdescriptor_t* descriptor, uint32_t binding, VkShaderSt
 			descriptor->bindings[i].stageFlags == stage) {
 			descriptor->data[i].descImageInfo[0].sampler = VK_NULL_HANDLE;
 			descriptor->data[i].descImageInfo[0].imageView = imageView;
+			return;
+		}
+	}
+}
+void VK_SetStorageBuffer(vkdescriptor_t* descriptor, uint32_t binding, VkShaderStageFlagBits stage, VkBuffer buffer) {
+	for (int i = 0; i < descriptor->size; ++i) {
+		if (descriptor->bindings[i].binding == binding &&
+			descriptor->bindings[i].stageFlags == stage) {
+			descriptor->data[i].descBufferInfo.buffer = buffer;
+			descriptor->data[i].descBufferInfo.offset = 0;
+			descriptor->data[i].descBufferInfo.range = VK_WHOLE_SIZE;
 			return;
 		}
 	}
@@ -227,6 +253,14 @@ void VK_UpdateDescriptorSet(vkdescriptor_t* descriptor) {
 			descWrite[j].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 			descWrite[j].pImageInfo = &descriptor->data[j].descImageInfo[0];
 			assert(descriptor->data[j].descImageInfo[0].imageView != NULL);
+			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+			descWrite[j].dstSet = descriptor->set;
+			descWrite[j].dstBinding = descriptor->bindings[j].binding;
+			descWrite[j].descriptorCount = 1;
+			descWrite[j].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descWrite[j].pBufferInfo = &descriptor->data[j].descBufferInfo;
+			assert(descriptor->data[j].descBufferInfo.buffer != NULL);
 			break;
 		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
 			descWrite[j].dstSet = descriptor->set;

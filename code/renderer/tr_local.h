@@ -1131,6 +1131,7 @@ typedef struct {
 	VkPipeline handle;
 
 	vkdescriptor_t* descriptor;
+	vkdescriptor_t* descriptor2;
 	vkshader_t* shader;
 
 	struct {
@@ -1153,11 +1154,13 @@ typedef struct {
 	VkDeviceMemory memory;
 	VkAccelerationStructureNV accelerationStructure;
 	uint64_t handle;
-
-	uint32_t geometryCount;		//bottom only
+	uint32_t geometryCount;
+	
 } vkaccelerationStructure_t;
 typedef struct {
 	qboolean					init;
+	uint32_t					bottomCount;		//bottom only
+
 	vkaccelerationStructure_t	bottom;
 	vkaccelerationStructure_t	top;
 	vkbuffer_t					uniformBuffer;

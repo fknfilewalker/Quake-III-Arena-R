@@ -12,6 +12,10 @@ static void VK_CreateRayTracingPipeline(vkrtpipeline_t* pipeline);
 void VK_SetRayTracingDescriptorSet(vkrtpipeline_t *pipeline, vkdescriptor_t *descriptor){
     pipeline->descriptor = descriptor;
 }
+void VK_Set2RayTracingDescriptorSets(vkrtpipeline_t* pipeline, vkdescriptor_t* descriptor, vkdescriptor_t* descriptor2) {
+	pipeline->descriptor = descriptor;
+	pipeline->descriptor2 = descriptor2;
+}
 
 void VK_SetRayTracingShader(vkrtpipeline_t *pipeline, vkshader_t *shader){
     pipeline->shader = shader;
@@ -70,14 +74,18 @@ static void VK_CreatePipelineLayout(vkrtpipeline_t*pipeline)
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = { 0 };
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     
-    VkDescriptorSetLayout dLayout[2];
-    dLayout[0] = pipeline->descriptor->layout;
-    if (pipeline->descriptor->layout != VK_NULL_HANDLE) {
+	VkDescriptorSetLayout dLayout[2];
+	dLayout[0] = pipeline->descriptor->layout;
+	if (pipeline->descriptor2 != NULL) {
+		dLayout[1] = pipeline->descriptor2->layout;
+		pipelineLayoutInfo.setLayoutCount = 2;
+	}
+	else if (pipeline->descriptor->layout != VK_NULL_HANDLE) {
 		pipelineLayoutInfo.setLayoutCount = 1;
 	}
 	else {
-        pipelineLayoutInfo.setLayoutCount = 0;
-    }
+		pipelineLayoutInfo.setLayoutCount = 0;
+	}
     pipelineLayoutInfo.pSetLayouts = &dLayout[0];
     pipelineLayoutInfo.pushConstantRangeCount = pipeline->pushConstantRange.size;
     pipelineLayoutInfo.pPushConstantRanges = &pipeline->pushConstantRange.p[0];
@@ -139,6 +147,14 @@ void VK_BindRayTracingDescriptorSet(vkrtpipeline_t *pipeline, vkdescriptor_t *de
 	VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, pipeline->layout, 0, 1,
 		&descriptor->set, 0, NULL);
+}
+
+void VK_Bind2RayTracingDescriptorSets(vkrtpipeline_t* pipeline, vkdescriptor_t* descriptor1, vkdescriptor_t* descriptor2) {
+	VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+
+	VkDescriptorSet sets[2] = { descriptor1->set, descriptor2->set };
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, pipeline->layout, 0, 2,
+		&sets[0], 0, NULL);
 }
 
 void VK_BindRayTracingPipeline(vkrtpipeline_t *pipeline) {

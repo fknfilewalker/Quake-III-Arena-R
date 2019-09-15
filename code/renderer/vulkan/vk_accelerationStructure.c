@@ -41,9 +41,9 @@ void VK_UploadScene(vkaccelerationStructures_t* as, vkgeometry_t* g) {
 		geometrys[i].geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
 		geometrys[i].geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
 		geometrys[i].geometry.triangles.vertexData = g->xyz.buffer;
-		geometrys[i].geometry.triangles.vertexOffset = offsetXYZ * sizeof(vec3_t);;
-		geometrys[i].geometry.triangles.vertexCount = 0;//g->sizeXYZ[i];
-		geometrys[i].geometry.triangles.vertexStride = 3 * sizeof(float);
+		geometrys[i].geometry.triangles.vertexOffset = 0;//offsetXYZ * 8 * sizeof(float);
+		geometrys[i].geometry.triangles.vertexCount = g->sizeXYZ[i];
+		geometrys[i].geometry.triangles.vertexStride = 8 * sizeof(float);
 		geometrys[i].geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
 		geometrys[i].geometry.triangles.indexData = g->idx.buffer;
 		geometrys[i].geometry.triangles.indexOffset = offsetIDX * sizeof(uint32_t);

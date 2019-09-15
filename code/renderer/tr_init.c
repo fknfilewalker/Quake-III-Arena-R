@@ -260,7 +260,7 @@ static void InitVulkan(void)
 		VK_CreateVertexBuffer(&vk_d.colorbuffer, vk.swapchain.imageCount * VK_VERTEX_ATTRIBUTE_DATA_SIZE * sizeof(color4ub_t));
 
 		vk_d.imageDescriptor.lastBindingVariableSizeExt = qtrue;
-		VK_AddSamplerCount(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT, MAX_DRAWIMAGES);
+		VK_AddSamplerCount(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, MAX_DRAWIMAGES);
 		VK_FinishDescriptorWithoutUpdate(&vk_d.imageDescriptor);
 
 		// device infos

@@ -1,5 +1,11 @@
 #include "../tr_local.h"
 
+void VK_CreateAttributeBuffer(vkbuffer_t* buffer, VkDeviceSize allocSize, VkBufferUsageFlagBits usage) {
+	buffer->allocSize = allocSize;
+	VK_CreateBufferMemory(allocSize, usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &buffer->buffer, &buffer->memory);
+	VK_CHECK(vkMapMemory(vk.device, buffer->memory, 0, buffer->allocSize, 0, (byte * *)(&buffer->p)), "failed to Map Memory!");
+}
+
 void VK_CreateVertexBuffer(vkbuffer_t *buffer, VkDeviceSize allocSize){
     buffer->allocSize = allocSize;
 	VK_CreateBufferMemory(allocSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &buffer->buffer, &buffer->memory);
