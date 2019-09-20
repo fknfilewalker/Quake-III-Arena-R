@@ -983,7 +983,12 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
         
         }
         else if (glConfig.driverType == VULKAN) {
-            
+			static int max = 0;
+			if (stage + 1> max) {
+				max = stage + 1;
+				Com_Printf("%d\n", max);
+			}
+			
 //            if( pStage->bundle[0].isLightmap){
 //                if(stage != 1) continue;
 //                //break;
@@ -1043,6 +1048,8 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
                 }
             
 				tr_api.State( pStage->stateBits );
+				//vk_d.state.cullMode = VK_CULL_MODE_NONE;
+				//vk_d.state.colorBlend.blendEnable = VK_FALSE;
  
                 if(tess.xstages[3]){
                     int c = stage;

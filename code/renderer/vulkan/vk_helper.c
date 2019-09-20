@@ -18,8 +18,9 @@ void VK_BeginRenderClear()
 	vk_d.offsetIdx = vk.swapchain.currentImage * VK_INDEX_DATA_SIZE;
 	vk_d.offset = vk.swapchain.currentImage * VK_VERTEX_ATTRIBUTE_DATA_SIZE;
 	vk_d.currentPipeline = -1;
+	vk_d.drawMirror = qtrue;
 
-	VkClearColorValue cc = { 0.1f,0.1f,0.1f,1.0f };
+	VkClearColorValue cc = { 1.1f,0.1f,0.1f,1.0f };
     VkClearDepthStencilValue dsc = { 1, 0};
 
 
@@ -57,26 +58,8 @@ void beginRender()
 void VK_EndRender()
 {
 	vkCmdEndRenderPass(vk.swapchain.CurrentCommandBuffer());
-	if (vk_d.accelerationStructures.init) {
-		VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
-		VK_Bind2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor, &vk_d.imageDescriptor);
-		
-		float pos[3];
-		pos[0] = 0;// -650;
-		pos[1] = 0;// 630;
-		pos[2] = 2000;//140;
-		////tr.viewParms.or.origin;
-		////ri.Printf(PRINT_ALL, "%f %f %f\n", tr.refdef.vieworg[0],
-		////	tr.refdef.vieworg[1],
-		////	tr.refdef.vieworg[2]);
-		////tr. or .modelMatrix
-		//	//ri.Printf(PRINT_ALL, "%f %f %f\n", tr. or .modelMatrix[3],
-		//		//tr. or .modelMatrix[7],
-		//		//tr. or .modelMatrix[11]);
-		VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0, sizeof(vec3_t), &pos);
-		VK_TraceRays();
-		VK_CopyImageToSwapchain(&vk_d.accelerationStructures.resultImage);
-	}
+	
+	//if(vk_d.drawMirror == qfalse) VK_CopyImageToSwapchain(&vk_d.accelerationStructures.resultImage);
 
 }
 

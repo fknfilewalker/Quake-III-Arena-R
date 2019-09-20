@@ -1224,6 +1224,7 @@ typedef struct {
     vkbuffer_t			colorbuffer;
 
 	// RTX
+	qboolean drawMirror;
 	vkaccelerationStructures_t accelerationStructures;
     
     //

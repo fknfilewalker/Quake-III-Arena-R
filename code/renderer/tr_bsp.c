@@ -1785,7 +1785,7 @@ static	void R_BuildAccelerationStructure() {
 
 	vkgeometry_t geometry = {0};
 	VK_CreateAttributeBuffer(&geometry.idx, VK_INDEX_DATA_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-	VK_CreateAttributeBuffer(&geometry.xyz, VK_VERTEX_ATTRIBUTE_DATA_SIZE * 8 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	VK_CreateAttributeBuffer(&geometry.xyz, VK_VERTEX_ATTRIBUTE_DATA_SIZE * 12 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
 	geometry.sizeIDX = calloc(100000, sizeof(uint32_t));
 	geometry.sizeXYZ = calloc(100000, sizeof(uint32_t));
@@ -1799,43 +1799,53 @@ static	void R_BuildAccelerationStructure() {
 		shader_t* s = tr.shaders[s_worldData.surfaces[i].shader->index];
 		//s_worldData.surfaces[i].shader->numStates
 		if (cv->surfaceType == SF_FACE) {
-			geometry.sizeIDX[index] = cv->numIndices;
-			geometry.sizeXYZ[index] = cv->numPoints;
-		
-			//VK_UploadBufferDataOffset(&geometry.idx, offsetIDX * sizeof(uint32_t), cv->numIndices * sizeof(uint32_t), (void*)& ((uint32_t*)((byte*)cv + cv->ofsIndices))[0]);
-			
-			for (j = 0; j < cv->numIndices; j++) {
-				//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
-				uint32_t idx = (uint32_t)(*(int*)((byte*)cv + cv->ofsIndices + (j * sizeof(int))));
-				idx += offsetXYZ;
-				VK_UploadBufferDataOffset(&geometry.idx, offsetIDX * sizeof(uint32_t) + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)& idx);
+			for (int stage = 0; stage < MAX_SHADER_STAGES; stage++)
+			{
+				shaderStage_t* pStage = s->stages[stage];
+				if (!pStage || pStage->bundle[0].isLightmap) {
+					continue;
+				}
+				geometry.sizeIDX[index] = cv->numIndices;
+				geometry.sizeXYZ[index] = cv->numPoints;
+
+				//VK_UploadBufferDataOffset(&geometry.idx, offsetIDX * sizeof(uint32_t), cv->numIndices * sizeof(uint32_t), (void*)& ((uint32_t*)((byte*)cv + cv->ofsIndices))[0]);
+
+				for (j = 0; j < cv->numIndices; j++) {
+					//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
+					uint32_t idx = (uint32_t)(*(int*)((byte*)cv + cv->ofsIndices + (j * sizeof(int))));
+					idx += offsetXYZ;
+					VK_UploadBufferDataOffset(&geometry.idx, offsetIDX * sizeof(uint32_t) + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)& idx);
+				}
+
+				for (j = 0; j < cv->numPoints; j++) {
+					float p[9] = {
+						p[0] = cv->points[j][0],
+						p[1] = cv->points[j][1],
+						p[2] = cv->points[j][2],
+						p[3] = (float)s->stages[stage]->bundle[0].image[0]->index,//->stages[0].bundle[0].image[0]->index, // texture id
+						p[4] = cv->points[j][3 + 0],
+						p[5] = cv->points[j][3 + 1],
+						p[6] = cv->plane.normal[0],
+						p[7] = cv->plane.normal[1],
+						p[8] = cv->plane.normal[2]
+					};
+					//cv->points[i][3 + j] = LittleFloat(verts[i].st[j]);
+					VK_UploadBufferDataOffset(&geometry.xyz, offsetXYZ * 12 * sizeof(float) + (j * 12 * sizeof(float)), 9 * sizeof(float), (void*)& p);
+				}
+				//ri.Printf(PRINT_ALL, "Brightest lightmap value: %d\n", (int)(s->stages[0]->bundle[0].image[0]->index));
+				geometry.numSurfaces += 1;
+				index += 1;
+				offsetIDX += cv->numIndices;
+				offsetXYZ += cv->numPoints;
+
+				//((int*)((byte*)cv + cv->ofsIndices))[i]
+
+				//for (j = 0; j < cv->numIndices; j++) {
+					//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
+
+				//}
+				//if(geometry.numSurfaces == 1)break;
 			}
-
-			for (j = 0; j < cv->numPoints; j++) {
-				float p[6] = {
-					p[0] = cv->points[j][0],
-					p[1] = cv->points[j][1],
-					p[2] = cv->points[j][2],
-					p[3] = (float)s->stages[0]->bundle[0].image[0]->index,//->stages[0].bundle[0].image[0]->index, // texture id
-					p[4] = cv->points[j][3 + 0],
-					p[5] = cv->points[j][3 + 1]
-				};
-				//cv->points[i][3 + j] = LittleFloat(verts[i].st[j]);
-				VK_UploadBufferDataOffset(&geometry.xyz, offsetXYZ * 8 * sizeof(float) + (j * 8 * sizeof(float)), 6 * sizeof(float), (void*)& p);
-			}
-			//ri.Printf(PRINT_ALL, "Brightest lightmap value: %d\n", (int)(s->stages[0]->bundle[0].image[0]->index));
-			geometry.numSurfaces += 1;
-			index += 1;
-			offsetIDX += cv->numIndices;
-			offsetXYZ += cv->numPoints;
-			
-			//((int*)((byte*)cv + cv->ofsIndices))[i]
-
-			//for (j = 0; j < cv->numIndices; j++) {
-				//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
-
-			//}
-			//if(geometry.numSurfaces == 1)break;
 		}
 	}
 
@@ -1876,7 +1886,7 @@ static	void R_BuildAccelerationStructure() {
 
 		VK_Set2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor, &vk_d.imageDescriptor);
 		VK_SetRayTracingShader(&vk_d.accelerationStructures.pipeline, &s);
-		VK_AddRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0, sizeof(vec3_t));
+		VK_AddRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0, 40 * sizeof(float));
 		VK_FinishRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
 	}
 }
@@ -1954,7 +1964,7 @@ void RE_LoadWorldMap( const char *name ) {
 	R_LoadEntities( &header->lumps[LUMP_ENTITIES] );
 	R_LoadLightGrid( &header->lumps[LUMP_LIGHTGRID] );
 
-	R_BuildAccelerationStructure();
+	if(glConfig.driverType == VULKAN)R_BuildAccelerationStructure();
 
 	s_worldData.dataSize = (byte *)ri.Hunk_Alloc(0, h_low) - startMarker;
 

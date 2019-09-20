@@ -43,7 +43,7 @@ void VK_UploadScene(vkaccelerationStructures_t* as, vkgeometry_t* g) {
 		geometrys[i].geometry.triangles.vertexData = g->xyz.buffer;
 		geometrys[i].geometry.triangles.vertexOffset = 0;//offsetXYZ * 8 * sizeof(float);
 		geometrys[i].geometry.triangles.vertexCount = g->sizeXYZ[i];
-		geometrys[i].geometry.triangles.vertexStride = 8 * sizeof(float);
+		geometrys[i].geometry.triangles.vertexStride = 12 * sizeof(float);
 		geometrys[i].geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
 		geometrys[i].geometry.triangles.indexData = g->idx.buffer;
 		geometrys[i].geometry.triangles.indexOffset = offsetIDX * sizeof(uint32_t);
@@ -56,8 +56,22 @@ void VK_UploadScene(vkaccelerationStructures_t* as, vkgeometry_t* g) {
 		offsetXYZ += g->sizeXYZ[i];
 	}
 
+	geometrys[0].sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
+	geometrys[0].geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
+	geometrys[0].geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
+	geometrys[0].geometry.triangles.vertexData = g->xyz.buffer;
+	geometrys[0].geometry.triangles.vertexOffset = 0;//offsetXYZ * 8 * sizeof(float);
+	geometrys[0].geometry.triangles.vertexCount = offsetXYZ;
+	geometrys[0].geometry.triangles.vertexStride = 12 * sizeof(float);
+	geometrys[0].geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+	geometrys[0].geometry.triangles.indexData = g->idx.buffer;
+	geometrys[0].geometry.triangles.indexOffset = 0;//offsetIDX * sizeof(uint32_t);
+	geometrys[0].geometry.triangles.indexCount = offsetIDX;
+	geometrys[0].geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+	geometrys[0].geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
+	geometrys[0].flags = VK_GEOMETRY_OPAQUE_BIT_NV;
 	
-	as->bottom.geometryCount = g->numSurfaces;
+	as->bottom.geometryCount = 1;
 	// create bottom as
 	VK_CreateBottomLevelAccelerationStructure(as, &geometrys[0]);
 	// create top as
@@ -255,7 +269,7 @@ static void VK_BuildAccelerationStructure(vkaccelerationStructures_t* as, const 
 	geometryInstance.instanceCustomIndex = 0;
 	geometryInstance.mask = 0xff;
 	geometryInstance.instanceOffset = 0;
-	geometryInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+	geometryInstance.flags;//VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
 	geometryInstance.accelerationStructureHandle = as->bottom.handle;
 
 	VK_CreateRayTracingBuffer(&instanceBuffer, sizeof(geometryInstance));

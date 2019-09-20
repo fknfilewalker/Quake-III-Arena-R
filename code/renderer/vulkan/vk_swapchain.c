@@ -238,13 +238,20 @@ static void VK_CreateRenderPass()
 	subpass.pColorAttachments = &colorAttachmentRef;
 	if (vk.swapchain.depthImageView) subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
-	VkSubpassDependency dependency = {0};
-	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependency.dstSubpass = 0;
-	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.srcAccessMask = 0;
-	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	VkSubpassDependency dependency[2] = {0};
+	dependency[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency[0].dstSubpass = 0;
+	dependency[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency[0].srcAccessMask = 0;
+	dependency[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+	dependency[1].srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency[1].dstSubpass = 0;
+	dependency[1].srcStageMask = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV;
+	dependency[1].srcAccessMask = 0;
+	dependency[1].dstStageMask = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+	dependency[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
 	VkAttachmentDescription attachments[2];
 	attachments[0] = colorAttachment;
