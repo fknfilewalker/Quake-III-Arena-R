@@ -5,9 +5,9 @@
 layout(set = 1, binding = 0) uniform sampler2D tex[];
 
 struct RayPayload {
-  vec3 color;
-  float distance;
+  vec4 color;
   vec4 normal;
+  float distance;
 };
 layout(location = 0) rayPayloadInNV RayPayload rp;
 hitAttributeNV vec2 attribs;
@@ -16,7 +16,7 @@ struct v_s
 {
   vec4 pos;
   vec4 uv;
-  vec4 normal;
+  vec4 textureIndex;
 };
 layout(binding = 2, set = 0) buffer Vertices { v_s v[]; } vertices;
 
@@ -36,13 +36,13 @@ void main()
                   	vertices.v[index.y].uv * barycentricCoords.y +
                   	vertices.v[index.z].uv * barycentricCoords.z;
     //float texturePos = (vertices.v[index.x].pos.w); 
-    float texturePos = (vertices.v[index.x].pos.w); 
+    vec4 texturePos = (vertices.v[index.x].textureIndex); 
 
-vec4 color;
+    vec4 color;
     //if(gl_PrimitiveID  > 10) color =  vec4(1,0,0,1);
-  	//else color =  texture(tex[uint(120)], uv);//texture(tex[uint(texturePos)], uv);
-color = texture(tex[uint(texturePos)], uv.xy);
-  	rp.color = color.xyz;//barycentricCoords;
+  	
+    color = texture(tex[uint(texturePos.x)], uv.xy);
+  	rp.color = color;//barycentricCoords;
     rp.distance = gl_RayTmaxNV;
 
     vec3 AB = vertices.v[index.y].pos.xyz - vertices.v[index.x].pos.xyz;

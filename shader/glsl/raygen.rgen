@@ -12,9 +12,9 @@ layout(binding = 0, set = 0) uniform accelerationStructureNV topLevelAS;
 layout(binding = 1, set = 0, rgba8) uniform image2D image;
 
 struct RayPayload {
-	vec3 color;
-	float distance;
+	vec4 color;
 	vec4 normal;
+	float distance;
 };
 layout(location = 0) rayPayloadNV RayPayload rp;
 
@@ -41,6 +41,7 @@ void main()
 
 	traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
 
+	vec4 color = vec4(0,0,0,0);
 	//if(dot(rp.normal.xyz, direction.xyz)< 0.0) imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(vec3(255, 0, 0), 0.0));
-	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(rp.color, 0.0));
+	imageStore(image, ivec2(gl_LaunchIDNV.xy), rp.color);
 }

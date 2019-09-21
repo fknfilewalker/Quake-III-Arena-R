@@ -20,12 +20,12 @@ void VK_BeginRenderClear()
 	vk_d.currentPipeline = -1;
 	vk_d.drawMirror = qtrue;
 
-	VkClearColorValue cc = { 1.1f,0.1f,0.1f,1.0f };
+	VkClearColorValue cc = { 0.1f,0.1f,0.1f,1.0f };
     VkClearDepthStencilValue dsc = { 1, 0};
 
 
     VkClearValue clearValues[2] ={0};
-	//clearValues[0].color = cc;
+	clearValues[0].color = cc;
     clearValues[1].depthStencil = dsc;
 
 	VkRenderPassBeginInfo rpBeginInfo = {0};
@@ -59,7 +59,7 @@ void VK_EndRender()
 {
 	vkCmdEndRenderPass(vk.swapchain.CurrentCommandBuffer());
 	
-	//if(vk_d.drawMirror == qfalse) VK_CopyImageToSwapchain(&vk_d.accelerationStructures.resultImage);
+	if(vk_d.drawMirror == qfalse) VK_CopyImageToSwapchain(&vk_d.accelerationStructures.resultImage);
 
 }
 
