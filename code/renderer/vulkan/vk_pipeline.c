@@ -14,6 +14,8 @@ void VK_DestroyAllPipelines() {
         VK_DestroyPipeline(&attachmentClearPipelineList[i].pipeline);
     }
     memset(&attachmentClearPipelineList[0], 0, sizeof(attachmentClearPipelineList));
+
+	VK_DestroyPipeline(&vk_d.fullscreenRectPipeline);
 }
 
 static void VK_CreatePipelineCache(vkpipeline_t *pipeline);

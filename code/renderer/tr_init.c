@@ -1259,6 +1259,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			VK_DestroyImage(&vk_d.accelerationStructures.resultImage);
 			VK_DestroyRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
 			VK_DestroyDescriptor(&vk_d.accelerationStructures.descriptor);
+			vk_d.accelerationStructures.init = qfalse;
 
 			VK_DestroyAllPipelines();
 

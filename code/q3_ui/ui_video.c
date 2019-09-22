@@ -386,9 +386,11 @@ static void GraphicsOptions_UpdateMenuItems( void )
 
 	if (s_graphicsoptions.driver.curvalue == VULKAN) {
 		s_graphicsoptions.allow_extensions.generic.flags |= QMF_GRAYED;
+		s_graphicsoptions.lighting.numitems = 3;
 	}
 	else {
 		s_graphicsoptions.allow_extensions.generic.flags &= ~QMF_GRAYED;
+		s_graphicsoptions.lighting.numitems = 2;
 	}
 
 	if ( s_graphicsoptions.driver.curvalue ==  OPENGL)
@@ -626,7 +628,14 @@ static void GraphicsOptions_SetMenuItems( void )
 		s_graphicsoptions.tq.curvalue = 3;
 	}
 
-	s_graphicsoptions.lighting.curvalue = trap_Cvar_VariableValue( "r_vertexLight" ) != 0;
+	
+	if (s_graphicsoptions.driver.curvalue == VULKAN) {
+		s_graphicsoptions.lighting.curvalue = trap_Cvar_VariableValue("r_vertexLight");
+	}
+	else {
+		s_graphicsoptions.lighting.curvalue = trap_Cvar_VariableValue("r_vertexLight") != 0;
+	}
+
 	switch ( ( int ) trap_Cvar_VariableValue( "r_texturebits" ) )
 	{
 	default:
@@ -728,6 +737,7 @@ void GraphicsOptions_MenuInit( void )
 	{
 		"Lightmap",
 		"Vertex",
+		"Global Illumination",
 		0
 	};
 

@@ -632,7 +632,7 @@ static void RB_FogPass( void ) {
 ComputeColors
 ===============
 */
-static void ComputeColors( shaderStage_t *pStage )
+ void ComputeColors( shaderStage_t *pStage )
 {
 	int		i;
 
@@ -826,7 +826,7 @@ static void ComputeColors( shaderStage_t *pStage )
 ComputeTexCoords
 ===============
 */
-static void ComputeTexCoords( shaderStage_t *pStage ) {
+ void ComputeTexCoords( shaderStage_t *pStage ) {
 	int		i;
 	int		b;
 
@@ -922,11 +922,99 @@ static void ComputeTexCoords( shaderStage_t *pStage ) {
 	}
 }
 
+static float	s_flipMatrix[16] = {
+	// convert from our coordinate system (looking down X)
+	// to OpenGL's coordinate system (looking down -Z)
+	0, 0, -1, 0,
+	-1, 0, 0, 0,
+	0, 1, 0, 0,
+	0, 0, 0, 1
+};
+
+static void RB_IterateStagesRayTracing(shaderCommands_t* input) {
+	if (qtrue && !backEnd.viewParms.isPortal) {
+		//ri.Printf(PRINT_ALL, "%f %f %f\n", backEnd.viewParms.or.origin[0],
+		//	backEnd.viewParms. or .origin[1],
+		//	backEnd.viewParms. or .origin[2]);
+		if (vk_d.accelerationStructures.init && vk_d.drawMirror) {
+			float invView[16];
+			float invProj[16];
+
+			float	viewerMatrix[16];
+			float	viewerMatrix2[16];
+			vec3_t	origin;
+
+			VectorCopy(backEnd.viewParms. or .origin, origin);
+
+			viewerMatrix[0] = backEnd.viewParms. or .axis[0][0];
+			viewerMatrix[4] = backEnd.viewParms. or .axis[0][1];
+			viewerMatrix[8] = backEnd.viewParms. or .axis[0][2];
+			viewerMatrix[12] = -origin[0] * viewerMatrix[0] + -origin[1] * viewerMatrix[4] + -origin[2] * viewerMatrix[8];
+
+			viewerMatrix[1] = backEnd.viewParms. or .axis[1][0];
+			viewerMatrix[5] = backEnd.viewParms. or .axis[1][1];
+			viewerMatrix[9] = backEnd.viewParms. or .axis[1][2];
+			viewerMatrix[13] = -origin[0] * viewerMatrix[1] + -origin[1] * viewerMatrix[5] + -origin[2] * viewerMatrix[9];
+
+			viewerMatrix[2] = backEnd.viewParms. or .axis[2][0];
+			viewerMatrix[6] = backEnd.viewParms. or .axis[2][1];
+			viewerMatrix[10] = backEnd.viewParms. or .axis[2][2];
+			viewerMatrix[14] = -origin[0] * viewerMatrix[2] + -origin[1] * viewerMatrix[6] + -origin[2] * viewerMatrix[10];
+
+			viewerMatrix[3] = 0;
+			viewerMatrix[7] = 0;
+			viewerMatrix[11] = 0;
+			viewerMatrix[15] = 1;
+
+			myGlMultMatrix(viewerMatrix, s_flipMatrix, viewerMatrix2);
+
+			myGLInvertMatrix(&viewerMatrix2, &invView);
+			myGLInvertMatrix(&vk_d.projectionMatrix, &invProj);
+
+
+			VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
+			VK_Bind2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor, &vk_d.imageDescriptor);
+
+			float pos[3];
+			pos[0] = backEnd.viewParms. or .origin[0];// -650;
+			pos[1] = backEnd.viewParms. or .origin[1];//630;
+			pos[2] = backEnd.viewParms. or .origin[2];//140;
+			////tr.viewParms.or.origin;
+			float direction[3];
+			direction[0] = 1;// -650;
+			direction[1] = 0;//630;
+			direction[2] = 0;//140;
+			////tr. or .modelMatrix
+			//	//ri.Printf(PRINT_ALL, "%f %f %f\n", tr. or .modelMatrix[3],
+			//		//tr. or .modelMatrix[7],
+			//		//tr. or .modelMatrix[11]);
+			VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0 * sizeof(float), 16 * sizeof(float), &invView[0]);
+			VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 16 * sizeof(float), 16 * sizeof(float), &invProj[0]);
+			VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 32 * sizeof(float), sizeof(vec3_t), &origin);
+			VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 36 * sizeof(float), sizeof(vec3_t), &backEnd.viewParms.portalPlane.normal);
+
+			//VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 4 * sizeof(float), sizeof(vec3_t), &direction);
+			VK_TraceRays();
+			//VK_CopyImageToSwapchain(&vk_d.accelerationStructures.resultImage);
+			//VK_TransitionImage(&vk_d.accelerationStructures.resultImage, )
+			VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultImage);
+			vk_d.drawMirror = qfalse;
+		}
+		return;
+	}
+}
+
 /*
 ** RB_IterateStagesGeneric
 */
 static void RB_IterateStagesGeneric( shaderCommands_t *input )
 {
+
+	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && backEnd.refdef.rdflags != RDF_NOWORLDMODEL && !backEnd.projection2D) {
+		RB_IterateStagesRayTracing(input);
+		return;
+	}
+
 	int stage;
 
 	for ( stage = 0; stage < MAX_SHADER_STAGES; stage++ )

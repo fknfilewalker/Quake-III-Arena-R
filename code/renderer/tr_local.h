@@ -1252,6 +1252,8 @@ typedef struct {
 	uint32_t			pipelineListSize;
 	vkpipe_t			pipelineList[500];
 
+	vkpipeline_t        fullscreenRectPipeline;
+
     vkrenderState_t     state;
 } vkdata_t;
 

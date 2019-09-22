@@ -1783,9 +1783,13 @@ qboolean R_GetEntityToken( char *buffer, int size ) {
 static	void R_BuildAccelerationStructure() {
 	int i, j;
 
+	// do not forget to free memory
 	vkgeometry_t geometry = {0};
 	VK_CreateAttributeBuffer(&geometry.idx, VK_INDEX_DATA_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 	VK_CreateAttributeBuffer(&geometry.xyz, 5 * VK_VERTEX_ATTRIBUTE_DATA_SIZE * 12 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	//VK_DestroyBuffer(&geometry.idx);
+	//VK_DestroyBuffer(&geometry.xyz);
+
 
 	geometry.sizeIDX = calloc(100000, sizeof(uint32_t));
 	geometry.sizeXYZ = calloc(100000, sizeof(uint32_t));
@@ -1809,6 +1813,7 @@ static	void R_BuildAccelerationStructure() {
 			else continue;
 			//srfSurfaceFace_t* cv = (srfSurfaceFace_t*)s_worldData.surfaces[i].data;
 			//RB_SurfaceFace(cv);
+			
 			shader_t* s = tr.shaders[s_worldData.surfaces[i].shader->index];
 			for (int stage = 0; stage < MAX_SHADER_STAGES; stage++)
 			{
@@ -1816,6 +1821,9 @@ static	void R_BuildAccelerationStructure() {
 				if (!pStage || pStage->bundle[0].isLightmap || !pStage->active) {
 					continue;
 				}
+				ComputeColors(pStage);
+				ComputeTexCoords(pStage);
+
 				geometry.sizeIDX[index] = tess.numIndexes;
 				geometry.sizeXYZ[index] = tess.numVertexes;
 
@@ -1836,10 +1844,10 @@ static	void R_BuildAccelerationStructure() {
 						p[5] = tess.texCoords[j][0][1],
 						p[6] = tess.texCoords[j][1][0],
 						p[7] = tess.texCoords[j][1][1],
-						p[8] = (float)s->stages[stage]->bundle[0].image[0]->index,
-						p[9] = 0,//(float)s->stages[stage]->bundle[0].image[1]->index,
-						p[10] = 0,//(float)s->stages[stage]->bundle[1].image[0]->index,
-						p[11] = 0//(float)s->stages[stage]->bundle[1].image[1]->index
+						p[8] = (float)tess.svars.colors[j][0],
+						p[9] = (float)tess.svars.colors[j][1],//(float)s->stages[stage]->bundle[0].image[1]->index,
+						p[10] = (float)tess.svars.colors[j][2],//(float)s->stages[stage]->bundle[1].image[0]->index,
+						p[11] = (float)tess.svars.colors[j][3]//(float)s->stages[stage]->bundle[1].image[1]->index
 					};
 					//cv->points[i][3 + j] = LittleFloat(verts[i].st[j]);
 					VK_UploadBufferDataOffset(&geometry.xyz, offsetXYZ * 12 * sizeof(float) + (j * 12 * sizeof(float)), 11 * sizeof(float), (void*)& p);
@@ -1854,165 +1862,10 @@ static	void R_BuildAccelerationStructure() {
 			}
 			
 		}
-		//else if (type == SF_GRID){
-
-		//	srfGridMesh_t* cv = (srfGridMesh_t*)s_worldData.surfaces[i].data; 
-		//	RB_SurfaceGrid(cv);
-		//	shader_t* s = tr.shaders[s_worldData.surfaces[i].shader->index];
-
-		//	for (int stage = 0; stage < MAX_SHADER_STAGES; stage++)
-		//	{
-		//		shaderStage_t* pStage = s->stages[stage];
-		//		if (!pStage || pStage->bundle[0].isLightmap) {
-		//			continue;
-		//		}
-		//		int numPoints = cv->width * cv->height;
-		//		geometry.sizeIDX[index] = tess.numIndexes;
-		//		geometry.sizeXYZ[index] = tess.numVertexes;
-
-		//		for (j = 0; j < tess.numIndexes; j++) {
-		//			//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
-		//			uint32_t idx = (uint32_t)tess.indexes[j];
-		//			idx += offsetXYZ;
-		//			VK_UploadBufferDataOffset(&geometry.idx, offsetIDX * sizeof(uint32_t) + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)& idx);
-		//		}
-
-		//		for (j = 0; j < tess.numVertexes; j++) {
-		//			float p[11] = {
-		//				p[0] = tess.xyz[j][0],
-		//				p[1] = tess.xyz[j][1],
-		//				p[2] = tess.xyz[j][2],
-		//				p[3] = (float)s->stages[stage]->bundle[0].image[0]->index,//->stages[0].bundle[0].image[0]->index, // texture id
-		//				p[4] = cv->verts[j].st[0],
-		//				p[5] = cv->verts[j].st[1],
-		//				p[6] = cv->verts[j].lightmap[0],
-		//				p[7] = cv->verts[j].lightmap[1],
-		//				p[8] = cv->verts[j].normal[0],
-		//				p[9] = cv->verts[j].normal[1],
-		//				p[10] = cv->verts[j].normal[2]
-		//			};
-		//			//cv->points[i][3 + j] = LittleFloat(verts[i].st[j]);
-		//			VK_UploadBufferDataOffset(&geometry.xyz, offsetXYZ * 12 * sizeof(float) + (j * 12 * sizeof(float)), 11 * sizeof(float), (void*)& p);
-		//		}
-		//		//ri.Printf(PRINT_ALL, "Brightest lightmap value: %d\n", (int)(s->stages[0]->bundle[0].image[0]->index));
-		//		geometry.numSurfaces += 1;
-		//		index += 1;
-		//		offsetIDX += tess.numIndexes;
-		//		offsetXYZ += tess.numVertexes;
-
-		//
-		//	}
-		
-		//if (geometry.numSurfaces == 1) break;
-
-		//if (type == SF_FACE) {
-		//	srfSurfaceFace_t* cv = (srfSurfaceFace_t*)s_worldData.surfaces[i].data;
-		//	shader_t* s = tr.shaders[s_worldData.surfaces[i].shader->index];
-		//	//s_worldData.surfaces[i].shader->numStates
-
-		//	for (int stage = 0; stage < MAX_SHADER_STAGES; stage++)
-		//	{
-		//		shaderStage_t* pStage = s->stages[stage];
-		//		if (!pStage || pStage->bundle[0].isLightmap) {
-		//			continue;
-		//		}
-		//		geometry.sizeIDX[index] = cv->numIndices;
-		//		geometry.sizeXYZ[index] = cv->numPoints;
-
-		//		//VK_UploadBufferDataOffset(&geometry.idx, offsetIDX * sizeof(uint32_t), cv->numIndices * sizeof(uint32_t), (void*)& ((uint32_t*)((byte*)cv + cv->ofsIndices))[0]);
-
-		//		for (j = 0; j < cv->numIndices; j++) {
-		//			//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
-		//			uint32_t idx = (uint32_t)(*(int*)((byte*)cv + cv->ofsIndices + (j * sizeof(int))));
-		//			idx += offsetXYZ;
-		//			VK_UploadBufferDataOffset(&geometry.idx, offsetIDX * sizeof(uint32_t) + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)& idx);
-		//		}
-
-		//		for (j = 0; j < cv->numPoints; j++) {
-		//			float p[11] = {
-		//				p[0] = cv->points[j][0],
-		//				p[1] = cv->points[j][1],
-		//				p[2] = cv->points[j][2],
-		//				p[3] = (float)s->stages[stage]->bundle[0].image[0]->index,//->stages[0].bundle[0].image[0]->index, // texture id
-		//				p[4] = cv->points[j][3 + 0],
-		//				p[5] = cv->points[j][3 + 1],
-		//				p[6] = cv->points[j][3 + 2],
-		//				p[7] = cv->points[j][3 + 3],
-		//				p[8] = cv->plane.normal[0],
-		//				p[9] = cv->plane.normal[1],
-		//				p[10] = cv->plane.normal[2]
-		//			};
-		//			//cv->points[i][3 + j] = LittleFloat(verts[i].st[j]);
-		//			VK_UploadBufferDataOffset(&geometry.xyz, offsetXYZ * 12 * sizeof(float) + (j * 12 * sizeof(float)), 11 * sizeof(float), (void*)& p);
-		//		}
-		//		//ri.Printf(PRINT_ALL, "Brightest lightmap value: %d\n", (int)(s->stages[0]->bundle[0].image[0]->index));
-		//		geometry.numSurfaces += 1;
-		//		index += 1;
-		//		offsetIDX += cv->numIndices;
-		//		offsetXYZ += cv->numPoints;
-
-		//		//((int*)((byte*)cv + cv->ofsIndices))[i]
-
-		//		//for (j = 0; j < cv->numIndices; j++) {
-		//			//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
-
-		//		//}
-		//		//if(geometry.numSurfaces == 1)break;
-
-		//	}
-		//}
-		//else 
-		//if (type == SF_GRID){
-
-		//	srfGridMesh_t* cv = (srfGridMesh_t*)s_worldData.surfaces[i].data; 
-		//	RB_SurfaceGrid(cv);
-		//	shader_t* s = tr.shaders[s_worldData.surfaces[i].shader->index];
-
-		//	for (int stage = 0; stage < MAX_SHADER_STAGES; stage++)
-		//	{
-		//		shaderStage_t* pStage = s->stages[stage];
-		//		if (!pStage || pStage->bundle[0].isLightmap) {
-		//			continue;
-		//		}
-		//		int numPoints = cv->width * cv->height;
-		//		geometry.sizeIDX[index] = tess.numIndexes;
-		//		geometry.sizeXYZ[index] = tess.numVertexes - before;
-
-		//		for (j = 0; j < tess.numIndexes; j++) {
-		//			//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
-		//			uint32_t idx = (uint32_t)tess.indexes;
-		//			idx += offsetXYZ - before;
-		//			VK_UploadBufferDataOffset(&geometry.idx, offsetIDX * sizeof(uint32_t) + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)& idx);
-		//		}
-
-		//		for (j = 0; j < tess.numVertexes - before; j++) {
-		//			float p[11] = {
-		//				p[0] = tess.xyz[j][0],
-		//				p[1] = tess.xyz[j][1],
-		//				p[2] = tess.xyz[j][2],
-		//				p[3] = (float)s->stages[stage]->bundle[0].image[0]->index,//->stages[0].bundle[0].image[0]->index, // texture id
-		//				p[4] = cv->verts[j].st[0],
-		//				p[5] = cv->verts[j].st[1],
-		//				p[6] = cv->verts[j].lightmap[0],
-		//				p[7] = cv->verts[j].lightmap[1],
-		//				p[8] = cv->verts[j].normal[0],
-		//				p[9] = cv->verts[j].normal[1],
-		//				p[10] = cv->verts[j].normal[2]
-		//			};
-		//			//cv->points[i][3 + j] = LittleFloat(verts[i].st[j]);
-		//			VK_UploadBufferDataOffset(&geometry.xyz, offsetXYZ * 12 * sizeof(float) + (j * 12 * sizeof(float)), 11 * sizeof(float), (void*)& p);
-		//		}
-		//		//ri.Printf(PRINT_ALL, "Brightest lightmap value: %d\n", (int)(s->stages[0]->bundle[0].image[0]->index));
-		//		geometry.numSurfaces += 1;
-		//		index += 1;
-		//		offsetIDX += tess.numIndexes;
-		//		offsetXYZ += tess.numVertexes - before;
-
-		//
-		//	}
-		//}
 	}
 
+	
+	
 	if (!vk_d.accelerationStructures.init) {
 		//VK_UploadScene2(&vk_d.accelerationStructures);
 		VK_UploadScene(&vk_d.accelerationStructures, &geometry);
@@ -2024,8 +1877,16 @@ static	void R_BuildAccelerationStructure() {
 
 		VK_CreateUniformBuffer(&vk_d.accelerationStructures.uniformBuffer, sizeof(uniformData));
 
-		VK_CreateImage(&vk_d.accelerationStructures.resultImage, vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, 1);
+		// create result image
+		VK_CreateImage(&vk_d.accelerationStructures.resultImage, vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+		VK_CreateSampler(&vk_d.accelerationStructures.resultImage, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 		VK_TransitionImage(&vk_d.accelerationStructures.resultImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+		
+		// create descriptor
+		VK_AddSampler(&vk_d.accelerationStructures.resultImage.descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
+		vk_d.accelerationStructures.resultImage.descriptor_set.data[0].descImageInfo->imageLayout = VK_IMAGE_LAYOUT_GENERAL;	
+		VK_SetSampler(&vk_d.accelerationStructures.resultImage.descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, vk_d.accelerationStructures.resultImage.sampler, vk_d.accelerationStructures.resultImage.view);
+		VK_FinishDescriptor(&vk_d.accelerationStructures.resultImage.descriptor_set);
 
 
 		vkshader_t s = { 0 };
@@ -2128,7 +1989,7 @@ void RE_LoadWorldMap( const char *name ) {
 	R_LoadEntities( &header->lumps[LUMP_ENTITIES] );
 	R_LoadLightGrid( &header->lumps[LUMP_LIGHTGRID] );
 
-	if(glConfig.driverType == VULKAN)R_BuildAccelerationStructure();
+	if(glConfig.driverType == VULKAN && r_vertexLight->value == 2)R_BuildAccelerationStructure();
 
 	s_worldData.dataSize = (byte *)ri.Hunk_Alloc(0, h_low) - startMarker;
 

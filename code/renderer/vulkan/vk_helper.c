@@ -59,20 +59,25 @@ void VK_EndRender()
 {
 	vkCmdEndRenderPass(vk.swapchain.CurrentCommandBuffer());
 	
-	if(vk_d.drawMirror == qfalse) VK_CopyImageToSwapchain(&vk_d.accelerationStructures.resultImage);
+	//if(vk_d.drawMirror == qfalse) VK_CopyImageToSwapchain(&vk_d.accelerationStructures.resultImage);
 
 }
+
+static float vFullscreenQuad[24] = { -1.0f, -1.0f, 1.0f, 0.0f,
+											 1.0f, -1.0f, 1.0f, 0.0f,
+											-1.0f,  1.0f, 1.0f, 0.0f,
+											 1.0f,  1.0f, 1.0f, 0.0f };
+static uint32_t idxFullscreenQuad[6] = { 0, 1, 2, 2, 1, 3 };
+static float uvFullscreenQuad[12] = { 0.0f, 0.0f,
+									1.0f, 0.0f,
+									0.0f,  1.0f,
+									1.0f,  1.0f};
 
 /*
 ** CLEAR ATTACHMENT
 */
-
 void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean clear_color, vec4_t color) {
-    static float vFullscreenQuad[24] = {    -1.0f, -1.0f, 1.0f, 0.0f,
-                                             1.0f, -1.0f, 1.0f, 0.0f,
-                                            -1.0f,  1.0f, 1.0f, 0.0f,
-                                             1.0f,  1.0f, 1.0f, 0.0f};
-    static uint32_t idxFullscreenQuad[6] = {0, 1, 2, 2, 1, 3};
+    
 
     if (!clear_depth && !clear_stencil && !clear_color)
         return;
@@ -116,6 +121,48 @@ void VK_ClearAttachments(qboolean clear_depth, qboolean clear_stencil, qboolean 
     // restore state
     Com_Memcpy(&vk_d.viewport, &vpSave, sizeof(vk_d.viewport));
     Com_Memcpy(&vk_d.scissor, &sSave, sizeof(vk_d.scissor));
+}
+
+/*
+** FULLSCREEN RECT
+*/
+void VK_DrawFullscreenRect(vkimage_t *image) {
+	if (vk_d.fullscreenRectPipeline.handle == VK_NULL_HANDLE) {
+	
+		vkshader_t s = { 0 };
+		VK_FullscreenRectShader(&s);
+		
+		VK_SetDescriptorSet(&vk_d.fullscreenRectPipeline, &vk_d.images[0].descriptor_set);
+		VK_SetShader(&vk_d.fullscreenRectPipeline, &s);
+		VK_AddBindingDescription(&vk_d.fullscreenRectPipeline, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
+		VK_AddBindingDescription(&vk_d.fullscreenRectPipeline, 2, sizeof(vec2_t), VK_VERTEX_INPUT_RATE_VERTEX);
+		VK_AddAttributeDescription(&vk_d.fullscreenRectPipeline, 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 0 * sizeof(float));
+		VK_AddAttributeDescription(&vk_d.fullscreenRectPipeline, 2, 2, VK_FORMAT_R32G32_SFLOAT, 0 * sizeof(float));
+		
+		VK_FinishPipeline(&vk_d.fullscreenRectPipeline);
+
+	}
+
+	// backup state
+	VkViewport vpSave = { 0 };
+	VkRect2D sSave = { 0 };
+	Com_Memcpy(&vpSave, &vk_d.viewport, sizeof(vk_d.viewport));
+	Com_Memcpy(&sSave, &vk_d.scissor, sizeof(vk_d.scissor));
+
+	VK_UploadBufferDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), sizeof(idxFullscreenQuad) / sizeof(idxFullscreenQuad[0]) * sizeof(uint32_t), (void*)& idxFullscreenQuad[0]);
+	VK_UploadBufferDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), sizeof(vFullscreenQuad) / sizeof(vFullscreenQuad[0]) * sizeof(vec4_t), (void*)& vFullscreenQuad[0]);
+	VK_UploadBufferDataOffset(&vk_d.uvbuffer1, vk_d.offset * sizeof(vec2_t), sizeof(vFullscreenQuad) / sizeof(vFullscreenQuad[0]) * sizeof(vec2_t), (void*)& uvFullscreenQuad[0]);
+
+	VK_Bind1DescriptorSet(&vk_d.fullscreenRectPipeline, &image->descriptor_set);
+	VK_BindPipeline(&vk_d.fullscreenRectPipeline);
+	VK_DrawIndexed(&vk_d.indexbuffer, sizeof(idxFullscreenQuad) / sizeof(idxFullscreenQuad[0]), vk_d.offsetIdx, vk_d.offset);
+
+	vk_d.offsetIdx += sizeof(idxFullscreenQuad) / sizeof(idxFullscreenQuad[0]);
+	vk_d.offset += sizeof(vFullscreenQuad) / sizeof(vFullscreenQuad[0]);
+
+	// restore state
+	Com_Memcpy(&vk_d.viewport, &vpSave, sizeof(vk_d.viewport));
+	Com_Memcpy(&vk_d.scissor, &sSave, sizeof(vk_d.scissor));
 }
 
 /*

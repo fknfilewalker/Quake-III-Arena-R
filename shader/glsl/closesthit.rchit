@@ -16,7 +16,7 @@ struct v_s
 {
   vec4 pos;
   vec4 uv;
-  vec4 textureIndex;
+  vec4 color;
 };
 layout(binding = 2, set = 0) buffer Vertices { v_s v[]; } vertices;
 
@@ -35,13 +35,17 @@ void main()
 	vec4 uv = 		vertices.v[index.x].uv * barycentricCoords.x +
                   	vertices.v[index.y].uv * barycentricCoords.y +
                   	vertices.v[index.z].uv * barycentricCoords.z;
+
+  vec4 c =     vertices.v[index.x].color * barycentricCoords.x +
+                    vertices.v[index.y].color * barycentricCoords.y +
+                    vertices.v[index.z].color * barycentricCoords.z;
     //float texturePos = (vertices.v[index.x].pos.w); 
-    vec4 texturePos = (vertices.v[index.x].textureIndex); 
+    float texturePos = (vertices.v[index.x].pos.w); 
 
     vec4 color;
     //if(gl_PrimitiveID  > 10) color =  vec4(1,0,0,1);
   	
-    color = texture(tex[uint(texturePos.x)], uv.xy);
+    color = (c/255) * texture(tex[uint(texturePos)], uv.xy);
   	rp.color = color;//barycentricCoords;
     rp.distance = gl_RayTmaxNV;
 

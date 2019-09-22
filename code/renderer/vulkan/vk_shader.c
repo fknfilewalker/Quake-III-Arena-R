@@ -4,6 +4,9 @@
 #include "../../../shader/header/clearAttachment.vert.h"
 #include "../../../shader/header/clearAttachment.frag.h"
 
+#include "../../../shader/header/fullscreenRect.vert.h"
+#include "../../../shader/header/fullscreenRect.frag.h"
+
 #include "../../../shader/header/singleTexture.vert.h"
 #include "../../../shader/header/singleTextureClip.vert.h"
 #include "../../../shader/header/singleTexture.frag.h"
@@ -25,6 +28,7 @@ static vkshader_t *multiTextureMulClip;
 static vkshader_t *multiTextureAdd;
 static vkshader_t *multiTextureAddClip;
 static vkshader_t *clearAttachment;
+static vkshader_t *fullscreenRect;
 // rtx
 static vkshader_t* rayTracing;
 
@@ -98,6 +102,15 @@ void VK_ClearAttachmentShader(vkshader_t* shader) {
     Com_Memcpy(shader, clearAttachment, sizeof(vkshader_t));
 }
 
+void VK_FullscreenRectShader(vkshader_t* shader) {
+	if (fullscreenRect == NULL) {
+		fullscreenRect = malloc(sizeof(vkshader_t));
+		//VK_LoadVertFragShadersFromFile(fullscreenRect, "../../shader/spv/fullscreenRect.vert.spv", "../../shader/spv/fullscreenRect.frag.spv");
+		VK_LoadVertFragShadersFromVariable(fullscreenRect, &fullscreenRectVert, sizeof(fullscreenRectVert), &fullscreenRectFrag, sizeof(fullscreenRectFrag));
+	}
+	Com_Memcpy(shader, fullscreenRect, sizeof(vkshader_t));
+}
+
 // rtx
 void VK_RayTracingShader(vkshader_t* shader) {
 	if (rayTracing == NULL) {
@@ -149,6 +162,11 @@ void VK_DestroyAllShaders() {
 		VK_DestroyShader(clearAttachment);
 		free(clearAttachment);
 		clearAttachment = NULL;
+	}
+	if (fullscreenRect != NULL) {
+		VK_DestroyShader(fullscreenRect);
+		free(fullscreenRect);
+		fullscreenRect = NULL;
 	}
 	// RTX
 	if (rayTracing != NULL) {
