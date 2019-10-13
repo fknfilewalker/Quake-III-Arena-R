@@ -1,5 +1,8 @@
 #version 460
 #extension GL_NV_ray_tracing : require
+#extension GL_GOOGLE_include_directive : require
+#include "RayPayload.glsl"
+#include "RTBlend.glsl"
 
 layout(push_constant) uniform PushConstant {
     layout(offset = 0) mat4 inverseView;
@@ -11,11 +14,6 @@ layout(push_constant) uniform PushConstant {
 layout(binding = 0, set = 0) uniform accelerationStructureNV topLevelAS;
 layout(binding = 1, set = 0, rgba8) uniform image2D image;
 
-struct RayPayload {
-	vec4 color;
-	vec4 normal;
-	float distance;
-};
 layout(location = 0) rayPayloadNV RayPayload rp;
 
 void main() 
@@ -24,24 +22,64 @@ void main()
 	const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeNV.xy);
 	vec2 d = inUV * 2.0 - 1.0;
 
-	//vec4 origin = vec4(0,0,-1,1);
 	vec4 origin = vec4(position.xyz,1);
-	//vec4 direction2 = vec4(normalize(vec3(d.x, d.y, 1)),1);
-
+	
 	vec4 target = inverseProj * vec4(d.x, d.y, -1, 1) ;
 	vec4 direction = inverseView*vec4(normalize(target.xyz), 0);
 
-	vec3 n = vec3(0,1,0);
+	//vec3 n = vec3(0,1,0);
 	//direction.xyz = reflect(direction.xyz, reflectionNormal.xyz);
 
-	uint rayFlags = gl_RayFlagsOpaqueNV | gl_RayFlagsCullFrontFacingTrianglesNV ;
+	uint rayFlags = gl_RayFlagsCullBackFacingTrianglesNV;// = /*gl_RayFlagsOpaqueNV | */gl_RayFlagsCullFrontFacingTrianglesNV ;
 	uint cullMask = 0xff;
 	float tmin = 0.001;
 	float tmax = 10000.0;
 
+	vec4 pixelColor = vec4(0,0,0,0);
+	rp.color = vec4(0,0,0,0);
 	traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
+	pixelColor += rp.color;
 
-	vec4 color = vec4(0,0,0,0);
-	//if(dot(rp.normal.xyz, direction.xyz)< 0.0) imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(vec3(255, 0, 0), 0.0));
-	imageStore(image, ivec2(gl_LaunchIDNV.xy), rp.color);
+/*
+// Trace hit.
+		origin.xyz = origin.xyz + rp.distance * direction.xyz;
+	//pixelColor = vec4(pixelColor.w,pixelColor.w,pixelColor.w,pixelColor.w);
+	if(pixelColor.w == 0) {
+		traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
+		pixelColor += rp.color;
+	}else(rp.transparent > 0 && pixelColor.w != 1)  {
+		traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
+		pixelColor += rp.color;
+			//pixelColor = vec4(((1-pixelColor.w) * pixelColor.xyz) + ((pixelColor.w) * rp.color.xyz), 1);
+	}*/
+/*
+	for (uint s = 0; s < 5; ++s)
+	{
+		if (rp.distance < 0 || rp.transparent == 0)
+		{				
+			break;
+		}
+		// Trace hit.
+		origin.xyz = origin.xyz + rp.distance * direction.xyz;
+
+		if(pixelColor.w == 0) {
+			traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
+			pixelColor += rp.color;
+		}
+		else(pixelColor.w != 1)  {
+			//traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
+			//pixelColor = vec4(((1-pixelColor.w) * pixelColor.xyz) + ((pixelColor.w) * rp.color.xyz), 1);
+		}
+		*/
+		//if((rp.transparent == 1) || (rp.transparent == 2 && pixelColor.w != 1))traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
+		//pixelColor = blendColor(pixelColor, rp.color, uint(rp.blendFunc));
+		//if(rp.transparent == 2) {
+
+		//else pixelColor += rp.color;
+		
+
+		
+	//}
+	//traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz + (direction.xyz * rp.distance), tmin, direction.xyz, tmax, 0);
+	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(pixelColor.xyz, 1));
 }

@@ -306,7 +306,8 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 	//if (backEnd.viewParms.isPortal) return;
     //int aaa = pStage->bundle[0].image[0]->index;
 	
-	
+	//vk_d.state.colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+	//vk_d.state.colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
 
     //vkimage_t image = {0};
     

@@ -25,6 +25,11 @@ void VK_CreateUniformBuffer(vkbuffer_t* buffer, VkDeviceSize allocSize) {
 }
 
 // RTX
+void VK_CreateRayTracingASBuffer(vkbuffer_t* buffer, VkDeviceSize allocSize) {
+	buffer->allocSize = allocSize;
+	VK_CreateBufferMemory(allocSize, VK_BUFFER_USAGE_RAY_TRACING_BIT_NV, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &buffer->buffer, &buffer->memory);
+	buffer->onGpu = VK_TRUE;
+}
 void VK_CreateRayTracingBuffer(vkbuffer_t* buffer, VkDeviceSize allocSize) {
 	buffer->allocSize = allocSize;
 	VK_CreateBufferMemory(allocSize, VK_BUFFER_USAGE_RAY_TRACING_BIT_NV, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &buffer->buffer, &buffer->memory);
@@ -33,6 +38,7 @@ void VK_CreateRayTracingBuffer(vkbuffer_t* buffer, VkDeviceSize allocSize) {
 void VK_CreateRayTracingScratchBuffer(vkbuffer_t* buffer, VkDeviceSize allocSize) {
 	buffer->allocSize = allocSize;
 	VK_CreateBufferMemory(allocSize, VK_BUFFER_USAGE_RAY_TRACING_BIT_NV, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &buffer->buffer, &buffer->memory);
+	buffer->onGpu = VK_TRUE;
 }
 void VK_CreateShaderBindingTableBuffer(vkbuffer_t* buffer, VkDeviceSize allocSize) {
 	buffer->allocSize = allocSize;

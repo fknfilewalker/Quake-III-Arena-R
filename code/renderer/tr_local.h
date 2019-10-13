@@ -554,6 +554,7 @@ typedef struct srfPoly_s {
 	int				fogIndex;
 	int				numVerts;
 	polyVert_t		*verts;
+	int			idxBottomAS;
 } srfPoly_t;
 
 typedef struct srfDisplayList_s {
@@ -593,6 +594,7 @@ typedef struct srfGridMesh_s {
 	float			*widthLodError;
 	float			*heightLodError;
 	drawVert_t		verts[1];		// variable sized
+	int			idxBottomAS;
 } srfGridMesh_t;
 
 
@@ -611,6 +613,7 @@ typedef struct {
 	int			ofsIndices;
 	float		points[1][VERTEXSIZE];	// variable sized
 										// there is a variable length list of indices here also
+	int			idxBottomAS;
 } srfSurfaceFace_t;
 
 
@@ -632,6 +635,7 @@ typedef struct {
 
 	int				numVerts;
 	drawVert_t		*verts;
+	int			idxBottomAS;
 } srfTriangles_t;
 
 
@@ -1047,6 +1051,13 @@ typedef struct {
 } vkbuffer_t;
 
 typedef struct {
+	VkDeviceSize	allocSize;
+	VkDeviceSize	currentOffset;
+	uint32_t		memoryTypeIndex;
+	VkDeviceMemory	memory;
+} vkmemory_t;
+
+typedef struct {
 	uint32_t graphicsFamily;
 	uint32_t presentFamily;
 } vkqueueFamilyIndices_t;
@@ -1126,6 +1137,25 @@ typedef struct {
 
 // RTX
 typedef struct {
+	float offsetIdx;
+	float offsetXYZ;
+	float texIdx;
+	float texIdx2;
+	uint32_t blendfunc;
+	float a;
+	float b;
+	float c;
+} ASInstanceData;
+typedef struct {
+	float          transform[12];
+	uint32_t       instanceCustomIndex : 24;
+	uint32_t       mask : 8;
+	uint32_t       instanceOffset : 24;
+	uint32_t       flags : 8;
+	uint64_t       accelerationStructureHandle;
+} VkGeometryInstanceNV; // needed for top AS
+
+typedef struct {
 	VkPipelineCache cache;
 	VkPipelineLayout layout;
 	VkPipeline handle;
@@ -1146,8 +1176,6 @@ typedef struct {
 	vkbuffer_t xyz;
 	vkbuffer_t idx;
 
-	uint32_t* sizeXYZ;
-	uint32_t* sizeIDX;
 } vkgeometry_t;
 
 typedef struct {
@@ -1157,6 +1185,26 @@ typedef struct {
 	uint32_t geometryCount;
 	
 } vkaccelerationStructure_t;
+
+typedef struct {
+	VkAccelerationStructureNV	accelerationStructure;
+	uint64_t					handle;
+} vktopAS_t;
+typedef struct {
+	VkAccelerationStructureNV	accelerationStructure;
+	uint64_t					handle;
+	VkGeometryNV				geometries;
+	ASInstanceData				data;
+	VkGeometryInstanceFlagBitsNV flags;
+} vkbottomAS_t;
+typedef struct {
+	vktopAS_t					topAS;
+	vkbottomAS_t*				bottomASList;
+	uint32_t					asCount;
+	VkDeviceMemory				bottomMemory;
+	VkDeviceMemory				topMemory;
+} vkbottomASList_t;
+
 typedef struct {
 	qboolean					init;
 	uint32_t					bottomCount;		//bottom only
@@ -1224,8 +1272,22 @@ typedef struct {
     vkbuffer_t			colorbuffer;
 
 	// RTX
-	qboolean drawMirror;
 	vkaccelerationStructures_t accelerationStructures;
+
+	vktopAS_t			topAS;
+	vkbottomAS_t*		bottomASList;
+	uint32_t			bottomASCount;
+
+	// RTX BUFFER
+	vkgeometry_t geometry;
+
+	// stores offset and stuff for in shader lookup
+	vkbuffer_t			instanceDataBuffer;
+
+	vkbuffer_t			asBuffer;
+	VkDeviceSize		asBufferOffset;
+	vkbuffer_t			scratchBuffer;	// only required for build, not needed after build
+	vkbuffer_t			instanceBuffer; // only required for build, not needed after build
     
     //
     qboolean            renderBegan;

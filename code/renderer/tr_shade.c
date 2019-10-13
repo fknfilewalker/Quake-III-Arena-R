@@ -922,6 +922,7 @@ ComputeTexCoords
 	}
 }
 
+ /*
 static float	s_flipMatrix[16] = {
 	// convert from our coordinate system (looking down X)
 	// to OpenGL's coordinate system (looking down -Z)
@@ -1003,6 +1004,7 @@ static void RB_IterateStagesRayTracing(shaderCommands_t* input) {
 		return;
 	}
 }
+*/
 
 /*
 ** RB_IterateStagesGeneric
@@ -1011,8 +1013,8 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 {
 
 	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && backEnd.refdef.rdflags != RDF_NOWORLDMODEL && !backEnd.projection2D) {
-		RB_IterateStagesRayTracing(input);
-		return;
+		//RB_IterateStagesRayTracing(input);
+		//return;
 	}
 
 	int stage;
@@ -1134,6 +1136,10 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
                 else {
                     R_BindAnimatedImage( &pStage->bundle[0] );
                 }
+
+				if (pStage->bundle[0].numImageAnimations > 1) {
+					int x = 22;
+				}
             
 				tr_api.State( pStage->stateBits );
 				//vk_d.state.cullMode = VK_CULL_MODE_NONE;

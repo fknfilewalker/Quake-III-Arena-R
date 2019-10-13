@@ -114,8 +114,15 @@ static void VK_CreateRayTracingPipeline(vkrtpipeline_t* pipeline)
 	groups[2].type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_NV;
 	groups[2].generalShader = VK_SHADER_UNUSED_NV;
 	groups[2].closestHitShader = 2;
-	groups[2].anyHitShader = VK_SHADER_UNUSED_NV;
+	groups[2].anyHitShader = (pipeline->shader->size == 4) ? 3 : VK_SHADER_UNUSED_NV;
 	groups[2].intersectionShader = VK_SHADER_UNUSED_NV;
+
+	/*groups[3].sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_NV;
+	groups[3].type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_NV;
+	groups[3].generalShader = VK_SHADER_UNUSED_NV;
+	groups[3].closestHitShader = VK_SHADER_UNUSED_NV;
+	groups[3].anyHitShader = 3;
+	groups[3].intersectionShader = VK_SHADER_UNUSED_NV;*/
 
 	VkRayTracingPipelineCreateInfoNV rayPipelineInfo = { 0 };
 	rayPipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_NV;
@@ -132,7 +139,6 @@ static void VK_CreateShaderBindingTable(vkrtpipeline_t *pipeline) {
 
 	const uint32_t sbtSize = vk.rayTracingProperties.shaderGroupHandleSize * 3;
 	VK_CreateShaderBindingTableBuffer(&vk_d.accelerationStructures.shaderBindingTableBuffer, sbtSize);
-
 
 	uint8_t* shaderHandleStorage = calloc(sbtSize, sizeof(uint8_t));
 	// Get shader identifiers

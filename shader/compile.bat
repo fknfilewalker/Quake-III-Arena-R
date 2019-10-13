@@ -25,6 +25,9 @@ for %%f in (%glslDir%\*.rmiss) do (
 for %%f in (%glslDir%\*.rchit) do (
     %glslangValidator% -V %glslDir%\%%~nxf -o %spvDir%\%%~nxf.spv
 )
+for %%f in (%glslDir%\*.rahit) do (
+    %glslangValidator% -V %glslDir%\%%~nxf -o %spvDir%\%%~nxf.spv
+)
 
 rem C HEADER
 for %%f in (%glslDir%\*.vert) do (
@@ -44,6 +47,9 @@ for %%f in (%glslDir%\*.rmiss) do (
 )
 for %%f in (%glslDir%\*.rchit) do (
     %glslangValidator% -V %glslDir%\%%~nxf --vn %%~nfRCHit -o %headerDir%\%%~nxf.h
+)
+for %%f in (%glslDir%\*.rahit) do (
+    %glslangValidator% -V %glslDir%\%%~nxf --vn %%~nfRAHit -o %headerDir%\%%~nxf.h
 )
 
 :quit

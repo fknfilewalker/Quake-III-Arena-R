@@ -375,6 +375,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	backEnd.pc.c_surfaces += numDrawSurfs;
 
 	for (i = 0, drawSurf = drawSurfs ; i < numDrawSurfs ; i++, drawSurf++) {
+		//if (*drawSurf->surface != SF_FACE) continue;
 		if ( drawSurf->sort == oldSort ) {
 			// fast path, same as previous sort
 			rb_surfaceTable[ *drawSurf->surface ]( drawSurf->surface );
@@ -591,7 +592,7 @@ void RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int
             VK_SetSampler(&image->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image->sampler, image->view);
             VK_FinishDescriptor(&image->descriptor_set);
 
-			VK_SetSamplerPosition(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, image->sampler, image->view, tr.scratchImage[client]->index);
+			VK_SetSamplerPosition(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, image->sampler, image->view, tr.scratchImage[client]->index);
 			VK_UpdateDescriptorSet(&vk_d.imageDescriptor);
         }
         else {
@@ -717,7 +718,13 @@ const void	*RB_DrawSurfs( const void *data ) {
 	backEnd.refdef = cmd->refdef;
 	backEnd.viewParms = cmd->viewParms;
 
-	RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
+	// skip mirror for now
+	if(backEnd.viewParms.isPortal)return (const void*)(cmd + 1);
+	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && !backEnd.viewParms.isPortal && backEnd.refdef.rdflags != RDF_NOWORLDMODEL && !backEnd.projection2D) {
+		RB_RayTraceScene(cmd->drawSurfs, cmd->numDrawSurfs);
+		//RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
+	}
+	else RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
 
 	return (const void *)(cmd + 1);
 }

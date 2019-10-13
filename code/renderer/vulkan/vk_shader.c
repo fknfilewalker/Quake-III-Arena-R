@@ -20,6 +20,7 @@
 #include "../../../shader/header/raygen.rgen.h"
 #include "../../../shader/header/miss.rmiss.h"
 #include "../../../shader/header/closesthit.rchit.h"
+#include "../../../shader/header/anyhit.rahit.h"
 
 static vkshader_t *singleTexture;
 static vkshader_t *singleTextureClip;
@@ -31,6 +32,7 @@ static vkshader_t *clearAttachment;
 static vkshader_t *fullscreenRect;
 // rtx
 static vkshader_t* rayTracing;
+static vkshader_t* rayTracingAny;
 
 void VK_CreateShaderModule(VkShaderModule *handle, const char *code, size_t size);
 void VK_LoadVertFragShadersFromFile(vkshader_t *shader, const char *vertexSPV, const char *fragmentSPV);
@@ -38,6 +40,10 @@ void VK_LoadVertFragShadersFromVariable(vkshader_t* shader, const char* vertexSP
 void VK_LoadRayTracingShadersFromVariable(vkshader_t* shader, const char* rgenSPV, const uint32_t sizeRGEN,
 	const char* rmissSPV, const uint32_t sizeRMISS,
 	const char* rhitSPV, const uint32_t sizeRHIT);
+void VK_LoadRayTracingShadersWithAnyFromVariable(vkshader_t* shader, const char* rgenSPV, const uint32_t sizeRGEN,
+	const char* rmissSPV, const uint32_t sizeRMISS,
+	const char* rhitSPV, const uint32_t sizeRHIT,
+	const char* rahitSPV, const uint32_t sizeRAHIT);
 
 void VK_SingleTextureShader(vkshader_t *shader){
     if (singleTexture == NULL) {
@@ -120,6 +126,14 @@ void VK_RayTracingShader(vkshader_t* shader) {
 	Com_Memcpy(shader, rayTracing, sizeof(vkshader_t));
 }
 
+void VK_RayTracingShaderWithAny(vkshader_t* shader) {
+	if (rayTracingAny == NULL) {
+		rayTracingAny = malloc(sizeof(vkshader_t));
+		VK_LoadRayTracingShadersWithAnyFromVariable(rayTracingAny, &raygenRGen, sizeof(raygenRGen), &missRMiss, sizeof(missRMiss), &closesthitRCHit, sizeof(closesthitRCHit), &anyhitRAHit, sizeof(anyhitRAHit));
+	}
+	Com_Memcpy(shader, rayTracingAny, sizeof(vkshader_t));
+}
+
 void VK_DestroyShader(vkshader_t* shader) {
 	for (int i = 0; i < shader->size; ++i) {
 		vkDestroyShaderModule(vk.device, shader->modules[i], NULL);
@@ -173,6 +187,11 @@ void VK_DestroyAllShaders() {
 		VK_DestroyShader(rayTracing);
 		free(rayTracing);
 		rayTracing = NULL;
+	}
+	if (rayTracingAny != NULL) {
+		VK_DestroyShader(rayTracingAny);
+		free(rayTracingAny);
+		rayTracingAny = NULL;
 	}
 }
 
@@ -289,5 +308,45 @@ void VK_LoadRayTracingShadersFromVariable(vkshader_t* shader, const char* rgenSP
 	shader->shaderStageCreateInfos[2].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV;
 	shader->shaderStageCreateInfos[2].module = shader->modules[2];
 	shader->shaderStageCreateInfos[2].pName = "main";
+
+}
+void VK_LoadRayTracingShadersWithAnyFromVariable(vkshader_t* shader, const char* rgenSPV, const uint32_t sizeRGEN,
+	const char* rmissSPV, const uint32_t sizeRMISS,
+	const char* rhitSPV, const uint32_t sizeRHIT,
+	const char* rahitSPV, const uint32_t sizeRAHIT) {
+	shader->size = 4;
+	shader->modules = calloc(shader->size, sizeof(VkShaderModule));
+	shader->flags = calloc(shader->size, sizeof(VkShaderStageFlagBits));
+	shader->shaderStageCreateInfos = calloc(shader->size, sizeof(VkPipelineShaderStageCreateInfo));
+
+	shader->flags[0] = VK_SHADER_STAGE_RAYGEN_BIT_NV;
+	shader->flags[1] = VK_SHADER_STAGE_MISS_BIT_NV;
+	shader->flags[2] = VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV;
+	shader->flags[3] = VK_SHADER_STAGE_ANY_HIT_BIT_NV;
+
+	VK_CreateShaderModule(&shader->modules[0], rgenSPV, sizeRGEN);
+	VK_CreateShaderModule(&shader->modules[1], rmissSPV, sizeRMISS);
+	VK_CreateShaderModule(&shader->modules[2], rhitSPV, sizeRHIT);
+	VK_CreateShaderModule(&shader->modules[3], rahitSPV, sizeRAHIT);
+
+	shader->shaderStageCreateInfos[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shader->shaderStageCreateInfos[0].stage = VK_SHADER_STAGE_RAYGEN_BIT_NV;
+	shader->shaderStageCreateInfos[0].module = shader->modules[0];
+	shader->shaderStageCreateInfos[0].pName = "main";
+
+	shader->shaderStageCreateInfos[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shader->shaderStageCreateInfos[1].stage = VK_SHADER_STAGE_MISS_BIT_NV;
+	shader->shaderStageCreateInfos[1].module = shader->modules[1];
+	shader->shaderStageCreateInfos[1].pName = "main";
+
+	shader->shaderStageCreateInfos[2].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shader->shaderStageCreateInfos[2].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV;
+	shader->shaderStageCreateInfos[2].module = shader->modules[2];
+	shader->shaderStageCreateInfos[2].pName = "main";
+
+	shader->shaderStageCreateInfos[3].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shader->shaderStageCreateInfos[3].stage = VK_SHADER_STAGE_ANY_HIT_BIT_NV;
+	shader->shaderStageCreateInfos[3].module = shader->modules[3];
+	shader->shaderStageCreateInfos[3].pName = "main";
 
 }

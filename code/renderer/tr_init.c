@@ -259,8 +259,15 @@ static void InitVulkan(void)
         VK_CreateVertexBuffer(&vk_d.uvbuffer2, vk.swapchain.imageCount * VK_VERTEX_ATTRIBUTE_DATA_SIZE * sizeof(vec2_t));
 		VK_CreateVertexBuffer(&vk_d.colorbuffer, vk.swapchain.imageCount * VK_VERTEX_ATTRIBUTE_DATA_SIZE * sizeof(color4ub_t));
 
+		// RTX
+		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer, 10000 * 8 * sizeof(float), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		VK_CreateRayTracingASBuffer(&vk_d.asBuffer, 2* 2* 400000000 * sizeof(byte));
+		VK_CreateRayTracingScratchBuffer(&vk_d.scratchBuffer, 3 * 2000000 * sizeof(byte));
+		VK_CreateRayTracingBuffer(&vk_d.instanceBuffer,	10000 * sizeof(VkGeometryInstanceNV));
+
 		vk_d.imageDescriptor.lastBindingVariableSizeExt = qtrue;
-		VK_AddSamplerCount(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, MAX_DRAWIMAGES);
+		vk_d.imageDescriptor.lastBindingVariableSizeExt = qtrue;
+		VK_AddSamplerCount(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, MAX_DRAWIMAGES);
 		VK_FinishDescriptorWithoutUpdate(&vk_d.imageDescriptor);
 
 		// device infos
@@ -1253,7 +1260,14 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			VK_DestroyDescriptor(&vk_d.imageDescriptor);
 
 			// RTX
+			VK_DestroyBuffer(&vk_d.instanceDataBuffer);
+			VK_DestroyBuffer(&vk_d.asBuffer);
+			vk_d.asBufferOffset = 0;
+			VK_DestroyBuffer(&vk_d.scratchBuffer);
+			VK_DestroyBuffer(&vk_d.instanceBuffer);
+
 			VK_DestroyAccelerationStructure(&vk_d.accelerationStructures);
+			//VK_DestroyAccelerationStructure2(&vk_d.staticBottomAS);
 			VK_DestroyBuffer(&vk_d.accelerationStructures.shaderBindingTableBuffer);
 			VK_DestroyBuffer(&vk_d.accelerationStructures.uniformBuffer);
 			VK_DestroyImage(&vk_d.accelerationStructures.resultImage);

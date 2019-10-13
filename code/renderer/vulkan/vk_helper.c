@@ -18,7 +18,6 @@ void VK_BeginRenderClear()
 	vk_d.offsetIdx = vk.swapchain.currentImage * VK_INDEX_DATA_SIZE;
 	vk_d.offset = vk.swapchain.currentImage * VK_VERTEX_ATTRIBUTE_DATA_SIZE;
 	vk_d.currentPipeline = -1;
-	vk_d.drawMirror = qtrue;
 
 	VkClearColorValue cc = { 0.1f,0.1f,0.1f,1.0f };
     VkClearDepthStencilValue dsc = { 1, 0};
@@ -229,7 +228,6 @@ void VK_EndSingleTimeCommands(VkCommandBuffer *commandBuffer) {
 */
 void VK_CreateBufferMemory(VkDeviceSize size, VkBufferUsageFlags usage,
 	VkMemoryPropertyFlags properties, VkBuffer* buffer, VkDeviceMemory* bufferMemory) {
-
 
 	VkBufferCreateInfo bufInfo = { 0 };
 	bufInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
