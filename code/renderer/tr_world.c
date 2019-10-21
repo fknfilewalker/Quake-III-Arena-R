@@ -299,8 +299,11 @@ static void R_AddWorldSurface( msurface_t *surf, int dlightBits ) {
 		dlightBits = R_DlightSurface( surf, dlightBits );
 		dlightBits = ( dlightBits != 0 );
 	}
+	if (surf->basIndex > -1) {
+		int x = 2;
+	}
 
-	R_AddDrawSurf( surf->data, surf->shader, surf->fogIndex, dlightBits );
+	R_AddDrawSurf( surf->data, surf->shader, surf->fogIndex, dlightBits, surf->basIndex);
 }
 
 /*

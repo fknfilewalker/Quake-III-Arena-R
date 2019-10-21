@@ -1359,7 +1359,7 @@ R_AddDrawSurf
 =================
 */
 void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader, 
-				   int fogIndex, int dlightMap ) {
+				   int fogIndex, int dlightMap, int basIndex ) {
 	int			index;
 
 	// instead of checking for overflow, we just mask the index
@@ -1370,6 +1370,7 @@ void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader,
 	tr.refdef.drawSurfs[index].sort = (shader->sortedIndex << QSORT_SHADERNUM_SHIFT) 
 		| tr.shiftedEntityNum | ( fogIndex << QSORT_FOGNUM_SHIFT ) | (int)dlightMap;
 	tr.refdef.drawSurfs[index].surface = surface;
+	tr.refdef.drawSurfs[index].basIndex = basIndex;
 	tr.refdef.numDrawSurfs++;
 }
 
@@ -1491,7 +1492,7 @@ void R_AddEntitySurfaces (void) {
 				continue;
 			}
 			shader = R_GetShaderByHandle( ent->e.customShader );
-			R_AddDrawSurf( &entitySurface, shader, R_SpriteFogNum( ent ), 0 );
+			R_AddDrawSurf( &entitySurface, shader, R_SpriteFogNum( ent ), 0, -1);
 			break;
 
 		case RT_MODEL:
@@ -1500,7 +1501,7 @@ void R_AddEntitySurfaces (void) {
 
 			tr.currentModel = R_GetModelByHandle( ent->e.hModel );
 			if (!tr.currentModel) {
-				R_AddDrawSurf( &entitySurface, tr.defaultShader, 0, 0 );
+				R_AddDrawSurf( &entitySurface, tr.defaultShader, 0, 0, -1);
 			} else {
 				switch ( tr.currentModel->type ) {
 				case MOD_MESH:
@@ -1517,7 +1518,7 @@ void R_AddEntitySurfaces (void) {
 						break;
 					}
 					shader = R_GetShaderByHandle( ent->e.customShader );
-					R_AddDrawSurf( &entitySurface, tr.defaultShader, 0, 0 );
+					R_AddDrawSurf( &entitySurface, tr.defaultShader, 0, 0, -1);
 					break;
 				default:
 					ri.Error( ERR_DROP, "R_AddEntitySurfaces: Bad modeltype" );

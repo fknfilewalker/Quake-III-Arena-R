@@ -261,10 +261,18 @@ static void InitVulkan(void)
 
 		// RTX
 		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer, 10000 * 8 * sizeof(float), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-		VK_CreateRayTracingASBuffer(&vk_d.asBuffer, 2* 2* 400000000 * sizeof(byte));
+		VK_CreateRayTracingASBuffer(&vk_d.basBuffer, 2* 2* 400000000 * sizeof(byte));
+		VK_CreateRayTracingASBuffer(&vk_d.tasBuffer, 2000000 * sizeof(byte));
+		
 		VK_CreateRayTracingScratchBuffer(&vk_d.scratchBuffer, 3 * 2000000 * sizeof(byte));
 		VK_CreateRayTracingBuffer(&vk_d.instanceBuffer,	10000 * sizeof(VkGeometryInstanceNV));
 
+		// create result image
+		VK_CreateImage(&vk_d.accelerationStructures.resultImage, vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+		VK_CreateSampler(&vk_d.accelerationStructures.resultImage, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+		VK_TransitionImage(&vk_d.accelerationStructures.resultImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+		// descriptor for all textures
 		vk_d.imageDescriptor.lastBindingVariableSizeExt = qtrue;
 		vk_d.imageDescriptor.lastBindingVariableSizeExt = qtrue;
 		VK_AddSamplerCount(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, MAX_DRAWIMAGES);
@@ -1243,6 +1251,16 @@ void RE_Shutdown( qboolean destroyWindow ) {
 		R_SyncRenderThread();
 		R_ShutdownCommandBuffers();
 		R_DeleteTextures();
+
+		// rtx cleanup
+		if (glConfig.driverType == VULKAN) {
+			VK_DestroyImage(&vk_d.accelerationStructures.resultImage);
+			VK_DestroyDescriptor(&vk_d.accelerationStructures.descriptor);
+			VK_DestroyBuffer(&vk_d.accelerationStructures.uniformBuffer);
+
+			vk_d.basBufferOffset = 0;
+			vk_d.tasBufferOffset = 0;
+		}
 	}
 
 	R_DoneFreeType();
@@ -1261,20 +1279,18 @@ void RE_Shutdown( qboolean destroyWindow ) {
 
 			// RTX
 			VK_DestroyBuffer(&vk_d.instanceDataBuffer);
-			VK_DestroyBuffer(&vk_d.asBuffer);
-			vk_d.asBufferOffset = 0;
+			/*VK_DestroyBuffer(&vk_d.basBuffer);
+			vk_d.basBufferOffset = 0;
+			VK_DestroyBuffer(&vk_d.tasBuffer);
+			vk_d.tasBufferOffset = 0;*/
 			VK_DestroyBuffer(&vk_d.scratchBuffer);
 			VK_DestroyBuffer(&vk_d.instanceBuffer);
 
-			VK_DestroyAccelerationStructure(&vk_d.accelerationStructures);
-			//VK_DestroyAccelerationStructure2(&vk_d.staticBottomAS);
-			VK_DestroyBuffer(&vk_d.accelerationStructures.shaderBindingTableBuffer);
-			VK_DestroyBuffer(&vk_d.accelerationStructures.uniformBuffer);
-			VK_DestroyImage(&vk_d.accelerationStructures.resultImage);
-			VK_DestroyRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
-			VK_DestroyDescriptor(&vk_d.accelerationStructures.descriptor);
-			vk_d.accelerationStructures.init = qfalse;
+			VK_DestroyAllAccelerationStructures();
 
+
+			VK_DestroyRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
+			
 			VK_DestroyAllPipelines();
 
 			VK_DestroyAllShaders();

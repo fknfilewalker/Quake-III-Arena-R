@@ -262,6 +262,7 @@ typedef struct {
 	int			ofsBoneReferences;
 
 	int			ofsEnd;				// next surface follows
+	int				idxBottomAS;
 } md4Surface_t;
 
 typedef struct {

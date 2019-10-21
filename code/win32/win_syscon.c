@@ -459,7 +459,7 @@ void Sys_ShowConsole( int visLevel, qboolean quitOnClose )
 	switch ( visLevel )
 	{
 	case 0:
-		ShowWindow( s_wcd.hWnd, SW_HIDE );
+		//ShowWindow( s_wcd.hWnd, SW_HIDE );
 		break;
 	case 1:
 		ShowWindow( s_wcd.hWnd, SW_SHOWNORMAL );

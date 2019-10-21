@@ -539,6 +539,7 @@ typedef enum {
 typedef struct drawSurf_s {
 	unsigned			sort;			// bit combination for fast compares
 	surfaceType_t		*surface;		// any of surface*_t
+	int					basIndex;		// bottom Acceleration Structure Index
 } drawSurf_t;
 
 #define	MAX_FACE_POINTS		64
@@ -552,9 +553,9 @@ typedef struct srfPoly_s {
 	surfaceType_t	surfaceType;
 	qhandle_t		hShader;
 	int				fogIndex;
+	int				idxBottomAS;
 	int				numVerts;
 	polyVert_t		*verts;
-	int			idxBottomAS;
 } srfPoly_t;
 
 typedef struct srfDisplayList_s {
@@ -589,12 +590,13 @@ typedef struct srfGridMesh_s {
 	int				lodFixed;
 	int				lodStitched;
 
+	int				idxBottomAS;
 	// vertexes
 	int				width, height;
 	float			*widthLodError;
 	float			*heightLodError;
 	drawVert_t		verts[1];		// variable sized
-	int			idxBottomAS;
+	
 } srfGridMesh_t;
 
 
@@ -607,13 +609,13 @@ typedef struct {
 	// dynamic lighting information
 	int			dlightBits[SMP_FRAMES];
 
+	int			idxBottomAS;
 	// triangle definitions (no normals at points)
 	int			numPoints;
 	int			numIndices;
 	int			ofsIndices;
 	float		points[1][VERTEXSIZE];	// variable sized
 										// there is a variable length list of indices here also
-	int			idxBottomAS;
 } srfSurfaceFace_t;
 
 
@@ -629,13 +631,13 @@ typedef struct {
 	vec3_t			localOrigin;
 	float			radius;
 
+	int				idxBottomAS;
 	// triangle definitions
 	int				numIndexes;
 	int				*indexes;
 
 	int				numVerts;
 	drawVert_t		*verts;
-	int			idxBottomAS;
 } srfTriangles_t;
 
 
@@ -662,6 +664,7 @@ typedef struct msurface_s {
 	int					viewCount;		// if == tr.viewCount, already added
 	struct shader_s		*shader;
 	int					fogIndex;
+	int					basIndex;		// bottom Acceleration Structure Index
 
 	surfaceType_t		*data;			// any of srf*_t
 } msurface_t;
@@ -1160,9 +1163,11 @@ typedef struct {
 	VkPipelineLayout layout;
 	VkPipeline handle;
 
+	vkbuffer_t		shaderBindingTableBuffer;
+
 	vkdescriptor_t* descriptor;
 	vkdescriptor_t* descriptor2;
-	vkshader_t* shader;
+	vkshader_t*		shader;
 
 	struct {
 		size_t size;
@@ -1173,6 +1178,8 @@ typedef struct {
 typedef struct {
 	uint32_t numSurfaces;
 
+	uint32_t offsetIDX;
+	uint32_t offsetXYZ;
 	vkbuffer_t xyz;
 	vkbuffer_t idx;
 
@@ -1189,30 +1196,19 @@ typedef struct {
 typedef struct {
 	VkAccelerationStructureNV	accelerationStructure;
 	uint64_t					handle;
+	VkDeviceSize				offset;
 } vktopAS_t;
 typedef struct {
-	VkAccelerationStructureNV	accelerationStructure;
-	uint64_t					handle;
-	VkGeometryNV				geometries;
-	ASInstanceData				data;
-	VkGeometryInstanceFlagBitsNV flags;
+	VkAccelerationStructureNV		accelerationStructure;
+	uint64_t						handle;
+	VkGeometryNV					geometries;
+	ASInstanceData					data;
+	VkGeometryInstanceFlagBitsNV	flags;
+	VkDeviceSize					offset; // vk_d.basBuffer
 } vkbottomAS_t;
-typedef struct {
-	vktopAS_t					topAS;
-	vkbottomAS_t*				bottomASList;
-	uint32_t					asCount;
-	VkDeviceMemory				bottomMemory;
-	VkDeviceMemory				topMemory;
-} vkbottomASList_t;
 
 typedef struct {
-	qboolean					init;
-	uint32_t					bottomCount;		//bottom only
-
-	vkaccelerationStructure_t	bottom;
-	vkaccelerationStructure_t	top;
 	vkbuffer_t					uniformBuffer;
-	vkbuffer_t					shaderBindingTableBuffer;
 	vkimage_t					resultImage;
 	vkrtpipeline_t				pipeline;
 	vkdescriptor_t				descriptor;
@@ -1278,14 +1274,19 @@ typedef struct {
 	vkbottomAS_t*		bottomASList;
 	uint32_t			bottomASCount;
 
+	vkbottomAS_t*		bottomASListDynamic;
+	uint32_t			bottomASDynamicCount;
+
 	// RTX BUFFER
 	vkgeometry_t geometry;
 
 	// stores offset and stuff for in shader lookup
 	vkbuffer_t			instanceDataBuffer;
 
-	vkbuffer_t			asBuffer;
-	VkDeviceSize		asBufferOffset;
+	vkbuffer_t			basBuffer;
+	VkDeviceSize		basBufferOffset;
+	vkbuffer_t			tasBuffer;
+	VkDeviceSize		tasBufferOffset;
 	vkbuffer_t			scratchBuffer;	// only required for build, not needed after build
 	vkbuffer_t			instanceBuffer; // only required for build, not needed after build
     
@@ -1479,7 +1480,7 @@ void R_AddPolygonSurfaces( void );
 void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader, 
 					 int *fogNum, int *dlightMap );
 
-void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader, int fogIndex, int dlightMap );
+void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader, int fogIndex, int dlightMap, int basIndex );
 
 
 #define	CULL_IN		0		// completely unclipped

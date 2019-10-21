@@ -42,6 +42,7 @@ void VK_FinishRayTracingPipeline(vkrtpipeline_t *pipeline) {
 }
 
 void VK_DestroyRayTracingPipeline(vkrtpipeline_t *pipeline) {
+	VK_DestroyBuffer(&pipeline->shaderBindingTableBuffer);
 
     if (pipeline->layout) {
         vkDestroyPipelineLayout(vk.device, pipeline->layout, NULL);
@@ -138,14 +139,14 @@ static void VK_CreateRayTracingPipeline(vkrtpipeline_t* pipeline)
 static void VK_CreateShaderBindingTable(vkrtpipeline_t *pipeline) {
 
 	const uint32_t sbtSize = vk.rayTracingProperties.shaderGroupHandleSize * 3;
-	VK_CreateShaderBindingTableBuffer(&vk_d.accelerationStructures.shaderBindingTableBuffer, sbtSize);
+	VK_CreateShaderBindingTableBuffer(&pipeline->shaderBindingTableBuffer, sbtSize);
 
 	uint8_t* shaderHandleStorage = calloc(sbtSize, sizeof(uint8_t));
 	// Get shader identifiers
 	VK_CHECK(vkGetRayTracingShaderGroupHandlesNV(vk.device, pipeline->handle, 0, 3, sbtSize, shaderHandleStorage), "failed to get shader handels");
-	VK_UploadBufferData(&vk_d.accelerationStructures.shaderBindingTableBuffer, (void*)shaderHandleStorage);
+	VK_UploadBufferData(&pipeline->shaderBindingTableBuffer, (void*)shaderHandleStorage);
 
-	VK_UnmapBuffer(&vk_d.accelerationStructures.shaderBindingTableBuffer);
+	VK_UnmapBuffer(&pipeline->shaderBindingTableBuffer);
 	free(shaderHandleStorage);
 }
 
@@ -174,7 +175,7 @@ void VK_SetRayTracingPushConstant(vkrtpipeline_t *pipeline, VkShaderStageFlags s
     vkCmdPushConstants(commandBuffer, pipeline->layout, stage, offset, size, data);
 }
 
-void VK_TraceRays() {
+void VK_TraceRays(vkbuffer_t *buffer) {
 	VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
 
 	VkDeviceSize bindingOffsetRayGenShader = vk.rayTracingProperties.shaderGroupHandleSize * 0;
@@ -183,9 +184,9 @@ void VK_TraceRays() {
 	VkDeviceSize bindingStride = vk.rayTracingProperties.shaderGroupHandleSize;
 
 	vkCmdTraceRaysNV(commandBuffer,
-		vk_d.accelerationStructures.shaderBindingTableBuffer.buffer, bindingOffsetRayGenShader,
-		vk_d.accelerationStructures.shaderBindingTableBuffer.buffer, bindingOffsetMissShader, bindingStride,
-		vk_d.accelerationStructures.shaderBindingTableBuffer.buffer, bindingOffsetHitShader, bindingStride,
+		buffer->buffer, bindingOffsetRayGenShader,
+		buffer->buffer, bindingOffsetMissShader, bindingStride,
+		buffer->buffer, bindingOffsetHitShader, bindingStride,
 		VK_NULL_HANDLE, 0, 0,
 		vk.swapchain.extent.width, vk.swapchain.extent.height, 1);
 }
