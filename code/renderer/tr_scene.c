@@ -105,7 +105,7 @@ void R_AddPolygonSurfaces( void ) {
 
 	for ( i = 0, poly = tr.refdef.polys; i < tr.refdef.numPolys ; i++, poly++ ) {
 		sh = R_GetShaderByHandle( poly->hShader );
-		R_AddDrawSurf( ( void * )poly, sh, poly->fogIndex, qfalse, -1);
+		R_AddDrawSurf( ( void * )poly, sh, poly->fogIndex, qfalse, NULL);
 	}
 }
 

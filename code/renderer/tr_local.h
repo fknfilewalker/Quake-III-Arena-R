@@ -281,6 +281,25 @@ typedef struct {
 
 } texModInfo_t;
 
+// RTX BOTTOM AS
+typedef struct {
+	float offsetIdx;
+	float offsetXYZ;
+	float texIdx;
+	float texIdx2;
+	uint32_t blendfunc;
+	float a;
+	float b;
+	float c;
+} ASInstanceData;
+typedef struct {
+	VkAccelerationStructureNV		accelerationStructure;
+	uint64_t						handle;
+	VkGeometryNV					geometries;
+	ASInstanceData					data;
+	VkGeometryInstanceFlagBitsNV	flags;
+	VkDeviceSize					offset; // vk_d.basBuffer
+} vkbottomAS_t;
 
 #define	MAX_IMAGE_ANIMATIONS	8
 
@@ -539,7 +558,7 @@ typedef enum {
 typedef struct drawSurf_s {
 	unsigned			sort;			// bit combination for fast compares
 	surfaceType_t		*surface;		// any of surface*_t
-	int					basIndex;		// bottom Acceleration Structure Index
+	vkbottomAS_t		*bAS;			// bottom Acceleration Structure
 } drawSurf_t;
 
 #define	MAX_FACE_POINTS		64
@@ -553,7 +572,6 @@ typedef struct srfPoly_s {
 	surfaceType_t	surfaceType;
 	qhandle_t		hShader;
 	int				fogIndex;
-	int				idxBottomAS;
 	int				numVerts;
 	polyVert_t		*verts;
 } srfPoly_t;
@@ -589,8 +607,6 @@ typedef struct srfGridMesh_s {
 	float			lodRadius;
 	int				lodFixed;
 	int				lodStitched;
-
-	int				idxBottomAS;
 	// vertexes
 	int				width, height;
 	float			*widthLodError;
@@ -609,7 +625,6 @@ typedef struct {
 	// dynamic lighting information
 	int			dlightBits[SMP_FRAMES];
 
-	int			idxBottomAS;
 	// triangle definitions (no normals at points)
 	int			numPoints;
 	int			numIndices;
@@ -631,7 +646,6 @@ typedef struct {
 	vec3_t			localOrigin;
 	float			radius;
 
-	int				idxBottomAS;
 	// triangle definitions
 	int				numIndexes;
 	int				*indexes;
@@ -664,7 +678,7 @@ typedef struct msurface_s {
 	int					viewCount;		// if == tr.viewCount, already added
 	struct shader_s		*shader;
 	int					fogIndex;
-	int					basIndex;		// bottom Acceleration Structure Index
+	vkbottomAS_t*		bAS;			// bottom Acceleration Structure
 
 	surfaceType_t		*data;			// any of srf*_t
 } msurface_t;
@@ -760,7 +774,8 @@ typedef struct model_s {
 	md3Header_t	*md3[MD3_MAX_LODS];	// only if type == MOD_MESH
 	md4Header_t	*md4;				// only if type == MOD_MD4
 
-	int			 numLods;
+	int			numLods;
+	vkbottomAS_t* bAS[MD3_MAX_LODS][MD3_MAX_SURFACES]; // bottom Acceleration Structure 
 } model_t;
 
 
@@ -1140,16 +1155,6 @@ typedef struct {
 
 // RTX
 typedef struct {
-	float offsetIdx;
-	float offsetXYZ;
-	float texIdx;
-	float texIdx2;
-	uint32_t blendfunc;
-	float a;
-	float b;
-	float c;
-} ASInstanceData;
-typedef struct {
 	float          transform[12];
 	uint32_t       instanceCustomIndex : 24;
 	uint32_t       mask : 8;
@@ -1198,14 +1203,7 @@ typedef struct {
 	uint64_t					handle;
 	VkDeviceSize				offset;
 } vktopAS_t;
-typedef struct {
-	VkAccelerationStructureNV		accelerationStructure;
-	uint64_t						handle;
-	VkGeometryNV					geometries;
-	ASInstanceData					data;
-	VkGeometryInstanceFlagBitsNV	flags;
-	VkDeviceSize					offset; // vk_d.basBuffer
-} vkbottomAS_t;
+
 
 typedef struct {
 	vkbuffer_t					uniformBuffer;
@@ -1276,6 +1274,9 @@ typedef struct {
 
 	vkbottomAS_t*		bottomASListDynamic;
 	uint32_t			bottomASDynamicCount;
+
+	vkbottomAS_t*		bottomASs;
+	uint32_t			bottomASc;
 
 	// RTX BUFFER
 	vkgeometry_t geometry;
@@ -1480,7 +1481,7 @@ void R_AddPolygonSurfaces( void );
 void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader, 
 					 int *fogNum, int *dlightMap );
 
-void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader, int fogIndex, int dlightMap, int basIndex );
+void R_AddDrawSurf(surfaceType_t* surface, shader_t* shader, int fogIndex, int dlightMap, vkbottomAS_t* bAS);
 
 
 #define	CULL_IN		0		// completely unclipped

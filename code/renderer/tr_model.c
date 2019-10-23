@@ -282,6 +282,9 @@ static qboolean R_LoadMD3 (model_t *mod, int lod, void *buffer, const char *mod_
 
 	// swap all the surfaces
 	surf = (md3Surface_t *) ( (byte *)mod->md3[lod] + mod->md3[lod]->ofsSurfaces );
+	if (mod->md3[lod]->numSurfaces > 4) {
+		int x = 1;
+	}
 	for ( i = 0 ; i < mod->md3[lod]->numSurfaces ; i++) {
 
         LL(surf->ident);
@@ -317,7 +320,7 @@ static qboolean R_LoadMD3 (model_t *mod, int lod, void *buffer, const char *mod_
 		if ( j > 2 && surf->name[j-2] == '_' ) {
 			surf->name[j-2] = 0;
 		}
-
+		
         // register the shaders
         shader = (md3Shader_t *) ( (byte *)surf + surf->ofsShaders );
         for ( j = 0 ; j < surf->numShaders ; j++, shader++ ) {
@@ -357,8 +360,12 @@ static qboolean R_LoadMD3 (model_t *mod, int lod, void *buffer, const char *mod_
             xyz->normal = LittleShort( xyz->normal );
         }
 
-
-		// find the next surface
+		//RTX
+		if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
+			shader = (md3Shader_t*)((byte*)surf + surf->ofsShaders);
+			RB_CreateNewBottomAS(surf, tr.shaders[shader->shaderIndex], &mod->bAS[lod][i]);
+		}
+		
 		surf = (md3Surface_t *)( (byte *)surf + surf->ofsEnd );
 	}
     

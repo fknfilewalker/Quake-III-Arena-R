@@ -260,6 +260,9 @@ static void InitVulkan(void)
 		VK_CreateVertexBuffer(&vk_d.colorbuffer, vk.swapchain.imageCount * VK_VERTEX_ATTRIBUTE_DATA_SIZE * sizeof(color4ub_t));
 
 		// RTX
+		vk_d.bottomASs = calloc(2000, sizeof(vkbottomAS_t));
+		vk_d.bottomASc = 0;
+
 		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer, 10000 * 8 * sizeof(float), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		VK_CreateRayTracingASBuffer(&vk_d.basBuffer, 2* 2* 400000000 * sizeof(byte));
 		VK_CreateRayTracingASBuffer(&vk_d.tasBuffer, 2000000 * sizeof(byte));

@@ -167,7 +167,6 @@ typedef struct {
 	int		ofsXyzNormals;		// numVerts * numFrames
 
 	int		ofsEnd;				// next surface follows
-	int			idxBottomAS;
 } md3Surface_t;
 
 typedef struct {
@@ -262,7 +261,6 @@ typedef struct {
 	int			ofsBoneReferences;
 
 	int			ofsEnd;				// next surface follows
-	int				idxBottomAS;
 } md4Surface_t;
 
 typedef struct {
