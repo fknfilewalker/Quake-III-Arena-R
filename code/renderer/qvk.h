@@ -128,6 +128,7 @@ PFN_vkCmdClearAttachments                       vkCmdClearAttachments;
 PFN_vkCreateImage								vkCreateImage;
 PFN_vkGetImageMemoryRequirements				vkGetImageMemoryRequirements;
 PFN_vkGetBufferMemoryRequirements				vkGetBufferMemoryRequirements;
+PFN_vkGetBufferMemoryRequirements2				vkGetBufferMemoryRequirements2;
 PFN_vkGetImageSubresourceLayout					vkGetImageSubresourceLayout;
 
 PFN_vkCreateBuffer								vkCreateBuffer;

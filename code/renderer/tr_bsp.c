@@ -1834,9 +1834,7 @@ static	void R_BuildAccelerationStructure() {
 	vk_d.bottomASListDynamic = calloc(6000, sizeof(vkbottomAS_t));
 	vk_d.bottomASDynamicCount = 0;
 	// do not forget to free memory
-	
-	VK_CreateAttributeBuffer(&vk_d.geometry.idx, VK_INDEX_DATA_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-	VK_CreateAttributeBuffer(&vk_d.geometry.xyz, 5 * VK_VERTEX_ATTRIBUTE_DATA_SIZE * 12 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+
 
 	for (i = 0; i < s_worldData.numsurfaces; i++) {
 		RB_CreateNewBottomAS(s_worldData.surfaces[i].data, tr.shaders[s_worldData.surfaces[i].shader->index], &s_worldData.surfaces[i].bAS);

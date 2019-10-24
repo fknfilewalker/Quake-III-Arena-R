@@ -98,6 +98,7 @@ qboolean VK_LoadDeviceFunctions(void)
 	vkCreateImage = VK_DEVICE_LEVEL_FUNCTION("vkCreateImage");
 	vkGetImageMemoryRequirements = VK_DEVICE_LEVEL_FUNCTION("vkGetImageMemoryRequirements");
 	vkGetBufferMemoryRequirements = VK_DEVICE_LEVEL_FUNCTION("vkGetBufferMemoryRequirements");
+	vkGetBufferMemoryRequirements2 = VK_DEVICE_LEVEL_FUNCTION("vkGetBufferMemoryRequirements2");
 	vkGetImageSubresourceLayout = VK_DEVICE_LEVEL_FUNCTION("vkGetImageSubresourceLayout");
 
 	vkCreateBuffer = VK_DEVICE_LEVEL_FUNCTION("vkCreateBuffer");

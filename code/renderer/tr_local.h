@@ -1024,6 +1024,7 @@ typedef struct {
 
 	// ext
 	qboolean							lastBindingVariableSizeExt;
+	qboolean							needsUpdate;
 } vkdescriptor_t;
 
 typedef struct {
@@ -1288,6 +1289,7 @@ typedef struct {
 	VkDeviceSize		basBufferOffset;
 	vkbuffer_t			tasBuffer;
 	VkDeviceSize		tasBufferOffset;
+	VkDeviceSize		scratchBufferOffset;
 	vkbuffer_t			scratchBuffer;	// only required for build, not needed after build
 	vkbuffer_t			instanceBuffer; // only required for build, not needed after build
     

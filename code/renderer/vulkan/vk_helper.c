@@ -14,10 +14,16 @@ void VK_GetDeviceProperties(VkPhysicalDeviceProperties *devProperties)
 
 void VK_BeginRenderClear()
 {
+	if (vk_d.imageDescriptor.needsUpdate == qtrue) {
+		VK_UpdateDescriptorSet(&vk_d.imageDescriptor);
+		vk_d.imageDescriptor.needsUpdate = qfalse;
+	}
+
 	// buffer offset so each cmd buffer has its own range
 	vk_d.offsetIdx = vk.swapchain.currentImage * VK_INDEX_DATA_SIZE;
 	vk_d.offset = vk.swapchain.currentImage * VK_VERTEX_ATTRIBUTE_DATA_SIZE;
 	vk_d.currentPipeline = -1;
+	vk_d.scratchBufferOffset = 0;
 
 	VkClearColorValue cc = { 0.1f,0.1f,0.1f,1.0f };
     VkClearDepthStencilValue dsc = { 1, 0};
@@ -336,4 +342,16 @@ uint32_t VK_DeviceLocalMemoryIndex()
 		}
 	}
 	return deviceLocalMemIndex;
+}
+
+/*
+* RTX MEMORY
+*/
+void VK_GetAccelerationStructureMemoryRequirements(VkAccelerationStructureNV as, VkAccelerationStructureMemoryRequirementsTypeNV type, VkMemoryRequirements2 *memreq){
+	VkAccelerationStructureMemoryRequirementsInfoNV memoryRequirementsInfoScratch = { 0 };
+	memoryRequirementsInfoScratch.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV;
+	memoryRequirementsInfoScratch.accelerationStructure = as;
+	memoryRequirementsInfoScratch.type = type;
+	memreq->sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
+	vkGetAccelerationStructureMemoryRequirementsNV(vk.device, &memoryRequirementsInfoScratch, memreq);
 }

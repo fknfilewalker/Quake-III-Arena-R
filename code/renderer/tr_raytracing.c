@@ -183,10 +183,16 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		}
 
 		
-
 		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
 
 		if(drawSurf->bAS != NULL){
+
+			/*if (drawSurf->bAS->offset == 66322432) {
+				bAS = drawSurf->bAS;
+			}
+			if (drawSurf->bAS->offset != 66322432 && bAS == drawSurf->bAS) {
+				int x = 2;
+			}*/
 		//if (/*idxBottomAS >= 0 && idxBottomAS < vk_d.bottomASCount && */drawSurf->basIndex > -1 && drawSurf->basIndex < vk_d.bottomASCount) {
 		//	idxBottomAS = drawSurf->basIndex;
 			//vk_d.bottomASList[idxBottomAS].data.texIdx = (float)shader->stages[0]->bundle[0].image[0]->index;
@@ -215,6 +221,9 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 					backEnd.skyRenderedThisView = qtrue;
 				}
 				else {*/
+				if (drawSurf->bAS->offset == 66322432) {
+					int x = 2l;
+				}
 					if (deform) RB_DeformTessGeometry();
 					if (cTex) ComputeTexCoords(tess.shader->stages[0]);
 				//}
@@ -253,10 +262,21 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 					qboolean newBottom = drawSurf->bAS->geometries.geometry.triangles.vertexCount < tess.numVertexes ||
 						drawSurf->bAS->geometries.geometry.triangles.indexCount < tess.numIndexes;
 
+					if (drawSurf->bAS->offset == 66322432) {
+						int x = 2l;
+						
+					}
+					if (drawSurf->bAS->offset == 66584576) {
+						int x = 2l;
+						//continue;
+					}
+
 					drawSurf->bAS->geometries.geometry.triangles.vertexCount = tess.numVertexes;
 					drawSurf->bAS->geometries.geometry.triangles.indexCount = tess.numIndexes;
-					if(newBottom) VK_UpdateBottomSingleDelete(drawSurf->bAS, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
-					else VK_UpdateBottomSingle(drawSurf->bAS, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
+					if (newBottom) VK_UpdateBottomSingleDelete(drawSurf->bAS, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
+					else {
+						VK_UpdateBottomSingle(drawSurf->bAS, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
+					}
 					//VK_UpdateBottomSingleDelete(&vk_d.bottomASList[idxBottomAS]);
 				}
 				

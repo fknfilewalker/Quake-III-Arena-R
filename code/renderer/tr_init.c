@@ -263,9 +263,11 @@ static void InitVulkan(void)
 		vk_d.bottomASs = calloc(2000, sizeof(vkbottomAS_t));
 		vk_d.bottomASc = 0;
 
-		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer, 10000 * 8 * sizeof(float), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		VK_CreateAttributeBuffer(&vk_d.geometry.idx, 4 * VK_INDEX_DATA_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		VK_CreateAttributeBuffer(&vk_d.geometry.xyz, 5 * VK_VERTEX_ATTRIBUTE_DATA_SIZE * 12 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer, 20000 * 8 * sizeof(float), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		VK_CreateRayTracingASBuffer(&vk_d.basBuffer, 2* 2* 400000000 * sizeof(byte));
-		VK_CreateRayTracingASBuffer(&vk_d.tasBuffer, 2000000 * sizeof(byte));
+		VK_CreateRayTracingASBuffer(&vk_d.tasBuffer, 60000000 * sizeof(byte)); 
 		
 		VK_CreateRayTracingScratchBuffer(&vk_d.scratchBuffer, 3 * 2000000 * sizeof(byte));
 		VK_CreateRayTracingBuffer(&vk_d.instanceBuffer,	10000 * sizeof(VkGeometryInstanceNV));
