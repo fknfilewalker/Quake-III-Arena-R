@@ -293,11 +293,19 @@ typedef struct {
 	float c;
 } ASInstanceData;
 typedef struct {
+	float          transform[12];
+	uint32_t       instanceCustomIndex : 24;
+	uint32_t       mask : 8;
+	uint32_t       instanceOffset : 24;
+	uint32_t       flags : 8;
+	uint64_t       accelerationStructureHandle;
+} VkGeometryInstanceNV; // needed for top AS
+typedef struct {
 	VkAccelerationStructureNV		accelerationStructure;
 	uint64_t						handle;
 	VkGeometryNV					geometries;
 	ASInstanceData					data;
-	VkGeometryInstanceFlagBitsNV	flags;
+	VkGeometryInstanceNV			geometryInstance;
 	VkDeviceSize					offset; // vk_d.basBuffer
 } vkbottomAS_t;
 
@@ -1155,14 +1163,9 @@ typedef struct {
 }vkimage_t;
 
 // RTX
-typedef struct {
-	float          transform[12];
-	uint32_t       instanceCustomIndex : 24;
-	uint32_t       mask : 8;
-	uint32_t       instanceOffset : 24;
-	uint32_t       flags : 8;
-	uint64_t       accelerationStructureHandle;
-} VkGeometryInstanceNV; // needed for top AS
+#define RTX_FIRST_PERSON_VISIBLE			0x1
+#define RTX_MIRROR_VISIBLE					0x2
+#define RTX_FIRST_PERSON_MIRROR_VISIBLE		0x3
 
 typedef struct {
 	VkPipelineCache cache;

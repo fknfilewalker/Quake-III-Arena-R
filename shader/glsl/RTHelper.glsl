@@ -1,3 +1,4 @@
+
 hitAttributeNV vec2 hitAttribute;
 vec3 getBarycentricCoordinates()
 {

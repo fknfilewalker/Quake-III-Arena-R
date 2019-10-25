@@ -718,8 +718,7 @@ const void	*RB_DrawSurfs( const void *data ) {
 	backEnd.refdef = cmd->refdef;
 	backEnd.viewParms = cmd->viewParms;
 
-	// skip mirror for now
-	if(backEnd.viewParms.isPortal)return (const void*)(cmd + 1);
+	if(glConfig.driverType == VULKAN && r_vertexLight->value == 2 && backEnd.viewParms.isPortal) return (const void*)(cmd + 1);
 	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && !backEnd.viewParms.isPortal && backEnd.refdef.rdflags != RDF_NOWORLDMODEL && !backEnd.projection2D) {
 		RB_RayTraceScene(cmd->drawSurfs, cmd->numDrawSurfs);
 		//RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );

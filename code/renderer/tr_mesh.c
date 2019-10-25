@@ -386,7 +386,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 		}
 
 		// don't add third_person objects if not viewing through a portal
-		if ( !personalModel ) {
+		if ( !personalModel || (glConfig.driverType == VULKAN && r_vertexLight->value == 2)) {
 			R_AddDrawSurf( (void *)surface, shader, fogNum, qfalse, tr.currentModel->bAS[lod][i]);
 		}
 

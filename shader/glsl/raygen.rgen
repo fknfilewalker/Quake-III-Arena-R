@@ -31,7 +31,7 @@ void main()
 	//direction.xyz = reflect(direction.xyz, reflectionNormal.xyz);
 
 	uint rayFlags = gl_RayFlagsCullBackFacingTrianglesNV;// = /*gl_RayFlagsOpaqueNV | */gl_RayFlagsCullFrontFacingTrianglesNV ;
-	uint cullMask = 0xff;
+	uint cullMask = FIRST_PERSON_VISIBLE;
 	float tmin = 0.001;
 	float tmax = 10000.0;
 

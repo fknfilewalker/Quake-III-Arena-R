@@ -4,6 +4,8 @@
 #extension GL_GOOGLE_include_directive : require
 #include "RayPayload.glsl"
 #include "RTHelper.glsl"
+#include "RTBlend.glsl"
+
 
 layout(binding = 0, set = 0) uniform accelerationStructureNV topLevelAS;
 layout(binding = 0, set = 1) uniform sampler2D tex[];
@@ -67,7 +69,7 @@ void main()
 
     vec3 direction2 = reflect(gl_WorldRayDirectionNV, rp.normal.xyz);
     uint rayFlags = gl_RayFlagsCullBackFacingTrianglesNV;// = /*gl_RayFlagsOpaqueNV | */gl_RayFlagsCullFrontFacingTrianglesNV ;
-    uint cullMask = 0xff;
+    uint cullMask = MIRROR_VISIBLE;
     float tmin = 0.001;
     float tmax = 10000.0;
     traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, gl_WorldRayOriginNV + gl_RayTmaxNV * gl_WorldRayDirectionNV, tmin, direction2, tmax, 0);

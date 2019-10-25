@@ -236,14 +236,14 @@ void VK_MakeTop(vktopAS_t* tas, vkbottomAS_t* basList, uint32_t basCount, VkBuil
 	buildInfo.instanceCount = basCount;
 
 	uint32_t numIndex = 0;
-	for (int i = 0; i < basCount; i++) {
-		geometryInstance.accelerationStructureHandle = basList[i].handle;
-		geometryInstance.flags = basList[i].flags;
-		//geometryInstance.instanceCustomIndex = numIndex;
-		//geometryInstance.mask = 0xff;
-		//numIndex += bList->bottomASList[i].geometries.geometry.triangles.indexCount;
-		//VK_UploadBufferDataOffset(&vk_d.instanceBuffer, i * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&geometryInstance);
-	}
+	//for (int i = 0; i < basCount; i++) {
+	//	geometryInstance.accelerationStructureHandle = basList[i].handle;
+	//	geometryInstance.flags = basList[i].flags;
+	//	//geometryInstance.instanceCustomIndex = numIndex;
+	//	//geometryInstance.mask = 0xff;
+	//	//numIndex += bList->bottomASList[i].geometries.geometry.triangles.indexCount;
+	//	//VK_UploadBufferDataOffset(&vk_d.instanceBuffer, i * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&geometryInstance);
+	//}
 
 	VkCommandBuffer commandBuffer = { 0 };
 	VK_BeginSingleTimeCommands(&commandBuffer);
@@ -306,14 +306,14 @@ void VK_UpdateTop(vktopAS_t* top, vkbottomAS_t* bottomList, uint32_t bottomCount
 	buildInfo.instanceCount = bottomCount;
 
 	uint32_t numIndex = 0;
-	for (int i = 0; i < bottomCount; i++) {
-		geometryInstance.accelerationStructureHandle = bottomList[i].handle;
-		geometryInstance.flags = bottomList[i].flags;
-		//geometryInstance.instanceCustomIndex = numIndex;
-		//geometryInstance.mask = 0xff;
-		//numIndex += bList->bottomASList[i].geometries.geometry.triangles.indexCount;
-		VK_UploadBufferDataOffset(&vk_d.instanceBuffer, i * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&geometryInstance);
-	}
+	//for (int i = 0; i < bottomCount; i++) {
+	//	geometryInstance.accelerationStructureHandle = bottomList[i].handle;
+	//	geometryInstance.flags = bottomList[i].flags;
+	//	//geometryInstance.instanceCustomIndex = numIndex;
+	//	//geometryInstance.mask = 0xff;
+	//	//numIndex += bList->bottomASList[i].geometries.geometry.triangles.indexCount;
+	//	VK_UploadBufferDataOffset(&vk_d.instanceBuffer, i * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&geometryInstance);
+	//}
 
 	VkCommandBuffer commandBuffer = { 0 };
 	VK_BeginSingleTimeCommands(&commandBuffer);
