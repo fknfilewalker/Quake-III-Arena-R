@@ -16,7 +16,6 @@ struct v_s
 {
   vec4 pos;
   vec4 uv;
-  vec4 color;
 };
 layout(binding = 2, set = 0) buffer Vertices { v_s v[]; } vertices;
 
@@ -45,10 +44,10 @@ void main()
             vertices.v[index.y].uv * barycentricCoords.y +
             vertices.v[index.z].uv * barycentricCoords.z;
 
-  vec4 c = vertices.v[index.x].color * barycentricCoords.x +
+ /* vec4 c = vertices.v[index.x].color * barycentricCoords.x +
            vertices.v[index.y].color * barycentricCoords.y +
            vertices.v[index.z].color * barycentricCoords.z;
-
+*/
   // COLOR AND DISTANCE
   vec4 color = /*(c/255)*/ texture(tex[uint(uint(instanceData.data[gl_InstanceID].texIdx))], uv.xy);
 	rp.color += color;//vec4(color.w, color.w, color.w, color.w);//barycentricCoords;

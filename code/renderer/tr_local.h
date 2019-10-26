@@ -1213,7 +1213,7 @@ typedef struct {
 	vkbuffer_t					uniformBuffer;
 	vkimage_t					resultImage;
 	vkrtpipeline_t				pipeline;
-	vkdescriptor_t				descriptor;
+	vkdescriptor_t				descriptor[3];
 } vkaccelerationStructures_t;
 
 typedef struct {
@@ -1272,7 +1272,7 @@ typedef struct {
 	// RTX
 	vkaccelerationStructures_t accelerationStructures;
 
-	vktopAS_t			topAS;
+	vktopAS_t			topAS[3];
 	vkbottomAS_t*		bottomASList;
 	uint32_t			bottomASCount;
 
@@ -1286,15 +1286,16 @@ typedef struct {
 	vkgeometry_t geometry;
 
 	// stores offset and stuff for in shader lookup
-	vkbuffer_t			instanceDataBuffer;
+	vkbuffer_t			instanceDataBuffer[3];
 
 	vkbuffer_t			basBuffer;
 	VkDeviceSize		basBufferOffset;
 	vkbuffer_t			tasBuffer;
 	VkDeviceSize		tasBufferOffset;
-	VkDeviceSize		scratchBufferOffset;
 	vkbuffer_t			scratchBuffer;	// only required for build, not needed after build
-	vkbuffer_t			instanceBuffer; // only required for build, not needed after build
+	VkDeviceSize		scratchBufferOffset;
+	vkbuffer_t			instanceBuffer; 
+	VkDeviceSize		instanceBufferOffset;
     
     //
     qboolean            renderBegan;
