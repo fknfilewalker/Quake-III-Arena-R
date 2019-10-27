@@ -288,7 +288,7 @@ typedef struct {
 	float texIdx;
 	float texIdx2;
 	uint32_t blendfunc;
-	float a;
+	qboolean isMirror;
 	float b;
 	float c;
 } ASInstanceData;
@@ -1278,9 +1278,6 @@ typedef struct {
 
 	vkbottomAS_t*		bottomASListDynamic;
 	uint32_t			bottomASDynamicCount;
-
-	vkbottomAS_t*		bottomASs;
-	uint32_t			bottomASc;
 
 	// RTX BUFFER
 	vkgeometry_t geometry;

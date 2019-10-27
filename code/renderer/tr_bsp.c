@@ -1828,20 +1828,16 @@ static qboolean isTransparent(unsigned long stateBits)
 static	void R_BuildAccelerationStructure() {
 	int i, j;
 
-	vk_d.bottomASList = calloc(12000, sizeof(vkbottomAS_t));
-	vk_d.bottomASCount = 0;
 
-	vk_d.bottomASListDynamic = calloc(6000, sizeof(vkbottomAS_t));
-	vk_d.bottomASDynamicCount = 0;
 	// do not forget to free memory
 
 
 	for (i = 0; i < s_worldData.numsurfaces; i++) {
 		RB_CreateNewBottomAS(s_worldData.surfaces[i].data, tr.shaders[s_worldData.surfaces[i].shader->index], &s_worldData.surfaces[i].bAS);
-		if (tr.shaders[s_worldData.surfaces[i].shader->index]->numDeforms > 0) {
+		/*if (tr.shaders[s_worldData.surfaces[i].shader->index]->numDeforms > 0) {
 			RB_CreateNewBottomAS(s_worldData.surfaces[i].data, tr.shaders[s_worldData.surfaces[i].shader->index], NULL);
 			RB_CreateNewBottomAS(s_worldData.surfaces[i].data, tr.shaders[s_worldData.surfaces[i].shader->index], NULL);
-		}
+		}*/
 	}
 	
 	// build top as
@@ -1860,19 +1856,9 @@ static	void R_BuildAccelerationStructure() {
 
 	//VK_CreateUniformBuffer(&vk_d.accelerationStructures.uniformBuffer, sizeof(uniformData));
 
-	// create result image
-	VK_CreateImage(&vk_d.accelerationStructures.resultImage, vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
-	VK_CreateSampler(&vk_d.accelerationStructures.resultImage, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-	VK_TransitionImage(&vk_d.accelerationStructures.resultImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-		
-	// create descriptor
-	VK_AddSampler(&vk_d.accelerationStructures.resultImage.descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
-	vk_d.accelerationStructures.resultImage.descriptor_set.data[0].descImageInfo->imageLayout = VK_IMAGE_LAYOUT_GENERAL;	
-	VK_SetSampler(&vk_d.accelerationStructures.resultImage.descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, vk_d.accelerationStructures.resultImage.sampler, vk_d.accelerationStructures.resultImage.view);
-	VK_FinishDescriptor(&vk_d.accelerationStructures.resultImage.descriptor_set);
+	
 
 	vkshader_t s = { 0 };
-	//VK_RayTracingShader(&s);
 	VK_RayTracingShaderWithAny(&s);
 
 	for (i = 0; i < 3; i++) {

@@ -1001,7 +1001,9 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 //            }else {
 //                if(stage != 0) continue;
 //            }
-            
+			if (!strcmp(input->shader->name, "textures/common/mirror2")) {
+				int aaaaa = 2;
+			}
             
 			int a = tess.shader->index;
 			//if (a != 21) return;

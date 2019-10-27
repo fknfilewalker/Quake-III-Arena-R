@@ -409,7 +409,7 @@ void VK_EndFrame()
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
 	VK_CHECK(vkQueueSubmit(vk.graphicsQueue, 1, &submitInfo, vk.swapchain.inFlightFences[vk.swapchain.currentImage]), "failed to submit draw command buffer!");
-	VK_CHECK(vkQueueWaitIdle(vk.graphicsQueue), "failed to wait for Queue execution!");
+	//VK_CHECK(vkQueueWaitIdle(vk.graphicsQueue), "failed to wait for Queue execution!");
 
 	VkSwapchainKHR swapChains[] = { vk.swapchain.handle };
 

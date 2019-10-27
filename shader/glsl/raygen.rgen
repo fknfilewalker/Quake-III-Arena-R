@@ -8,7 +8,6 @@ layout(push_constant) uniform PushConstant {
     layout(offset = 0) mat4 inverseView;
     layout(offset = 64) mat4 inverseProj;
     layout(offset = 128) vec4 position;
-    layout(offset = 144) vec4 reflectionNormal;
 };
 
 layout(binding = 0, set = 0) uniform accelerationStructureNV topLevelAS;

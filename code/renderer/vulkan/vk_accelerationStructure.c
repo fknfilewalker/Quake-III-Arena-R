@@ -378,14 +378,14 @@ void VK_DestroyBottomAccelerationStructure(vkbottomAS_t* as) {
 }
 
 void VK_DestroyAllAccelerationStructures() {
+	
+	VK_DestroyTopAccelerationStructure(&vk_d.topAS[0]);
+	VK_DestroyTopAccelerationStructure(&vk_d.topAS[1]);
+	VK_DestroyTopAccelerationStructure(&vk_d.topAS[2]);
 	int i = 0;
 	for (i = 0; i < vk_d.bottomASCount; ++i) {
 		VK_DestroyBottomAccelerationStructure(&vk_d.bottomASList[i]);
 	}
-	VK_DestroyTopAccelerationStructure(&vk_d.topAS);
 
-	VK_DestroyBuffer(&vk_d.basBuffer);
-	VK_DestroyBuffer(&vk_d.tasBuffer);
-	vk_d.basBufferOffset = 0;
-	vk_d.tasBufferOffset = 0;
+	vk_d.bottomASCount = 0;
 }

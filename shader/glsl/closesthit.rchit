@@ -31,7 +31,7 @@ struct iData{
   float texIdx;
   float texIdx2;
   uint blendfunc;
-  float a;
+  bool isMirror;
   float b;
   float c;
 };
@@ -113,7 +113,7 @@ void main()
   vec3 AC = vertices.v[index.z].pos.xyz - vertices.v[index.x].pos.xyz;
   rp.normal = vec4(normalize(cross(AB, AC)),1);//vertices.v[index.x].normal;
 
-  if(instanceData.data[gl_InstanceID].a == 1){
+  if(instanceData.data[gl_InstanceID].isMirror == true){
     //rp.color = vec4(255,0,0,0);
 
     //gl_WorldRayOriginNV;
