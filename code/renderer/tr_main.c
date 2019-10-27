@@ -1430,14 +1430,16 @@ void R_SortDrawSurfs( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 			ri.Error (ERR_DROP, "Shader '%s'with sort == SS_BAD", shader->name );
 		}
 
+		//if (r_vertexLight->value != 2) {
 		// if the mirror was completely clipped away, we may need to check another surface
-		if ( R_MirrorViewBySurface( (drawSurfs+i), entityNum) ) {
+		if (R_MirrorViewBySurface((drawSurfs + i), entityNum)) {
 			// this is a debug option to see exactly what is being mirrored
-			if ( r_portalOnly->integer ) {
+			if (r_portalOnly->integer) {
 				return;
 			}
 			break;		// only one mirror view at a time
 		}
+		//}
 	}
 
 	R_AddDrawSurfCmd( drawSurfs, numDrawSurfs );

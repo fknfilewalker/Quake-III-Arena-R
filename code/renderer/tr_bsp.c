@@ -1838,10 +1838,10 @@ static	void R_BuildAccelerationStructure() {
 
 	for (i = 0; i < s_worldData.numsurfaces; i++) {
 		RB_CreateNewBottomAS(s_worldData.surfaces[i].data, tr.shaders[s_worldData.surfaces[i].shader->index], &s_worldData.surfaces[i].bAS);
-		/*if (tr.shaders[s_worldData.surfaces[i].shader->index]->numDeforms > 0) {
+		if (tr.shaders[s_worldData.surfaces[i].shader->index]->numDeforms > 0) {
 			RB_CreateNewBottomAS(s_worldData.surfaces[i].data, tr.shaders[s_worldData.surfaces[i].shader->index], NULL);
 			RB_CreateNewBottomAS(s_worldData.surfaces[i].data, tr.shaders[s_worldData.surfaces[i].shader->index], NULL);
-		}*/
+		}
 	}
 	
 	// build top as
@@ -1893,6 +1893,7 @@ static	void R_BuildAccelerationStructure() {
 	VK_Set2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor[0], &vk_d.imageDescriptor);
 	VK_SetRayTracingShader(&vk_d.accelerationStructures.pipeline, &s);
 	VK_AddRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0, 40 * sizeof(float));
+	VK_AddRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, 40 * sizeof(float), 16 * sizeof(float));
 	VK_FinishRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
 
 }

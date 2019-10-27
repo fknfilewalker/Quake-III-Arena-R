@@ -103,7 +103,7 @@ void VK_UpdateBottomSingleDelete(VkCommandBuffer commandBuffer, vkbottomAS_t* ba
 	if ((bas+1) != NULL) {
 		VkDeviceSize size = (bas + 1)->offset - bas->offset;
 		if (memoryRequirements2.memoryRequirements.size > size) {
-			ri.Error(ERR_FATAL, "Vulkan: Buffer to small!");
+			//ri.Error(ERR_FATAL, "Vulkan: Buffer to small!");
 		}
 	}
 	/*memoryInfo.memoryOffset = vk_d.asBufferOffset;
@@ -134,7 +134,7 @@ void VK_UpdateBottomSingleDelete(VkCommandBuffer commandBuffer, vkbottomAS_t* ba
 		VK_NULL_HANDLE,
 		vk_d.scratchBuffer.buffer,
 		vk_d.scratchBufferOffset);
-	vk_d.scratchBufferOffset += memoryRequirements2.memoryRequirements.size;
+	vk_d.scratchBufferOffset += memoryRequirements2Scratch.memoryRequirements.size;
 
 	VkMemoryBarrier memoryBarrier = { 0 };
 	memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -175,7 +175,7 @@ void VK_UpdateBottomSingle(VkCommandBuffer commandBuffer, vkbottomAS_t* bas) {
 		bas->accelerationStructure,
 		vk_d.scratchBuffer.buffer,
 		vk_d.scratchBufferOffset);
-	vk_d.scratchBufferOffset += memoryRequirements2.memoryRequirements.size;
+	vk_d.scratchBufferOffset += memoryRequirements2Scratch.memoryRequirements.size;
 
 
 	VkMemoryBarrier memoryBarrier = { 0 };

@@ -1262,7 +1262,9 @@ void RE_Shutdown( qboolean destroyWindow ) {
 		// rtx cleanup
 		if (glConfig.driverType == VULKAN) {
 			VK_DestroyImage(&vk_d.accelerationStructures.resultImage);
-			VK_DestroyDescriptor(&vk_d.accelerationStructures.descriptor);
+			VK_DestroyDescriptor(&vk_d.accelerationStructures.descriptor[0]);
+			VK_DestroyDescriptor(&vk_d.accelerationStructures.descriptor[1]);
+			VK_DestroyDescriptor(&vk_d.accelerationStructures.descriptor[2]);
 			VK_DestroyBuffer(&vk_d.accelerationStructures.uniformBuffer);
 
 			vk_d.basBufferOffset = 0;

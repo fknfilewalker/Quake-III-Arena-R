@@ -62,7 +62,7 @@ void RB_CreateNewBottomAS(surfaceType_t *surface, shader_t* shader, vkbottomAS_t
 		if (pStage->stateBits == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE)) {
 			vk_d.bottomASList[vk_d.bottomASCount].geometries.flags = 0;
 		}
-		
+
 
 		for (j = 0; j < tess.numIndexes; j++) {
 			//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
@@ -113,8 +113,8 @@ void RB_CreateNewBottomAS(surfaceType_t *surface, shader_t* shader, vkbottomAS_t
 			int test = 1;
 		}
 		qboolean deform = /*surface == SF_MD3 ||*/ shader->numDeforms > 0;
-		if(deform) VK_MakeBottomSingle(&vk_d.bottomASList[vk_d.bottomASCount], VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
-		else VK_MakeBottomSingle(&vk_d.bottomASList[vk_d.bottomASCount], VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_NV);
+		if (deform) VK_MakeBottomSingle(&vk_d.bottomASList[vk_d.bottomASCount], VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
+		else VK_MakeBottomSingle(&vk_d.bottomASList[vk_d.bottomASCount], VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
 		// setup topas instance data
 		vk_d.bottomASList[vk_d.bottomASCount].geometryInstance.instanceCustomIndex = 0;
 		vk_d.bottomASList[vk_d.bottomASCount].geometryInstance.mask = RTX_FIRST_PERSON_MIRROR_VISIBLE;
@@ -130,7 +130,7 @@ void RB_CreateNewBottomAS(surfaceType_t *surface, shader_t* shader, vkbottomAS_t
 		}
 
 
-		if(bAS != NULL) (*bAS) = &vk_d.bottomASList[vk_d.bottomASCount];
+		if (bAS != NULL) (*bAS) = &vk_d.bottomASList[vk_d.bottomASCount];
 		vk_d.bottomASCount++;
 		vk_d.geometry.numSurfaces += 1;
 		/*if (tess.shader->isSky) {
@@ -138,15 +138,15 @@ void RB_CreateNewBottomAS(surfaceType_t *surface, shader_t* shader, vkbottomAS_t
 			vk_d.geometry.offsetXYZ += 55 *tess.numVertexes;
 		}
 		else {*/
-	/*	if ((*surface == SF_MD3)) {
-			vk_d.geometry.offsetIDX += tess.numIndexes;
-			vk_d.geometry.offsetXYZ += ((md3Surface_t*)surface)->numFrames * tess.numVertexes;
-			
-		}
-		else {*/
+		/*	if ((*surface == SF_MD3)) {
+				vk_d.geometry.offsetIDX += tess.numIndexes;
+				vk_d.geometry.offsetXYZ += ((md3Surface_t*)surface)->numFrames * tess.numVertexes;
 
-			vk_d.geometry.offsetIDX += shader->numDeforms > 0 ? 5 * tess.numIndexes : 5 * tess.numIndexes;
-			vk_d.geometry.offsetXYZ += shader->numDeforms > 0 ? 5 * tess.numVertexes : 5 * tess.numVertexes;
+			}
+			else {*/
+
+		vk_d.geometry.offsetIDX += shader->numDeforms > 0 ? 5 * tess.numIndexes : 5 * tess.numIndexes;
+		vk_d.geometry.offsetXYZ += shader->numDeforms > 0 ? 5 * tess.numVertexes : 5 * tess.numVertexes;
 		//}
 		//}
 		//break;
@@ -161,265 +161,206 @@ void RB_CreateNewBottomAS(surfaceType_t *surface, shader_t* shader, vkbottomAS_t
 	tess.numIndexes = 0;
 }
 
+void RB_AddBottomAS(vkbottomAS_t* bAS) {
+	shaderCommands_t* input;
+
+	input = &tess;
+
+	if (input->numIndexes == 0) {
+		return;
+	}
+
+	if (input->indexes[SHADER_MAX_INDEXES - 1] != 0) {
+		ri.Error(ERR_DROP, "RB_EndSurface() - SHADER_MAX_INDEXES hit");
+	}
+	if (input->xyz[SHADER_MAX_VERTEXES - 1][0] != 0) {
+		ri.Error(ERR_DROP, "RB_EndSurface() - SHADER_MAX_VERTEXES hit");
+	}
+
+	if (tess.shader == tr.shadowShader) {
+		return;
+	}
+
+	// for debugging of sort order issues, stop rendering after a given sort value
+	if (r_debugSort->integer && r_debugSort->integer < tess.shader->sort) {
+		return;
+	}
+
+	if (bAS != NULL) {
+
+		qboolean anim = tess.shader->stages[0]->bundle[0].numImageAnimations > 0;
+		qboolean cTex = tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD) && tess.shader->stages[0]->bundle[0].numTexMods > 0) : qfalse;
+		qboolean deform = tess.shader->numDeforms > 0 /*|| (*drawSurf->surface == SF_MD3 && ((md3Surface_t*)drawSurf->surface)->numFrames > 1)*/;
+		qboolean frames = backEnd.currentEntity->e.frame != backEnd.currentEntity->e.oldframe;//(*drawSurf->surface == SF_MD3 && ((md3Surface_t*)drawSurf->surface)->numFrames > 1);
+		qboolean sky = qfalse;//tess.shader->isSky;
+		if (frames | deform | cTex) {
+
+			if (deform) RB_DeformTessGeometry();
+			if (cTex) ComputeTexCoords(tess.shader->stages[0]);
+
+			if (frames | deform | sky) {
+				for (int j = 0; j < tess.numIndexes; j++) {
+					//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
+					uint32_t idx = (uint32_t)tess.indexes[j];
+					//idx += offsetXYZ;
+					VK_UploadBufferDataOffset(&vk_d.geometry.idx, bAS->geometries.geometry.triangles.indexOffset + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)&idx);
+				}
+			}
+			if (frames) {
+
+			}
+			for (int j = 0; j < tess.numVertexes; j++) {
+				float p[12] = {
+					p[0] = tess.xyz[j][0],
+					p[1] = tess.xyz[j][1],
+					p[2] = tess.xyz[j][2],
+					p[3] = 0,
+					p[4] = cTex ? tess.svars.texcoords[0][j][0] : tess.texCoords[j][0][0],
+					p[5] = cTex ? tess.svars.texcoords[0][j][1] : tess.texCoords[j][0][1],
+					p[6] = tess.texCoords[j][1][0],
+					p[7] = tess.texCoords[j][1][1]
+				};
+				VK_UploadBufferDataOffset(&vk_d.geometry.xyz, bAS->geometries.geometry.triangles.vertexOffset + (j * sizeof(float[8])), 8 * sizeof(float), (void*)&p);
+			}
+			if (deform || frames) {
+				if (tess.numIndexes > 200) {
+					int hh = 1;
+				}
+
+				qboolean newBottom = (bAS->geometries.geometry.triangles.vertexCount < tess.numVertexes ||
+					bAS->geometries.geometry.triangles.indexCount < tess.numIndexes) || bAS->geometries.geometry.triangles.indexCount != tess.numIndexes;
+
+				bAS->geometries.geometry.triangles.vertexCount = tess.numVertexes;
+				bAS->geometries.geometry.triangles.indexCount = tess.numIndexes;
+				//VK_UpdateBottomSingleDelete(vk.swapchain.CurrentCommandBuffer(), bAS, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
+				if (newBottom) VK_UpdateBottomSingleDelete(vk.swapchain.CurrentCommandBuffer(), bAS, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
+				else {
+					VK_UpdateBottomSingle(vk.swapchain.CurrentCommandBuffer(), bAS, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
+				}
+				//VK_UpdateBottomSingleDelete(&vk_d.bottomASList[idxBottomAS]);
+			}
+
+		}
+		if (tess.shader->numDeforms) {
+
+			//RB_DeformTessGeometry();
+
+			/*vk_d.bottomASList[idxBottomAS].geometries.geometry.triangles.vertexCount = tess.numVertexes;
+			vk_d.bottomASList[idxBottomAS].geometries.geometry.triangles.indexCount = tess.numIndexes;
+			VK_MakeBottomSingleDelete(&vk_d.bottomASList[idxBottomAS]);*/
+		}
+
+
+		/*VkGeometryInstanceNV geometryInstance = { 0 };
+		geometryInstance.instanceCustomIndex = 0;
+		geometryInstance.mask = 0xff;
+		geometryInstance.instanceOffset = 0;
+		geometryInstance.flags = drawSurf->bAS->flags;*/
+		//drawSurf->bAS->geometryInstance.accelerationStructureHandle = drawSurf->bAS->handle;
+
+
+		if (anim) {
+			int indexAnim = (int)(tess.shaderTime * tess.shader->stages[0]->bundle[0].imageAnimationSpeed * FUNCTABLE_SIZE);
+			indexAnim >>= FUNCTABLE_SIZE2;
+
+			if (indexAnim < 0) {
+				indexAnim = 0;	// may happen with shader time offsets
+			}
+			indexAnim %= tess.shader->stages[0]->bundle[0].numImageAnimations;
+			bAS->data.texIdx = (float)tess.shader->stages[0]->bundle[0].image[indexAnim]->index;
+			tess.shader->stages[0]->bundle[0].image[indexAnim]->frameUsed = tr.frameCount;
+
+		}
+		else {
+			tess.shader->stages[0]->bundle[0].image[0]->frameUsed = tr.frameCount;
+			bAS->data.texIdx = (float)tess.shader->stages[0]->bundle[0].image[0]->index;
+		}
+		// set visibility for first and third
+		if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) {
+			bAS->geometryInstance.mask = RTX_MIRROR_VISIBLE;
+		}
+		else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) {
+			bAS->geometryInstance.mask = RTX_FIRST_PERSON_VISIBLE;
+		}
+		else {
+			bAS->geometryInstance.mask = RTX_FIRST_PERSON_MIRROR_VISIBLE;
+		}
+		VK_UploadBufferDataOffset(&vk_d.instanceBuffer, vk_d.instanceBufferOffset + vk_d.bottomASDynamicCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&bAS->geometryInstance);
+
+
+		VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASDynamicCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&bAS->data);
+
+		memcpy(&vk_d.bottomASListDynamic[vk_d.bottomASDynamicCount], bAS, sizeof(vkbottomAS_t));
+		vk_d.bottomASDynamicCount++;
+	}
+	else {
+		int x = 10;
+	}
+	
+	
+}
+
 static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
-	shader_t* shader;
+	shader_t*		shader;
 	int				fogNum;
 	int				entityNum;
 	int				dlighted;
-	qboolean		depthRange;
-	int				i,j;
-	drawSurf_t* drawSurf;
+	int				i;
+	drawSurf_t*		drawSurf;
 	float			originalTime;
 
 	vk_d.bottomASDynamicCount = 0;
-
-	// save original time for entity shader offsets
-	originalTime = backEnd.refdef.floatTime;
-
-	backEnd.currentEntity = &tr.worldEntity;
-	//backEnd.pc.c_surfaces += numDrawSurfs;
-
-	// RTX
 	vk_d.scratchBufferOffset = 0;
 	vk_d.instanceBufferOffset = vk.swapchain.currentImage * (5000 * sizeof(VkGeometryInstanceNV));
-
+	// save original time for entity shader offsets
+	originalTime = backEnd.refdef.floatTime;
+	backEnd.currentEntity = &tr.worldEntity;
 	
 	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
-		tess.numIndexes = 0;
-		tess.numVertexes = 0;
-
 		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
-		tess.shader = shader;
-		tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
-		if (tess.shader->clampTime && tess.shaderTime >= tess.shader->clampTime) {
-			tess.shaderTime = tess.shader->clampTime;
-		}
+		// just to clean backend state
+		RB_BeginSurface(shader, fogNum);
 
-		if (shader->isSky) continue;
+		if (entityNum != ENTITYNUM_WORLD) {
+			backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
+			backEnd.refdef.floatTime = originalTime - backEnd.currentEntity->e.shaderTime;
+			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
 
-		if (!strcmp(tess.shader->name, "textures/gothic_block/gkcspinemove")) {
-			int a = 2;
-		}
-
-		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
-
-		if(drawSurf->bAS != NULL){
-			//if (*drawSurf->surface != SF_GRID) continue;
-			vkbottomAS_t* bAS;
-			/*if (tess.shader->numDeforms > 0) {
-				bAS = &drawSurf->bAS[vk.swapchain.currentImage];
-			}
-			else {
-			}*/
-				bAS = &drawSurf->bAS[0];
-
-			if (bAS->offset != 66322432) {
-				//continue;
-			}
-			if (entityNum != ENTITYNUM_WORLD) {
-				backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
-				backEnd.refdef.floatTime = originalTime - backEnd.currentEntity->e.shaderTime;
-				tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
-
-				R_RotateForEntity(backEnd.currentEntity, &backEnd.viewParms, &backEnd. or );
-
-				float transform[12] = {
-					backEnd.currentEntity->e.axis[0][0], backEnd.currentEntity->e.axis[1][0], backEnd.currentEntity->e.axis[2][0], backEnd.currentEntity->e.origin[0],
-					backEnd.currentEntity->e.axis[0][1], backEnd.currentEntity->e.axis[1][1], backEnd.currentEntity->e.axis[2][1], backEnd.currentEntity->e.origin[1],
-					backEnd.currentEntity->e.axis[0][2], backEnd.currentEntity->e.axis[1][2], backEnd.currentEntity->e.axis[2][2], backEnd.currentEntity->e.origin[2]
-				};
-				Com_Memcpy(&bAS->geometryInstance.transform, &transform, sizeof(float[12]));
-			}
-			else {
-				backEnd.currentEntity = &tr.worldEntity;
-				backEnd.refdef.floatTime = originalTime;
-				backEnd. or = backEnd.viewParms.world;
-				tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
-				
-				float transform[12] = {
-					1,0,0,0,
-					0,1,0,0,
-					0,0,1,0
-				};
-				Com_Memcpy(&bAS->geometryInstance.transform, &transform, sizeof(float[12]));
-			}
-			
-			/*if (drawSurf->bAS->offset == 66322432) {
-				bAS = drawSurf->bAS;
-			}
-			if (drawSurf->bAS->offset != 66322432 && bAS == drawSurf->bAS) {
-				int x = 2;
-			}*/
-
-		
-			
-			qboolean anim = tess.shader->stages[0]->bundle[0].numImageAnimations > 0;
-			qboolean cTex = tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD)&& tess.shader->stages[0]->bundle[0].numTexMods > 0) : qfalse;
-			qboolean deform = tess.shader->numDeforms > 0;
-			qboolean frames = qfalse; //(*drawSurf->surface == SF_MD3 && ((md3Surface_t*)drawSurf->surface)->numFrames > 1);
-			qboolean sky = qfalse;//tess.shader->isSky;
-			if (frames | deform | cTex) {
-				if (!strcmp(tess.shader->name, "textures/gothic_block/gkcspinemove")) {
-					int a = 2;
-				}
-				
-				/*if (sky) {
-					RB_ClipSkyPolygons(&tess);
-					if (tess.shader->sky.outerbox[0] && tess.shader->sky.outerbox[0] != tr.defaultImage) {
-						int x = 1;
-					}
-					R_BuildCloudData(&tess);
-
-					RB_DeformTessGeometry();
-					ComputeTexCoords(tess.shader->stages[0]);
-
-					backEnd.skyRenderedThisView = qtrue;
-				}
-				else {*/
-				if (bAS->offset == 66322432) {
-					int x = 2l;
-				}
-					if (deform) RB_DeformTessGeometry();
-					if (cTex) ComputeTexCoords(tess.shader->stages[0]);
-				//}
-
-				if (deform | sky) {
-					for (j = 0; j < tess.numIndexes; j++) {
-						//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
-						uint32_t idx = (uint32_t)tess.indexes[j];
-						//idx += offsetXYZ;
-						VK_UploadBufferDataOffset(&vk_d.geometry.idx,bAS->geometries.geometry.triangles.indexOffset + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)&idx);
-					}
-				}
-				if (frames) {
-
-				}
-				for (j = 0; j < tess.numVertexes; j++) {
-					float p[12] = {
-						p[0] = tess.xyz[j][0],
-						p[1] = tess.xyz[j][1],
-						p[2] = tess.xyz[j][2],
-						p[3] = 0,
-						p[4] = cTex ? tess.svars.texcoords[0][j][0] : tess.texCoords[j][0][0],
-						p[5] = cTex ? tess.svars.texcoords[0][j][1] : tess.texCoords[j][0][1],
-						p[6] = tess.texCoords[j][1][0],
-						p[7] = tess.texCoords[j][1][1]
-					};
-					VK_UploadBufferDataOffset(&vk_d.geometry.xyz, bAS->geometries.geometry.triangles.vertexOffset + (j * sizeof(float[8])), 8 * sizeof(float), (void*)&p);
-				}
-				if (deform) {
-					if (tess.numIndexes > 200) {
-						int hh = 1;
-					}
-
-					qboolean newBottom = bAS->geometries.geometry.triangles.vertexCount < tess.numVertexes ||
-						bAS->geometries.geometry.triangles.indexCount < tess.numIndexes;
-
-					if (bAS->offset == 66322432) {
-						int x = 2l;
-						
-					}
-					if (bAS->offset == 66584576) {
-						int x = 2l;
-						//continue;
-					}
-
-					bAS->geometries.geometry.triangles.vertexCount = tess.numVertexes;
-					bAS->geometries.geometry.triangles.indexCount = tess.numIndexes;
-					//VK_UpdateBottomSingleDelete(vk.swapchain.CurrentCommandBuffer(), bAS, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
-					if (newBottom) VK_UpdateBottomSingleDelete(vk.swapchain.CurrentCommandBuffer(), bAS, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
-					else {
-						VK_UpdateBottomSingle(vk.swapchain.CurrentCommandBuffer(), bAS, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
-					}
-					//VK_UpdateBottomSingleDelete(&vk_d.bottomASList[idxBottomAS]);
-				}
-				
-			}
-			if (tess.shader->numDeforms) {
-				
-				//RB_DeformTessGeometry();
-
-				/*vk_d.bottomASList[idxBottomAS].geometries.geometry.triangles.vertexCount = tess.numVertexes;
-				vk_d.bottomASList[idxBottomAS].geometries.geometry.triangles.indexCount = tess.numIndexes;
-				VK_MakeBottomSingleDelete(&vk_d.bottomASList[idxBottomAS]);*/
-			}
-		
-			
-			/*VkGeometryInstanceNV geometryInstance = { 0 };
-			geometryInstance.instanceCustomIndex = 0;
-			geometryInstance.mask = 0xff;
-			geometryInstance.instanceOffset = 0;
-			geometryInstance.flags = drawSurf->bAS->flags;*/
-			//drawSurf->bAS->geometryInstance.accelerationStructureHandle = drawSurf->bAS->handle;
-
-			
-			if (anim) {
-				int indexAnim = (int)(tess.shaderTime * tess.shader->stages[0]->bundle[0].imageAnimationSpeed * FUNCTABLE_SIZE);
-				indexAnim >>= FUNCTABLE_SIZE2;
-
-				if (indexAnim < 0) {
-					indexAnim = 0;	// may happen with shader time offsets
-				}
-				indexAnim %= tess.shader->stages[0]->bundle[0].numImageAnimations;
-				bAS->data.texIdx = (float)tess.shader->stages[0]->bundle[0].image[indexAnim]->index;
-				tess.shader->stages[0]->bundle[0].image[indexAnim]->frameUsed = tr.frameCount;
-
-			}
-			else {
-				tess.shader->stages[0]->bundle[0].image[0]->frameUsed = tr.frameCount;
-			}
-			// set visibility for first and third
-			if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) {
-				bAS->geometryInstance.mask = RTX_MIRROR_VISIBLE;
-			}
-			else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) {
-				bAS->geometryInstance.mask = RTX_FIRST_PERSON_VISIBLE;
-			}
-			else {
-				bAS->geometryInstance.mask = RTX_FIRST_PERSON_MIRROR_VISIBLE;
-			}
-			VK_UploadBufferDataOffset(&vk_d.instanceBuffer, vk_d.instanceBufferOffset + vk_d.bottomASDynamicCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&bAS->geometryInstance);
-			
-			bAS->data.texIdx = (float)shader->stages[0]->bundle[0].image[0]->index;
-			
-			VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASDynamicCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&bAS->data);
-			
-			memcpy(&vk_d.bottomASListDynamic[vk_d.bottomASDynamicCount], bAS, sizeof(vkbottomAS_t));
-			vk_d.bottomASDynamicCount++;
+			R_RotateForEntity(backEnd.currentEntity, &backEnd.viewParms, &backEnd. or );
+			float transform[12] = {
+				backEnd.currentEntity->e.axis[0][0], backEnd.currentEntity->e.axis[1][0], backEnd.currentEntity->e.axis[2][0], backEnd.currentEntity->e.origin[0],
+				backEnd.currentEntity->e.axis[0][1], backEnd.currentEntity->e.axis[1][1], backEnd.currentEntity->e.axis[2][1], backEnd.currentEntity->e.origin[1],
+				backEnd.currentEntity->e.axis[0][2], backEnd.currentEntity->e.axis[1][2], backEnd.currentEntity->e.axis[2][2], backEnd.currentEntity->e.origin[2]
+			};
+			if (drawSurf->bAS != NULL) Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &transform, sizeof(float[12]));
 		}
 		else {
-		int x = 10;
+			backEnd.currentEntity = &tr.worldEntity;
+			backEnd.refdef.floatTime = originalTime;
+			backEnd. or = backEnd.viewParms.world;
+			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+
+			float transform[12] = {
+				1,0,0,0,
+				0,1,0,0,
+				0,0,1,0
+			};
+			if(drawSurf->bAS != NULL) Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &transform, sizeof(float[12]));
 		}
-		/*else {
-		int idx;
-			RB_CreateNewBottomAS(drawSurf->surface, shader, &idx);
-		}*/
+
+		// add the triangles for this surface
+		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
+		RB_AddBottomAS(drawSurf->bAS);
 	}
-
-	// update as
-	
-	//vk_d.tasBufferOffset = vk_d.topAS[1].offset;
-	//vk_d.tasBufferOffset = vk.swapchain.currentImage * (65536 * 5);
-	//vk_d.tasBufferOffset = 0;//0 * (65536);
-	VK_DestroyTopAccelerationStructure(&vk_d.topAS[vk.swapchain.currentImage]);
-
-	VK_MakeTop(vk.swapchain.CurrentCommandBuffer(), &vk_d.topAS[vk.swapchain.currentImage], vk_d.bottomASListDynamic, vk_d.bottomASDynamicCount, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV);
-	//VK_UpdateTop(vk.swapchain.CurrentCommandBuffer(), &vk_d.topAS[vk.swapchain.currentImage], &vk_d.topAS, vk_d.bottomASListDynamic, vk_d.bottomASDynamicCount);
-	
-	
 	backEnd.refdef.floatTime = originalTime;
 
-	// clean render list
+	VK_DestroyTopAccelerationStructure(&vk_d.topAS[vk.swapchain.currentImage]);
+	VK_MakeTop(vk.swapchain.CurrentCommandBuffer(), &vk_d.topAS[vk.swapchain.currentImage], vk_d.bottomASListDynamic, vk_d.bottomASDynamicCount, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV);
+	
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
-	tess.shader = NULL;
-	tess.fogNum = 0;
-	tess.dlightBits = 0;		// will be OR'd in by surface functions
-	tess.xstages = NULL;
-	tess.numPasses = 0;
-	tess.currentStageIteratorFunc = NULL;
-
 }
+
 
 static void RB_TraceRays() {
 	//VK_UpdateTop(&vk_d.staticBottomAS);
@@ -476,6 +417,8 @@ static void RB_TraceRays() {
 	myGLInvertMatrix(&viewerMatrix2, &invView);
 	myGLInvertMatrix(&vk_d.projectionMatrix, &invProj);
 
+	myGlMultMatrix(&viewerMatrix2[0], vk_d.projectionMatrix, vk_d.mvp);
+
 	/*VK_SetAccelerationStructure(&vk_d.accelerationStructures.descriptor[vk.swapchain.currentImage], 0, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, &vk_d.topAS[vk.swapchain.currentImage].accelerationStructure);
 	VK_SetStorageImage(&vk_d.accelerationStructures.descriptor[vk.swapchain.currentImage], 1, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultImage.view);
 	VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[vk.swapchain.currentImage], 2, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz.buffer);
@@ -503,6 +446,8 @@ static void RB_TraceRays() {
 	VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 16 * sizeof(float), 16 * sizeof(float), &invProj[0]);
 	VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 32 * sizeof(float), sizeof(vec3_t), &origin);
 	VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 36 * sizeof(float), sizeof(vec3_t), &backEnd.viewParms.portalPlane.normal);
+	VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, 40 * sizeof(float), 16 * sizeof(float), &vk_d.mvp[0]);
+	//VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, 56 * sizeof(float), 16 * sizeof(float), &vk_d.projectionMatrix[0]);
 
 	//VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 4 * sizeof(float), sizeof(vec3_t), &direction);
 	VK_TraceRays(&vk_d.accelerationStructures.pipeline.shaderBindingTableBuffer);
@@ -520,11 +465,11 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	RB_UpdateRayTraceAS(drawSurfs, numDrawSurfs);
 	RB_TraceRays();
 
-	/*VkMemoryBarrier memoryBarrier = { 0 };
+	VkMemoryBarrier memoryBarrier = { 0 };
 	memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
 	memoryBarrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV| VK_ACCESS_MEMORY_WRITE_BIT;
 	memoryBarrier.dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-	vkCmdPipelineBarrier(vk.swapchain.CurrentCommandBuffer(), VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 1, &memoryBarrier, 0, 0, 0, 0);*/
+	vkCmdPipelineBarrier(vk.swapchain.CurrentCommandBuffer(), VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 1, &memoryBarrier, 0, 0, 0, 0);
 
 	VK_BeginRenderClear();
 	VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultImage);
