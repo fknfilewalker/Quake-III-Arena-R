@@ -306,7 +306,9 @@ typedef struct {
 	VkGeometryNV					geometries;
 	ASInstanceData					data;
 	VkGeometryInstanceNV			geometryInstance;
-	VkDeviceSize					offset; // vk_d.basBuffer
+	VkDeviceSize					offset;			// vk_d.basBuffer
+	qboolean						dynamic;		// data changing every frame
+	int frames;
 } vkbottomAS_t;
 
 #define	MAX_IMAGE_ANIMATIONS	8
@@ -1185,13 +1187,12 @@ typedef struct {
 } vkrtpipeline_t;
 
 typedef struct {
-	uint32_t numSurfaces;
-
-	uint32_t offsetIDX;
-	uint32_t offsetXYZ;
+	uint32_t idxStaticOffset;
+	uint32_t xyzStaticOffset;
+	uint32_t idxDynamicOffset;
+	uint32_t xyzDynamicOffset;
 	vkbuffer_t xyz;
 	vkbuffer_t idx;
-
 } vkgeometry_t;
 
 typedef struct {
@@ -1255,6 +1256,11 @@ typedef struct {
 	qboolean			clearStencil;
 } vkattachmentClearPipe_t;
 
+
+#define RTX_STATIC_XYZ_SIZE 512 * 1024
+#define RTX_STATIC_INDEX_SIZE 1024 * 1024 
+#define RTX_DYNAMIC_XYZ_SIZE 128 * 1024
+#define RTX_DYNAMIC_INDEX_SIZE 256 * 1024 
 typedef struct {
     size_t              size; // images
     vkimage_t           images[MAX_DRAWIMAGES];
@@ -1276,17 +1282,22 @@ typedef struct {
 	vkbottomAS_t*		bottomASList;
 	uint32_t			bottomASCount;
 
-	vkbottomAS_t*		bottomASListDynamic;
-	uint32_t			bottomASDynamicCount;
+	vkbottomAS_t*		bottomASDynamicList[3];
+	uint32_t			bottomASDynamicCount[3];
+
+	vkbottomAS_t*		bottomASTraceList;
+	uint32_t			bottomASTraceListCount;
 
 	// RTX BUFFER
-	vkgeometry_t geometry;
+	vkgeometry_t		geometry;
 
 	// stores offset and stuff for in shader lookup
 	vkbuffer_t			instanceDataBuffer[3];
 
 	vkbuffer_t			basBuffer;
-	VkDeviceSize		basBufferOffset;
+	VkDeviceSize		basBufferStaticOffset;
+	VkDeviceSize		basBufferDynamicOffset;
+
 	vkbuffer_t			tasBuffer;
 	VkDeviceSize		tasBufferOffset;
 	vkbuffer_t			scratchBuffer;	// only required for build, not needed after build

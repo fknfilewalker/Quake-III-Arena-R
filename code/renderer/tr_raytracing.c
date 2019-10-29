@@ -4,142 +4,122 @@
 glConfig.driverType == VULKAN && r_vertexLight->value == 2
 */
 
+#define RTX_IS_DYNAMIC tess.shader->stages[0]->bundle[0].numImageAnimations > 0 || \
+						tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD) && tess.shader->stages[0]->bundle[0].numTexMods > 0) : qfalse || \
+						tess.shader->numDeforms > 0 || \
+						backEnd.currentEntity->e.frame != backEnd.currentEntity->e.oldframe;
 
-void RB_CreateNewBottomAS(surfaceType_t *surface, shader_t* shader, vkbottomAS_t** bAS) {
-	if (shader->isSky) return;
+void RB_CreateBottomAS(vkbottomAS_t** bAS, qboolean dynamic);
+void RB_CreateNewBottomAS(surfaceType_t* surface, shader_t* shader, vkbottomAS_t** bAS) {
 	tess.numVertexes = 0;
 	tess.numIndexes = 0;
-
-	if (*surface == SF_SKIP) return;
-	if (*surface == SF_BAD) return;
-	if (*surface == SF_FACE) RB_SurfaceFace((srfSurfaceFace_t*)surface);
-	else if (*surface == SF_GRID) RB_SurfaceGrid((srfGridMesh_t*)surface);
-	else if (*surface == SF_TRIANGLES) RB_SurfaceTriangles((srfTriangles_t*)surface);
-	else if (*surface == SF_POLY) RB_SurfacePolychain((srfPoly_t*)surface);
-	else if (*surface == SF_MD3) RB_SurfaceMesh((md3Surface_t*)surface);
-	/*else if (*surface == SF_MD4) {
-		RB_SurfaceAnim((md4Surface_t*)surface);
-	}*/
-	//else if (type == SF_FLARE) RB_SurfaceFlare((srfFlare_t*)s_worldData.surfaces[i].data);
-	else return;
-
-	/*R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
-
-	backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
-	*/
-	int				j;
 	tess.shader = shader;
+	rb_surfaceTable[*surface](surface);
+	RB_CreateBottomAS(bAS, qfalse);
+	tess.numVertexes = 0;
+	tess.numIndexes = 0;
+}
 
-	for (int stage = 0; stage < MAX_SHADER_STAGES; stage++)
+void RB_CreateBottomAS(vkbottomAS_t** bAS, qboolean dynamic) {
+	int j;
+	//if (*surface == SF_SKIP) return;
+	//if (*surface == SF_BAD) return;
+	//if (*surface == SF_FACE) RB_SurfaceFace((srfSurfaceFace_t*)surface);
+	//else if (*surface == SF_GRID) RB_SurfaceGrid((srfGridMesh_t*)surface);
+	//else if (*surface == SF_TRIANGLES) RB_SurfaceTriangles((srfTriangles_t*)surface);
+	//else if (*surface == SF_POLY) RB_SurfacePolychain((srfPoly_t*)surface);
+	//else if (*surface == SF_MD3) RB_SurfaceMesh((md3Surface_t*)surface);
+	///*else if (*surface == SF_MD4) {
+	//	RB_SurfaceAnim((md4Surface_t*)surface);
+	//}*/
+	////else if (type == SF_FLARE) RB_SurfaceFlare((srfFlare_t*)s_worldData.surfaces[i].data);
+	//else return;
+	
+	for (int stage = 0; stage < 1/*MAX_SHADER_STAGES*/; stage++)
 	{
-
-		shaderStage_t* pStage = shader->stages[stage];
-		if (!pStage || pStage->bundle[0].isLightmap || !pStage->active) {
-			continue;
-		}
-		
+		shaderStage_t* pStage = tess.shader->stages[stage];
+		if (!pStage || pStage->bundle[0].isLightmap || !pStage->active) continue;
 		ComputeColors(pStage);
 		ComputeTexCoords(pStage);
-		vk_d.bottomASList[vk_d.bottomASCount].geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
-		vk_d.bottomASList[vk_d.bottomASCount].geometries.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
-		vk_d.bottomASList[vk_d.bottomASCount].geometries.geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
-		vk_d.bottomASList[vk_d.bottomASCount].geometries.geometry.triangles.vertexData = vk_d.geometry.xyz.buffer;
-		vk_d.bottomASList[vk_d.bottomASCount].geometries.geometry.triangles.vertexOffset = vk_d.geometry.offsetXYZ * sizeof(float[8]);
-		vk_d.bottomASList[vk_d.bottomASCount].geometries.geometry.triangles.vertexCount = tess.numVertexes;
-		vk_d.bottomASList[vk_d.bottomASCount].geometries.geometry.triangles.vertexStride = 8 * sizeof(float);
-		vk_d.bottomASList[vk_d.bottomASCount].geometries.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
-		vk_d.bottomASList[vk_d.bottomASCount].geometries.geometry.triangles.indexData = vk_d.geometry.idx.buffer;
-		vk_d.bottomASList[vk_d.bottomASCount].geometries.geometry.triangles.indexOffset = vk_d.geometry.offsetIDX * sizeof(uint32_t);
-		vk_d.bottomASList[vk_d.bottomASCount].geometries.geometry.triangles.indexCount = tess.numIndexes;
-		vk_d.bottomASList[vk_d.bottomASCount].geometries.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
-		vk_d.bottomASList[vk_d.bottomASCount].geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
-		vk_d.bottomASList[vk_d.bottomASCount].geometries.flags = VK_GEOMETRY_OPAQUE_BIT_NV;
-		if (pStage->stateBits == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE)) {
-			vk_d.bottomASList[vk_d.bottomASCount].geometries.flags = 0;
+
+		// set offsets and 
+		uint32_t* idxOffset;
+		uint32_t* xyzOffset;
+		// save bas in static or dynamic list
+		vkbottomAS_t* bASList;
+		if (dynamic) {
+			idxOffset = &vk_d.geometry.idxDynamicOffset;
+			xyzOffset = &vk_d.geometry.xyzDynamicOffset;
+			bASList = &vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]];
+		}
+		else {
+			idxOffset = &vk_d.geometry.idxStaticOffset;
+			xyzOffset = &vk_d.geometry.xyzStaticOffset;
+			bASList = &vk_d.bottomASList[vk_d.bottomASCount];
 		}
 
+		// define as geometry
+		bASList->geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
+		bASList->geometries.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
+		bASList->geometries.geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
+		bASList->geometries.geometry.triangles.vertexData = vk_d.geometry.xyz.buffer;
+		bASList->geometries.geometry.triangles.vertexOffset = (*xyzOffset) * sizeof(float[8]);
+		bASList->geometries.geometry.triangles.vertexCount = tess.numVertexes;
+		bASList->geometries.geometry.triangles.vertexStride = 8 * sizeof(float);
+		bASList->geometries.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+		bASList->geometries.geometry.triangles.indexData = vk_d.geometry.idx.buffer;
+		bASList->geometries.geometry.triangles.indexOffset = (*idxOffset) * sizeof(uint32_t);
+		bASList->geometries.geometry.triangles.indexCount = tess.numIndexes;
+		bASList->geometries.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+		bASList->geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
+		bASList->geometries.flags = VK_GEOMETRY_OPAQUE_BIT_NV;
 
+		// write idx
 		for (j = 0; j < tess.numIndexes; j++) {
-			//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
 			uint32_t idx = (uint32_t)tess.indexes[j];
-			//idx += offsetXYZ;
-			VK_UploadBufferDataOffset(&vk_d.geometry.idx, vk_d.geometry.offsetIDX * sizeof(uint32_t) + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)&idx);
+			VK_UploadBufferDataOffset(&vk_d.geometry.idx, (*idxOffset) * sizeof(uint32_t) + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)&idx);
 		}
-		vk_d.bottomASList[vk_d.bottomASCount].data.offsetIdx = vk_d.geometry.offsetIDX;
-		vk_d.bottomASList[vk_d.bottomASCount].data.offsetXYZ = vk_d.geometry.offsetXYZ;
-		vk_d.bottomASList[vk_d.bottomASCount].data.texIdx = (float)shader->stages[stage]->bundle[0].image[0]->index;
-		vk_d.bottomASList[vk_d.bottomASCount].data.texIdx2 = 0;
-		vk_d.bottomASList[vk_d.bottomASCount].data.blendfunc = (uint32_t)(pStage->stateBits);
-		vk_d.bottomASList[vk_d.bottomASCount].data.isMirror = shader->sort == SS_PORTAL && strstr(shader->name, "mirror") != NULL; //strcmp(shader->name, "textures/common/mirror2") == 0;
-		/*if (!strcmp(shader->name, "textures/common/mirror2")) {
-			int aaaaa = 2;
-		}*/
 
-		if ((pStage->stateBits == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE)) || (shader->contentFlags & CONTENTS_TRANSLUCENT)) {
-			vk_d.bottomASList[vk_d.bottomASCount].data.texIdx2 = 1;
-		}
-		if ((shader->surfaceFlags == SURF_ALPHASHADOW)) {
-			vk_d.bottomASList[vk_d.bottomASCount].data.texIdx2 = 2;
-		}
-		//VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer, vk_d.geometry.numSurfaces * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASList[vk_d.bottomASCount].data);
-
-		qboolean cTex = (shader->stages[0]->bundle[0].tcGen != TCGEN_BAD || shader->stages[0]->bundle[0].numTexMods > 0);
+		// write xyz and other vertex attribs
+		qboolean tcGen = (tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD || tess.shader->stages[0]->bundle[0].numTexMods > 0);
 		for (j = 0; j < tess.numVertexes; j++) {
 			float p[8] = {
 				p[0] = tess.xyz[j][0],
 				p[1] = tess.xyz[j][1],
 				p[2] = tess.xyz[j][2],
 				p[3] = 0,
-				p[4] = cTex ? tess.svars.texcoords[0][j][0] : tess.texCoords[j][0][0],
-				p[5] = cTex ? tess.svars.texcoords[0][j][1] : tess.texCoords[j][0][1],
+				p[4] = tcGen ? tess.svars.texcoords[0][j][0] : tess.texCoords[j][0][0],
+				p[5] = tcGen ? tess.svars.texcoords[0][j][1] : tess.texCoords[j][0][1],
 				p[6] = tess.texCoords[j][1][0],
 				p[7] = tess.texCoords[j][1][1],
 			};
-			//cv->points[i][3 + j] = LittleFloat(verts[i].st[j]);
-			VK_UploadBufferDataOffset(&vk_d.geometry.xyz, vk_d.geometry.offsetXYZ * 8 * sizeof(float) + (j * 8 * sizeof(float)), 8 * sizeof(float), (void*)&p);
+			VK_UploadBufferDataOffset(&vk_d.geometry.xyz, (*xyzOffset) * 8 * sizeof(float) + (j * 8 * sizeof(float)), 8 * sizeof(float), (void*)&p);
 		}
-		//ri.Printf(PRINT_ALL, "Brightest lightmap value: %d\n", (int)(s->stages[0]->bundle[0].image[0]->index));
-		//if (geometry.numSurfaces == 4727) {
-		//	int as = 123;
-		//	//isTransparent(pStage->stateBits);
-		//	break;
-		//}
-		if (pStage->stateBits != 34 && pStage->stateBits != 256 && pStage->stateBits != 101) {
-			int test = 1;
+
+		// set offsets for in-shader lookup
+		bASList->data.offsetIdx = (*idxOffset);
+		bASList->data.offsetXYZ = (*xyzOffset);
+
+		qboolean deform = /*surface == SF_MD3 ||*/ tess.shader->numDeforms > 0;
+		if (!dynamic) {
+			VkCommandBuffer commandBuffer = {0};
+			VK_BeginSingleTimeCommands(&commandBuffer);
+			if (deform) VK_CreateBottomAS(commandBuffer, bASList, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV, &vk_d.basBufferStaticOffset);
+			else VK_CreateBottomAS(commandBuffer, bASList, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV, &vk_d.basBufferStaticOffset);
+			vk_d.bottomASCount++;
+			VK_EndSingleTimeCommands(&commandBuffer);
 		}
-		qboolean deform = /*surface == SF_MD3 ||*/ shader->numDeforms > 0;
-		if (deform) VK_MakeBottomSingle(&vk_d.bottomASList[vk_d.bottomASCount], VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
-		else VK_MakeBottomSingle(&vk_d.bottomASList[vk_d.bottomASCount], VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
-
-		if (bAS != NULL) (*bAS) = &vk_d.bottomASList[vk_d.bottomASCount];
-		vk_d.bottomASCount++;
-		vk_d.geometry.numSurfaces += 1;
-		/*if (tess.shader->isSky) {
-			vk_d.geometry.offsetIDX += 55 * tess.numIndexes;
-			vk_d.geometry.offsetXYZ += 55 *tess.numVertexes;
+		else {
+			VkCommandBuffer commandBuffer = vk.swapchain.CurrentCommandBuffer();
+			VK_CreateBottomAS(commandBuffer, bASList, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV, &vk_d.basBufferDynamicOffset);
+			vk_d.bottomASDynamicCount[vk.swapchain.currentImage]++;
 		}
-		else {*/
-		/*	if ((*surface == SF_MD3)) {
-				vk_d.geometry.offsetIDX += tess.numIndexes;
-				vk_d.geometry.offsetXYZ += ((md3Surface_t*)surface)->numFrames * tess.numVertexes;
 
-			}
-			else {*/
+		if (bAS != NULL)  (*bAS) = bASList;
 
-		vk_d.geometry.offsetIDX += shader->numDeforms > 0 ? 5 * tess.numIndexes : 5 * tess.numIndexes;
-		vk_d.geometry.offsetXYZ += shader->numDeforms > 0 ? 5 * tess.numVertexes : 5 * tess.numVertexes;
-		//}
-		//}
-		//break;
-
+		(*idxOffset) += tess.shader->numDeforms > 0 ? 3 * tess.numIndexes : 1 * tess.numIndexes;
+		(*xyzOffset) += tess.shader->numDeforms > 0 ? 3 * tess.numVertexes : 1 * tess.numVertexes;
 	}
-	//if (geometry.numSurfaces == 4726) break; // control
-	//if (geometry.numSurfaces > 4879) break; light
-	//if (geometry.numSurfaces > 4846) break; // quake sphere 0 0 console/sphere2
-	//if (geometry.numSurfaces >= 3639) break; // roof SURF_SKY SURF_NOIMPACT SURF_NOLIGHTMAP isSky
-
-	tess.numVertexes = 0;
-	tess.numIndexes = 0;
 }
 
 void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
@@ -161,35 +141,34 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	}
 	bAS->geometryInstance.accelerationStructureHandle = bAS->handle;
 
-	VK_UploadBufferDataOffset(&vk_d.instanceBuffer, vk_d.instanceBufferOffset + vk_d.bottomASDynamicCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&bAS->geometryInstance);
+	VK_UploadBufferDataOffset(&vk_d.instanceBuffer, vk_d.instanceBufferOffset + vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&bAS->geometryInstance);
 }
 
 void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
+	// set texture id and calc texture animation
+	int indexAnim = 0;
 	if (tess.shader->stages[0]->bundle[0].numImageAnimations > 1) {
-		int indexAnim = (int)(tess.shaderTime * tess.shader->stages[0]->bundle[0].imageAnimationSpeed * FUNCTABLE_SIZE);
+		indexAnim = (int)(tess.shaderTime * tess.shader->stages[0]->bundle[0].imageAnimationSpeed * FUNCTABLE_SIZE);
 		indexAnim >>= FUNCTABLE_SIZE2;
-
 		if (indexAnim < 0) {
 			indexAnim = 0;	// may happen with shader time offsets
 		}
-		indexAnim %= tess.shader->stages[0]->bundle[0].numImageAnimations;
-		if (bAS->data.texIdx != (float)tess.shader->stages[0]->bundle[0].image[indexAnim]->index) {
-			bAS->data.texIdx = (float)tess.shader->stages[0]->bundle[0].image[indexAnim]->index;
-			tess.shader->stages[0]->bundle[0].image[indexAnim]->frameUsed = tr.frameCount;
-		}
+		indexAnim %= tess.shader->stages[0]->bundle[0].numImageAnimations;	
 	}
-	else {
-		if (bAS->data.texIdx != (float)tess.shader->stages[0]->bundle[0].image[0]->index) {
-			tess.shader->stages[0]->bundle[0].image[0]->frameUsed = tr.frameCount;
-			bAS->data.texIdx = (float)tess.shader->stages[0]->bundle[0].image[0]->index;
-		}
+	if (bAS->data.texIdx != (float)tess.shader->stages[0]->bundle[0].image[indexAnim]->index) {
+		bAS->data.texIdx = (float)tess.shader->stages[0]->bundle[0].image[indexAnim]->index;
+		tess.shader->stages[0]->bundle[0].image[indexAnim]->frameUsed = tr.frameCount;
 	}
+	bAS->data.blendfunc = (uint32_t)(tess.shader->stages[0]->stateBits);
+	// set if surface is a mirror
+	bAS->data.isMirror = tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL;
 
-	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASDynamicCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&bAS->data);
+	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&bAS->data);
 }
 
-void RB_AddBottomAS(vkbottomAS_t* bAS) {
+void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic) {
 	shaderCommands_t* input  = &tess;
+	vkbottomAS_t* currentAS;
 
 	if (input->numIndexes == 0) {
 		return;
@@ -208,76 +187,104 @@ void RB_AddBottomAS(vkbottomAS_t* bAS) {
 		return;
 	}
 
-	if (bAS != NULL) {
-		if (!strcmp(tess.shader->name, "textures/common/mirror2")) {
-			int aaaaa = 2;
-		}
-		if (input->shader->sort == SS_PORTAL) {
-			int x = 2l;
-		}
-		if (input->shader->sort == SS_OPAQUE) {
-			int x = 2l;
-		}
-		qboolean anim = tess.shader->stages[0]->bundle[0].numImageAnimations > 0;
-		qboolean cTex = tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD) && tess.shader->stages[0]->bundle[0].numTexMods > 0) : qfalse;
-		qboolean deform = tess.shader->numDeforms > 0 /*|| (*drawSurf->surface == SF_MD3 && ((md3Surface_t*)drawSurf->surface)->numFrames > 1)*/;
-		qboolean frames = backEnd.currentEntity->e.frame != backEnd.currentEntity->e.oldframe;//(*drawSurf->surface == SF_MD3 && ((md3Surface_t*)drawSurf->surface)->numFrames > 1);
-		qboolean sky = qfalse;//tess.shader->isSky;
-		if (frames | deform | cTex) {
-
-			if (deform) RB_DeformTessGeometry();
-			if (cTex) ComputeTexCoords(tess.shader->stages[0]);
-
-			if (frames | deform | sky) {
-				for (int j = 0; j < tess.numIndexes; j++) {
-					//VK_UploadBufferDataOffset(&geometry.idx, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*)& indexes[0]);
-					uint32_t idx = (uint32_t)tess.indexes[j];
-					//idx += offsetXYZ;
-					VK_UploadBufferDataOffset(&vk_d.geometry.idx, bAS->geometries.geometry.triangles.indexOffset + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)&idx);
-				}
-			}
-			for (int j = 0; j < tess.numVertexes; j++) {
-				float p[12] = {
-					p[0] = tess.xyz[j][0],
-					p[1] = tess.xyz[j][1],
-					p[2] = tess.xyz[j][2],
-					p[3] = 0,
-					p[4] = cTex ? tess.svars.texcoords[0][j][0] : tess.texCoords[j][0][0],
-					p[5] = cTex ? tess.svars.texcoords[0][j][1] : tess.texCoords[j][0][1],
-					p[6] = tess.texCoords[j][1][0],
-					p[7] = tess.texCoords[j][1][1]
-				};
-				VK_UploadBufferDataOffset(&vk_d.geometry.xyz, bAS->geometries.geometry.triangles.vertexOffset + (j * sizeof(float[8])), 8 * sizeof(float), (void*)&p);
-			}
-			if (deform || frames) {
-
-				qboolean updateBottom = (bAS->geometries.geometry.triangles.vertexCount >= tess.numVertexes &&
-					bAS->geometries.geometry.triangles.indexCount == tess.numIndexes);
-
-				bAS->geometries.geometry.triangles.vertexCount = tess.numVertexes;
-				bAS->geometries.geometry.triangles.indexCount = tess.numIndexes;
-
-				if (updateBottom) VK_UpdateBottomSingle(vk.swapchain.CurrentCommandBuffer(), bAS, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
-				else  VK_UpdateBottomSingleDelete(vk.swapchain.CurrentCommandBuffer(), bAS, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
-			}
-
-		}
-		/*VkGeometryInstanceNV geometryInstance = { 0 };
-		geometryInstance.instanceCustomIndex = 0;
-		geometryInstance.mask = 0xff;
-		geometryInstance.instanceOffset = 0;
-		geometryInstance.flags = drawSurf->bAS->flags;*/
-		//drawSurf->bAS->geometryInstance.accelerationStructureHandle = drawSurf->bAS->handle;
-
-
-		
-		RB_UpdateInstanceBuffer(bAS);
-		RB_UpdateInstanceDataBuffer(bAS);
-		
-		// add bottom to trace as list
-		memcpy(&vk_d.bottomASListDynamic[vk_d.bottomASDynamicCount], bAS, sizeof(vkbottomAS_t));
-		vk_d.bottomASDynamicCount++;
+	// just stuff
+	if (!strcmp(tess.shader->name, "textures/common/mirror2")) {
+		int aaaaa = 2;
 	}
+	if (input->shader->sort == SS_PORTAL) {
+		int x = 2l;
+	}
+	if (input->shader->sort == SS_STENCIL_SHADOW) {
+		int x = 2l;
+	}
+	
+	qboolean anim = tess.shader->stages[0]->bundle[0].numImageAnimations > 0;
+	qboolean cTex = tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD) && tess.shader->stages[0]->bundle[0].numTexMods > 0) : qfalse;
+	qboolean deform = tess.shader->numDeforms > 0 /*|| (*drawSurf->surface == SF_MD3 && ((md3Surface_t*)drawSurf->surface)->numFrames > 1)*/;
+	qboolean frames = backEnd.currentEntity->e.frame > 1;//backEnd.currentEntity->e.frame != backEnd.currentEntity->e.oldframe;//(*drawSurf->surface == SF_MD3 && ((md3Surface_t*)drawSurf->surface)->numFrames > 1);
+	qboolean sky = qfalse;//tess.shader->isSky;
+	if (!dynamic) {
+		currentAS = bAS;
+	}
+	else {
+		if (deform || frames) {
+			currentAS = &vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]];
+			currentAS->geometries = bAS->geometries;
+			currentAS->data = bAS->data;
+			currentAS->geometryInstance = bAS->geometryInstance;
+
+			currentAS->geometries.geometry.triangles.indexOffset = vk_d.geometry.idxDynamicOffset * sizeof(uint32_t);
+			currentAS->geometries.geometry.triangles.vertexOffset = vk_d.geometry.xyzDynamicOffset * sizeof(float[8]);
+			currentAS->data.offsetIdx = vk_d.geometry.idxDynamicOffset;
+			currentAS->data.offsetXYZ = vk_d.geometry.xyzDynamicOffset;
+		}
+		else currentAS = bAS;
+	}
+
+	if (deform) RB_DeformTessGeometry();
+	if (cTex) ComputeTexCoords(tess.shader->stages[0]);
+
+	
+	if (dynamic || frames || deform || cTex) {
+		for (int j = 0; j < tess.numIndexes; j++) {
+			uint32_t idx = (uint32_t)tess.indexes[j];
+			VK_UploadBufferDataOffset(&vk_d.geometry.idx, currentAS->geometries.geometry.triangles.indexOffset + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)&idx);
+		}
+		//}
+		for (int j = 0; j < tess.numVertexes; j++) {
+			float p[12] = {
+				p[0] = tess.xyz[j][0],
+				p[1] = tess.xyz[j][1],
+				p[2] = tess.xyz[j][2],
+				p[3] = 0,
+				p[4] = cTex ? tess.svars.texcoords[0][j][0] : tess.texCoords[j][0][0],
+				p[5] = cTex ? tess.svars.texcoords[0][j][1] : tess.texCoords[j][0][1],
+				p[6] = tess.texCoords[j][1][0],
+				p[7] = tess.texCoords[j][1][1]
+			};
+			VK_UploadBufferDataOffset(&vk_d.geometry.xyz, currentAS->geometries.geometry.triangles.vertexOffset + (j * sizeof(float[8])), 8 * sizeof(float), (void*)&p);
+		}
+	}
+	if (!dynamic && (deform || frames)) {
+
+		qboolean updateBottom = (currentAS->geometries.geometry.triangles.vertexCount >= tess.numVertexes &&
+			currentAS->geometries.geometry.triangles.indexCount == tess.numIndexes);
+
+		currentAS->geometries.geometry.triangles.vertexCount = tess.numVertexes;
+		currentAS->geometries.geometry.triangles.indexCount = tess.numIndexes;
+
+		if (updateBottom) VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), currentAS, currentAS, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV, NULL);
+		else  VK_RecreateBottomAS(vk.swapchain.CurrentCommandBuffer(), currentAS, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
+	}
+	if (dynamic) {
+		if (currentAS != bAS) { // (deform || frames)
+			qboolean updateBottom = (currentAS->geometries.geometry.triangles.vertexCount >= tess.numVertexes &&
+				currentAS->geometries.geometry.triangles.indexCount == tess.numIndexes);
+
+			currentAS->geometries.geometry.triangles.vertexCount = tess.numVertexes;
+			currentAS->geometries.geometry.triangles.indexCount = tess.numIndexes;
+
+			VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), bAS, currentAS, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV, &vk_d.basBufferDynamicOffset);
+			vk_d.bottomASDynamicCount[vk.swapchain.currentImage]++;
+			vk_d.geometry.idxDynamicOffset += tess.numIndexes;
+			vk_d.geometry.xyzDynamicOffset += tess.numVertexes;
+		}
+	}
+		
+	RB_UpdateInstanceBuffer(currentAS);
+	RB_UpdateInstanceDataBuffer(currentAS);
+	// add bottom to trace as list
+	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], currentAS, sizeof(vkbottomAS_t));
+	vk_d.bottomASTraceListCount++;
+	//if (!dynamic || (dynamic && !deform && !frames)) {
+	//}
+	//else {
+	//	/*vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]].geometries = bAS->geometries;
+	//	vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]].data = bAS->data;
+	//	vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]].geometryInstance = bAS->geometryInstance;*/
+	//	
+	//	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage] -1], sizeof(vkbottomAS_t));
+	//}
 }
 
 static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
@@ -288,31 +295,36 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	int				i;
 	drawSurf_t*		drawSurf;
 	float			originalTime;
+	qboolean		dynamic;
 
-	vk_d.bottomASDynamicCount = 0;
-	vk_d.scratchBufferOffset = 0;
-	vk_d.instanceBufferOffset = vk.swapchain.currentImage * (5000 * sizeof(VkGeometryInstanceNV));
 	// save original time for entity shader offsets
 	originalTime = backEnd.refdef.floatTime;
 	backEnd.currentEntity = &tr.worldEntity;
 	
 	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
 		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
+		if (shader->isSky /*|| shader->polygonOffset == qtrue*/) continue;
 		// just to clean backend state
 		RB_BeginSurface(shader, fogNum);
 
+		if (entityNum != ENTITYNUM_WORLD) {
+			if (drawSurf->bAS == NULL) {
+				int x = 2;
+			}
+		}
+		//if (tess.numIndexes == 0) continue;
+		float tM[12];
 		if (entityNum != ENTITYNUM_WORLD) {
 			backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
 			backEnd.refdef.floatTime = originalTime - backEnd.currentEntity->e.shaderTime;
 			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
 
 			R_RotateForEntity(backEnd.currentEntity, &backEnd.viewParms, &backEnd. or );
-			float transform[12] = {
-				backEnd.currentEntity->e.axis[0][0], backEnd.currentEntity->e.axis[1][0], backEnd.currentEntity->e.axis[2][0], backEnd.currentEntity->e.origin[0],
-				backEnd.currentEntity->e.axis[0][1], backEnd.currentEntity->e.axis[1][1], backEnd.currentEntity->e.axis[2][1], backEnd.currentEntity->e.origin[1],
-				backEnd.currentEntity->e.axis[0][2], backEnd.currentEntity->e.axis[1][2], backEnd.currentEntity->e.axis[2][2], backEnd.currentEntity->e.origin[2]
-			};
-			if (drawSurf->bAS != NULL) Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &transform, sizeof(float[12]));
+			
+			tM[0] = backEnd.currentEntity->e.axis[0][0]; tM[1] = backEnd.currentEntity->e.axis[1][0]; tM[2] = backEnd.currentEntity->e.axis[2][0]; tM[3] = backEnd.currentEntity->e.origin[0];
+			tM[4] = backEnd.currentEntity->e.axis[0][1]; tM[5] = backEnd.currentEntity->e.axis[1][1]; tM[6] = backEnd.currentEntity->e.axis[2][1]; tM[7] = backEnd.currentEntity->e.origin[1];
+			tM[8] = backEnd.currentEntity->e.axis[0][2]; tM[9] = backEnd.currentEntity->e.axis[1][2]; tM[10] = backEnd.currentEntity->e.axis[2][2]; tM[11] = backEnd.currentEntity->e.origin[2];
+			dynamic = qtrue;
 		}
 		else {
 			backEnd.currentEntity = &tr.worldEntity;
@@ -320,27 +332,35 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			backEnd. or = backEnd.viewParms.world;
 			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
 
-			float transform[12] = {
-				1,0,0,0,
-				0,1,0,0,
-				0,0,1,0
-			};
-			if(drawSurf->bAS != NULL) Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &transform, sizeof(float[12]));
-		}
+			tM[0] = 1; tM[1] = 0; tM[2] = 0; tM[3] = 0;
+			tM[4] = 0; tM[5] = 1; tM[6] = 0; tM[7] = 0;
+			tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
 
+			dynamic = qfalse;
+		}
 		// add the triangles for this surface
 		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
-		RB_AddBottomAS(drawSurf->bAS);
+		/*if(drawSurf->bAS != NULL) Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
+		else*/ 
+		//if (drawSurf->bAS  == NULL){
+		//	RB_CreateBottomAS(&drawSurf->bAS, qtrue);
+		//	//RB_CreateTempNewBottomAS(&vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]]);
+		//	//Com_Memcpy(&vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]].geometryInstance.transform, &tM, sizeof(float[12]));
+		//	//drawSurf->bAS = &vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]-1];
+		//	//vk_d.bottomASDynamicCount[vk.swapchain.currentImage]++;
+		//}
+		if (drawSurf->bAS != NULL)Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
+		
+		if (drawSurf->bAS != NULL) RB_AddBottomAS(drawSurf->bAS, dynamic);
 	}
 	backEnd.refdef.floatTime = originalTime;
 
 	VK_DestroyTopAccelerationStructure(&vk_d.topAS[vk.swapchain.currentImage]);
-	VK_MakeTop(vk.swapchain.CurrentCommandBuffer(), &vk_d.topAS[vk.swapchain.currentImage], vk_d.bottomASListDynamic, vk_d.bottomASDynamicCount, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV);
+	VK_MakeTop(vk.swapchain.CurrentCommandBuffer(), &vk_d.topAS[vk.swapchain.currentImage], vk_d.bottomASTraceList, vk_d.bottomASTraceListCount, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV);
 	
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
 }
-
 
 static void RB_TraceRays() {
 	static float	s_flipMatrix[16] = {
@@ -423,6 +443,20 @@ static void RB_TraceRays() {
 
 void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	vkCmdEndRenderPass(vk.swapchain.CurrentCommandBuffer());
+
+	for (int i = 0; i < vk_d.bottomASDynamicCount[vk.swapchain.currentImage]; i++) {
+		VK_DestroyBottomAccelerationStructure(&vk_d.bottomASDynamicList[vk.swapchain.currentImage][i]);
+	}
+	vk_d.bottomASDynamicCount[vk.swapchain.currentImage] = 0;
+
+	vk_d.bottomASTraceListCount = 0;
+	vk_d.scratchBufferOffset = 0;
+	vk_d.instanceBufferOffset = vk.swapchain.currentImage * (5000 * sizeof(VkGeometryInstanceNV));
+
+	vk_d.tasBufferOffset = vk.swapchain.currentImage * (65536 * 20);
+	vk_d.geometry.xyzDynamicOffset = vk.swapchain.currentImage * 500000 + 500000;
+	vk_d.geometry.idxDynamicOffset = vk.swapchain.currentImage * 500000 + 500000;
+	vk_d.basBufferDynamicOffset = vk_d.basBufferStaticOffset;
 
 	RB_UpdateRayTraceAS(drawSurfs, numDrawSurfs);
 	RB_TraceRays();

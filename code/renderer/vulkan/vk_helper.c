@@ -24,10 +24,6 @@ void VK_BeginRenderClear()
 	vk_d.offset = vk.swapchain.currentImage * VK_VERTEX_ATTRIBUTE_DATA_SIZE;
 	vk_d.currentPipeline = -1;
 
-	vk_d.tasBufferOffset = vk.swapchain.currentImage * (65536 * 20);
-	//vk_d.tasBufferOffset = 1 * (65536 * 5);
-	
-
 	VkClearColorValue cc = { 0.1f,0.1f,0.1f,1.0f };
     VkClearDepthStencilValue dsc = { 1, 0};
 

@@ -2,12 +2,7 @@
 
 #define max(a,b) (((a)>(b))?(a):(b))
 
-//static void VK_CreateBottomLevelAccelerationStructure(vkaccelerationStructures_t* as, const VkGeometryNV* geometries);
-//static void VK_CreateTopLevelAccelerationStructure(vkaccelerationStructures_t* as);
-//static void VK_BuildAccelerationStructure(vkaccelerationStructures_t* as, const VkGeometryNV* geometries);
-
-void VK_MakeBottomSingle(vkbottomAS_t* bas, VkBuildAccelerationStructureFlagsNV flag) {
-
+void VK_CreateBottomAS(VkCommandBuffer commandBuffer, vkbottomAS_t* bas, VkBuildAccelerationStructureFlagsNV flag, VkDeviceSize* offset) {
 	// create
 	VkAccelerationStructureInfoNV accelerationStructureInfo = { 0 };
 	accelerationStructureInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
@@ -32,91 +27,17 @@ void VK_MakeBottomSingle(vkbottomAS_t* bas, VkBuildAccelerationStructureFlagsNV 
 	VkBindAccelerationStructureMemoryInfoNV memoryInfo = { 0 };
 	memoryInfo.sType = VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV;
 	memoryInfo.accelerationStructure = bas->accelerationStructure;
-	memoryInfo.memoryOffset = vk_d.basBufferOffset;
 	memoryInfo.memory = vk_d.basBuffer.memory;
-	bas->offset = vk_d.basBufferOffset;
-	vk_d.basBufferOffset += (memoryRequirements2.memoryRequirements.size * 4);
-	
-	VK_CHECK(vkBindAccelerationStructureMemoryNV(vk.device, 1, &memoryInfo), "failed to bind Acceleration Structure Memory NV");
-	VK_CHECK(vkGetAccelerationStructureHandleNV(vk.device, bas->accelerationStructure, sizeof(uint64_t), &bas->handle), "failed to get Acceleration Structure Handle NV");
-	
-	// build
-	VkCommandBuffer commandBuffer = { 0 };
-	VK_BeginSingleTimeCommands(&commandBuffer);
-
-	VkAccelerationStructureInfoNV buildInfo = { 0 };
-	buildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
-	buildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV;
-	buildInfo.flags = flag;
-	buildInfo.geometryCount = 1;
-	buildInfo.pGeometries = &bas->geometries;
-
-	vkCmdBuildAccelerationStructureNV(
-		commandBuffer,
-		&buildInfo,
-		VK_NULL_HANDLE,
-		0,
-		VK_FALSE,
-		bas->accelerationStructure,
-		VK_NULL_HANDLE,
-		vk_d.scratchBuffer.buffer,
-		vk_d.scratchBufferOffset);
-	vk_d.scratchBufferOffset += memoryRequirements2Scratch.memoryRequirements.size;
-
-	VK_EndSingleTimeCommands(&commandBuffer);
-	
-}
-void VK_UpdateBottomSingleDelete(VkCommandBuffer commandBuffer, vkbottomAS_t* bas, VkBuildAccelerationStructureFlagsNV flag) {
-	
-
-	vkDestroyAccelerationStructureNV(vk.device, bas->accelerationStructure, NULL);
-	bas->handle = 0;
-	// create
-	VkAccelerationStructureInfoNV accelerationStructureInfo = { 0 };
-	accelerationStructureInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
-	accelerationStructureInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV;
-	accelerationStructureInfo.flags = flag;
-	accelerationStructureInfo.instanceCount = 0;
-	accelerationStructureInfo.geometryCount = 1;
-	accelerationStructureInfo.pGeometries = &bas->geometries;
-
-	VkAccelerationStructureCreateInfoNV accelerationStructureCI = { 0 };
-	accelerationStructureCI.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_NV;
-	accelerationStructureCI.info = accelerationStructureInfo;
-	VK_CHECK(vkCreateAccelerationStructureNV(vk.device, &accelerationStructureCI, NULL, &bas->accelerationStructure), "failed to create Bottom Level Acceleration Structure NV");
-
-	// Get Memory Info
-	VkMemoryRequirements2 memoryRequirements2Scratch = { 0 };
-	VK_GetAccelerationStructureMemoryRequirements(bas->accelerationStructure, VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_BUILD_SCRATCH_NV, &memoryRequirements2Scratch);
-
-	VkMemoryRequirements2 memoryRequirements2 = { 0 };
-	VK_GetAccelerationStructureMemoryRequirements(bas->accelerationStructure, VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_OBJECT_NV, &memoryRequirements2);
-
-
-	VkBindAccelerationStructureMemoryInfoNV memoryInfo = { 0 };
-	memoryInfo.sType = VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV;
-	memoryInfo.accelerationStructure = bas->accelerationStructure;
-	memoryInfo.memoryOffset = bas->offset;
-	memoryInfo.memory = vk_d.basBuffer.memory;
-
-	//bas->offset = vk_d.asBufferOffset;
-	if ((bas+1) != NULL) {
-		VkDeviceSize size = (bas + 1)->offset - bas->offset;
-		if (memoryRequirements2.memoryRequirements.size > size) {
-			//ri.Error(ERR_FATAL, "Vulkan: Buffer to small!");
-		}
+	if (offset != NULL) {
+		memoryInfo.memoryOffset = bas->offset = *offset;
+		*offset += (memoryRequirements2.memoryRequirements.size);
 	}
-	/*memoryInfo.memoryOffset = vk_d.asBufferOffset;
-	memoryInfo.memory = vk_d.asBuffer.memory;
-	bas->offset = vk_d.asBufferOffset;*/
+	else memoryInfo.memoryOffset = bas->offset;
 	
 	VK_CHECK(vkBindAccelerationStructureMemoryNV(vk.device, 1, &memoryInfo), "failed to bind Acceleration Structure Memory NV");
 	VK_CHECK(vkGetAccelerationStructureHandleNV(vk.device, bas->accelerationStructure, sizeof(uint64_t), &bas->handle), "failed to get Acceleration Structure Handle NV");
-
+	
 	// build
-	//VkCommandBuffer commandBuffer = { 0 };
-	//VK_BeginSingleTimeCommands(&commandBuffer);
-
 	VkAccelerationStructureInfoNV buildInfo = { 0 };
 	buildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
 	buildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV;
@@ -135,35 +56,60 @@ void VK_UpdateBottomSingleDelete(VkCommandBuffer commandBuffer, vkbottomAS_t* ba
 		vk_d.scratchBuffer.buffer,
 		vk_d.scratchBufferOffset);
 	vk_d.scratchBufferOffset += memoryRequirements2Scratch.memoryRequirements.size;
+}
+void VK_UpdateBottomAS(VkCommandBuffer commandBuffer, vkbottomAS_t* oldBas, vkbottomAS_t* newBas, VkBuildAccelerationStructureFlagsNV flag, VkDeviceSize* offset) {
+	
+	VkMemoryRequirements2 memoryRequirements2Scratch = { 0 };
+	VkMemoryRequirements2 memoryRequirements2 = { 0 };
+	// if old and new are the same do not create new as
+	if (oldBas == newBas) {
+		// Get Memory Info
+		VK_GetAccelerationStructureMemoryRequirements(oldBas->accelerationStructure, VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_UPDATE_SCRATCH_NV, &memoryRequirements2Scratch);
+		VK_GetAccelerationStructureMemoryRequirements(oldBas->accelerationStructure, VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_OBJECT_NV, &memoryRequirements2);
+	}
+	else {
+		// create as
+		VkAccelerationStructureInfoNV accelerationStructureInfo = { 0 };
+		accelerationStructureInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
+		accelerationStructureInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV;
+		accelerationStructureInfo.flags = flag;
+		accelerationStructureInfo.instanceCount = 0;
+		accelerationStructureInfo.geometryCount = 1;
+		accelerationStructureInfo.pGeometries = &newBas->geometries;
+
+		VkAccelerationStructureCreateInfoNV accelerationStructureCI = { 0 };
+		accelerationStructureCI.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_NV;
+		accelerationStructureCI.info = accelerationStructureInfo;
+		VK_CHECK(vkCreateAccelerationStructureNV(vk.device, &accelerationStructureCI, NULL, &newBas->accelerationStructure), "failed to create Bottom Level Acceleration Structure NV");
+
+		// Get Memory Info
+		VK_GetAccelerationStructureMemoryRequirements(newBas->accelerationStructure, VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_UPDATE_SCRATCH_NV, &memoryRequirements2Scratch);
+		VK_GetAccelerationStructureMemoryRequirements(newBas->accelerationStructure, VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_OBJECT_NV, &memoryRequirements2);
+
+		VkBindAccelerationStructureMemoryInfoNV memoryInfo = { 0 };
+		memoryInfo.sType = VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV;
+		memoryInfo.accelerationStructure = newBas->accelerationStructure;
+		memoryInfo.memory = vk_d.basBuffer.memory;
+		memoryInfo.memoryOffset = newBas->offset = *offset;
+		*offset += (memoryRequirements2.memoryRequirements.size);
+
+		VK_CHECK(vkBindAccelerationStructureMemoryNV(vk.device, 1, &memoryInfo), "failed to bind Acceleration Structure Memory NV");
+		VK_CHECK(vkGetAccelerationStructureHandleNV(vk.device, newBas->accelerationStructure, sizeof(uint64_t), &newBas->handle), "failed to get Acceleration Structure Handle NV");
+	}
+
+	// build
+	VkAccelerationStructureInfoNV buildInfo = { 0 };
+	buildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
+	buildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV;
+	buildInfo.flags = flag;
+	buildInfo.geometryCount = 1;
+	buildInfo.pGeometries = &newBas->geometries;
 
 	VkMemoryBarrier memoryBarrier = { 0 };
 	memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
 	memoryBarrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
 	memoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
-	vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
-
-	//VK_EndSingleTimeCommands(&commandBuffer);
-
-}
-void VK_UpdateBottomSingle(VkCommandBuffer commandBuffer, vkbottomAS_t* bas) {
-	
-	// Get Memory Info
-	VkMemoryRequirements2 memoryRequirements2Scratch = { 0 };
-	VK_GetAccelerationStructureMemoryRequirements(bas->accelerationStructure, VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_UPDATE_SCRATCH_NV, &memoryRequirements2Scratch);
-
-	VkMemoryRequirements2 memoryRequirements2 = { 0 };
-	VK_GetAccelerationStructureMemoryRequirements(bas->accelerationStructure, VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_OBJECT_NV, &memoryRequirements2);
-
-
-	/*VkCommandBuffer commandBuffer = { 0 };
-	VK_BeginSingleTimeCommands(&commandBuffer);*/
-
-	VkAccelerationStructureInfoNV buildInfo = { 0 };
-	buildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
-	buildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV;
-	buildInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV;
-	buildInfo.geometryCount = 1;
-	buildInfo.pGeometries = &bas->geometries;
+	//vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
 
 	vkCmdBuildAccelerationStructureNV(
 		commandBuffer,
@@ -171,19 +117,20 @@ void VK_UpdateBottomSingle(VkCommandBuffer commandBuffer, vkbottomAS_t* bas) {
 		VK_NULL_HANDLE,
 		0,
 		VK_TRUE,
-		bas->accelerationStructure,
-		bas->accelerationStructure,
+		newBas->accelerationStructure,
+		oldBas->accelerationStructure,
 		vk_d.scratchBuffer.buffer,
 		vk_d.scratchBufferOffset);
 	vk_d.scratchBufferOffset += memoryRequirements2Scratch.memoryRequirements.size;
 
+	//vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
+}
 
-	VkMemoryBarrier memoryBarrier = { 0 };
-	memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-	memoryBarrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
-	memoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
-	vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
-	//VK_EndSingleTimeCommands(&commandBuffer);
+// destroy and create same AS
+void VK_RecreateBottomAS(VkCommandBuffer commandBuffer, vkbottomAS_t* bas, VkBuildAccelerationStructureFlagsNV flag) {
+	vkDestroyAccelerationStructureNV(vk.device, bas->accelerationStructure, NULL);
+	bas->handle = 0;
+	VK_CreateBottomAS(commandBuffer, bas, flag, NULL);
 }
 
 void VK_MakeTop(VkCommandBuffer commandBuffer, vktopAS_t* tas, vkbottomAS_t* basList, uint32_t basCount, VkBuildAccelerationStructureFlagsNV flag) {
@@ -300,24 +247,7 @@ void VK_UpdateTop(VkCommandBuffer commandBuffer, vktopAS_t* top, vkbottomAS_t* b
 	buildInfo.instanceCount = bottomCount;
 
 	uint32_t numIndex = 0;
-	//for (int i = 0; i < bottomCount; i++) {
-	//	geometryInstance.accelerationStructureHandle = bottomList[i].handle;
-	//	geometryInstance.flags = bottomList[i].flags;
-	//	//geometryInstance.instanceCustomIndex = numIndex;
-	//	//geometryInstance.mask = 0xff;
-	//	//numIndex += bList->bottomASList[i].geometries.geometry.triangles.indexCount;
-	//	VK_UploadBufferDataOffset(&vk_d.instanceBuffer, i * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&geometryInstance);
-	//}
-
-	//VkCommandBuffer commandBuffer = { 0 };
-	//VK_BeginSingleTimeCommands(&commandBuffer);
-
-	/*VkMemoryBarrier memoryBarrier = { 0 };
-	memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-	memoryBarrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
-	memoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
-	vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);*/
-
+	
 	vkCmdBuildAccelerationStructureNV(
 		commandBuffer,
 		&buildInfo,
@@ -330,37 +260,7 @@ void VK_UpdateTop(VkCommandBuffer commandBuffer, vktopAS_t* top, vkbottomAS_t* b
 		vk_d.scratchBufferOffset);
 	vk_d.scratchBufferOffset += memoryRequirements2Scratch.memoryRequirements.size;
 
-	//vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
-
-	//VK_EndSingleTimeCommands(&commandBuffer);
 }
-//
-//void VK_DestroyAccelerationStructure2(vkbottomASList_t* as) {
-//	if (as->bottomMemory != VK_NULL_HANDLE) {
-//		vkFreeMemory(vk.device, as->bottomMemory, NULL);
-//		as->bottomMemory = VK_NULL_HANDLE;
-//	}
-//	if (as->topMemory != VK_NULL_HANDLE) {
-//		vkFreeMemory(vk.device, as->topMemory, NULL);
-//		as->topMemory = VK_NULL_HANDLE;
-//	}
-//
-//	for (int i = 0; i < as->asCount; i++) {
-//		if (as->bottomASList[i].accelerationStructure != VK_NULL_HANDLE) {
-//			vkDestroyAccelerationStructureNV(vk.device, as->bottomASList[i].accelerationStructure, NULL);
-//			as->bottomASList[i].accelerationStructure = VK_NULL_HANDLE;
-//		}
-//	}
-//
-//
-//	if (as->topAS.accelerationStructure != VK_NULL_HANDLE) {
-//		vkDestroyAccelerationStructureNV(vk.device, as->topAS.accelerationStructure, NULL);
-//		as->topAS.accelerationStructure = VK_NULL_HANDLE;
-//	}
-//
-//	free(as->bottomASList);
-//	as->asCount = 0;
-//}
 void VK_DestroyTopAccelerationStructure(vktopAS_t* as) {
 	if (as->accelerationStructure != VK_NULL_HANDLE) {
 		vkDestroyAccelerationStructureNV(vk.device, as->accelerationStructure, NULL);

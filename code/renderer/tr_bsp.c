@@ -1833,6 +1833,7 @@ static	void R_BuildAccelerationStructure() {
 
 
 	for (i = 0; i < s_worldData.numsurfaces; i++) {
+		if (tr.shaders[s_worldData.surfaces[i].shader->index]->isSky) continue;
 		RB_CreateNewBottomAS(s_worldData.surfaces[i].data, tr.shaders[s_worldData.surfaces[i].shader->index], &s_worldData.surfaces[i].bAS);
 		/*if (tr.shaders[s_worldData.surfaces[i].shader->index]->numDeforms > 0) {
 			RB_CreateNewBottomAS(s_worldData.surfaces[i].data, tr.shaders[s_worldData.surfaces[i].shader->index], NULL);
