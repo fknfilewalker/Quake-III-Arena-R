@@ -336,7 +336,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			tM[8] = backEnd.currentEntity->e.axis[0][2]; tM[9] = backEnd.currentEntity->e.axis[1][2]; tM[10] = backEnd.currentEntity->e.axis[2][2]; tM[11] = backEnd.currentEntity->e.origin[2];
 			dynamic = qtrue;
 
-			if (backEnd.currentEntity->e.reType & (RT_SPRITE | RT_RAIL_CORE | RT_RAIL_RINGS)) {
+			if (backEnd.currentEntity->e.reType & (RT_SPRITE | RT_BEAM | RT_LIGHTNING | RT_RAIL_CORE | RT_RAIL_RINGS)) {
 				tM[0] = 1; tM[1] = 0; tM[2] = 0; tM[3] = 0;
 				tM[4] = 0; tM[5] = 1; tM[6] = 0; tM[7] = 0;
 				tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
