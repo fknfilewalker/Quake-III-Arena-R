@@ -1829,11 +1829,22 @@ static	void R_BuildAccelerationStructure() {
 	int i, j;
 
 
-	// do not forget to free memory
-
+	// quad AS at aslist[0]
+	tess.numVertexes = 0;
+	tess.numIndexes = 0;
+	tess.shader = tr.defaultShader;
+	vec3_t origin = { 0,0,0 };
+	vec3_t left = { 1,0,0 };
+	vec3_t up = { 0,1,0 };
+	RB_AddQuadStampExt(origin, left, up, tess.vertexColors, 0, 0, 1, 1);
+	RB_CreateBottomAS(NULL, qfalse);
+	tess.numVertexes = 0;
+	tess.numIndexes = 0;
 
 	for (i = 0; i < s_worldData.numsurfaces; i++) {
-		if (tr.shaders[s_worldData.surfaces[i].shader->index]->isSky) continue;
+		/*if (tr.shaders[s_worldData.surfaces[i].shader->index]->isSky) {
+			continue;
+		}*/
 		RB_CreateNewBottomAS(s_worldData.surfaces[i].data, tr.shaders[s_worldData.surfaces[i].shader->index], &s_worldData.surfaces[i].bAS);
 		/*if (tr.shaders[s_worldData.surfaces[i].shader->index]->numDeforms > 0) {
 			RB_CreateNewBottomAS(s_worldData.surfaces[i].data, tr.shaders[s_worldData.surfaces[i].shader->index], NULL);

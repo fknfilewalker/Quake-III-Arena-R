@@ -260,7 +260,7 @@ static void InitVulkan(void)
 		VK_CreateVertexBuffer(&vk_d.colorbuffer, vk.swapchain.imageCount * VK_VERTEX_ATTRIBUTE_DATA_SIZE * sizeof(color4ub_t));
 
 		// <RTX>
-		vk_d.bottomASList = calloc(6000, sizeof(vkbottomAS_t));
+		vk_d.bottomASList = calloc(10000, sizeof(vkbottomAS_t));
 		vk_d.bottomASCount = 0;
 		vk_d.bottomASDynamicList[0] = calloc(1000, sizeof(vkbottomAS_t));
 		vk_d.bottomASDynamicList[1] = calloc(1000, sizeof(vkbottomAS_t));
@@ -272,7 +272,7 @@ static void InitVulkan(void)
 		vk_d.bottomASTraceListCount = 0;
 
 		VK_CreateAttributeBuffer(&vk_d.geometry.idx, 4 * RTX_STATIC_INDEX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-		VK_CreateAttributeBuffer(&vk_d.geometry.xyz, 5 * RTX_STATIC_XYZ_SIZE * 8 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		VK_CreateAttributeBuffer(&vk_d.geometry.xyz, 5 * RTX_STATIC_XYZ_SIZE * 12 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[0], 10000 * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[1], 10000 * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[2], 10000 * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -1302,6 +1302,15 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			VK_DestroyDescriptor(&vk_d.imageDescriptor);
 
 			// RTX
+			for (int j = 0; j < 3; j++) {
+				for (int i = 0; i < vk_d.bottomASDynamicCount[j]; i++) {
+					VK_DestroyBottomAccelerationStructure(&vk_d.bottomASDynamicList[j][i]);
+				}
+			}
+			free(vk_d.bottomASDynamicList[0]);
+			free(vk_d.bottomASDynamicList[1]);
+			free(vk_d.bottomASDynamicList[2]);
+
 			VK_DestroyImage(&vk_d.accelerationStructures.resultImage);
 
 			VK_DestroyBuffer(&vk_d.basBuffer);
@@ -1313,6 +1322,9 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			VK_DestroyBuffer(&vk_d.geometry.idx);
 
 			VK_DestroyBuffer(&vk_d.instanceBuffer);
+			VK_DestroyBuffer(&vk_d.instanceDataBuffer[0]);
+			VK_DestroyBuffer(&vk_d.instanceDataBuffer[1]);
+			VK_DestroyBuffer(&vk_d.instanceDataBuffer[2]);
 			/*VK_DestroyBuffer(&vk_d.basBuffer);
 			vk_d.basBufferOffset = 0;
 			VK_DestroyBuffer(&vk_d.tasBuffer);

@@ -123,7 +123,7 @@ void VK_UpdateBottomAS(VkCommandBuffer commandBuffer, vkbottomAS_t* oldBas, vkbo
 		vk_d.scratchBufferOffset);
 	vk_d.scratchBufferOffset += memoryRequirements2Scratch.memoryRequirements.size;
 
-	//vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
+	vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
 }
 
 // destroy and create same AS
