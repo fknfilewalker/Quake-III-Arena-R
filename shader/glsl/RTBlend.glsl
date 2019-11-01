@@ -2,6 +2,8 @@
 #define FIRST_PERSON_VISIBLE 			0x1
 #define MIRROR_VISIBLE 					0x2
 #define FIRST_PERSON_MIRROR_VISIBLE 	0x3
+#define SKY_VISIBLE 					0x4
+
 
 const uint GLS_SRCBLEND_ZERO						= 0x00000001;
 const uint GLS_SRCBLEND_ONE							= 0x00000002;

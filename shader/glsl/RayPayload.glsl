@@ -4,4 +4,7 @@ struct RayPayload {
   uint blendFunc;
   uint transparent;
   float distance;
+  bool miss;
+  uint cullMask;
+  uint depth;
 };

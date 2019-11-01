@@ -2,11 +2,12 @@
 
 void VK_CreateSampler(vkimage_t* image, VkFilter magFilter, VkFilter minFilter,
 	VkSamplerMipmapMode mipmapMode, VkSamplerAddressMode addressMode);
-static void VK_CopyBufferToImage(vkimage_t* image, uint32_t width, uint32_t height, VkBuffer *buffer, uint32_t mipLevel);
+static void VK_CopyBufferToImage(vkimage_t* image, uint32_t width, uint32_t height, VkBuffer* buffer, uint32_t mipLevel, uint32_t arrayLayer);
 
 void VK_CreateImage(vkimage_t *image, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, uint32_t mipLevels) {
 	image->extent = (VkExtent3D) { width, height, 1 };
 	image->mipLevels = mipLevels;
+	image->arrayLayers = 1;
 
 	// create image
 	{
@@ -55,6 +56,58 @@ void VK_CreateImage(vkimage_t *image, uint32_t width, uint32_t height, VkFormat 
 	}
 }
 
+void VK_CreateCubeMap(vkimage_t* image, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, uint32_t mipLevels, uint32_t arrayLayers) {
+	image->extent = (VkExtent3D){ width, height, 1 };
+	image->mipLevels = mipLevels;
+	image->arrayLayers = arrayLayers;
+
+	// create image
+	{
+		VkImageCreateInfo desc = { 0 };
+		desc.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		desc.pNext = NULL;
+		desc.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		desc.imageType = VK_IMAGE_TYPE_2D;
+		desc.format = format;
+		desc.extent.width = width;
+		desc.extent.height = height;
+		desc.extent.depth = 1;
+		desc.mipLevels = image->mipLevels;
+		desc.arrayLayers = image->arrayLayers;
+		desc.samples = VK_SAMPLE_COUNT_1_BIT;
+		desc.tiling = VK_IMAGE_TILING_OPTIMAL;
+		desc.usage = usage;
+		desc.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		desc.queueFamilyIndexCount = 0;
+		desc.pQueueFamilyIndices = NULL;
+		desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VK_CHECK(vkCreateImage(vk.device, &desc, NULL, &image->handle), "failed to create Image!");
+		VK_CreateImageMemory(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &image->handle, &image->memory);
+	}
+
+	// create image view
+	{
+		VkImageViewCreateInfo desc = { 0 };
+		desc.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		desc.pNext = NULL;
+		desc.flags = 0;
+		desc.image = image->handle;
+		desc.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+		desc.format = format;
+		desc.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		desc.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		desc.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		desc.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		desc.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		desc.subresourceRange.baseMipLevel = 0;
+		desc.subresourceRange.levelCount = image->mipLevels;//VK_REMAINING_MIP_LEVELS;
+		desc.subresourceRange.baseArrayLayer = 0;
+		desc.subresourceRange.layerCount = image->arrayLayers;
+		VK_CHECK(vkCreateImageView(vk.device, &desc, NULL, &image->view), "failed to create Image View!");
+	}
+}
+
 void VK_CreateSampler(	vkimage_t* image, VkFilter magFilter, VkFilter minFilter, 
 						VkSamplerMipmapMode mipmapMode, VkSamplerAddressMode addressMode)
 {
@@ -90,8 +143,7 @@ void VK_CreateSampler(	vkimage_t* image, VkFilter magFilter, VkFilter minFilter,
 	VK_CHECK(vkCreateSampler(vk.device, &desc, NULL, &image->sampler), "failed to create Sampler!");
 }
 
-//VkImage image, int width, int height, bool mipmap, const uint8_t* pixels, int bytes_per_pixel
-void VK_UploadImageData(vkimage_t* image, uint32_t width, uint32_t height, const uint8_t* pixels, uint32_t bytes_per_pixel, uint32_t mipLevel) {
+void VK_UploadImageData(vkimage_t* image, uint32_t width, uint32_t height, const uint8_t* pixels, uint32_t bytes_per_pixel, uint32_t mipLevel, uint32_t arrayLayer) {
 
 	VkDeviceSize imageSize = (uint64_t) width * (uint64_t) height * (uint64_t) 1 * (uint64_t)bytes_per_pixel;
 
@@ -105,10 +157,13 @@ void VK_UploadImageData(vkimage_t* image, uint32_t width, uint32_t height, const
 	Com_Memcpy(p, pixels, (size_t)(imageSize));
 	vkUnmapMemory(vk.device, stagingBufferMemory);
 
-	VK_CopyBufferToImage(image, width, height, &stagingBuffer, mipLevel);
+	VK_CopyBufferToImage(image, width, height, &stagingBuffer, mipLevel, arrayLayer);
 
 	vkDestroyBuffer(vk.device, stagingBuffer, NULL);
 	vkFreeMemory(vk.device, stagingBufferMemory, NULL);
+}
+void VK_UploadMipImageData(vkimage_t* image, uint32_t width, uint32_t height, const uint8_t* pixels, uint32_t bytes_per_pixel, uint32_t mipLevel) {
+	VK_UploadImageData(image, width, height, pixels, bytes_per_pixel, mipLevel, 0);
 }
 
 void VK_TransitionImage(vkimage_t* image, VkImageLayout oldLayout, VkImageLayout newLayout)
@@ -234,7 +289,7 @@ void VK_TransitionImage(vkimage_t* image, VkImageLayout oldLayout, VkImageLayout
 	VK_EndSingleTimeCommands(&commandBuffer);
 }
 
-static void VK_CopyBufferToImage(vkimage_t* image, uint32_t width, uint32_t height, VkBuffer *buffer, uint32_t mipLevel)
+static void VK_CopyBufferToImage(vkimage_t* image, uint32_t width, uint32_t height, VkBuffer *buffer, uint32_t mipLevel, uint32_t arrayLayer)
 {
 	VkCommandBuffer commandBuffer;
 	VK_BeginSingleTimeCommands(&commandBuffer);
@@ -243,7 +298,7 @@ static void VK_CopyBufferToImage(vkimage_t* image, uint32_t width, uint32_t heig
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.layerCount = image->arrayLayers;
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = image->mipLevels;
 
@@ -268,7 +323,7 @@ static void VK_CopyBufferToImage(vkimage_t* image, uint32_t width, uint32_t heig
 	region.bufferImageHeight = 0;
 	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	region.imageSubresource.mipLevel = mipLevel;
-	region.imageSubresource.baseArrayLayer = 0;
+	region.imageSubresource.baseArrayLayer = arrayLayer;
 	region.imageSubresource.layerCount = 1;
 	region.imageOffset = (VkOffset3D){ 0, 0, 0 };
     region.imageExtent = (VkExtent3D){ width, height, 1 };

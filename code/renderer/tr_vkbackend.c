@@ -313,7 +313,7 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
     
     //uint8_t data[4] = { 255,255,0,125 };
     //VK_CreateImage(&image, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 1);
-    //VK_UploadImageData(&image, 1, 1, data, 4, 0); // rows wise
+    //VK_UploadMipImageData(&image, 1, 1, data, 4, 0); // rows wise
     //VK_CreateSampler(&image, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
     
     //vkdescriptor_t d = { 0 };

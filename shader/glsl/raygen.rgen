@@ -17,6 +17,7 @@ layout(location = 0) rayPayloadNV RayPayload rp;
 
 void main() 
 {
+
 	const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + vec2(0.5);
 	const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeNV.xy);
 	vec2 d = inUV * 2.0 - 1.0;
@@ -29,14 +30,17 @@ void main()
 	//vec3 n = vec3(0,1,0);
 	//direction.xyz = reflect(direction.xyz, reflectionNormal.xyz);
 
+	rp.miss = false;
 	uint rayFlags = gl_RayFlagsCullBackFacingTrianglesNV;// = /*gl_RayFlagsOpaqueNV | */gl_RayFlagsCullFrontFacingTrianglesNV ;
 	uint cullMask = FIRST_PERSON_VISIBLE;
-	float tmin = 0.001;
+	float tmin = 0.01;
 	float tmax = 10000.0;
 
 	vec4 pixelColor = vec4(0,0,0,0);
 	rp.color = vec4(0,0,0,0);
-	traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
+	rp.depth = 0;
+	rp.cullMask = FIRST_PERSON_VISIBLE;
+	traceNV(topLevelAS, rayFlags, rp.cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
 	pixelColor += rp.color;
 
 /*

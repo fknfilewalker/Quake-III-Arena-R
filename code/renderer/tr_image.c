@@ -780,7 +780,7 @@ static vkimage_t upload_vk_image(const struct Image_Upload_Data* upload_data, in
 		}
 
 		// upload data
-		VK_UploadImageData(&image, w, h, buffer, bytesPerPixel, i);
+		VK_UploadMipImageData(&image, w, h, buffer, bytesPerPixel, i);
 
 		buffer += w * h * 4;
 

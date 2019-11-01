@@ -72,7 +72,13 @@ void RB_CreateBottomAS(vkbottomAS_t** bAS, qboolean dynamic) {
 		bASList->geometries.geometry.triangles.indexCount = tess.numIndexes;
 		bASList->geometries.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
 		bASList->geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
-		bASList->geometries.flags = VK_GEOMETRY_OPAQUE_BIT_NV;
+		if (tess.shader->sort <= SS_OPAQUE) {
+			bASList->geometries.flags = VK_GEOMETRY_OPAQUE_BIT_NV;
+		}
+		else {
+			bASList->geometries.flags = 0;
+		}
+		
 
 		// write idx
 		for (j = 0; j < tess.numIndexes; j++) {
@@ -132,6 +138,9 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) bAS->geometryInstance.mask = RTX_MIRROR_VISIBLE;
 	else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RTX_FIRST_PERSON_VISIBLE;
 	else bAS->geometryInstance.mask = RTX_FIRST_PERSON_MIRROR_VISIBLE;
+	if (tess.shader->isSky) {
+		bAS->geometryInstance.mask = RTX_SKY_VISIBLE;
+	}
 
 	bAS->geometryInstance.instanceOffset = 0;
 
@@ -166,6 +175,7 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 	bAS->data.blendfunc = (uint32_t)(tess.shader->stages[0]->stateBits);
 	// set if surface is a mirror
 	bAS->data.isMirror = tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL;
+	bAS->data.opaque = (tess.shader->sort <= SS_OPAQUE)/*tess.shader->sort == SS_OPAQUE || tess.shader->isSky*/;
 
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&bAS->data);
 }
@@ -283,15 +293,6 @@ void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic, qboolean forceUpdate) {
 	// add bottom to trace as list
 	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], currentAS, sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
-	//if (!dynamic || (dynamic && !deform && !frames)) {
-	//}
-	//else {
-	//	/*vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]].geometries = bAS->geometries;
-	//	vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]].data = bAS->data;
-	//	vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]].geometryInstance = bAS->geometryInstance;*/
-	//	
-	//	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage] -1], sizeof(vkbottomAS_t));
-	//}
 }
 
 static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
@@ -311,6 +312,11 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
 		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
 		if (shader->isSky /*|| shader->polygonOffset == qtrue*/) {
+			//continue;
+			int a = 2;
+		}
+		if (i != 795) {
+			int x = 2;
 			//continue;
 		}
 		forceUpdate = qfalse;
@@ -360,21 +366,41 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		if (drawSurf->bAS == NULL && drawSurf->surface == SF_ENTITY) {
 			int x = 2;
 		}
-
-		// handle dynamic objects
 		if (backEnd.currentEntity->e.reType == RT_BEAM || backEnd.currentEntity->e.reType == RT_RAIL_CORE || backEnd.currentEntity->e.reType == RT_RAIL_RINGS) {
 			int x = 2;
 		}
+
+		// handle dynamic objects
+		// sky
+		//if (i > 7 && i < 10) continue;
+		if (shader->isSky /*|| shader->polygonOffset == qtrue*/) {
+			//continue;
+			RB_ClipSkyPolygons(&tess);
+			// draw the outer skybox
+			if (tess.shader->sky.outerbox[0] && tess.shader->sky.outerbox[0] != tr.defaultImage) {
+				//DrawSkyBox(tess.shader);
+			}
+			// generate the vertexes for all the clouds, which will be drawn
+			// by the generic shader routine
+			R_BuildCloudData(&tess);
+			dynamic = qtrue;
+			forceUpdate = qfalse;
+			RB_CreateBottomAS(&drawSurf->bAS, dynamic);
+		}
+
+		// blood ray projectile etc
 		if (drawSurf->bAS == NULL && tess.numIndexes == 6 && tess.numVertexes == 4){//backEnd.currentEntity->e.reType == RT_SPRITE) {RT_BEAM
 			drawSurf->bAS = &vk_d.bottomASList[0];
 			dynamic = qtrue;
 			forceUpdate = qtrue;
 		}
-		if (drawSurf->bAS == NULL && tess.shader->stages[0] != NULL) {
+		// everything else
+		/*if (drawSurf->bAS == NULL && tess.shader->stages[0] != NULL) {
 			dynamic = qtrue;
 			forceUpdate = qtrue;
-			RB_CreateBottomAS(drawSurf->bAS, dynamic);
-		}
+			RB_CreateBottomAS(&drawSurf->bAS, dynamic);
+		}*/
+		
 		if (drawSurf->bAS == NULL) continue;
 		
 		Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
@@ -468,7 +494,52 @@ static void RB_TraceRays() {
 	VK_TraceRays(&vk_d.accelerationStructures.pipeline.shaderBindingTableBuffer);
 }
 
+void renderSky(drawSurf_t* drawSurfs, int numDrawSurfs) {
+	shader_t* shader;
+	int				fogNum;
+	int				entityNum;
+	int				dlighted;
+	int				i;
+	drawSurf_t* drawSurf;
+	float			originalTime;
+
+	// save original time for entity shader offsets
+	originalTime = backEnd.refdef.floatTime;
+	backEnd.currentEntity = &tr.worldEntity;
+
+	tr_api.SetViewportAndScissor();
+
+	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
+		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
+		if (!shader->isSky) {
+			continue;
+		}
+		if (i > 20)break;
+		// just to clean backend state
+		RB_BeginSurface(shader, fogNum);
+
+		if (entityNum != ENTITYNUM_WORLD) {
+			backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
+			backEnd.refdef.floatTime = originalTime - backEnd.currentEntity->e.shaderTime;
+			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+			R_RotateForEntity(backEnd.currentEntity, &backEnd.viewParms, &backEnd. or );
+		} else {
+			backEnd.currentEntity = &tr.worldEntity;
+			backEnd.refdef.floatTime = originalTime;
+			backEnd. or = backEnd.viewParms.world;
+			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+		}
+		// add the triangles for this surface
+		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
+
+		Com_Memcpy(vk_d.modelViewMatrix, backEnd. or .modelMatrix, 64);
+		RB_StageIteratorSky();
+	}
+	backEnd.refdef.floatTime = originalTime;
+}
+
 void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
+	//renderSky(drawSurfs, numDrawSurfs);
 	vkCmdEndRenderPass(vk.swapchain.CurrentCommandBuffer());
 
 	for (int i = 0; i < vk_d.bottomASDynamicCount[vk.swapchain.currentImage]; i++) {

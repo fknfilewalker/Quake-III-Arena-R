@@ -289,7 +289,7 @@ typedef struct {
 	float texIdx2;
 	uint32_t blendfunc;
 	qboolean isMirror;
-	float b;
+	qboolean opaque;
 	float c;
 } ASInstanceData;
 typedef struct {
@@ -1152,6 +1152,7 @@ typedef struct {
 typedef struct {
 	VkExtent3D					extent;
 	uint32_t					mipLevels;
+	uint32_t					arrayLayers;
 
 	VkImage						handle;
 	VkImageView					view;
@@ -1168,6 +1169,7 @@ typedef struct {
 #define RTX_FIRST_PERSON_VISIBLE			0x1
 #define RTX_MIRROR_VISIBLE					0x2
 #define RTX_FIRST_PERSON_MIRROR_VISIBLE		0x3
+#define RTX_SKY_VISIBLE						0x4
 
 typedef struct {
 	VkPipelineCache cache;

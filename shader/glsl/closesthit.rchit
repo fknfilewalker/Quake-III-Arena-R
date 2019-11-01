@@ -33,7 +33,7 @@ struct iData{
   float texIdx2;
   uint blendfunc;
   bool isMirror;
-  float b;
+  bool isOpaque;
   float c;
 };
 layout(binding = 4, set = 0) buffer Instance { iData data[]; } instanceData;
@@ -86,6 +86,11 @@ float calcLOD(ivec3 index){
 
 void main()
 {
+  //rp.depth += 1;
+  //if(rp.depth > 2) return;
+  if(rp.depth > 3) return;
+  rp.depth++;
+
   const vec3 barycentricCoords = getBarycentricCoordinates();
 
   uint customIndex = uint(instanceData.data[gl_InstanceID].offsetIdx) + (gl_PrimitiveID * 3);
@@ -94,8 +99,6 @@ void main()
 	vec4 uv = vertices.v[index.x].uv * barycentricCoords.x +
             vertices.v[index.y].uv * barycentricCoords.y +
             vertices.v[index.z].uv * barycentricCoords.z;
-
-
 
   vec4 c = vertices.v[index.x].color * barycentricCoords.x +
            vertices.v[index.y].color * barycentricCoords.y +
@@ -122,11 +125,17 @@ void main()
 
     vec3 direction2 = reflect(gl_WorldRayDirectionNV, rp.normal.xyz);
     uint rayFlags = gl_RayFlagsCullBackFacingTrianglesNV;// = /*gl_RayFlagsOpaqueNV | */gl_RayFlagsCullFrontFacingTrianglesNV ;
-    uint cullMask = MIRROR_VISIBLE;
-    float tmin = 0.001;
+    rp.cullMask = MIRROR_VISIBLE;
+    float tmin = 0.01;
     float tmax = 10000.0;
-    traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, gl_WorldRayOriginNV + gl_RayTmaxNV * gl_WorldRayDirectionNV, tmin, direction2, tmax, 0);
+    traceNV(topLevelAS, rayFlags, rp.cullMask, 0, 0, 0, gl_WorldRayOriginNV + gl_RayTmaxNV * gl_WorldRayDirectionNV, tmin, direction2, tmax, 0);
   //
+  } else if(instanceData.data[gl_InstanceID].isOpaque == false){
+    uint rayFlags = gl_RayFlagsCullBackFacingTrianglesNV;// = gl_RayFlagsCullFrontFacingTrianglesNV ;
+    float tmin = 0.01;
+    float tmax = 10000.0;
+    traceNV(topLevelAS, rayFlags, rp.cullMask, 0, 0, 0, gl_WorldRayOriginNV + (gl_RayTmaxNV) * gl_WorldRayDirectionNV, tmin, gl_WorldRayDirectionNV, tmax, 0);
+  //rp.color = vec4(255,0,0,0);
   }
 
 }  

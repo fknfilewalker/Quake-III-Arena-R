@@ -279,7 +279,7 @@ static void InitVulkan(void)
 		VK_CreateRayTracingASBuffer(&vk_d.basBuffer, 2000000000 * sizeof(byte));
 		VK_CreateRayTracingASBuffer(&vk_d.tasBuffer, 100 * 65536);
 		
-		VK_CreateRayTracingScratchBuffer(&vk_d.scratchBuffer, 4000000000 * sizeof(byte));
+		VK_CreateRayTracingScratchBuffer(&vk_d.scratchBuffer, 5000000000 * sizeof(byte));
 		VK_CreateRayTracingBuffer(&vk_d.instanceBuffer,	15000 * sizeof(VkGeometryInstanceNV));
 
 		// create result image
