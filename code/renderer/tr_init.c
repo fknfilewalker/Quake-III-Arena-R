@@ -260,7 +260,7 @@ static void InitVulkan(void)
 		VK_CreateVertexBuffer(&vk_d.colorbuffer, vk.swapchain.imageCount * VK_VERTEX_ATTRIBUTE_DATA_SIZE * sizeof(color4ub_t));
 
 		// <RTX>
-		vk_d.bottomASList = calloc(10000, sizeof(vkbottomAS_t));
+		vk_d.bottomASList = calloc(13000, sizeof(vkbottomAS_t));
 		vk_d.bottomASCount = 0;
 		vk_d.bottomASDynamicList[0] = calloc(1000, sizeof(vkbottomAS_t));
 		vk_d.bottomASDynamicList[1] = calloc(1000, sizeof(vkbottomAS_t));
@@ -283,7 +283,7 @@ static void InitVulkan(void)
 		VK_CreateRayTracingBuffer(&vk_d.instanceBuffer,	15000 * sizeof(VkGeometryInstanceNV));
 
 		// create result image
-		VK_CreateImage(&vk_d.accelerationStructures.resultImage, vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+		VK_CreateImage(&vk_d.accelerationStructures.resultImage, vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
 		VK_CreateSampler(&vk_d.accelerationStructures.resultImage, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 		VK_TransitionImage(&vk_d.accelerationStructures.resultImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 		// create descriptor

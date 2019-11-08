@@ -1953,7 +1953,10 @@ void R_DeleteTextures(void) {
 	Com_Memset(tr.images, 0, sizeof(tr.images));
 
 	tr.numImages = 0;
-	if (glConfig.driverType == VULKAN) vk_d.size = 0;
+	if (glConfig.driverType == VULKAN) {
+		VK_DestroyImage(&vk_d.accelerationStructures.cubemap);
+		vk_d.size = 0;
+	}
 
 	Com_Memset(glState.currenttextures, 0, sizeof(glState.currenttextures));
 

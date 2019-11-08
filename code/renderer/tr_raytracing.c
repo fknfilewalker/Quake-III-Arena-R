@@ -138,9 +138,9 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) bAS->geometryInstance.mask = RTX_MIRROR_VISIBLE;
 	else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RTX_FIRST_PERSON_VISIBLE;
 	else bAS->geometryInstance.mask = RTX_FIRST_PERSON_MIRROR_VISIBLE;
-	if (tess.shader->isSky) {
-		bAS->geometryInstance.mask = RTX_SKY_VISIBLE;
-	}
+	//if (tess.shader->isSky) {
+	//	bAS->geometryInstance.mask = RTX_SKY_VISIBLE;
+	//}
 
 	bAS->geometryInstance.instanceOffset = 0;
 
@@ -176,6 +176,7 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 	// set if surface is a mirror
 	bAS->data.isMirror = tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL;
 	bAS->data.opaque = (tess.shader->sort <= SS_OPAQUE)/*tess.shader->sort == SS_OPAQUE || tess.shader->isSky*/;
+	bAS->data.isSky = tess.shader->isSky;
 
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&bAS->data);
 }
@@ -312,23 +313,13 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
 		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
 		if (shader->isSky /*|| shader->polygonOffset == qtrue*/) {
-			//continue;
+			continue;
 			int a = 2;
-		}
-		if (i != 795) {
-			int x = 2;
-			//continue;
 		}
 		forceUpdate = qfalse;
 		// just to clean backend state
 		RB_BeginSurface(shader, fogNum);
 
-		/*if (entityNum != ENTITYNUM_WORLD) {
-			if (drawSurf->bAS == NULL) {
-				int x = 2;
-			}
-		}*/
-		//if (tess.numIndexes == 0) continue;
 		float tM[12];
 		if (entityNum != ENTITYNUM_WORLD) {
 			backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
@@ -493,54 +484,58 @@ static void RB_TraceRays() {
 
 	VK_TraceRays(&vk_d.accelerationStructures.pipeline.shaderBindingTableBuffer);
 }
-
-void renderSky(drawSurf_t* drawSurfs, int numDrawSurfs) {
-	shader_t* shader;
-	int				fogNum;
-	int				entityNum;
-	int				dlighted;
-	int				i;
-	drawSurf_t* drawSurf;
-	float			originalTime;
-
-	// save original time for entity shader offsets
-	originalTime = backEnd.refdef.floatTime;
-	backEnd.currentEntity = &tr.worldEntity;
-
-	tr_api.SetViewportAndScissor();
-
-	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
-		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
-		if (!shader->isSky) {
-			continue;
-		}
-		if (i > 20)break;
-		// just to clean backend state
-		RB_BeginSurface(shader, fogNum);
-
-		if (entityNum != ENTITYNUM_WORLD) {
-			backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
-			backEnd.refdef.floatTime = originalTime - backEnd.currentEntity->e.shaderTime;
-			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
-			R_RotateForEntity(backEnd.currentEntity, &backEnd.viewParms, &backEnd. or );
-		} else {
-			backEnd.currentEntity = &tr.worldEntity;
-			backEnd.refdef.floatTime = originalTime;
-			backEnd. or = backEnd.viewParms.world;
-			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
-		}
-		// add the triangles for this surface
-		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
-
-		Com_Memcpy(vk_d.modelViewMatrix, backEnd. or .modelMatrix, 64);
-		RB_StageIteratorSky();
-	}
-	backEnd.refdef.floatTime = originalTime;
-}
+//
+//void renderSky(drawSurf_t* drawSurfs, int numDrawSurfs) {
+//	shader_t* shader;
+//	int				fogNum;
+//	int				entityNum;
+//	int				dlighted;
+//	int				i;
+//	drawSurf_t* drawSurf;
+//	float			originalTime;
+//
+//	// save original time for entity shader offsets
+//	originalTime = backEnd.refdef.floatTime;
+//	backEnd.currentEntity = &tr.worldEntity;
+//
+//	tr_api.SetViewportAndScissor();
+//
+//	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
+//		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
+//		if (!shader->isSky) {
+//			continue;
+//		}
+//		if (i > 20)break;
+//		// just to clean backend state
+//		RB_BeginSurface(shader, fogNum);
+//
+//		if (entityNum != ENTITYNUM_WORLD) {
+//			backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
+//			backEnd.refdef.floatTime = originalTime - backEnd.currentEntity->e.shaderTime;
+//			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+//			R_RotateForEntity(backEnd.currentEntity, &backEnd.viewParms, &backEnd. or );
+//		} else {
+//			backEnd.currentEntity = &tr.worldEntity;
+//			backEnd.refdef.floatTime = originalTime;
+//			backEnd. or = backEnd.viewParms.world;
+//			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+//		}
+//		// add the triangles for this surface
+//		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
+//
+//		Com_Memcpy(vk_d.modelViewMatrix, backEnd. or .modelMatrix, 64);
+//		RB_StageIteratorSky();
+//	}
+//	backEnd.refdef.floatTime = originalTime;
+//}
 
 void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
-	//renderSky(drawSurfs, numDrawSurfs);
+	VkMemoryBarrier memoryBarrier = { 0 };
 	vkCmdEndRenderPass(vk.swapchain.CurrentCommandBuffer());
+	//VK_BeginFramebuffer(&vk_d.accelerationStructures.resultFramebuffer);
+	//renderSky(drawSurfs, numDrawSurfs);
+	//VK_EndFramebuffer(&vk_d.accelerationStructures.resultFramebuffer);
+	//VK_CopySwapchainToImage(&vk_d.accelerationStructures.resultImage);
 
 	for (int i = 0; i < vk_d.bottomASDynamicCount[vk.swapchain.currentImage]; i++) {
 		VK_DestroyBottomAccelerationStructure(&vk_d.bottomASDynamicList[vk.swapchain.currentImage][i]);
@@ -559,14 +554,20 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	RB_UpdateRayTraceAS(drawSurfs, numDrawSurfs);
 	RB_TraceRays();
 
-	VkMemoryBarrier memoryBarrier = { 0 };
 	memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
 	memoryBarrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV| VK_ACCESS_MEMORY_WRITE_BIT;
-	memoryBarrier.dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+	memoryBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
 	vkCmdPipelineBarrier(vk.swapchain.CurrentCommandBuffer(), VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 1, &memoryBarrier, 0, 0, 0, 0);
+
+	/*memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+	memoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+	memoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+	vkCmdPipelineBarrier(vk.swapchain.CurrentCommandBuffer(), VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 1, &memoryBarrier, 0, 0, 0, 0);*/
+
 
 	// draw rt results to swap chain
 	VK_BeginRenderClear();
 	VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultImage);
+	//VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultFramebuffer.image);
 }
 

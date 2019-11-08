@@ -9,9 +9,16 @@ layout(binding = 0, set = 0) uniform accelerationStructureNV topLevelAS;
 
 layout(location = 0) rayPayloadInNV RayPayload rp;
 
-//layout(binding = 5) uniform samplerCube samplerCubeMap;
+layout(binding = 5) uniform samplerCube samplerCubeMap;
 //layout(binding = 5) uniform sampler2D samplerCubeMap;
 
+// convert from our coordinate system (looking down X)
+// to OpenGL's coordinate system (looking down -Z)
+mat3 s_flipMatrix = mat3(
+	0.0f, 0.0f, 1.0f,
+	-1.0f, 0.0f, 0.0f,
+	0.0f, 1.0f, 0.0f
+);
 /*
 vec2 sampleCube(vec3 v)
 {
@@ -43,17 +50,24 @@ vec2 sampleCube(vec3 v)
 
 void main()
 {
-	//rp.color = texture(samplerCubeMap, gl_WorldRayDirectionNV);
+	vec3 v =  s_flipMatrix * gl_WorldRayDirectionNV;
+	//float buf = -1 * v.z;
+	//v.z = v.x;
+	//v.x = buf;
+	//v.x = -1 * v.x;
+	rp.color = texture(samplerCubeMap, v);
 	//rp.color = texture(samplerCubeMap, sampleCube(gl_WorldRayDirectionNV.xyz));
-    
-    if(rp.miss == true) rp.color = vec4(0.0, 0.0, 0.2, 0);
+    //if(rp.miss == true) 
+    //rp.color = rp.skycolor;
+/*
+    if(rp.miss == true) rp.color = vec4(1, 0.0, 0, 0);
     else{
 	    rp.miss = true;
 	    uint rayFlags = 0;
 	    uint cullMask = SKY_VISIBLE;
 	    float tmin = 0.1;
 	    float tmax = 10000.0;
-	    traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, gl_WorldRayOriginNV, tmin, gl_WorldRayDirectionNV, tmax, 0);
+	    //traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, gl_WorldRayOriginNV, tmin, gl_WorldRayDirectionNV, tmax, 0);
 	}
-
+*/
 }

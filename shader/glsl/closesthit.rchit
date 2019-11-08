@@ -34,7 +34,7 @@ struct iData{
   uint blendfunc;
   bool isMirror;
   bool isOpaque;
-  float c;
+  bool isSky;
 };
 layout(binding = 4, set = 0) buffer Instance { iData data[]; } instanceData;
 
@@ -112,6 +112,7 @@ void main()
   rp.distance = gl_RayTmaxNV;
   rp.transparent = uint(instanceData.data[gl_InstanceID].texIdx2);
 
+
   // NORMAL
   vec3 AB = vertices.v[index.y].pos.xyz - vertices.v[index.x].pos.xyz;
   vec3 AC = vertices.v[index.z].pos.xyz - vertices.v[index.x].pos.xyz;
@@ -134,7 +135,7 @@ void main()
     uint rayFlags = gl_RayFlagsCullBackFacingTrianglesNV;// = gl_RayFlagsCullFrontFacingTrianglesNV ;
     float tmin = 0.01;
     float tmax = 10000.0;
-    traceNV(topLevelAS, rayFlags, rp.cullMask, 0, 0, 0, gl_WorldRayOriginNV + (gl_RayTmaxNV) * gl_WorldRayDirectionNV, tmin, gl_WorldRayDirectionNV, tmax, 0);
+    //traceNV(topLevelAS, rayFlags, rp.cullMask, 0, 0, 0, gl_WorldRayOriginNV + ((gl_RayTmaxNV+ 0.1) * gl_WorldRayDirectionNV), tmin, gl_WorldRayDirectionNV, tmax, 0);
   //rp.color = vec4(255,0,0,0);
   }
 

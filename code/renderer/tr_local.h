@@ -290,7 +290,7 @@ typedef struct {
 	uint32_t blendfunc;
 	qboolean isMirror;
 	qboolean opaque;
-	float c;
+	qboolean isSky;
 } ASInstanceData;
 typedef struct {
 	float          transform[12];
@@ -1165,6 +1165,17 @@ typedef struct {
 	vkdescriptor_t descriptor_set;
 }vkimage_t;
 
+typedef struct {
+	VkExtent2D					extent;
+	VkFormat					format;
+
+	vkimage_t					image;
+	vkimage_t					depth;
+	
+	VkRenderPass				renderPass;
+	VkFramebuffer				framebuffer;
+}vkframebuffer_t;
+
 // RTX
 #define RTX_FIRST_PERSON_VISIBLE			0x1
 #define RTX_MIRROR_VISIBLE					0x2
@@ -1215,6 +1226,7 @@ typedef struct {
 typedef struct {
 	vkbuffer_t					uniformBuffer;
 	vkimage_t					resultImage;
+	vkimage_t					cubemap;
 	vkrtpipeline_t				pipeline;
 	vkdescriptor_t				descriptor[3];
 } vkaccelerationStructures_t;

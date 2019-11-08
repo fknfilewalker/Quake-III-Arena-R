@@ -37,7 +37,13 @@ void main()
 	float tmax = 10000.0;
 
 	vec4 pixelColor = vec4(0,0,0,0);
+	cullMask = SKY_VISIBLE;
+	//traceNV(topLevelAS, rayFlags, rp.cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
+	//pixelColor += rp.color;
+
+	cullMask = FIRST_PERSON_VISIBLE;
 	rp.color = vec4(0,0,0,0);
+	//rp.skycolor = vec4(0,0,0,0);
 	rp.depth = 0;
 	rp.cullMask = FIRST_PERSON_VISIBLE;
 	traceNV(topLevelAS, rayFlags, rp.cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
