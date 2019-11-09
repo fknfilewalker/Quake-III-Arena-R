@@ -1,8 +1,7 @@
 #version 460
 #extension GL_NV_ray_tracing : require
 #extension GL_GOOGLE_include_directive : require
-#include "RayPayload.glsl"
-#include "RTBlend.glsl"
+#include "rt_defines.glsl"
 
 layout(push_constant) uniform PushConstant {
     layout(offset = 0) mat4 inverseView;
@@ -17,37 +16,31 @@ layout(location = 0) rayPayloadNV RayPayload rp;
 
 void main() 
 {
-
 	const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + vec2(0.5);
 	const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeNV.xy);
 	vec2 d = inUV * 2.0 - 1.0;
 
 	vec4 origin = vec4(position.xyz,1);
-	
 	vec4 target = inverseProj * vec4(d.x, d.y, -1, 1) ;
 	vec4 direction = inverseView*vec4(normalize(target.xyz), 0);
 
-	//vec3 n = vec3(0,1,0);
-	//direction.xyz = reflect(direction.xyz, reflectionNormal.xyz);
-
-	rp.miss = false;
 	uint rayFlags = gl_RayFlagsCullBackFacingTrianglesNV;// = /*gl_RayFlagsOpaqueNV | */gl_RayFlagsCullFrontFacingTrianglesNV ;
 	uint cullMask = FIRST_PERSON_VISIBLE;
 	float tmin = 0.01;
 	float tmax = 10000.0;
 
-	vec4 pixelColor = vec4(0,0,0,0);
-	cullMask = SKY_VISIBLE;
-	//traceNV(topLevelAS, rayFlags, rp.cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
-	//pixelColor += rp.color;
-
-	cullMask = FIRST_PERSON_VISIBLE;
+	// init payload
 	rp.color = vec4(0,0,0,0);
-	//rp.skycolor = vec4(0,0,0,0);
 	rp.depth = 0;
-	rp.cullMask = FIRST_PERSON_VISIBLE;
-	traceNV(topLevelAS, rayFlags, rp.cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
+	rp.distance = 0;
+	rp.cullMask = cullMask;
+
+	vec4 pixelColor = vec4(0,0,0,0);
+	traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
 	pixelColor += rp.color;
+
+	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(pixelColor.xyz, 1));
+}
 
 /*
 // Trace hit.
@@ -90,5 +83,5 @@ void main()
 		
 	//}
 	//traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz + (direction.xyz * rp.distance), tmin, direction.xyz, tmax, 0);
-	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(pixelColor.xyz, 1));
-}
+	
+//}

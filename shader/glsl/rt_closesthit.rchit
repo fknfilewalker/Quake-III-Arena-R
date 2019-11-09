@@ -2,9 +2,9 @@
 #extension GL_NV_ray_tracing : require
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_GOOGLE_include_directive : require
-#include "RayPayload.glsl"
-#include "RTHelper.glsl"
-#include "RTBlend.glsl"
+#include "rt_defines.glsl"
+#include "rt_Helper.glsl"
+
 
 
 layout(push_constant) uniform PushConstant {
@@ -86,9 +86,7 @@ float calcLOD(ivec3 index){
 
 void main()
 {
-  //rp.depth += 1;
-  //if(rp.depth > 2) return;
-  if(rp.depth > 3) return;
+  if(rp.depth > 6) return;
   rp.depth++;
 
   const vec3 barycentricCoords = getBarycentricCoordinates();
@@ -105,13 +103,11 @@ void main()
            vertices.v[index.z].color * barycentricCoords.z;
 
   // COLOR AND DISTANCE
-  vec4 color = /*(c/255) */ texture(tex[uint(uint(instanceData.data[gl_InstanceID].texIdx))], uv.xy);
-  //vec4 color = textureLod(tex[uint(uint(instanceData.data[gl_InstanceID].texIdx))], uv.xy, calcLOD(index));
+  vec4 color = /*(c/255) */ texture(tex[uint(uint(instanceData.data[gl_InstanceID].texIdx))], uv.xy); //calcLOD(index));
 	rp.color += color;//vec4(color.w, color.w, color.w, color.w);//barycentricCoords;
   rp.blendFunc = instanceData.data[gl_InstanceID].blendfunc;
   rp.distance = gl_RayTmaxNV;
   rp.transparent = uint(instanceData.data[gl_InstanceID].texIdx2);
-
 
   // NORMAL
   vec3 AB = vertices.v[index.y].pos.xyz - vertices.v[index.x].pos.xyz;
@@ -119,24 +115,20 @@ void main()
   rp.normal = vec4(normalize(cross(AB, AC)),1);//vertices.v[index.x].normal;
 
   if(instanceData.data[gl_InstanceID].isMirror == true){
-    //rp.color = vec4(255,0,0,0);
-
-    //gl_WorldRayOriginNV;
-    //gl_WorldRayDirectionNV;
-
     vec3 direction2 = reflect(gl_WorldRayDirectionNV, rp.normal.xyz);
-    uint rayFlags = gl_RayFlagsCullBackFacingTrianglesNV;// = /*gl_RayFlagsOpaqueNV | */gl_RayFlagsCullFrontFacingTrianglesNV ;
     rp.cullMask = MIRROR_VISIBLE;
+    uint rayFlags = gl_RayFlagsCullBackFacingTrianglesNV;// = /*gl_RayFlagsOpaqueNV | */gl_RayFlagsCullFrontFacingTrianglesNV ;
     float tmin = 0.01;
     float tmax = 10000.0;
     traceNV(topLevelAS, rayFlags, rp.cullMask, 0, 0, 0, gl_WorldRayOriginNV + gl_RayTmaxNV * gl_WorldRayDirectionNV, tmin, direction2, tmax, 0);
-  //
   } else if(instanceData.data[gl_InstanceID].isOpaque == false){
-    uint rayFlags = gl_RayFlagsCullBackFacingTrianglesNV;// = gl_RayFlagsCullFrontFacingTrianglesNV ;
+    uint rayFlags = 0;//gl_RayFlagsCullBackFacingTrianglesNV;// = gl_RayFlagsCullFrontFacingTrianglesNV ;
     float tmin = 0.01;
     float tmax = 10000.0;
-    //traceNV(topLevelAS, rayFlags, rp.cullMask, 0, 0, 0, gl_WorldRayOriginNV + ((gl_RayTmaxNV+ 0.1) * gl_WorldRayDirectionNV), tmin, gl_WorldRayDirectionNV, tmax, 0);
-  //rp.color = vec4(255,0,0,0);
+    traceNV(topLevelAS, rayFlags, rp.cullMask, 0, 0, 0, gl_WorldRayOriginNV + ((gl_RayTmaxNV+ 0.1) * gl_WorldRayDirectionNV), tmin, gl_WorldRayDirectionNV, tmax, 0);
   }
 
 }  
+
+//gl_WorldRayOriginNV;
+    //gl_WorldRayDirectionNV;

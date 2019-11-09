@@ -17,10 +17,10 @@
 #include "../../../shader/header/multiTextureMul.frag.h"
 
 // RTX
-#include "../../../shader/header/raygen.rgen.h"
-#include "../../../shader/header/miss.rmiss.h"
-#include "../../../shader/header/closesthit.rchit.h"
-#include "../../../shader/header/anyhit.rahit.h"
+#include "../../../shader/header/rt_raygen.rgen.h"
+#include "../../../shader/header/rt_miss.rmiss.h"
+#include "../../../shader/header/rt_closesthit.rchit.h"
+#include "../../../shader/header/rt_anyhit.rahit.h"
 
 static vkshader_t *singleTexture;
 static vkshader_t *singleTextureClip;
@@ -121,7 +121,7 @@ void VK_FullscreenRectShader(vkshader_t* shader) {
 void VK_RayTracingShader(vkshader_t* shader) {
 	if (rayTracing == NULL) {
 		rayTracing = malloc(sizeof(vkshader_t));
-		VK_LoadRayTracingShadersFromVariable(rayTracing, &raygenRGen, sizeof(raygenRGen), &missRMiss, sizeof(missRMiss), &closesthitRCHit, sizeof(closesthitRCHit));
+		VK_LoadRayTracingShadersFromVariable(rayTracing, &rt_raygenRGen, sizeof(rt_raygenRGen), &rt_missRMiss, sizeof(rt_missRMiss), &rt_closesthitRCHit, sizeof(rt_closesthitRCHit));
 	}
 	Com_Memcpy(shader, rayTracing, sizeof(vkshader_t));
 }
@@ -129,7 +129,7 @@ void VK_RayTracingShader(vkshader_t* shader) {
 void VK_RayTracingShaderWithAny(vkshader_t* shader) {
 	if (rayTracingAny == NULL) {
 		rayTracingAny = malloc(sizeof(vkshader_t));
-		VK_LoadRayTracingShadersWithAnyFromVariable(rayTracingAny, &raygenRGen, sizeof(raygenRGen), &missRMiss, sizeof(missRMiss), &closesthitRCHit, sizeof(closesthitRCHit), &anyhitRAHit, sizeof(anyhitRAHit));
+		VK_LoadRayTracingShadersWithAnyFromVariable(rayTracingAny, &rt_raygenRGen, sizeof(rt_raygenRGen), &rt_missRMiss, sizeof(rt_missRMiss), &rt_closesthitRCHit, sizeof(rt_closesthitRCHit), &rt_anyhitRAHit, sizeof(rt_anyhitRAHit));
 	}
 	Com_Memcpy(shader, rayTracingAny, sizeof(vkshader_t));
 }

@@ -364,20 +364,20 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		// handle dynamic objects
 		// sky
 		//if (i > 7 && i < 10) continue;
-		if (shader->isSky /*|| shader->polygonOffset == qtrue*/) {
-			//continue;
-			RB_ClipSkyPolygons(&tess);
-			// draw the outer skybox
-			if (tess.shader->sky.outerbox[0] && tess.shader->sky.outerbox[0] != tr.defaultImage) {
-				//DrawSkyBox(tess.shader);
-			}
-			// generate the vertexes for all the clouds, which will be drawn
-			// by the generic shader routine
-			R_BuildCloudData(&tess);
-			dynamic = qtrue;
-			forceUpdate = qfalse;
-			RB_CreateBottomAS(&drawSurf->bAS, dynamic);
-		}
+		//if (shader->isSky /*|| shader->polygonOffset == qtrue*/) {
+		//	//continue;
+		//	RB_ClipSkyPolygons(&tess);
+		//	// draw the outer skybox
+		//	if (tess.shader->sky.outerbox[0] && tess.shader->sky.outerbox[0] != tr.defaultImage) {
+		//		//DrawSkyBox(tess.shader);
+		//	}
+		//	// generate the vertexes for all the clouds, which will be drawn
+		//	// by the generic shader routine
+		//	R_BuildCloudData(&tess);
+		//	dynamic = qtrue;
+		//	forceUpdate = qfalse;
+		//	RB_CreateBottomAS(&drawSurf->bAS, dynamic);
+		//}
 
 		// blood ray projectile etc
 		if (drawSurf->bAS == NULL && tess.numIndexes == 6 && tess.numVertexes == 4){//backEnd.currentEntity->e.reType == RT_SPRITE) {RT_BEAM

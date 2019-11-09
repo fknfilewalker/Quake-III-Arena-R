@@ -1,8 +1,7 @@
 #version 460
 #extension GL_NV_ray_tracing : require
 #extension GL_GOOGLE_include_directive : require
-#include "RayPayload.glsl"
-#include "RTBlend.glsl"
+#include "rt_defines.glsl"
 
 
 layout(binding = 0, set = 0) uniform accelerationStructureNV topLevelAS;
@@ -19,6 +18,28 @@ mat3 s_flipMatrix = mat3(
 	-1.0f, 0.0f, 0.0f,
 	0.0f, 1.0f, 0.0f
 );
+
+void main()
+{
+	vec3 v = s_flipMatrix * gl_WorldRayDirectionNV;
+	rp.color += texture(samplerCubeMap, v);
+}
+
+//rp.color = texture(samplerCubeMap, sampleCube(gl_WorldRayDirectionNV.xyz));
+    //if(rp.miss == true) 
+    //rp.color = rp.skycolor;
+/*
+    if(rp.miss == true) rp.color = vec4(1, 0.0, 0, 0);
+    else{
+	    rp.miss = true;
+	    uint rayFlags = 0;
+	    uint cullMask = SKY_VISIBLE;
+	    float tmin = 0.1;
+	    float tmax = 10000.0;
+	    //traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, gl_WorldRayOriginNV, tmin, gl_WorldRayDirectionNV, tmax, 0);
+	}
+*/
+
 /*
 vec2 sampleCube(vec3 v)
 {
@@ -47,27 +68,3 @@ vec2 sampleCube(vec3 v)
 	return uv * ma + 0.5;
 }
 */
-
-void main()
-{
-	vec3 v =  s_flipMatrix * gl_WorldRayDirectionNV;
-	//float buf = -1 * v.z;
-	//v.z = v.x;
-	//v.x = buf;
-	//v.x = -1 * v.x;
-	rp.color = texture(samplerCubeMap, v);
-	//rp.color = texture(samplerCubeMap, sampleCube(gl_WorldRayDirectionNV.xyz));
-    //if(rp.miss == true) 
-    //rp.color = rp.skycolor;
-/*
-    if(rp.miss == true) rp.color = vec4(1, 0.0, 0, 0);
-    else{
-	    rp.miss = true;
-	    uint rayFlags = 0;
-	    uint cullMask = SKY_VISIBLE;
-	    float tmin = 0.1;
-	    float tmax = 10000.0;
-	    //traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, gl_WorldRayOriginNV, tmin, gl_WorldRayDirectionNV, tmax, 0);
-	}
-*/
-}
