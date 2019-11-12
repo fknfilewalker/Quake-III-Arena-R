@@ -175,7 +175,7 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 	bAS->data.blendfunc = (uint32_t)(tess.shader->stages[0]->stateBits);
 	// set if surface is a mirror
 	bAS->data.isMirror = tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL;
-	bAS->data.opaque = (tess.shader->sort <= SS_OPAQUE)/*tess.shader->sort == SS_OPAQUE || tess.shader->isSky*/;
+	bAS->data.opaque = tess.shader->sort;//(tess.shader->sort <= SS_OPAQUE)/*tess.shader->sort == SS_OPAQUE || tess.shader->isSky*/;
 	bAS->data.isSky = tess.shader->isSky;
 
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&bAS->data);

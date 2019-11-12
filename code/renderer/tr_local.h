@@ -289,7 +289,7 @@ typedef struct {
 	float texIdx2;
 	uint32_t blendfunc;
 	qboolean isMirror;
-	qboolean opaque;
+	float opaque;
 	qboolean isSky;
 } ASInstanceData;
 typedef struct {
@@ -1253,9 +1253,6 @@ typedef struct {
     
     // clip
     qboolean                                    clip;
-	qboolean									add;
-	qboolean									mul;
-    
 } vkrenderState_t;
 
 typedef struct {
@@ -1331,11 +1328,12 @@ typedef struct {
     float               modelViewMatrix[16];
 	float               projectionMatrix[16];
     float               mvp[16];
-    int                 discardModeAlpha;
+	uint32_t            discardModeAlpha;
 	float				clipPlane[4];
     
     // texture
-    int                 currentTexture[2];
+	uint32_t            currentTexture[2];
+	uint32_t			textureMode; // 0: default, 1: add, 2: mul
     // imagedescriptor
 	vkdescriptor_t		imageDescriptor;
 

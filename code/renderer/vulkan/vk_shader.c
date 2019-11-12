@@ -7,14 +7,11 @@
 #include "../../../shader/header/fullscreenRect.vert.h"
 #include "../../../shader/header/fullscreenRect.frag.h"
 
-#include "../../../shader/header/singleTexture.vert.h"
-#include "../../../shader/header/singleTextureClip.vert.h"
-#include "../../../shader/header/singleTexture.frag.h"
+#include "../../../shader/header/texture.vert.h"
+#include "../../../shader/header/textureClip.vert.h"
+#include "../../../shader/header/texture.frag.h"
 
-#include "../../../shader/header/multiTexture.vert.h"
-#include "../../../shader/header/multiTextureClip.vert.h"
-#include "../../../shader/header/multiTextureAdd.frag.h"
-#include "../../../shader/header/multiTextureMul.frag.h"
+
 
 // RTX
 #include "../../../shader/header/rt_raygen.rgen.h"
@@ -22,12 +19,8 @@
 #include "../../../shader/header/rt_closesthit.rchit.h"
 #include "../../../shader/header/rt_anyhit.rahit.h"
 
-static vkshader_t *singleTexture;
-static vkshader_t *singleTextureClip;
-static vkshader_t *multiTextureMul;
-static vkshader_t *multiTextureMulClip;
-static vkshader_t *multiTextureAdd;
-static vkshader_t *multiTextureAddClip;
+static vkshader_t *texture;
+static vkshader_t *textureClip;
 static vkshader_t *clearAttachment;
 static vkshader_t *fullscreenRect;
 // rtx
@@ -46,57 +39,21 @@ void VK_LoadRayTracingShadersWithAnyFromVariable(vkshader_t* shader, const char*
 	const char* rahitSPV, const uint32_t sizeRAHIT);
 
 void VK_SingleTextureShader(vkshader_t *shader){
-    if (singleTexture == NULL) {
-        singleTexture = malloc(sizeof(vkshader_t));
+    if (texture == NULL) {
+		texture = malloc(sizeof(vkshader_t));
 		//VK_LoadVertFragShadersFromFile(singleTexture, "../../shader/spv/singleTexture.vert.spv", "../../shader/spv/singleTexture.frag.spv");
-		VK_LoadVertFragShadersFromVariable(singleTexture, &singleTextureVert, sizeof(singleTextureVert), &singleTextureFrag, sizeof(singleTextureFrag));
+		VK_LoadVertFragShadersFromVariable(texture, &textureVert, sizeof(textureVert), &textureFrag, sizeof(textureFrag));
     }
-    Com_Memcpy(shader, singleTexture, sizeof(vkshader_t));
+    Com_Memcpy(shader, texture, sizeof(vkshader_t));
 }
 
 void VK_SingleTextureClipShader(vkshader_t* shader) {
-    if (singleTextureClip == NULL) {
-        singleTextureClip = malloc(sizeof(vkshader_t));
+    if (textureClip == NULL) {
+		textureClip = malloc(sizeof(vkshader_t));
 		//VK_LoadVertFragShadersFromFile(singleTextureClip, "../../shader/spv/singleTextureClip.vert.spv", "../../shader/spv/singleTexture.frag.spv");
-		VK_LoadVertFragShadersFromVariable(singleTextureClip, &singleTextureClipVert, sizeof(singleTextureClipVert), &singleTextureFrag, sizeof(singleTextureFrag));
+		VK_LoadVertFragShadersFromVariable(textureClip, &textureClipVert, sizeof(textureClipVert), &textureFrag, sizeof(textureFrag));
     }
-    Com_Memcpy(shader, singleTextureClip, sizeof(vkshader_t));
-}
-
-void VK_MultiTextureMulShader(vkshader_t *shader){
-    if (multiTextureMul == NULL) {
-        multiTextureMul = malloc(sizeof(vkshader_t));
-		//VK_LoadVertFragShadersFromFile(multiTextureMul, "../../shader/spv/multiTexture.vert.spv", "../../shader/spv/multiTextureMul.frag.spv");
-		VK_LoadVertFragShadersFromVariable(multiTextureMul, &multiTextureVert, sizeof(multiTextureVert), &multiTextureMulFrag, sizeof(multiTextureMulFrag));
-    }
-    Com_Memcpy(shader, multiTextureMul, sizeof(vkshader_t));
-}
-
-void VK_MultiTextureMulClipShader(vkshader_t* shader) {
-    if (multiTextureMulClip == NULL) {
-        multiTextureMulClip = malloc(sizeof(vkshader_t));
-		//VK_LoadVertFragShadersFromFile(multiTextureMulClip, "../../shader/spv/multiTextureClip.vert.spv", "../../shader/spv/multiTextureMul.frag.spv");
-		VK_LoadVertFragShadersFromVariable(multiTextureMulClip, &multiTextureClipVert, sizeof(multiTextureClipVert), &multiTextureMulFrag, sizeof(multiTextureMulFrag));
-    }
-    Com_Memcpy(shader, multiTextureMulClip, sizeof(vkshader_t));
-}
-
-void VK_MultiTextureAddShader(vkshader_t *shader){
-    if (multiTextureAdd == NULL) {
-        multiTextureAdd = malloc(sizeof(vkshader_t));
-		//VK_LoadVertFragShadersFromFile(multiTextureAdd, "../../shader/spv/multiTexture.vert.spv", "../../shader/spv/multiTextureAdd.frag.spv");
-		VK_LoadVertFragShadersFromVariable(multiTextureAdd, &multiTextureVert, sizeof(multiTextureVert), &multiTextureAddFrag, sizeof(multiTextureAddFrag));
-    }
-    Com_Memcpy(shader, multiTextureAdd, sizeof(vkshader_t));
-}
-
-void VK_MultiTextureAddClipShader(vkshader_t* shader) {
-    if (multiTextureAddClip == NULL) {
-        multiTextureAddClip = malloc(sizeof(vkshader_t));
-		//VK_LoadVertFragShadersFromFile(multiTextureAddClip, "../../shader/spv/multiTextureClip.vert.spv", "../../shader/spv/multiTextureAdd.frag.spv");
-		VK_LoadVertFragShadersFromVariable(multiTextureAddClip, &multiTextureClipVert, sizeof(multiTextureClipVert), &multiTextureAddFrag, sizeof(multiTextureAddFrag));
-    }
-    Com_Memcpy(shader, multiTextureAddClip, sizeof(vkshader_t));
+    Com_Memcpy(shader, textureClip, sizeof(vkshader_t));
 }
 
 void VK_ClearAttachmentShader(vkshader_t* shader) {
@@ -142,36 +99,16 @@ void VK_DestroyShader(vkshader_t* shader) {
 }
 
 void VK_DestroyAllShaders() {
-	if (singleTexture != NULL) {
-		VK_DestroyShader(singleTexture);
-		free(singleTexture);
-		singleTexture = NULL;
+	if (texture != NULL) {
+		VK_DestroyShader(texture);
+		free(texture);
+		texture = NULL;
 	}
-	if (singleTextureClip != NULL) {
-		VK_DestroyShader(singleTextureClip);
-		free(singleTextureClip);
-		singleTextureClip = NULL;
+	if (textureClip != NULL) {
+		VK_DestroyShader(textureClip);
+		free(textureClip);
+		textureClip = NULL;
 	}
-    if (multiTextureMul != NULL) {
-        VK_DestroyShader(multiTextureMul);
-        free(multiTextureMul);
-        multiTextureMul = NULL;
-    }
-    if (multiTextureMulClip != NULL) {
-        VK_DestroyShader(multiTextureMulClip);
-        free(multiTextureMulClip);
-        multiTextureMulClip = NULL;
-    }
-    if (multiTextureAdd != NULL) {
-        VK_DestroyShader(multiTextureAdd);
-        free(multiTextureAdd);
-        multiTextureAdd = NULL;
-    }
-    if (multiTextureAddClip != NULL) {
-        VK_DestroyShader(multiTextureAddClip);
-        free(multiTextureAddClip);
-        multiTextureAddClip = NULL;
-    }
 	if (clearAttachment != NULL) {
 		VK_DestroyShader(clearAttachment);
 		free(clearAttachment);

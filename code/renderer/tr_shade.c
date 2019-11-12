@@ -322,8 +322,7 @@ static void DrawMultitextured( shaderCommands_t *input, int stage ) {
 		vk_d.offset += input->numVertexes;
 		vk_d.offsetIdx += input->numIndexes;
 
-		vk_d.state.add = qfalse;
-		vk_d.state.mul = qfalse;
+		vk_d.textureMode = 0;
     }
 }
 

@@ -84,6 +84,7 @@ void VK_FinishPipeline(vkpipeline_t *pipeline){
 void VK_DestroyPipeline(vkpipeline_t* pipeline) {
 	free(pipeline->attributeDescription.p);
 	free(pipeline->bindingDescription.p);
+	free(pipeline->pushConstantRange.p);
 
     if (pipeline->layout) {
         vkDestroyPipelineLayout(vk.device, pipeline->layout, NULL);

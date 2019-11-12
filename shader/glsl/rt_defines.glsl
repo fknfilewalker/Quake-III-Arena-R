@@ -37,30 +37,30 @@ const uint GLS_DSTBLEND_ONE_MINUS_DST_ALPHA			= 0x00000080;
 const uint		GLS_DSTBLEND_BITS					= 0x000000f0;
 
 // for shaderSort_t
-const uint SS_BAD 									= 0x00000000u;
-const uint SS_PORTAL 								= 0x00000001u;	// mirrors, portals, viewscreens
-const uint SS_ENVIRONMENT 							= 0x00000002u;	// sky box
-const uint SS_OPAQUE 								= 0x00000003u;	// opaque
+const float SS_BAD 									= 0;
+const float SS_PORTAL 								= 1;	// mirrors, portals, viewscreens
+const float SS_ENVIRONMENT 							= 2;	// sky box
+const float SS_OPAQUE 								= 3;	// opaque
 
-const uint SS_DECAL 								= 0x00000004u;	// scorch marks, etc.
-const uint SS_SEE_THROUGH 							= 0x00000005u;	// ladders, grates, grills that may have small blended edges
+const float SS_DECAL 								= 4;	// scorch marks, etc.
+const float SS_SEE_THROUGH 							= 5;	// ladders, grates, grills that may have small blended edges
 																	// in addition to alpha test
-const uint SS_BANNER 								= 0x00000006u;
+const float SS_BANNER 								= 6;
 
-const uint SS_FOG 									= 0x00000007u;
+const float SS_FOG 									= 7;
 
-const uint SS_UNDERWATER 							= 0x00000008u;	// for items that should be drawn in front of the water plane
+const float SS_UNDERWATER 							= 8;	// for items that should be drawn in front of the water plane
 
-const uint SS_BLEND0 								= 0x00000009u;	// regular transparency and filters
-const uint SS_BLEND1 								= 0x0000000au;	// generally only used for additive type effects
-const uint SS_BLEND2 								= 0x0000000bu;
-const uint SS_BLEND3 								= 0x0000000cu;
+const float SS_BLEND0 								= 9;	// regular transparency and filters
+const float SS_BLEND1 								= 10;	// generally only used for additive type effects
+const float SS_BLEND2 								= 11;
+const float SS_BLEND3 								= 12;
 
-const uint SS_BLEND6 								= 0x0000000du;
-const uint SS_STENCIL_SHADOW 						= 0x0000000eu;
-const uint SS_ALMOST_NEAREST 						= 0x0000000fu;	// gun smoke puffs
+const float SS_BLEND6 								= 13;
+const float SS_STENCIL_SHADOW 						= 14;
+const float SS_ALMOST_NEAREST 						= 15;	// gun smoke puffs
 
-const uint SS_NEAREST 								= 0x00000010u;	// blood blobs
+const float SS_NEAREST 								= 16;	// blood blobs
 
 vec4 blendColor(vec4 src, vec4 dst, uint blendFunc){
 	vec4 srcBlend;

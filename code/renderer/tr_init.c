@@ -273,11 +273,11 @@ static void InitVulkan(void)
 
 		VK_CreateAttributeBuffer(&vk_d.geometry.idx, 4 * RTX_STATIC_INDEX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		VK_CreateAttributeBuffer(&vk_d.geometry.xyz, 5 * RTX_STATIC_XYZ_SIZE * 12 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[0], 10000 * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[1], 10000 * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[2], 10000 * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[0], 12000 * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[1], 12000 * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[2], 12000 * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		VK_CreateRayTracingASBuffer(&vk_d.basBuffer, 2000000000 * sizeof(byte));
-		VK_CreateRayTracingASBuffer(&vk_d.tasBuffer, 100 * 65536);
+		VK_CreateRayTracingASBuffer(&vk_d.tasBuffer, 1000 * 65536);
 		
 		VK_CreateRayTracingScratchBuffer(&vk_d.scratchBuffer, 5000000000 * sizeof(byte));
 		VK_CreateRayTracingBuffer(&vk_d.instanceBuffer,	15000 * sizeof(VkGeometryInstanceNV));

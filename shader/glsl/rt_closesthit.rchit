@@ -33,7 +33,7 @@ struct iData{
   float texIdx2;
   uint blendfunc;
   bool isMirror;
-  bool isOpaque;
+  float shaderSort;
   bool isSky;
 };
 layout(binding = 4, set = 0) buffer Instance { iData data[]; } instanceData;
@@ -121,7 +121,7 @@ void main()
     float tmin = 0.01;
     float tmax = 10000.0;
     traceNV(topLevelAS, rayFlags, rp.cullMask, 0, 0, 0, gl_WorldRayOriginNV + gl_RayTmaxNV * gl_WorldRayDirectionNV, tmin, direction2, tmax, 0);
-  } else if(instanceData.data[gl_InstanceID].isOpaque == false){
+  } else if(instanceData.data[gl_InstanceID].shaderSort > SS_OPAQUE){
     uint rayFlags = 0;//gl_RayFlagsCullBackFacingTrianglesNV;// = gl_RayFlagsCullFrontFacingTrianglesNV ;
     float tmin = 0.01;
     float tmax = 10000.0;
