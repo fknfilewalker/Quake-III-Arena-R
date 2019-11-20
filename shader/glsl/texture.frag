@@ -1,5 +1,7 @@
 #version 450
 #extension GL_EXT_nonuniform_qualifier : require
+#extension GL_GOOGLE_include_directive : require
+#include "constants.h"
 
 layout(push_constant) uniform PushConstant {
 	layout(offset = 144) uint textureType;
@@ -18,17 +20,17 @@ layout(location = 0) out vec4 fragColor;
 void main() {
 	switch(textureType)
     {
-		case 1: 
+		case TEXTURE_ADD: 
 			// multi texture add
 			vec4 color_a = frag_color * texture(tex[textureIdx1], v_uv1);
 			vec4 color_b = texture(tex[textureIdx2], v_uv2);
 			fragColor = vec4(color_a.rgb + color_b.rgb, color_a.a * color_b.a);
 			break;
-		case 2: 
+		case TEXTURE_MUL: 
 			// multi texture mul
 			fragColor = frag_color * texture(tex[textureIdx1], v_uv1) * texture(tex[textureIdx2], v_uv2);
 			break;
-		case 0: 
+		case TEXTURE_DEFAULT: 
 		default:
 			// single texture
 			fragColor = frag_color * texture(tex[textureIdx1], v_uv1.xy);

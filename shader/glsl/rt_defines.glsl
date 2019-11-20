@@ -1,18 +1,31 @@
+// struct RayPayload {
+// 	vec4 color;
+// 	vec4 normal;
+// 	uint blendFunc;
+// 	uint transparent;
+// 	float distance;
+// 	uint depth;
+// 	uint cullMask;
+// };
+#define PAYLOAD_BRDF 0
+
+#define ALBEDO_MULT 1.3
+
 struct RayPayload {
-	vec4 color;
-	vec4 normal;
-	uint blendFunc;
-	uint transparent;
-	float distance;
-	uint depth;
-	uint cullMask;
+	vec2 barycentric;
+	uint instanceID;
+	uint primitiveID;
+	float hit_distance;
+	vec4 transparent;
+	float max_transparent_distance;
 };
 
-// cullMask
-const uint FIRST_PERSON_VISIBLE 					= 0x00000001u;
-const uint MIRROR_VISIBLE 							= 0x00000002u;
-const uint FIRST_PERSON_MIRROR_VISIBLE 				= 0x00000003u;
-const uint SKY_VISIBLE 								= 0x00000004u;
+struct Ray {
+	vec3 origin, direction;
+	float t_min, t_max;
+};
+
+
 
 // blendBits
 const uint GLS_SRCBLEND_ZERO						= 0x00000001;

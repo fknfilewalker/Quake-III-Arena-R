@@ -594,7 +594,7 @@ void RE_UploadCinematic (int w, int h, int cols, int rows, const byte *data, int
             VK_SetSampler(&image->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image->sampler, image->view);
             VK_FinishDescriptor(&image->descriptor_set);
 
-			VK_SetSamplerPosition(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, image->sampler, image->view, tr.scratchImage[client]->index);
+			VK_SetSamplerPosition(&vk_d.imageDescriptor, 0, VK_GLOBAL_IMAGEARRAY_SHADER_STAGE_FLAGS, image->sampler, image->view, tr.scratchImage[client]->index);
 			VK_UpdateDescriptorSet(&vk_d.imageDescriptor);
         }
         else {

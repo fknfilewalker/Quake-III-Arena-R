@@ -127,10 +127,12 @@ qboolean VK_LoadDeviceFunctions(void)
     vkCmdSetDepthBias = VK_DEVICE_LEVEL_FUNCTION("vkCmdSetDepthBias");
     vkCmdSetBlendConstants = VK_DEVICE_LEVEL_FUNCTION("vkCmdSetBlendConstants");
 	vkCmdCopyImage = VK_DEVICE_LEVEL_FUNCTION("vkCmdCopyImage");
+	vkCmdDispatch = VK_DEVICE_LEVEL_FUNCTION("vkCmdDispatch");
 
     vkCreatePipelineCache = VK_DEVICE_LEVEL_FUNCTION("vkCreatePipelineCache");
     vkCreatePipelineLayout = VK_DEVICE_LEVEL_FUNCTION("vkCreatePipelineLayout");
     vkCreateGraphicsPipelines = VK_DEVICE_LEVEL_FUNCTION("vkCreateGraphicsPipelines");
+	vkCreateComputePipelines = VK_DEVICE_LEVEL_FUNCTION("vkCreateComputePipelines");
     
     vkCreateShaderModule = VK_DEVICE_LEVEL_FUNCTION("vkCreateShaderModule");
     vkCreateDescriptorSetLayout = VK_DEVICE_LEVEL_FUNCTION("vkCreateDescriptorSetLayout");

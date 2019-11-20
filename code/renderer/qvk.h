@@ -158,10 +158,12 @@ PFN_vkCmdClearAttachments                       vkCmdClearAttachments;
 PFN_vkCmdSetDepthBias                           vkCmdSetDepthBias;
 PFN_vkCmdSetBlendConstants                      vkCmdSetBlendConstants;
 PFN_vkCmdCopyImage								vkCmdCopyImage;
+PFN_vkCmdDispatch								vkCmdDispatch;
 
 PFN_vkCreatePipelineCache                       vkCreatePipelineCache;
 PFN_vkCreatePipelineLayout                      vkCreatePipelineLayout;
 PFN_vkCreateGraphicsPipelines                   vkCreateGraphicsPipelines;
+PFN_vkCreateComputePipelines					vkCreateComputePipelines;
 
 PFN_vkCreateShaderModule                        vkCreateShaderModule;
 PFN_vkCreateDescriptorSetLayout                 vkCreateDescriptorSetLayout;

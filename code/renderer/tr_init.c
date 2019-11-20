@@ -295,7 +295,7 @@ static void InitVulkan(void)
 
 		// descriptor for all texture array
 		vk_d.imageDescriptor.lastBindingVariableSizeExt = qtrue;
-		VK_AddSamplerCount(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, MAX_DRAWIMAGES);
+		VK_AddSamplerCount(&vk_d.imageDescriptor, 0, VK_GLOBAL_IMAGEARRAY_SHADER_STAGE_FLAGS, MAX_DRAWIMAGES);
 		VK_FinishDescriptorWithoutUpdate(&vk_d.imageDescriptor);
 
 		// device infos

@@ -1,47 +1,245 @@
 #version 460
 #extension GL_NV_ray_tracing : require
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : enable
 #include "rt_defines.glsl"
+#include "rt_helper.glsl"
+#include "rt_sky.glsl"
+#include "rt_vattributes.glsl"
+#include "rt_texture.glsl"
+#include "constants.h"
 
+// Push Constants
 layout(push_constant) uniform PushConstant {
     layout(offset = 0) mat4 inverseView;
     layout(offset = 64) mat4 inverseProj;
     layout(offset = 128) vec4 position;
 };
 
+// Bindings
 layout(binding = 0, set = 0) uniform accelerationStructureNV topLevelAS;
 layout(binding = 1, set = 0, rgba8) uniform image2D image;
 
+// Specific
 layout(location = 0) rayPayloadNV RayPayload rp;
+
+vec4
+global_textureGrad(uint idx, vec2 tex_coord, vec2 d_x, vec2 d_y)
+{
+	return textureGrad(texure_array[idx], tex_coord, d_x, d_y);
+}
+
+Ray get_primary_ray(vec2 pos_cs)
+{
+	vec4 v_near = inverseView * inverseProj * vec4(pos_cs, -1.0, 1.0);
+	vec4 v_far  = inverseView * inverseProj * vec4(pos_cs,  0.0, 1.0);
+	v_near /= v_near.w;
+	v_far  /= v_far.w;
+
+	Ray ray;
+	ray.origin = v_near.xyz;
+	ray.direction = normalize(v_far.xyz - v_near.xyz);
+	ray.t_min = 0.01;
+	ray.t_max = 10000.0;
+	return ray;
+}
+
+void trace_ray(Ray ray)
+{
+	const uint rayFlags = 0;//gl_RayFlagsOpaqueNV;// | gl_RayFlagsCullBackFacingTrianglesNV;
+	//const uint rayFlags = gl_RayFlagsOpaqueNV | gl_RayFlagsCullBackFacingTrianglesNV;
+	const uint cullMask = RAY_FIRST_PERSON_VISIBLE;
+	rp.transparent = vec4(0);
+	rp.max_transparent_distance = 0;
+
+	traceNV( topLevelAS, rayFlags, cullMask,
+			SBT_RCHIT_OPAQUE /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_PATH_TRACER /*missIndex*/,
+			ray.origin, ray.t_min, ray.direction, ray.t_max, PAYLOAD_BRDF);
+}
+
+vec4 path_tracer(){
+	const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + vec2(0.5);
+	const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeNV.xy);
+	const vec2 screen_coord_cs  = inUV * 2.0 - 1.0;
+
+	Ray ray;
+	ray.origin = position.xyz;
+	vec4 target = inverseProj * vec4(screen_coord_cs, -1, 1) ;
+	ray.direction = (inverseView*vec4(normalize(target.xyz), 0)).xyz;
+	ray.t_min = 0.01;
+	ray.t_max = 10000.0;
+
+	trace_ray(ray);
+	if(!found_intersection(rp)){
+		return sampleSky(ray.direction);
+	}
+
+	HitPoint hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+
+	vec4 color = vec4(0,0,0,0);
+
+	vec4 contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	color = alpha_blend_premultiplied(rp.transparent, contrib);
+	//color += contrib;
+	//color += rp.transparent;
+
+	const int num_bounces = 10;
+	for(int i = 0; i < num_bounces; i++) {
+		
+
+		// vec4 contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+		// // if object needs additional color it is probably because it just has a greyscale tesxture or needs the alpha for blending
+		// if((iData.data[rp.instanceID].type & S_TYPE_NEEDSCOLOR) > 0) {
+		// 	contrib *= (hp.color/255);
+		// 	//contrib = contrib * contrib.w;
+		// 	//color += contrib; 
+		// 	color = alpha_blend(color, contrib);
+		// 	//color = vec4(1,0,0,0);
+		// 	//break;
+		// 	//color = alpha_blend_premultiplied(color, contrib);
+		// } 
+		// //else if((iData.data[rp.instanceID].material & MATERIAL_FLAG_SEE_THROUGH) > 0){
+		// //	contrib *= (hp.color/255);
+		// 	//contrib = contrib * contrib.w;
+		// //	color = alpha_blend_premultiplied(color, contrib);
+		// //}
+		// // else if((iData.data[rp.instanceID].material & MATERIAL_FLAG_SEE_THROUGH) > 0){
+		// // 		//color = alpha_blend_premultiplied(color, contrib);
+		// // 	}
+		// else if ((iData.data[rp.instanceID].type & S_TYPE_OPAQUE) == 0)  {
+		// 	//contrib *= (hp.color/255);
+		// 	color += contrib; 
+		// } else {
+		// 	color += contrib; 
+		// }
+		// // 	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_SEE_THROUGH) > 0){
+		// // 		color = alpha_blend_premultiplied(color, contrib);
+		// // 	} else {
+		// // 		//contrib = contrib * contrib.w;
+		// // 		color = alpha_blend_premultiplied(contrib, color);
+		// // 		//color += contrib;
+		// // 		//color = blendColor(color, contrib, iData.data[rp.instanceID].blendfunc);
+		// // 	}
+		// // 	if(contrib.w == 1) {
+		// // 		//color = vec4(1,0,0,0);
+		// // 	//break;
+		// // 	}
+		// // 	//color = blendColor(color, contrib, iData.data[rp.instanceID].blendfunc);
+		// // }
+		// //color += contrib; 
+		// //if(iData.data[rp.instanceID].blendfunc == (GLS_SRCBLEND_ONE|GLS_DSTBLEND_ONE)){// || ( (iData.data[rp.instanceID].blendfunc & (GLS_SRCBLEND_BITS|GLS_DSTBLEND_BITS)) == 0 ) ) { 
+		// //else color = alpha_blend_premultiplied(color, contrib);
+		// //if( (iData.data[rp.instanceID].blendfunc & (GLS_SRCBLEND_BITS|GLS_DSTBLEND_BITS)) == 0 ){
+		// if((iData.data[rp.instanceID].material & MATERIAL_FLAG_SEE_THROUGH) > 0){
+		// 	color = vec4(1,0,0,0);
+		// 	break;
+		// }
+
+		// if((iData.data[rp.instanceID].material & MATERIAL_KIND_WATER) == MATERIAL_KIND_WATER){
+		// 	//color = vec4(1,0,0,0);
+		// 	//break;
+		// }
+
+		// if((iData.data[rp.instanceID].type & S_TYPE_OPAQUE) > 0 && (iData.data[rp.instanceID].type & S_TYPE_PARTICLE) == 0) break;
+		// //break;
+		// ray.origin += ray.direction * rp.hit_distance;
+		// trace_ray(ray);
+		// hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+	}
+	
+
+	//vec3 position = hp.pos;
+	//return c;
+
+	// vec3 throughput = vec3(1);
+	// vec3 direction = normalize(ray.direction);
+	// vec3 normal = normalize(hp.normal);
+
+	// const int num_bounces = 10;
+	// for(int i = 0; i < num_bounces; i++) {
+	// 	if(dot(direction, normal) > 0)
+	// 		normal = -normal;
+
+	// 	direction = reflect(direction, normal);
+	// 	trace_ray(Ray(position, direction, 0.01, 10000.0));
+
+	// 	if(!found_intersection(rp)) {
+	// 		vec3 env = sampleSky(ray.direction).xyz;
+	// 		contrib += env * throughput;
+	// 		break;
+	// 	}
+
+	// 	{
+	// 		hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+
+	// 		/* world-space */
+	// 		position       = hp.pos;
+	// 		normal         = normalize(hp.normal);
+
+	// 		contrib += texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv).xyz * throughput;
+	// 		throughput *= 0.8;
+
+	// 	}
+	// }
+
+	return vec4(color.xyz, false);
+}
 
 void main() 
 {
-	const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + vec2(0.5);
-	const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeNV.xy);
-	vec2 d = inUV * 2.0 - 1.0;
+	vec4 color = path_tracer();
+	// color.rgb = max(vec3(0), color.rgb);
+	// if(any(isnan(color.rgb)))
+	// 	color.rgb = vec3(0);
 
-	vec4 origin = vec4(position.xyz,1);
-	vec4 target = inverseProj * vec4(d.x, d.y, -1, 1) ;
-	vec4 direction = inverseView*vec4(normalize(target.xyz), 0);
+	// color.rgb = clamp_color(color.rgb, 128.0);
 
-	uint rayFlags = gl_RayFlagsCullBackFacingTrianglesNV;// = /*gl_RayFlagsOpaqueNV | */gl_RayFlagsCullFrontFacingTrianglesNV ;
-	uint cullMask = FIRST_PERSON_VISIBLE;
-	float tmin = 0.01;
-	float tmax = 10000.0;
+	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(color.xyz,1));
 
-	// init payload
-	rp.color = vec4(0,0,0,0);
-	rp.depth = 0;
-	rp.distance = 0;
-	rp.cullMask = cullMask;
-
-	vec4 pixelColor = vec4(0,0,0,0);
-	traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
-	pixelColor += rp.color;
-
-	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(pixelColor.xyz, 1));
+	
 }
 
+
+
+	
+	//pixelColor += rp.color;
+
+//traceNV(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
+	// init payload
+	//initPayload(rp);
+	// } else{
+	// 	HitPoint hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+	// 	vec4 c = texture(tex[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// 	if((iData.data[rp.instanceID].type & S_TYPE_NEEDSCOLOR) > 0){
+	// 		c = c * (hp.color/255);
+	// 	} 
+
+	// 	uint blendFunc = iData.data[rp.instanceID].blendfunc;
+
+	// 	if(iData.data[rp.instanceID].shaderSort > SS_OPAQUE){
+	// 		//c = vec4(1,0,0,0);
+	// 		ray.origin += ray.direction * rp.hit_distance;
+	// 		trace_ray(ray);
+	// 		if(!found_intersection(rp)){
+	// 			return sampleSky(ray.direction);
+	// 		}
+
+	// 		hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+	// 		if(blendFunc == (GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA)){
+	// 			vec4 c2 = /*(hp.color/255) */ texture(tex[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// 			if((iData.data[rp.instanceID].type & S_TYPE_NEEDSCOLOR) > 0) c2 = c2 * (hp.color/255);
+	// 			c = blendColor(c, c2, blendFunc );
+	// 		} else {
+	// 			c += /*(hp.color/255) */ texture(tex[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// 		}
+	// 		//c = ((hp.color/255) * c).wwww;
+	// 	}
+		// if(iData.data[rp.instanceID].shaderSort > SS_OPAQUE){
+		// ray.origin += ray.direction * rp.hit_distance;
+		// trace_ray(ray);
+		// hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+		// c += (hp.color/255) * texture(tex[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+		// }
 /*
 // Trace hit.
 		origin.xyz = origin.xyz + rp.distance * direction.xyz;

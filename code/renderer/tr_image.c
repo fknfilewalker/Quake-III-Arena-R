@@ -187,7 +187,7 @@ void VK_TextureMode(const char *string) {
             VK_SetSampler(&image->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, image->sampler, image->view);
             VK_UpdateDescriptorSet(&image->descriptor_set);
 
-			VK_SetSamplerPosition(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, image->sampler, image->view, glt->index);
+			VK_SetSamplerPosition(&vk_d.imageDescriptor, 0, VK_GLOBAL_IMAGEARRAY_SHADER_STAGE_FLAGS, image->sampler, image->view, glt->index);
 			vk_d.imageDescriptor.needsUpdate = qtrue;
 			//VK_UpdateDescriptorSet(&vk_d.imageDescriptor);
         }
@@ -858,8 +858,8 @@ image_t *R_CreateImage(const char *name, const byte *pic, int width, int height,
 	else if (glConfig.driverType == VULKAN) {
 		vk_d.images[image->index] = upload_vk_image(&upload_data, glWrapClampMode);
 		
-		VK_SetSamplerPosition(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.images[image->index].sampler, vk_d.images[image->index].view, image->index);
-		VK_SetUpdateSize(&vk_d.imageDescriptor, 0, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, image->index+1);
+		VK_SetSamplerPosition(&vk_d.imageDescriptor, 0, VK_GLOBAL_IMAGEARRAY_SHADER_STAGE_FLAGS, vk_d.images[image->index].sampler, vk_d.images[image->index].view, image->index);
+		VK_SetUpdateSize(&vk_d.imageDescriptor, 0, VK_GLOBAL_IMAGEARRAY_SHADER_STAGE_FLAGS, image->index+1);
 		vk_d.imageDescriptor.needsUpdate = qtrue;
 		//VK_UpdateDescriptorSet(&vk_d.imageDescriptor);
 	}

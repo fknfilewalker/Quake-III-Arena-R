@@ -1780,7 +1780,7 @@ qboolean R_GetEntityToken( char *buffer, int size ) {
 	}
 }
 
-static qboolean isTransparent(unsigned long stateBits)
+qboolean isTransparent(unsigned long stateBits)
 {
 	qboolean src = qfalse;
 	qboolean dst = qfalse;
@@ -1835,6 +1835,7 @@ static	void R_BuildAccelerationStructure() {
 	vec3_t origin = { 0,0,0 };
 	vec3_t left = { 1,0,0 };
 	vec3_t up = { 0,1,0 };
+	tess.shader->sort = 10;
 	RB_AddQuadStampExt(origin, left, up, tess.vertexColors, 0, 0, 1, 1);
 	RB_CreateBottomAS(NULL, qfalse);
 	tess.numVertexes = 0;
@@ -1856,6 +1857,7 @@ static	void R_BuildAccelerationStructure() {
 					VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1, 6);
 
 				R_LoadImage(shader->sky.outerbox[3]->imgName, &pic, &width, &height);
+				if (width == 0 || height == 0) goto skyFromStage;
 				VK_UploadImageData(&cubemap, width, height, pic, 4, 0, 0); // back
 
 				R_LoadImage(shader->sky.outerbox[1]->imgName, &pic, &width, &height);
@@ -1876,6 +1878,7 @@ static	void R_BuildAccelerationStructure() {
 				VK_UploadImageData(&cubemap, width, height, pic, 4, 0, 5);
 			}
 			else if (shader->stages[0] != NULL) {
+				skyFromStage:
 				width = shader->stages[0]->bundle[0].image[0]->width;
 				height = shader->stages[0]->bundle[0].image[0]->height;
 				VK_CreateCubeMap(&cubemap, width, height,
@@ -1926,20 +1929,20 @@ static	void R_BuildAccelerationStructure() {
 	VK_RayTracingShaderWithAny(&s);
 
 	for (i = 0; i < 3; i++) {
-		VK_AddAccelerationStructure(&vk_d.accelerationStructures.descriptor[i], 0, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_MISS_BIT_NV);
+		VK_AddAccelerationStructure(&vk_d.accelerationStructures.descriptor[i], 0, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_AddStorageImage(&vk_d.accelerationStructures.descriptor[i], 1, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 2, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 3, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 4, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_AddSampler(&vk_d.accelerationStructures.descriptor[i], 5, VK_SHADER_STAGE_MISS_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 2, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 3, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 4, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+		VK_AddSampler(&vk_d.accelerationStructures.descriptor[i], 5, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		
-		VK_SetAccelerationStructure(&vk_d.accelerationStructures.descriptor[i], 0, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_MISS_BIT_NV, &vk_d.topAS[i].accelerationStructure);
+		VK_SetAccelerationStructure(&vk_d.accelerationStructures.descriptor[i], 0, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.topAS[i].accelerationStructure);
 		VK_SetStorageImage(&vk_d.accelerationStructures.descriptor[i], 1, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultImage.view);
 		//VK_SetStorageImage(&vk_d.accelerationStructures.descriptor[i], 1, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultFramebuffer.image.view);
-		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 2, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz.buffer);
-		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 3, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx.buffer);
-		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 4, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.instanceDataBuffer[i].buffer);
-		VK_SetSampler(&vk_d.accelerationStructures.descriptor[i], 5, VK_SHADER_STAGE_MISS_BIT_NV, cubemap.sampler, cubemap.view);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 2, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz.buffer);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 3, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx.buffer);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 4, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.instanceDataBuffer[i].buffer);
+		VK_SetSampler(&vk_d.accelerationStructures.descriptor[i], 5, VK_SHADER_STAGE_RAYGEN_BIT_NV, cubemap.sampler, cubemap.view);
 		//VK_SetSampler(&vk_d.accelerationStructures.descriptor[i], 5, VK_SHADER_STAGE_MISS_BIT_NV, vk_d.images[120].sampler, vk_d.images[120].view);
 		VK_FinishDescriptor(&vk_d.accelerationStructures.descriptor[i]);
 	}

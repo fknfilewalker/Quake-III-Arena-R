@@ -1,4 +1,5 @@
 #include "tr_local.h"
+#include "../../shader/glsl/constants.h"
 
 /*
 glConfig.driverType == VULKAN && r_vertexLight->value == 2
@@ -135,14 +136,16 @@ void RB_CreateBottomAS(vkbottomAS_t** bAS, qboolean dynamic) {
 void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	bAS->geometryInstance.instanceCustomIndex = 0;
 	// set visibility for first and third person (eye and mirror)
-	if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) bAS->geometryInstance.mask = RTX_MIRROR_VISIBLE;
-	else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RTX_FIRST_PERSON_VISIBLE;
-	else bAS->geometryInstance.mask = RTX_FIRST_PERSON_MIRROR_VISIBLE;
+	if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) bAS->geometryInstance.mask = RAY_MIRROR_VISIBLE;
+	else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_VISIBLE;
+	else bAS->geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_VISIBLE;
 	//if (tess.shader->isSky) {
 	//	bAS->geometryInstance.mask = RTX_SKY_VISIBLE;
 	//}
 
-	bAS->geometryInstance.instanceOffset = 0;
+	if(bAS->data.type & S_TYPE_PARTICLE) bAS->geometryInstance.instanceOffset = 1;
+	else bAS->geometryInstance.instanceOffset = 0;
+	//bAS->geometryInstance.instanceOffset = 1;
 
 	switch (tess.shader->cullType) {
 	case CT_FRONT_SIDED:
@@ -172,11 +175,41 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 		bAS->data.texIdx = (float)tess.shader->stages[0]->bundle[0].image[indexAnim]->index;
 		tess.shader->stages[0]->bundle[0].image[indexAnim]->frameUsed = tr.frameCount;
 	}
+	if (tess.shader->stages[0]->bundle[1].image[0] != 0)
+	{
+		int x = 2;
+	}
+
+
 	bAS->data.blendfunc = (uint32_t)(tess.shader->stages[0]->stateBits);
+
+	bAS->data.material &= 0xfffffff0;
+	switch(tess.shader->contentFlags & 0x0000007f){
+		case CONTENTS_SOLID: bAS->data.material |= MATERIAL_KIND_REGULAR; break;
+		case CONTENTS_LAVA: bAS->data.material |= MATERIAL_KIND_LAVA; break;
+		case CONTENTS_SLIME: bAS->data.material |= MATERIAL_KIND_SLIME; break;
+		case CONTENTS_WATER: bAS->data.material |= MATERIAL_KIND_WATER; break;
+		case CONTENTS_FOG: bAS->data.material |= MATERIAL_KIND_FOG; break;
+		default: bAS->data.material |= MATERIAL_KIND_INVALID; break;
+	}
+	if (backEnd.currentEntity->e.reType & (RT_SPRITE) && 
+		(strstr(tess.shader->name, "rocketExplosion") || strstr(tess.shader->name, "plasma1"))) {
+		bAS->data.material |= MATERIAL_KIND_BULLET;
+	}
+
+
+	if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.material |= MATERIAL_FLAG_MIRROR;
+	if (tess.shader->sort <= SS_OPAQUE) bAS->data.material |= MATERIAL_FLAG_OPAQUE;
+	if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) {
+		bAS->data.material |= MATERIAL_FLAG_SEE_THROUGH;
+	}
+
 	// set if surface is a mirror
-	bAS->data.isMirror = tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL;
+	if(tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.type |= S_TYPE_MIRROR;
+	if(tess.shader->sort <= SS_OPAQUE && tess.shader->contentFlags != CONTENTS_TRANSLUCENT /*!strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "proto_grate4.tga")*/) bAS->data.type |= S_TYPE_OPAQUE;
+	//bAS->data.isMirror = tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL;
 	bAS->data.opaque = tess.shader->sort;//(tess.shader->sort <= SS_OPAQUE)/*tess.shader->sort == SS_OPAQUE || tess.shader->isSky*/;
-	bAS->data.isSky = tess.shader->isSky;
+	//bAS->data.isSky = tess.shader->isSky;
 
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&bAS->data);
 }
@@ -235,9 +268,12 @@ void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic, qboolean forceUpdate) {
 	}
 
 	if (deform) RB_DeformTessGeometry();
-	if (cTex) ComputeTexCoords(tess.shader->stages[0]);
+	if (cTex) {
+		ComputeTexCoords(tess.shader->stages[0]);
+		bAS->data.type |= S_TYPE_NEEDSCOLOR;
+		bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
+	}
 	ComputeColors(tess.shader->stages[0]);
-
 	
 	if (dynamic || frames || deform || cTex) {
 		for (int j = 0; j < tess.numIndexes; j++) {
@@ -258,7 +294,7 @@ void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic, qboolean forceUpdate) {
 				p[8] = (float)tess.svars.colors[j][0],
 				p[9] = (float)tess.svars.colors[j][1],
 				p[10] = (float)tess.svars.colors[j][2],
-				p[11] = 0
+				p[11] = (float)tess.svars.colors[j][3]
 			};
 			VK_UploadBufferDataOffset(&vk_d.geometry.xyz, currentAS->geometries.geometry.triangles.vertexOffset + (j * sizeof(float[12])), 12 * sizeof(float), (void*)&p);
 		}
@@ -312,10 +348,16 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	
 	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
 		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
-		if (shader->isSky /*|| shader->polygonOffset == qtrue*/) {
+
+		// SS_BLEND0 bullets, ball around energy, glow around armore shards, armor glow ,lights/fire
+		// SS_DECAL bullet marks
+		if (shader->isSky || shader->sort == SS_DECAL || strstr(shader->name, "Shadow")) {
 			continue;
 			int a = 2;
 		}
+		//if (strstr(shader->stages[0]->bundle->image[0]->imgName, "shinygrate1_4.tga")) {
+		//	int x = 2; // qboolean isTransparent(unsigned long stateBits)
+		//}
 		forceUpdate = qfalse;
 		// just to clean backend state
 		RB_BeginSurface(shader, fogNum);
@@ -351,16 +393,18 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 			dynamic = qfalse;
 		}
-		// add the triangles for this surface
-		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
-		
 		if (drawSurf->bAS == NULL && drawSurf->surface == SF_ENTITY) {
 			int x = 2;
 		}
-		if (backEnd.currentEntity->e.reType == RT_BEAM || backEnd.currentEntity->e.reType == RT_RAIL_CORE || backEnd.currentEntity->e.reType == RT_RAIL_RINGS) {
-			int x = 2;
-		}
+		if (backEnd.currentEntity->e.reType == RT_LIGHTNING) {
 
+		}
+		// add the triangles for this surface
+		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
+		
+		if (backEnd.currentEntity->e.reType & (RT_SPRITE)) {
+			int x;
+		}
 		// handle dynamic objects
 		// sky
 		//if (i > 7 && i < 10) continue;
@@ -384,6 +428,8 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			drawSurf->bAS = &vk_d.bottomASList[0];
 			dynamic = qtrue;
 			forceUpdate = qtrue;
+			drawSurf->bAS->data.type |= (S_TYPE_NEEDSCOLOR | S_TYPE_PARTICLE);
+			drawSurf->bAS->data.material |= (MATERIAL_FLAG_NEEDSCOLOR | MATERIAL_FLAG_PARTICLE);
 		}
 		// everything else
 		/*if (drawSurf->bAS == NULL && tess.shader->stages[0] != NULL) {
@@ -392,8 +438,9 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			RB_CreateBottomAS(&drawSurf->bAS, dynamic);
 		}*/
 		
-		if (drawSurf->bAS == NULL) continue;
-		
+		if (drawSurf->bAS == NULL) {
+			continue;
+		}
 		Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
 		RB_AddBottomAS(drawSurf->bAS, dynamic, forceUpdate);
 	}

@@ -286,11 +286,10 @@ typedef struct {
 	float offsetIdx;
 	float offsetXYZ;
 	float texIdx;
-	float texIdx2;
+	uint32_t material;
 	uint32_t blendfunc;
-	qboolean isMirror;
 	float opaque;
-	qboolean isSky;
+	uint32_t type;
 } ASInstanceData;
 typedef struct {
 	float          transform[12];
@@ -1011,6 +1010,8 @@ Vulkan
 #define VK_INDEX_DATA_SIZE 1024 * 1024
 #define VK_VERTEX_ATTRIBUTE_DATA_SIZE 512 * 1024
 
+#define VK_GLOBAL_IMAGEARRAY_SHADER_STAGE_FLAGS (VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV)
+
 // --Pipeline parts--
 typedef struct {
 	union {
@@ -1069,6 +1070,21 @@ typedef struct {
     } attributeDescription;
     
 } vkpipeline_t;
+
+typedef struct {
+	VkPipelineCache cache;
+	VkPipelineLayout layout;
+	VkPipeline handle;
+
+	vkdescriptor_t* descriptor;
+	vkdescriptor_t* descriptor2;
+	vkshader_t* shader;
+
+	struct {
+		size_t size;
+		VkPushConstantRange* p;
+	} pushConstantRange;
+} vkcpipeline_t;
 // ----------------
 
 typedef struct {
@@ -1175,12 +1191,6 @@ typedef struct {
 	VkRenderPass				renderPass;
 	VkFramebuffer				framebuffer;
 }vkframebuffer_t;
-
-// RTX
-#define RTX_FIRST_PERSON_VISIBLE			0x1
-#define RTX_MIRROR_VISIBLE					0x2
-#define RTX_FIRST_PERSON_MIRROR_VISIBLE		0x3
-#define RTX_SKY_VISIBLE						0x4
 
 typedef struct {
 	VkPipelineCache cache;

@@ -11,8 +11,6 @@
 #include "../../../shader/header/textureClip.vert.h"
 #include "../../../shader/header/texture.frag.h"
 
-
-
 // RTX
 #include "../../../shader/header/rt_raygen.rgen.h"
 #include "../../../shader/header/rt_miss.rmiss.h"

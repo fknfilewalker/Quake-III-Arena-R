@@ -1,0 +1,1 @@
+layout(binding = 0, set = 1) uniform sampler2D texure_array[];
