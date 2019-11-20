@@ -73,13 +73,12 @@ void RB_CreateBottomAS(vkbottomAS_t** bAS, qboolean dynamic) {
 		bASList->geometries.geometry.triangles.indexCount = tess.numIndexes;
 		bASList->geometries.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
 		bASList->geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
-		if (tess.shader->sort <= SS_OPAQUE) {
+		//if (tess.shader->sort <= SS_OPAQUE) {
 			bASList->geometries.flags = VK_GEOMETRY_OPAQUE_BIT_NV;
-		}
-		else {
+		//}
+		//else {
 			bASList->geometries.flags = 0;
-		}
-		
+		//}
 
 		// write idx
 		for (j = 0; j < tess.numIndexes; j++) {
@@ -139,12 +138,17 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) bAS->geometryInstance.mask = RAY_MIRROR_VISIBLE;
 	else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_VISIBLE;
 	else bAS->geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_VISIBLE;
-	//if (tess.shader->isSky) {
-	//	bAS->geometryInstance.mask = RTX_SKY_VISIBLE;
-	//}
+	
+	if (tess.shader->sort <= SS_OPAQUE) {
+		bAS->geometries.flags = VK_GEOMETRY_OPAQUE_BIT_NV;
+	}
+	else {
+		bAS->geometries.flags = 0;
+	}
 
-	if(bAS->data.type & S_TYPE_PARTICLE) bAS->geometryInstance.instanceOffset = 1;
+	if(bAS->data.type & S_TYPE_PARTICLE || tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1) bAS->geometryInstance.instanceOffset = 1;
 	else bAS->geometryInstance.instanceOffset = 0;
+	//bAS->geometryInstance.instanceOffset = ;
 	//bAS->geometryInstance.instanceOffset = 1;
 
 	switch (tess.shader->cullType) {
@@ -200,6 +204,7 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 
 	if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.material |= MATERIAL_FLAG_MIRROR;
 	if (tess.shader->sort <= SS_OPAQUE) bAS->data.material |= MATERIAL_FLAG_OPAQUE;
+	if (tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1) bAS->data.material |= MATERIAL_FLAG_TRANSPARENT;
 	if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) {
 		bAS->data.material |= MATERIAL_FLAG_SEE_THROUGH;
 	}

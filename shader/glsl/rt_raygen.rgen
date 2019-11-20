@@ -71,7 +71,7 @@ vec4 path_tracer(){
 
 	trace_ray(ray);
 	if(!found_intersection(rp)){
-		return sampleSky(ray.direction);
+		return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
 	}
 
 	HitPoint hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
@@ -80,6 +80,10 @@ vec4 path_tracer(){
 
 	vec4 contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
 	color = alpha_blend_premultiplied(rp.transparent, contrib);
+
+	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_TRANSPARENT) > 0){
+		color = vec4(1,0,0,0);
+	}
 	//color += contrib;
 	//color += rp.transparent;
 
