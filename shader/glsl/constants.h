@@ -37,11 +37,6 @@
 #define SBT_RAHIT_PARTICLE                  0x00000003
 
 // instance data type
-#define S_TYPE_OPAQUE 						0x00000001u
-#define S_TYPE_MIRROR 						0x00000002u
-#define S_TYPE_NEEDSCOLOR 					0x00000004u
-#define S_TYPE_PARTICLE 					0x00000008u
-
 
 /*
 #define MATERIAL_FLAG_LIGHT          0x08000000

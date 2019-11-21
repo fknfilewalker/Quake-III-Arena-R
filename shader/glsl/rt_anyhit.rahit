@@ -20,6 +20,10 @@ void main()
   // Explotion bullets etc
   if((iData.data[gl_InstanceID].material & MATERIAL_KIND_BULLET) == MATERIAL_KIND_BULLET){
     contrib = texture(texure_array[uint(uint(iData.data[gl_InstanceID].texIdx))], hp.uv);
+    if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_NEEDSCOLOR) > 0) {
+      contrib *= (hp.color/255);
+      //contrib.xyz *= contrib.w;
+    }
     //contrib *= (hp.color/255);
     contrib = vec4(contrib.xyz,0);
     if(rp.max_transparent_distance < gl_HitTNV)
@@ -28,7 +32,7 @@ void main()
       rp.transparent = alpha_blend_premultiplied(contrib, rp.transparent);
   }
   // blood smoke etc
-  else if((iData.data[gl_InstanceID].type & S_TYPE_PARTICLE) == S_TYPE_PARTICLE) {
+  else if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_PARTICLE) == MATERIAL_FLAG_PARTICLE) {
     contrib = texture(texure_array[uint(uint(iData.data[gl_InstanceID].texIdx))], hp.uv);
     if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_NEEDSCOLOR) > 0) {
       contrib *= (hp.color/255);

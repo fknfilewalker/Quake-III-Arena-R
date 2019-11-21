@@ -146,7 +146,7 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 		bAS->geometries.flags = 0;
 	}
 
-	if(bAS->data.type & S_TYPE_PARTICLE || tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1) bAS->geometryInstance.instanceOffset = 1;
+	if(bAS->data.material & MATERIAL_FLAG_PARTICLE || tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1) bAS->geometryInstance.instanceOffset = 1;
 	else bAS->geometryInstance.instanceOffset = 0;
 	//bAS->geometryInstance.instanceOffset = ;
 	//bAS->geometryInstance.instanceOffset = 1;
@@ -196,11 +196,24 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 		case CONTENTS_FOG: bAS->data.material |= MATERIAL_KIND_FOG; break;
 		default: bAS->data.material |= MATERIAL_KIND_INVALID; break;
 	}
-	if (backEnd.currentEntity->e.reType & (RT_SPRITE) && 
-		(strstr(tess.shader->name, "rocketExplosion") || strstr(tess.shader->name, "plasma1"))) {
+	if (backEnd.currentEntity->e.reType == (RT_SPRITE) && 
+		(strstr(tess.shader->name, "rocketExplosion") || strstr(tess.shader->name, "plasma1") || strstr(tess.shader->name, "grenadeExplosion") || strstr(tess.shader->name, "bfgExplosion"))) {
 		bAS->data.material |= MATERIAL_KIND_BULLET;
+		bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
+	}
+	if (backEnd.currentEntity->e.reType == RT_RAIL_CORE || backEnd.currentEntity->e.reType == RT_RAIL_RINGS || backEnd.currentEntity->e.reType == RT_LIGHTNING) {
+		bAS->data.material |= MATERIAL_KIND_BULLET;
+		bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
+	}
+	if (strstr(tess.shader->name, "railExplosion")) {
+		bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
+		bAS->data.material |= MATERIAL_FLAG_TRANSPARENT;
 	}
 
+	if(strstr(tess.shader->name, "railgun")) bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
+	if (strstr(tess.shader->name, "ring")) {
+		int x;
+	}
 
 	if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.material |= MATERIAL_FLAG_MIRROR;
 	if (tess.shader->sort <= SS_OPAQUE) bAS->data.material |= MATERIAL_FLAG_OPAQUE;
@@ -210,8 +223,9 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 	}
 
 	// set if surface is a mirror
-	if(tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.type |= S_TYPE_MIRROR;
-	if(tess.shader->sort <= SS_OPAQUE && tess.shader->contentFlags != CONTENTS_TRANSLUCENT /*!strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "proto_grate4.tga")*/) bAS->data.type |= S_TYPE_OPAQUE;
+	if(tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.material |= MATERIAL_FLAG_MIRROR;
+	if(tess.shader->sort <= SS_OPAQUE && tess.shader->contentFlags != CONTENTS_TRANSLUCENT /*!strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "proto_grate4.tga")*/) bAS->data.material |= MATERIAL_FLAG_OPAQUE;
+	
 	//bAS->data.isMirror = tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL;
 	bAS->data.opaque = tess.shader->sort;//(tess.shader->sort <= SS_OPAQUE)/*tess.shader->sort == SS_OPAQUE || tess.shader->isSky*/;
 	//bAS->data.isSky = tess.shader->isSky;
@@ -275,7 +289,6 @@ void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic, qboolean forceUpdate) {
 	if (deform) RB_DeformTessGeometry();
 	if (cTex) {
 		ComputeTexCoords(tess.shader->stages[0]);
-		bAS->data.type |= S_TYPE_NEEDSCOLOR;
 		bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
 	}
 	ComputeColors(tess.shader->stages[0]);
@@ -360,9 +373,6 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			continue;
 			int a = 2;
 		}
-		//if (strstr(shader->stages[0]->bundle->image[0]->imgName, "shinygrate1_4.tga")) {
-		//	int x = 2; // qboolean isTransparent(unsigned long stateBits)
-		//}
 		forceUpdate = qfalse;
 		// just to clean backend state
 		RB_BeginSurface(shader, fogNum);
@@ -402,7 +412,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			int x = 2;
 		}
 		if (backEnd.currentEntity->e.reType == RT_LIGHTNING) {
-
+			int x;
 		}
 		// add the triangles for this surface
 		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
@@ -433,8 +443,10 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			drawSurf->bAS = &vk_d.bottomASList[0];
 			dynamic = qtrue;
 			forceUpdate = qtrue;
-			drawSurf->bAS->data.type |= (S_TYPE_NEEDSCOLOR | S_TYPE_PARTICLE);
 			drawSurf->bAS->data.material |= (MATERIAL_FLAG_NEEDSCOLOR | MATERIAL_FLAG_PARTICLE);
+		}
+		if (shader->stages[0] != NULL && strstr(shader->stages[0]->bundle->image[0]->imgName, "ring")) {
+			int x = 2; // qboolean isTransparent(unsigned long stateBits)
 		}
 		// everything else
 		/*if (drawSurf->bAS == NULL && tess.shader->stages[0] != NULL) {
