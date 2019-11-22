@@ -1311,6 +1311,8 @@ typedef struct {
 
 	// RTX BUFFER
 	vkgeometry_t		geometry;
+	qboolean			hasPortal;
+	viewParms_t			portalOr;
 
 	// stores offset and stuff for in shader lookup
 	vkbuffer_t			instanceDataBuffer[3];
@@ -1325,6 +1327,8 @@ typedef struct {
 	VkDeviceSize		scratchBufferOffset;
 	vkbuffer_t			instanceBuffer; 
 	VkDeviceSize		instanceBufferOffset;
+
+	vkbuffer_t			uboBuffer[3];
     
     //
     qboolean            renderBegan;

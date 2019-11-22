@@ -135,9 +135,9 @@ void RB_CreateBottomAS(vkbottomAS_t** bAS, qboolean dynamic) {
 void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	bAS->geometryInstance.instanceCustomIndex = 0;
 	// set visibility for first and third person (eye and mirror)
-	if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) bAS->geometryInstance.mask = RAY_MIRROR_VISIBLE;
-	else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_VISIBLE;
-	else bAS->geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_VISIBLE;
+	if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) bAS->geometryInstance.mask = RAY_MIRROR_OPAQUE_VISIBLE;
+	else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_OPAQUE_VISIBLE;
+	else bAS->geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 	
 	if (tess.shader->sort <= SS_OPAQUE) {
 		bAS->geometries.flags = VK_GEOMETRY_OPAQUE_BIT_NV;
@@ -146,8 +146,15 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 		bAS->geometries.flags = 0;
 	}
 
-	if(bAS->data.material & MATERIAL_FLAG_PARTICLE || tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1) bAS->geometryInstance.instanceOffset = 1;
-	else bAS->geometryInstance.instanceOffset = 0;
+	if (bAS->data.material & MATERIAL_FLAG_PARTICLE || tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1) {
+		bAS->geometryInstance.instanceOffset = 1;
+		if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) bAS->geometryInstance.mask = RAY_MIRROR_PARTICLE_VISIBLE;
+		else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_PARTICLE_VISIBLE;
+		else bAS->geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_PARTICLE_VISIBLE;
+	}
+	else {
+		bAS->geometryInstance.instanceOffset = 0;
+	}
 	//bAS->geometryInstance.instanceOffset = ;
 	//bAS->geometryInstance.instanceOffset = 1;
 
@@ -209,13 +216,18 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 		bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
 		bAS->data.material |= MATERIAL_FLAG_TRANSPARENT;
 	}
+	if (tess.shader->sort == SS_DECAL) {
+		bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
+		bAS->data.material |= MATERIAL_KIND_BULLET;
+	}
 
 	if(strstr(tess.shader->name, "railgun")) bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
-	if (strstr(tess.shader->name, "ring")) {
+	if (strstr(tess.shader->name, "quad")) {
 		int x;
 	}
 
 	if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.material |= MATERIAL_FLAG_MIRROR;
+	else if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") == NULL) bAS->data.material |= MATERIAL_FLAG_PORTAL;
 	if (tess.shader->sort <= SS_OPAQUE) bAS->data.material |= MATERIAL_FLAG_OPAQUE;
 	if (tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1) bAS->data.material |= MATERIAL_FLAG_TRANSPARENT;
 	if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) {
@@ -223,7 +235,7 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 	}
 
 	// set if surface is a mirror
-	if(tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.material |= MATERIAL_FLAG_MIRROR;
+	//if(tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.material |= MATERIAL_FLAG_MIRROR;
 	if(tess.shader->sort <= SS_OPAQUE && tess.shader->contentFlags != CONTENTS_TRANSLUCENT /*!strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "proto_grate4.tga")*/) bAS->data.material |= MATERIAL_FLAG_OPAQUE;
 	
 	//bAS->data.isMirror = tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL;
@@ -366,6 +378,9 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	
 	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
 		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
+		if (strstr(shader->name, "models/mapobjects/console/under")) {
+			continue;
+		}
 
 		// SS_BLEND0 bullets, ball around energy, glow around armore shards, armor glow ,lights/fire
 		// SS_DECAL bullet marks
@@ -411,9 +426,8 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		if (drawSurf->bAS == NULL && drawSurf->surface == SF_ENTITY) {
 			int x = 2;
 		}
-		if (backEnd.currentEntity->e.reType == RT_LIGHTNING) {
-			int x;
-		}
+		
+
 		// add the triangles for this surface
 		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
 		
@@ -445,8 +459,12 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			forceUpdate = qtrue;
 			drawSurf->bAS->data.material |= (MATERIAL_FLAG_NEEDSCOLOR | MATERIAL_FLAG_PARTICLE);
 		}
-		if (shader->stages[0] != NULL && strstr(shader->stages[0]->bundle->image[0]->imgName, "ring")) {
+		if (shader->stages[0] != NULL && strstr(shader->stages[0]->bundle->image[0]->imgName, "models/mapobjects/console/under.tga")) {
 			int x = 2; // qboolean isTransparent(unsigned long stateBits)
+		}
+		if (i > 30) //continue;
+		if (strstr(shader->name, "wire")) {
+			//continue;
 		}
 		// everything else
 		/*if (drawSurf->bAS == NULL && tess.shader->stages[0] != NULL) {
@@ -470,6 +488,28 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	tess.numVertexes = 0;
 }
 
+static void RB_BuildViewMatrix(float *viewMatrix, float *origin, vec3_t *axis) {
+	viewMatrix[0] = axis[0][0];
+	viewMatrix[4] = axis[0][1];
+	viewMatrix[8] = axis[0][2];
+	viewMatrix[12] = -origin[0] * viewMatrix[0] + -origin[1] * viewMatrix[4] + -origin[2] * viewMatrix[8];
+
+	viewMatrix[1] = axis[1][0];
+	viewMatrix[5] = axis[1][1];
+	viewMatrix[9] = axis[1][2];
+	viewMatrix[13] = -origin[0] * viewMatrix[1] + -origin[1] * viewMatrix[5] + -origin[2] * viewMatrix[9];
+
+	viewMatrix[2] = axis[2][0];
+	viewMatrix[6] = axis[2][1];
+	viewMatrix[10] = axis[2][2];
+	viewMatrix[14] = -origin[0] * viewMatrix[2] + -origin[1] * viewMatrix[6] + -origin[2] * viewMatrix[10];
+
+	viewMatrix[3] = 0;
+	viewMatrix[7] = 0;
+	viewMatrix[11] = 0;
+	viewMatrix[15] = 1;
+}
+
 static void RB_TraceRays() {
 	static float	s_flipMatrix[16] = {
 		// convert from our coordinate system (looking down X)
@@ -481,12 +521,18 @@ static void RB_TraceRays() {
 	};
 
 	float	invViewMatrix[16];
+	float	invViewMatrixPortal[16];
 	float	invProjMatrix[16];
 
 	float	viewMatrix[16];
+	float	viewMatrixPortal[16];
 	float	viewMatrixFlipped[16];
+	float	viewMatrixFlippedPortal[16];
 	vec3_t	origin;	// player position
+	vec3_t	originPortal;	// portal position
 	VectorCopy(backEnd.viewParms. or .origin, origin);
+	//vk_d.portalOr. or .origin[2] += 100;
+	VectorCopy(vk_d.portalOr. or .origin, originPortal);
 
 	// projection matrix calculation
 	const float* p = backEnd.viewParms.projectionMatrix;
@@ -505,35 +551,29 @@ static void RB_TraceRays() {
 	};
 
 	// view
-	viewMatrix[0] = backEnd.viewParms. or .axis[0][0];
-	viewMatrix[4] = backEnd.viewParms. or .axis[0][1];
-	viewMatrix[8] = backEnd.viewParms. or .axis[0][2];
-	viewMatrix[12] = -origin[0] * viewMatrix[0] + -origin[1] * viewMatrix[4] + -origin[2] * viewMatrix[8];
-
-	viewMatrix[1] = backEnd.viewParms. or .axis[1][0];
-	viewMatrix[5] = backEnd.viewParms. or .axis[1][1];
-	viewMatrix[9] = backEnd.viewParms. or .axis[1][2];
-	viewMatrix[13] = -origin[0] * viewMatrix[1] + -origin[1] * viewMatrix[5] + -origin[2] * viewMatrix[9];
-
-	viewMatrix[2] = backEnd.viewParms. or .axis[2][0];
-	viewMatrix[6] = backEnd.viewParms. or .axis[2][1];
-	viewMatrix[10] = backEnd.viewParms. or .axis[2][2];
-	viewMatrix[14] = -origin[0] * viewMatrix[2] + -origin[1] * viewMatrix[6] + -origin[2] * viewMatrix[10];
-
-	viewMatrix[3] = 0;
-	viewMatrix[7] = 0;
-	viewMatrix[11] = 0;
-	viewMatrix[15] = 1;
+	RB_BuildViewMatrix(&viewMatrix[0], &origin, &backEnd.viewParms. or .axis);
 
 	// flip matrix for vulkan
 	myGlMultMatrix(viewMatrix, s_flipMatrix, viewMatrixFlipped);
-
 	// inverse view matrix
 	myGLInvertMatrix(&viewMatrixFlipped, &invViewMatrix);
 	// inverse proj matrix
 	myGLInvertMatrix(&projMatrix, &invProjMatrix);
+	
+	// view portal
+	if (vk_d.hasPortal) {
+		RB_BuildViewMatrix(&viewMatrixPortal[0], &originPortal, &vk_d.portalOr. or .axis);
+		myGlMultMatrix(viewMatrixPortal, s_flipMatrix, viewMatrixFlippedPortal);
+		myGLInvertMatrix(&viewMatrixFlippedPortal, &invViewMatrixPortal);
+		VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 16 * sizeof(float), 16 * sizeof(float), (void*)&invViewMatrixPortal[0]);
+	}
+
 	// mvp
 	myGlMultMatrix(&viewMatrixFlipped[0], projMatrix, vk_d.mvp);
+
+	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 0, 16 * sizeof(float), (void*)&invViewMatrix[0]);
+	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 32 * sizeof(float), 16 * sizeof(float), (void*)&invProjMatrix[0]);
+	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 48 * sizeof(float), 1 * sizeof(qboolean), (void*)&vk_d.hasPortal);
 
 	// bind rt pipeline
 	VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
@@ -541,9 +581,10 @@ static void RB_TraceRays() {
 	VK_Bind2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 
 	// push constants
-	VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0 * sizeof(float), 16 * sizeof(float), &invViewMatrix[0]);
-	VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 16 * sizeof(float), 16 * sizeof(float), &invProjMatrix[0]);
-	VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 32 * sizeof(float), sizeof(vec3_t), &origin);
+	//VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0 * sizeof(float), 16 * sizeof(float), &invViewMatrix[0]);
+	//VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 16 * sizeof(float), 16 * sizeof(float), &invProjMatrix[0]);
+	VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0 * sizeof(float), sizeof(vec3_t), &origin);
+	VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 4 * sizeof(float), sizeof(vec3_t), &originPortal);
 	VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, 40 * sizeof(float), 16 * sizeof(float), &vk_d.mvp[0]);
 
 	VK_TraceRays(&vk_d.accelerationStructures.pipeline.shaderBindingTableBuffer);

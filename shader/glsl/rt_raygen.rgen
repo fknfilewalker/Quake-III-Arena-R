@@ -11,14 +11,24 @@
 
 // Push Constants
 layout(push_constant) uniform PushConstant {
-    layout(offset = 0) mat4 inverseView;
-    layout(offset = 64) mat4 inverseProj;
-    layout(offset = 128) vec4 position;
+    //layout(offset = 0) mat4 inverseView;
+    //layout(offset = 64) mat4 inverseProj;
+    layout(offset = 0) vec4 position;
+	layout(offset = 16) vec4 positionPortal;
 };
 
 // Bindings
 layout(binding = 0, set = 0) uniform accelerationStructureNV topLevelAS;
 layout(binding = 1, set = 0, rgba8) uniform image2D image;
+
+
+layout(binding = 6, set = 0) uniform CameraProperties 
+{
+	mat4 inverseView; 
+	mat4 inverseViewPortal; 
+  	mat4 inverseProj;
+	  bool hasPortal;
+} ubo;
 
 // Specific
 layout(location = 0) rayPayloadNV RayPayload rp;
@@ -29,26 +39,26 @@ global_textureGrad(uint idx, vec2 tex_coord, vec2 d_x, vec2 d_y)
 	return textureGrad(texure_array[idx], tex_coord, d_x, d_y);
 }
 
-Ray get_primary_ray(vec2 pos_cs)
-{
-	vec4 v_near = inverseView * inverseProj * vec4(pos_cs, -1.0, 1.0);
-	vec4 v_far  = inverseView * inverseProj * vec4(pos_cs,  0.0, 1.0);
-	v_near /= v_near.w;
-	v_far  /= v_far.w;
+// Ray get_primary_ray(vec2 pos_cs)
+// {
+// 	vec4 v_near = inverseView * inverseProj * vec4(pos_cs, -1.0, 1.0);
+// 	vec4 v_far  = inverseView * inverseProj * vec4(pos_cs,  0.0, 1.0);
+// 	v_near /= v_near.w;
+// 	v_far  /= v_far.w;
 
-	Ray ray;
-	ray.origin = v_near.xyz;
-	ray.direction = normalize(v_far.xyz - v_near.xyz);
-	ray.t_min = 0.01;
-	ray.t_max = 10000.0;
-	return ray;
-}
+// 	Ray ray;
+// 	ray.origin = v_near.xyz;
+// 	ray.direction = normalize(v_far.xyz - v_near.xyz);
+// 	ray.t_min = 0.01;
+// 	ray.t_max = 10000.0;
+// 	return ray;
+// }
 
-void trace_ray(Ray ray)
+void trace_ray(Ray ray, uint cullMask)
 {
 	const uint rayFlags = 0;//gl_RayFlagsOpaqueNV;// | gl_RayFlagsCullBackFacingTrianglesNV;
 	//const uint rayFlags = gl_RayFlagsOpaqueNV | gl_RayFlagsCullBackFacingTrianglesNV;
-	const uint cullMask = RAY_FIRST_PERSON_VISIBLE;
+	//const uint cullMask = RAY_FIRST_PERSON_VISIBLE;
 	rp.transparent = vec4(0);
 	rp.max_transparent_distance = 0;
 
@@ -62,14 +72,19 @@ vec4 path_tracer(){
 	const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeNV.xy);
 	const vec2 screen_coord_cs  = inUV * 2.0 - 1.0;
 
+	// init ray
 	Ray ray;
 	ray.origin = position.xyz;
-	vec4 target = inverseProj * vec4(screen_coord_cs, -1, 1) ;
-	ray.direction = (inverseView*vec4(normalize(target.xyz), 0)).xyz;
+	vec4 target = ubo.inverseProj * vec4(screen_coord_cs, -1, 1) ;
+	ray.direction = (ubo.inverseView*vec4(normalize(target.xyz), 0)).xyz;
 	ray.t_min = 0.01;
 	ray.t_max = 10000.0;
 
-	trace_ray(ray);
+	// calc ray length
+	//trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE);
+	//ray.t_max = rp.hit_distance + 0.001;
+
+	trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
 	if(!found_intersection(rp)){
 		return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
 	}
@@ -77,15 +92,49 @@ vec4 path_tracer(){
 	HitPoint hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
 
 	vec4 color = vec4(0,0,0,0);
+	vec4 contrib = vec4(0,0,0,0);
 
-	vec4 contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
-	color = alpha_blend_premultiplied(rp.transparent, contrib);
+	//mirror
+	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_MIRROR) == MATERIAL_FLAG_MIRROR){
+		ray.origin = ray.origin + ray.direction * rp.hit_distance;
+		ray.direction = reflect(ray.direction, hp.normal);
+		trace_ray(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
+		hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
 
-	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_TRANSPARENT) > 0){
-		color = vec4(1,0,0,0);
+		if(!found_intersection(rp)){
+			return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
+		}
+
+		contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+		color = alpha_blend_premultiplied(rp.transparent, contrib);
+	} 
+	// else if(ubo.hasPortal && (iData.data[rp.instanceID].material & MATERIAL_FLAG_PORTAL) == MATERIAL_FLAG_PORTAL){
+	// 	ray.origin = positionPortal.xyz;
+	// 	target = ubo.inverseProj * vec4(screen_coord_cs, -1, 1) ;
+	// 	ray.direction = (ubo.inverseViewPortal*vec4(normalize(target.xyz), 0)).xyz;
+	// 	trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
+	// 	if(!found_intersection(rp)){
+	// 		return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
+	// 	}
+	// 	hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+	// 	return color = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// }
+	else {
+		contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+		color = alpha_blend_premultiplied(rp.transparent, contrib);
 	}
-	//color += contrib;
-	//color += rp.transparent;
+
+	// for see through objects we need another ray
+	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_SEE_THROUGH) > 0){
+		ray.origin = hp.pos;
+		trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
+		if(found_intersection(rp)){
+			hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+			contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+			vec4 color2 = alpha_blend_premultiplied(rp.transparent, contrib);
+			color =  alpha_blend_premultiplied(color, color2);
+		}
+	}
 
 	const int num_bounces = 10;
 	for(int i = 0; i < num_bounces; i++) {
@@ -192,11 +241,11 @@ vec4 path_tracer(){
 void main() 
 {
 	vec4 color = path_tracer();
-	// color.rgb = max(vec3(0), color.rgb);
-	// if(any(isnan(color.rgb)))
-	// 	color.rgb = vec3(0);
+	color.rgb = max(vec3(0), color.rgb);
+	if(any(isnan(color.rgb)))
+		color.rgb = vec3(0);
 
-	// color.rgb = clamp_color(color.rgb, 128.0);
+	color.rgb = clamp_color(color.rgb, 128.0);
 
 	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(color.xyz,1));
 
