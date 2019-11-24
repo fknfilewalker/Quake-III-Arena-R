@@ -146,7 +146,7 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 		bAS->geometries.flags = 0;
 	}
 
-	if (bAS->data.material & MATERIAL_FLAG_PARTICLE || tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1) {
+	if (bAS->data.material & MATERIAL_FLAG_PARTICLE || tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1 || tess.shader->sort == SS_DECAL) {
 		bAS->geometryInstance.instanceOffset = 1;
 		if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) bAS->geometryInstance.mask = RAY_MIRROR_PARTICLE_VISIBLE;
 		else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_PARTICLE_VISIBLE;
@@ -217,8 +217,8 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 		bAS->data.material |= MATERIAL_FLAG_TRANSPARENT;
 	}
 	if (tess.shader->sort == SS_DECAL) {
-		bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
-		bAS->data.material |= MATERIAL_KIND_BULLET;
+		//bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
+		bAS->data.material |= MATERIAL_FLAG_BULLET_MARK;
 	}
 
 	if(strstr(tess.shader->name, "railgun")) bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
@@ -384,7 +384,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 		// SS_BLEND0 bullets, ball around energy, glow around armore shards, armor glow ,lights/fire
 		// SS_DECAL bullet marks
-		if (shader->isSky || shader->sort == SS_DECAL || strstr(shader->name, "Shadow")) {
+		if (shader->isSky /* || shader->sort == SS_DECAL*/ || strstr(shader->name, "Shadow")) {
 			continue;
 			int a = 2;
 		}
@@ -431,6 +431,28 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		// add the triangles for this surface
 		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
 		
+		if (shader->sort == SS_DECAL) {
+			vec3_t a;
+			vec3_t b;
+			VectorSubtract(tess.xyz[0], tess.xyz[1], a);
+			VectorSubtract(tess.xyz[0], tess.xyz[2], b);
+
+			vec3_t normal;
+			CrossProduct(a, b, normal);
+			VectorNormalizeFast(normal);
+			for (int u = 0; u < tess.numVertexes; u++) {
+				tess.xyz[u][0] += 0.2f * normal[0];
+				tess.xyz[u][1] += 0.2f * normal[1];
+				tess.xyz[u][2] -= 0.2f * normal[2];
+			}
+			if (drawSurf->bAS == NULL && tess.numIndexes == 6 && tess.numVertexes == 4) {//backEnd.currentEntity->e.reType == RT_SPRITE) {RT_BEAM
+				drawSurf->bAS = &vk_d.bottomASList[0];
+				dynamic = qtrue;
+				forceUpdate = qtrue;
+				if (shader->stages[0]->stateBits == 65/*strstr(shader->name, "bullet_mrk") || strstr(shader->name, "burn_med_mrk")*/) drawSurf->bAS->data.material = MATERIAL_FLAG_BULLET_MARK;
+				else drawSurf->bAS->data.material = MATERIAL_FLAG_NEEDSCOLOR | MATERIAL_FLAG_PARTICLE;//MATERIAL_FLAG_BULLET_MARK;
+			}
+		}
 		if (backEnd.currentEntity->e.reType & (RT_SPRITE)) {
 			int x;
 		}
@@ -597,50 +619,6 @@ static void RB_TraceRays() {
 
 	VK_TraceRays(&vk_d.accelerationStructures.pipeline.shaderBindingTableBuffer);
 }
-//
-//void renderSky(drawSurf_t* drawSurfs, int numDrawSurfs) {
-//	shader_t* shader;
-//	int				fogNum;
-//	int				entityNum;
-//	int				dlighted;
-//	int				i;
-//	drawSurf_t* drawSurf;
-//	float			originalTime;
-//
-//	// save original time for entity shader offsets
-//	originalTime = backEnd.refdef.floatTime;
-//	backEnd.currentEntity = &tr.worldEntity;
-//
-//	tr_api.SetViewportAndScissor();
-//
-//	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
-//		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
-//		if (!shader->isSky) {
-//			continue;
-//		}
-//		if (i > 20)break;
-//		// just to clean backend state
-//		RB_BeginSurface(shader, fogNum);
-//
-//		if (entityNum != ENTITYNUM_WORLD) {
-//			backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
-//			backEnd.refdef.floatTime = originalTime - backEnd.currentEntity->e.shaderTime;
-//			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
-//			R_RotateForEntity(backEnd.currentEntity, &backEnd.viewParms, &backEnd. or );
-//		} else {
-//			backEnd.currentEntity = &tr.worldEntity;
-//			backEnd.refdef.floatTime = originalTime;
-//			backEnd. or = backEnd.viewParms.world;
-//			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
-//		}
-//		// add the triangles for this surface
-//		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
-//
-//		Com_Memcpy(vk_d.modelViewMatrix, backEnd. or .modelMatrix, 64);
-//		RB_StageIteratorSky();
-//	}
-//	backEnd.refdef.floatTime = originalTime;
-//}
 
 void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	VkMemoryBarrier memoryBarrier = { 0 };

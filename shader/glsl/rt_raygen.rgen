@@ -97,6 +97,9 @@ vec4 path_tracer(){
 
 	//mirror
 	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_MIRROR) == MATERIAL_FLAG_MIRROR){
+		contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+		color = alpha_blend_premultiplied(rp.transparent, contrib);
+
 		ray.origin = ray.origin + ray.direction * rp.hit_distance;
 		ray.direction = reflect(ray.direction, hp.normal);
 		trace_ray(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
@@ -107,7 +110,8 @@ vec4 path_tracer(){
 		}
 
 		contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
-		color = alpha_blend_premultiplied(rp.transparent, contrib);
+		vec4 color2 = alpha_blend_premultiplied(rp.transparent, contrib);
+		color =  alpha_blend_premultiplied(color, color2);
 	} 
 	// view through portal
 	else if(ubo.hasPortal && (iData.data[rp.instanceID].material & MATERIAL_FLAG_PORTAL) == MATERIAL_FLAG_PORTAL){
