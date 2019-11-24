@@ -726,17 +726,17 @@ const void	*RB_DrawSurfs( const void *data ) {
 	/*if(backEnd.viewParms.isPortal && !backEnd.viewParms.isMirror) {
 	return (const void*)(cmd + 1);
 	}*/
-	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && backEnd.viewParms.isPortal && !backEnd.viewParms.isMirror) {
+	/*if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && backEnd.viewParms.isPortal && !backEnd.viewParms.isMirror) {
 		backEnd.viewParms. or.origin[0] = backEnd.viewParms.pvsOrigin[0];
 		backEnd.viewParms. or .origin[1] = backEnd.viewParms.pvsOrigin[1];
 		backEnd.viewParms. or .origin[2] = backEnd.viewParms.pvsOrigin[2];
 		vk_d.portalOr = backEnd.viewParms;
 		vk_d.hasPortal = qtrue;
 		return (const void*)(cmd + 1);
-	}
+	}*/
 	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && !backEnd.viewParms.isPortal && backEnd.refdef.rdflags != RDF_NOWORLDMODEL && !backEnd.projection2D) {
 		RB_RayTraceScene(cmd->drawSurfs, cmd->numDrawSurfs);
-		vk_d.hasPortal = qfalse;
+		//vk_d.hasPortal = qfalse;
 		return (const void*)(cmd + 1);
 	}
 	else if(r_vertexLight->value != 2 || backEnd.refdef.rdflags == RDF_NOWORLDMODEL) RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );

@@ -27,7 +27,8 @@ layout(binding = 6, set = 0) uniform CameraProperties
 	mat4 inverseView; 
 	mat4 inverseViewPortal; 
   	mat4 inverseProj;
-	  bool hasPortal;
+	mat4 inverseProjPortal;
+	bool hasPortal;
 } ubo;
 
 // Specific
@@ -108,17 +109,18 @@ vec4 path_tracer(){
 		contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
 		color = alpha_blend_premultiplied(rp.transparent, contrib);
 	} 
-	// else if(ubo.hasPortal && (iData.data[rp.instanceID].material & MATERIAL_FLAG_PORTAL) == MATERIAL_FLAG_PORTAL){
-	// 	ray.origin = positionPortal.xyz;
-	// 	target = ubo.inverseProj * vec4(screen_coord_cs, -1, 1) ;
-	// 	ray.direction = (ubo.inverseViewPortal*vec4(normalize(target.xyz), 0)).xyz;
-	// 	trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
-	// 	if(!found_intersection(rp)){
-	// 		return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
-	// 	}
-	// 	hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
-	// 	return color = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
-	// }
+	// view through portal
+	else if(ubo.hasPortal && (iData.data[rp.instanceID].material & MATERIAL_FLAG_PORTAL) == MATERIAL_FLAG_PORTAL){
+		ray.origin = positionPortal.xyz;
+		target = ubo.inverseProjPortal * vec4(screen_coord_cs, -1, 1) ;
+		ray.direction = (ubo.inverseViewPortal*vec4(normalize(target.xyz), 0)).xyz;
+		trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
+		if(!found_intersection(rp)){
+			return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
+		}
+		hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+		return color = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	}
 	else {
 		contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
 		color = alpha_blend_premultiplied(rp.transparent, contrib);

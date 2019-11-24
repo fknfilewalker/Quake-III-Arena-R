@@ -1087,30 +1087,73 @@ qboolean R_MirrorViewBySurface (drawSurf_t *drawSurf, int entityNum) {
 	if (!tr.viewParms.isPortal && !tr.viewParms.isMirror) {
 		
 	}
-	// render the mirror view
-	if (qfalse && newParms.isMirror) {
-		VectorCopy(oldParms. or .origin, newParms. or .origin);
-		//VectorCopy(surface.origin, newParms. or .origin);
-		//newParms. or .origin[1] += 10;
-		VectorCopy(oldParms. or .axis[0], newParms. or .axis[0]);
-		VectorCopy(oldParms. or .axis[1], newParms. or .axis[1]);
-		VectorCopy(oldParms. or .axis[2], newParms. or .axis[2]);
-
-		vec3_t camToPortal;
-		VectorSubtract(surface.origin, newParms. or .origin, camToPortal);
-		
-		newParms.portalPlane.dist = DotProduct(newParms. or .origin, newParms.portalPlane.normal);
-
-		//newParms. or .origin[1] -= 500;
-
-		//VectorAdd(vec3_origin, newParms. or .axis[0], newParms.portalPlane.normal);
-
-		//newParms.portalPlane.normal[1] -= 0.3;
-		//VectorScale(camToPortal, newParms.portalPlane.dist, camToPortal);
-		//VectorAdd(newParms. or .origin, camToPortal, newParms. or .origin);
-		//VectorScale(newParms.portalPlane.normal, newParms.portalPlane.dist * camToPortal, newParms.portalPlane.normal);
-	}
+	
 	R_RenderView (&newParms);
+
+	tr.viewParms = oldParms;
+
+	return qtrue;
+}
+
+/*
+========================
+R_MirrorViewBySurface
+
+Returns qtrue if another view has been rendered
+========================
+*/
+qboolean R_MirrorViewBySurface2(drawSurf_t* drawSurf, int entityNum) {
+	vec4_t			clipDest[128];
+	viewParms_t		oldParms, newParms;
+	orientation_t	surface, camera;
+
+	// don't recursively mirror
+	if (tr.viewParms.isPortal) {
+		ri.Printf(PRINT_DEVELOPER, "WARNING: recursive mirror/portal found\n");
+		return qfalse;
+	}
+
+	if (r_noportals->integer || (r_fastsky->integer == 1)) {
+		return qfalse;
+	}
+
+	// trivially reject portal/mirror
+	if (SurfIsOffscreen(drawSurf, clipDest)) {
+		return qfalse;
+	}
+
+	// save old viewParms so we can return to it after the mirror view
+	oldParms = tr.viewParms;
+
+	newParms = tr.viewParms;
+	newParms.isPortal = qtrue;
+	if (!R_GetPortalOrientations(drawSurf, entityNum, &surface, &camera,
+		newParms.pvsOrigin, &newParms.isMirror)) {
+		return qfalse;		// bad portal, no portalentity
+	}
+
+	R_MirrorPoint(oldParms. or .origin, &surface, &camera, newParms. or .origin);
+
+	VectorSubtract(vec3_origin, camera.axis[0], newParms.portalPlane.normal);
+	newParms.portalPlane.dist = DotProduct(camera.origin, newParms.portalPlane.normal);
+
+	R_MirrorVector(oldParms. or .axis[0], &surface, &camera, newParms. or .axis[0]);
+	R_MirrorVector(oldParms. or .axis[1], &surface, &camera, newParms. or .axis[1]);
+	R_MirrorVector(oldParms. or .axis[2], &surface, &camera, newParms. or .axis[2]);
+
+	// OPTIMIZE: restrict the viewport on the mirrored view
+	tr.viewParms = newParms;
+	//R_SetupFrustum();
+	if (newParms.isPortal && newParms.isMirror) {
+		vk_d.mirrorInView = qtrue;
+		vk_d.mirrorViewParms = newParms;
+	}
+	if (newParms.isPortal && !newParms.isMirror) {
+		vk_d.portalInView = qtrue;
+		vk_d.portalViewParms = newParms;
+	}
+
+	//R_RenderView(&newParms);
 
 	tr.viewParms = oldParms;
 
@@ -1416,30 +1459,30 @@ void R_SortDrawSurfs( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	// sort the drawsurfs by sort type, then orientation, then shader
 	qsortFast (drawSurfs, numDrawSurfs, sizeof(drawSurf_t) );
 
-	// check for any pass through drawing, which
-	// may cause another view to be rendered first
-	for ( i = 0 ; i < numDrawSurfs ; i++ ) {
-		R_DecomposeSort( (drawSurfs+i)->sort, &entityNum, &shader, &fogNum, &dlighted );
+	if (r_vertexLight->value != 2) {
+		// check for any pass through drawing, which
+		// may cause another view to be rendered first
+		for (i = 0; i < numDrawSurfs; i++) {
+			R_DecomposeSort((drawSurfs + i)->sort, &entityNum, &shader, &fogNum, &dlighted);
 
-		if ( shader->sort > SS_PORTAL ) {
-			break;
-		}
-
-		// no shader should ever have this sort type
-		if ( shader->sort == SS_BAD ) {
-			ri.Error (ERR_DROP, "Shader '%s'with sort == SS_BAD", shader->name );
-		}
-
-		//if (r_vertexLight->value != 2) {
-		// if the mirror was completely clipped away, we may need to check another surface
-		if (R_MirrorViewBySurface((drawSurfs + i), entityNum)) {
-			// this is a debug option to see exactly what is being mirrored
-			if (r_portalOnly->integer) {
-				return;
+			if (shader->sort > SS_PORTAL) {
+				break;
 			}
-			break;		// only one mirror view at a time
+
+			// no shader should ever have this sort type
+			if (shader->sort == SS_BAD) {
+				ri.Error(ERR_DROP, "Shader '%s'with sort == SS_BAD", shader->name);
+			}
+
+			// if the mirror was completely clipped away, we may need to check another surface
+			if (R_MirrorViewBySurface((drawSurfs + i), entityNum)) {
+				// this is a debug option to see exactly what is being mirrored
+				if (r_portalOnly->integer) {
+					return;
+				}
+				break;		// only one mirror view at a time
+			}
 		}
-		//}
 	}
 
 	R_AddDrawSurfCmd( drawSurfs, numDrawSurfs );
@@ -1638,6 +1681,37 @@ void R_RenderView (viewParms_t *parms) {
 	R_SetupFrustum ();
 
 	R_GenerateDrawSurfs();
+
+	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
+		if (vk_d.portalInView) {
+			// set position to cull position and then back to actual view position
+			float x = vk_d.portalViewParms. or .origin[0];
+			float y = vk_d.portalViewParms. or .origin[1];
+			float z = vk_d.portalViewParms. or .origin[2];
+			vk_d.portalViewParms. or .origin[0] = vk_d.portalViewParms.pvsOrigin[0];
+			vk_d.portalViewParms. or .origin[1] = vk_d.portalViewParms.pvsOrigin[1];
+			vk_d.portalViewParms. or .origin[2] = vk_d.portalViewParms.pvsOrigin[2];
+
+			viewParms_t		oldParms = tr.viewParms;
+			tr.viewParms = vk_d.portalViewParms;
+			R_RotateForViewer();
+			R_SetupFrustum();
+			R_GenerateDrawSurfs();
+			tr.viewParms = oldParms;
+
+			vk_d.portalViewParms. or .origin[0] = x;
+			vk_d.portalViewParms. or .origin[1] = y;
+			vk_d.portalViewParms. or .origin[2] = z;
+		}
+		if (vk_d.mirrorInView) {
+			viewParms_t		oldParms = tr.viewParms;
+			tr.viewParms = vk_d.mirrorViewParms;
+			R_RotateForViewer();
+			R_SetupFrustum();
+			R_GenerateDrawSurfs();
+			tr.viewParms = oldParms;
+		}
+	}
 
 	R_SortDrawSurfs( tr.refdef.drawSurfs + firstDrawSurf, tr.refdef.numDrawSurfs - firstDrawSurf );
 

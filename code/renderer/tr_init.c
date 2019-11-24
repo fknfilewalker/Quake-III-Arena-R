@@ -278,9 +278,9 @@ static void InitVulkan(void)
 		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[2], 12000 * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		VK_CreateRayTracingASBuffer(&vk_d.basBuffer, 2000000000 * sizeof(byte));
 		VK_CreateRayTracingASBuffer(&vk_d.tasBuffer, 1000 * 65536);
-		VK_CreateUniformBuffer(&vk_d.uboBuffer[0], sizeof(qboolean) + 3 * 16 * sizeof(float));
-		VK_CreateUniformBuffer(&vk_d.uboBuffer[1], sizeof(qboolean) + 3 * 16 * sizeof(float));
-		VK_CreateUniformBuffer(&vk_d.uboBuffer[2], sizeof(qboolean) + 3 * 16 * sizeof(float));
+		VK_CreateUniformBuffer(&vk_d.uboBuffer[0], sizeof(qboolean) + 5 * 16 * sizeof(float));
+		VK_CreateUniformBuffer(&vk_d.uboBuffer[1], sizeof(qboolean) + 5 * 16 * sizeof(float));
+		VK_CreateUniformBuffer(&vk_d.uboBuffer[2], sizeof(qboolean) + 5 * 16 * sizeof(float));
 		
 		VK_CreateRayTracingScratchBuffer(&vk_d.scratchBuffer, 5000000000 * sizeof(byte));
 		VK_CreateRayTracingBuffer(&vk_d.instanceBuffer,	15000 * sizeof(VkGeometryInstanceNV));

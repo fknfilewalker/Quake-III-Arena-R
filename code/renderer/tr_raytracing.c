@@ -510,6 +510,22 @@ static void RB_BuildViewMatrix(float *viewMatrix, float *origin, vec3_t *axis) {
 	viewMatrix[15] = 1;
 }
 
+static void RB_BuildProjMatrix(float* projMatrix, float* p, float zFar) {
+	// update q3's proj matrix (opengl) to vulkan conventions: z - [0, 1] instead of [-1, 1] and invert y direction
+	float zNear = r_znear->value;
+	float P10 = -zFar / (zFar - zNear);
+	float P14 = -zFar * zNear / (zFar - zNear);
+	float P5 = -p[5];
+
+	float result[16] = {
+		p[0],  p[1],  p[2], p[3],
+		p[4],  P5,    p[6], p[7],
+		p[8],  p[9],  P10,  p[11],
+		p[12], p[13], P14,  p[15]
+	};
+	memcpy(projMatrix, &result, sizeof(result));
+}
+
 static void RB_TraceRays() {
 	static float	s_flipMatrix[16] = {
 		// convert from our coordinate system (looking down X)
@@ -520,39 +536,18 @@ static void RB_TraceRays() {
 		0, 0, 0, 1
 	};
 
+	vec3_t	origin;	// player position
+	VectorCopy(backEnd.viewParms. or .origin, origin);
+	float	viewMatrix[16];
+	float	viewMatrixFlipped[16];
 	float	invViewMatrix[16];
-	float	invViewMatrixPortal[16];
 	float	invProjMatrix[16];
 
-	float	viewMatrix[16];
-	float	viewMatrixPortal[16];
-	float	viewMatrixFlipped[16];
-	float	viewMatrixFlippedPortal[16];
-	vec3_t	origin;	// player position
-	vec3_t	originPortal;	// portal position
-	VectorCopy(backEnd.viewParms. or .origin, origin);
-	//vk_d.portalOr. or .origin[2] += 100;
-	VectorCopy(vk_d.portalOr. or .origin, originPortal);
-
-	// projection matrix calculation
-	const float* p = backEnd.viewParms.projectionMatrix;
-	// update q3's proj matrix (opengl) to vulkan conventions: z - [0, 1] instead of [-1, 1] and invert y direction
-	float zNear = r_znear->value;
-	float zFar = backEnd.viewParms.zFar;
-	float P10 = -zFar / (zFar - zNear);
-	float P14 = -zFar * zNear / (zFar - zNear);
-	float P5 = -p[5];
-
-	float projMatrix[16] = {
-		p[0],  p[1],  p[2], p[3],
-		p[4],  P5,    p[6], p[7],
-		p[8],  p[9],  P10,  p[11],
-		p[12], p[13], P14,  p[15]
-	};
-
-	// view
+	// projection matrix
+	float projMatrix[16];
+	RB_BuildProjMatrix(&projMatrix, backEnd.viewParms.projectionMatrix, backEnd.viewParms.zFar);
+	// viewMatrix
 	RB_BuildViewMatrix(&viewMatrix[0], &origin, &backEnd.viewParms. or .axis);
-
 	// flip matrix for vulkan
 	myGlMultMatrix(viewMatrix, s_flipMatrix, viewMatrixFlipped);
 	// inverse view matrix
@@ -561,11 +556,24 @@ static void RB_TraceRays() {
 	myGLInvertMatrix(&projMatrix, &invProjMatrix);
 	
 	// view portal
-	if (vk_d.hasPortal) {
-		RB_BuildViewMatrix(&viewMatrixPortal[0], &originPortal, &vk_d.portalOr. or .axis);
+	vec3_t	originPortal;	// portal position
+	//VectorCopy(vk_d.portalViewParms.pvsOrigin, originPortal);
+	VectorCopy(vk_d.portalViewParms. or .origin, originPortal);
+	if (vk_d.portalInView) {
+		float	invViewMatrixPortal[16];
+		float	viewMatrixPortal[16];
+		float	viewMatrixFlippedPortal[16];
+		float	projMatrixPortal[16];
+		float	invProjMatrixPortal[16];
+
+		RB_BuildProjMatrix(&projMatrixPortal, vk_d.portalViewParms.projectionMatrix, vk_d.portalViewParms.zFar);
+		myGLInvertMatrix(&projMatrixPortal, &invProjMatrixPortal);
+
+		RB_BuildViewMatrix(&viewMatrixPortal[0], &originPortal, &vk_d.portalViewParms. or .axis);
 		myGlMultMatrix(viewMatrixPortal, s_flipMatrix, viewMatrixFlippedPortal);
 		myGLInvertMatrix(&viewMatrixFlippedPortal, &invViewMatrixPortal);
 		VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 16 * sizeof(float), 16 * sizeof(float), (void*)&invViewMatrixPortal[0]);
+		VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 48 * sizeof(float), 16 * sizeof(float), (void*)&invProjMatrixPortal[0]);
 	}
 
 	// mvp
@@ -573,7 +581,7 @@ static void RB_TraceRays() {
 
 	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 0, 16 * sizeof(float), (void*)&invViewMatrix[0]);
 	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 32 * sizeof(float), 16 * sizeof(float), (void*)&invProjMatrix[0]);
-	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 48 * sizeof(float), 1 * sizeof(qboolean), (void*)&vk_d.hasPortal);
+	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 64 * sizeof(float), 1 * sizeof(qboolean), (void*)&vk_d.portalInView);
 
 	// bind rt pipeline
 	VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
@@ -670,6 +678,8 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	vkCmdPipelineBarrier(vk.swapchain.CurrentCommandBuffer(), VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 1, &memoryBarrier, 0, 0, 0, 0);*/
 
 
+	vk_d.portalInView = qfalse;
+	vk_d.mirrorInView = qfalse;
 	// draw rt results to swap chain
 	VK_BeginRenderClear();
 	VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultImage);
