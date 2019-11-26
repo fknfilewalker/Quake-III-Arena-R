@@ -1142,7 +1142,6 @@ qboolean R_MirrorViewBySurface2(drawSurf_t* drawSurf, int entityNum) {
 	R_MirrorVector(oldParms. or .axis[2], &surface, &camera, newParms. or .axis[2]);
 
 	// OPTIMIZE: restrict the viewport on the mirrored view
-	tr.viewParms = newParms;
 	//R_SetupFrustum();
 	if (newParms.isPortal && newParms.isMirror) {
 		vk_d.mirrorInView = qtrue;
@@ -1676,12 +1675,13 @@ void R_RenderView (viewParms_t *parms) {
 	tr.viewCount++;
 
 	// set viewParms.world
+	r_nocull->integer = 1;
 	R_RotateForViewer ();
 
 	R_SetupFrustum ();
 
 	R_GenerateDrawSurfs();
-
+	r_nocull->integer = 0;
 	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
 		if (vk_d.portalInView) {
 			// set position to cull position and then back to actual view position
@@ -1694,9 +1694,12 @@ void R_RenderView (viewParms_t *parms) {
 
 			viewParms_t		oldParms = tr.viewParms;
 			tr.viewParms = vk_d.portalViewParms;
+			//tr.viewParms.fovX *= 1.2;
+			//tr.viewParms.fovY *= 1.2;
 			R_RotateForViewer();
 			R_SetupFrustum();
 			R_GenerateDrawSurfs();
+
 			tr.viewParms = oldParms;
 
 			vk_d.portalViewParms. or .origin[0] = x;
@@ -1706,9 +1709,15 @@ void R_RenderView (viewParms_t *parms) {
 		if (vk_d.mirrorInView) {
 			viewParms_t		oldParms = tr.viewParms;
 			tr.viewParms = vk_d.mirrorViewParms;
+			//tr.viewParms.fovX *= 0.2;
+			//tr.viewParms.fovY *= 10;
 			R_RotateForViewer();
 			R_SetupFrustum();
+			/*cplane_t buf = tr.viewParms.frustum[0];
+			tr.viewParms.frustum[0] = tr.viewParms.frustum[1];
+			tr.viewParms.frustum[1] = buf;*/
 			R_GenerateDrawSurfs();
+			//vk_d.mirrorViewParms = tr.viewParms;
 			tr.viewParms = oldParms;
 		}
 	}

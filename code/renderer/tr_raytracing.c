@@ -139,6 +139,11 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_OPAQUE_VISIBLE;
 	else bAS->geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 	
+	// --special cases
+	if (strstr(tess.shader->name, "hologirl")) {
+		//tess.shader->sort = SS_BLEND0;
+	}
+	// --
 	if (tess.shader->sort <= SS_OPAQUE) {
 		bAS->geometries.flags = VK_GEOMETRY_OPAQUE_BIT_NV;
 	}
@@ -203,6 +208,7 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 		case CONTENTS_FOG: bAS->data.material |= MATERIAL_KIND_FOG; break;
 		default: bAS->data.material |= MATERIAL_KIND_INVALID; break;
 	}
+	// --special cases
 	if (backEnd.currentEntity->e.reType == (RT_SPRITE) && 
 		(strstr(tess.shader->name, "rocketExplosion") || strstr(tess.shader->name, "plasma1") || strstr(tess.shader->name, "grenadeExplosion") || strstr(tess.shader->name, "bfgExplosion"))) {
 		bAS->data.material |= MATERIAL_KIND_BULLET;
@@ -225,6 +231,7 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 	if (strstr(tess.shader->name, "quad")) {
 		int x;
 	}
+	// --
 
 	if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.material |= MATERIAL_FLAG_MIRROR;
 	else if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") == NULL) bAS->data.material |= MATERIAL_FLAG_PORTAL;
@@ -234,10 +241,16 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 		bAS->data.material |= MATERIAL_FLAG_SEE_THROUGH;
 	}
 
+	// --
 	// set if surface is a mirror
 	//if(tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.material |= MATERIAL_FLAG_MIRROR;
 	if(tess.shader->sort <= SS_OPAQUE && tess.shader->contentFlags != CONTENTS_TRANSLUCENT /*!strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "proto_grate4.tga")*/) bAS->data.material |= MATERIAL_FLAG_OPAQUE;
 	
+	// --special cases
+	if (strstr(tess.shader->name, "hologirl")) {
+		bAS->data.material = MATERIAL_FLAG_SEE_THROUGH;
+		//bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
+	}
 	//bAS->data.isMirror = tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL;
 	bAS->data.opaque = tess.shader->sort;//(tess.shader->sort <= SS_OPAQUE)/*tess.shader->sort == SS_OPAQUE || tess.shader->isSky*/;
 	//bAS->data.isSky = tess.shader->isSky;
@@ -432,6 +445,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
 		
 		if (shader->sort == SS_DECAL) {
+			continue;
 			vec3_t a;
 			vec3_t b;
 			VectorSubtract(tess.xyz[0], tess.xyz[1], a);
@@ -441,15 +455,15 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			CrossProduct(a, b, normal);
 			VectorNormalizeFast(normal);
 			for (int u = 0; u < tess.numVertexes; u++) {
-				tess.xyz[u][0] += 0.2f * normal[0];
-				tess.xyz[u][1] += 0.2f * normal[1];
-				tess.xyz[u][2] -= 0.2f * normal[2];
+				tess.xyz[u][0] += 0.5f * normal[0];
+				tess.xyz[u][1] += 0.5f * normal[1];
+				tess.xyz[u][2] -= 0.5f * normal[2];
 			}
 			if (drawSurf->bAS == NULL && tess.numIndexes == 6 && tess.numVertexes == 4) {//backEnd.currentEntity->e.reType == RT_SPRITE) {RT_BEAM
 				drawSurf->bAS = &vk_d.bottomASList[0];
 				dynamic = qtrue;
 				forceUpdate = qtrue;
-				if (shader->stages[0]->stateBits == 65/*strstr(shader->name, "bullet_mrk") || strstr(shader->name, "burn_med_mrk")*/) drawSurf->bAS->data.material = MATERIAL_FLAG_BULLET_MARK;
+				if (shader->stages[0]->stateBits == 65/*strstr(shader->name, "bullet_mrk") || strstr(shader->name, "burn_med_mrk")*/) drawSurf->bAS->data.material = MATERIAL_FLAG_BULLET_MARK | MATERIAL_FLAG_NEEDSCOLOR;
 				else drawSurf->bAS->data.material = MATERIAL_FLAG_NEEDSCOLOR | MATERIAL_FLAG_PARTICLE;//MATERIAL_FLAG_BULLET_MARK;
 			}
 		}
@@ -481,9 +495,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			forceUpdate = qtrue;
 			drawSurf->bAS->data.material |= (MATERIAL_FLAG_NEEDSCOLOR | MATERIAL_FLAG_PARTICLE);
 		}
-		if (shader->stages[0] != NULL && strstr(shader->stages[0]->bundle->image[0]->imgName, "models/mapobjects/console/under.tga")) {
-			int x = 2; // qboolean isTransparent(unsigned long stateBits)
-		}
+		
 		if (i > 30) //continue;
 		if (strstr(shader->name, "wire")) {
 			//continue;

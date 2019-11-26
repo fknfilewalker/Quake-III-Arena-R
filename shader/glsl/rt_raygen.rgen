@@ -34,11 +34,6 @@ layout(binding = 6, set = 0) uniform CameraProperties
 // Specific
 layout(location = 0) rayPayloadNV RayPayload rp;
 
-vec4
-global_textureGrad(uint idx, vec2 tex_coord, vec2 d_x, vec2 d_y)
-{
-	return textureGrad(texure_array[idx], tex_coord, d_x, d_y);
-}
 
 // Ray get_primary_ray(vec2 pos_cs)
 // {
@@ -68,6 +63,7 @@ void trace_ray(Ray ray, uint cullMask)
 			ray.origin, ray.t_min, ray.direction, ray.t_max, PAYLOAD_BRDF);
 }
 
+#define ALBEDO_MULT 1.3
 vec4 path_tracer(){
 	const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + vec2(0.5);
 	const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeNV.xy);
@@ -130,7 +126,49 @@ vec4 path_tracer(){
 		color = alpha_blend_premultiplied(rp.transparent, contrib);
 	}
 
-	// for see through objects we need another ray
+	//color = contrib * ALBEDO_MULT;
+
+	// vec3 throughput = vec3(1);
+	// const int num_bounces = 3;
+	// vec3 bounceContrib = color.xyz;
+	// for(int i = 0; i < num_bounces; i++) {
+	// 	if(dot(ray.direction, hp.normal) > 0)
+	// 		hp.normal = -hp.normal;
+
+	// 	ray.origin = hp.pos;
+	// 	ray.direction = reflect(ray.direction, hp.normal);
+
+	// 	trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE);
+	// 	hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+
+	// 	if(!found_intersection(rp)) {
+	// 		vec4 env = sampleSky(ray.direction);
+	// 		//contrib += env * throughput;
+	// 		break;
+	// 	}
+
+	// 	vec4 contrib2 = global_textureLod(uint(uint(iData.data[rp.instanceID].texIdx)), hp.uv, i/2);
+	// 	bounceContrib.xyz += contrib2.xyz * throughput;
+	// 	throughput *= 0.8;
+	// 	// {
+	// 	// 	Triangle triangle = get_hit_triangle(ray_payload_brdf);
+	// 	// 	vec3 bary         = get_hit_barycentric(ray_payload_brdf);
+	// 	// 	vec2 tex_coord    = triangle.tex_coords * bary;
+
+	// 	// 	/* world-space */
+	// 	// 	position       = triangle.positions * bary;
+	// 	// 	normal         = normalize(triangle.normals * bary);
+	// 	// 	material_id    = triangle.material_id;
+	// 	// 	albedo         = global_textureLod(triangle.material_id, tex_coord, i / 2).rgb;
+	// 	// 	cluster_idx    = triangle.cluster;
+
+	// 	// 	contrib += albedo * throughput;
+	// 	// 	throughput *= 0.8;
+
+	// 	// }
+	// }
+	// color.xyz = bounceContrib;
+	//for see through objects we need another ray
 	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_SEE_THROUGH) > 0){
 		ray.origin = hp.pos;
 		trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
@@ -141,106 +179,6 @@ vec4 path_tracer(){
 			color =  alpha_blend_premultiplied(color, color2);
 		}
 	}
-
-	const int num_bounces = 10;
-	for(int i = 0; i < num_bounces; i++) {
-		
-
-		// vec4 contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
-		// // if object needs additional color it is probably because it just has a greyscale tesxture or needs the alpha for blending
-		// if((iData.data[rp.instanceID].type & S_TYPE_NEEDSCOLOR) > 0) {
-		// 	contrib *= (hp.color/255);
-		// 	//contrib = contrib * contrib.w;
-		// 	//color += contrib; 
-		// 	color = alpha_blend(color, contrib);
-		// 	//color = vec4(1,0,0,0);
-		// 	//break;
-		// 	//color = alpha_blend_premultiplied(color, contrib);
-		// } 
-		// //else if((iData.data[rp.instanceID].material & MATERIAL_FLAG_SEE_THROUGH) > 0){
-		// //	contrib *= (hp.color/255);
-		// 	//contrib = contrib * contrib.w;
-		// //	color = alpha_blend_premultiplied(color, contrib);
-		// //}
-		// // else if((iData.data[rp.instanceID].material & MATERIAL_FLAG_SEE_THROUGH) > 0){
-		// // 		//color = alpha_blend_premultiplied(color, contrib);
-		// // 	}
-		// else if ((iData.data[rp.instanceID].type & S_TYPE_OPAQUE) == 0)  {
-		// 	//contrib *= (hp.color/255);
-		// 	color += contrib; 
-		// } else {
-		// 	color += contrib; 
-		// }
-		// // 	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_SEE_THROUGH) > 0){
-		// // 		color = alpha_blend_premultiplied(color, contrib);
-		// // 	} else {
-		// // 		//contrib = contrib * contrib.w;
-		// // 		color = alpha_blend_premultiplied(contrib, color);
-		// // 		//color += contrib;
-		// // 		//color = blendColor(color, contrib, iData.data[rp.instanceID].blendfunc);
-		// // 	}
-		// // 	if(contrib.w == 1) {
-		// // 		//color = vec4(1,0,0,0);
-		// // 	//break;
-		// // 	}
-		// // 	//color = blendColor(color, contrib, iData.data[rp.instanceID].blendfunc);
-		// // }
-		// //color += contrib; 
-		// //if(iData.data[rp.instanceID].blendfunc == (GLS_SRCBLEND_ONE|GLS_DSTBLEND_ONE)){// || ( (iData.data[rp.instanceID].blendfunc & (GLS_SRCBLEND_BITS|GLS_DSTBLEND_BITS)) == 0 ) ) { 
-		// //else color = alpha_blend_premultiplied(color, contrib);
-		// //if( (iData.data[rp.instanceID].blendfunc & (GLS_SRCBLEND_BITS|GLS_DSTBLEND_BITS)) == 0 ){
-		// if((iData.data[rp.instanceID].material & MATERIAL_FLAG_SEE_THROUGH) > 0){
-		// 	color = vec4(1,0,0,0);
-		// 	break;
-		// }
-
-		// if((iData.data[rp.instanceID].material & MATERIAL_KIND_WATER) == MATERIAL_KIND_WATER){
-		// 	//color = vec4(1,0,0,0);
-		// 	//break;
-		// }
-
-		// if((iData.data[rp.instanceID].type & S_TYPE_OPAQUE) > 0 && (iData.data[rp.instanceID].type & S_TYPE_PARTICLE) == 0) break;
-		// //break;
-		// ray.origin += ray.direction * rp.hit_distance;
-		// trace_ray(ray);
-		// hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
-	}
-	
-
-	//vec3 position = hp.pos;
-	//return c;
-
-	// vec3 throughput = vec3(1);
-	// vec3 direction = normalize(ray.direction);
-	// vec3 normal = normalize(hp.normal);
-
-	// const int num_bounces = 10;
-	// for(int i = 0; i < num_bounces; i++) {
-	// 	if(dot(direction, normal) > 0)
-	// 		normal = -normal;
-
-	// 	direction = reflect(direction, normal);
-	// 	trace_ray(Ray(position, direction, 0.01, 10000.0));
-
-	// 	if(!found_intersection(rp)) {
-	// 		vec3 env = sampleSky(ray.direction).xyz;
-	// 		contrib += env * throughput;
-	// 		break;
-	// 	}
-
-	// 	{
-	// 		hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
-
-	// 		/* world-space */
-	// 		position       = hp.pos;
-	// 		normal         = normalize(hp.normal);
-
-	// 		contrib += texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv).xyz * throughput;
-	// 		throughput *= 0.8;
-
-	// 	}
-	// }
-
 	return vec4(color.xyz, false);
 }
 

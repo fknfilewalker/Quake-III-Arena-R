@@ -1911,7 +1911,7 @@ static	void R_BuildAccelerationStructure() {
 	}
 	
 	// build top as
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < vk.swapchain.imageCount; i++) {
 		vk_d.tasBufferOffset = i * (65536 * 20);
 		VkCommandBuffer commandBuffer = { 0 };
 		VK_BeginSingleTimeCommands(&commandBuffer);
@@ -1928,7 +1928,7 @@ static	void R_BuildAccelerationStructure() {
 	vkshader_t s = { 0 };
 	VK_RayTracingShaderWithAny(&s);
 
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < vk.swapchain.imageCount; i++) {
 		VK_AddAccelerationStructure(&vk_d.accelerationStructures.descriptor[i], 0, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_AddStorageImage(&vk_d.accelerationStructures.descriptor[i], 1, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 2, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);

@@ -1006,6 +1006,7 @@ Vulkan
 
 ==============================================================================
 */
+#define VK_MAX_SWAPCHAIN_SIZE 3
 #define VK_MAX_SURFACE_FORMAT_ARRAY_SIZE 10
 #define VK_INDEX_DATA_SIZE 1024 * 1024
 #define VK_VERTEX_ATTRIBUTE_DATA_SIZE 512 * 1024
@@ -1238,7 +1239,7 @@ typedef struct {
 	vkimage_t					resultImage;
 	vkimage_t					cubemap;
 	vkrtpipeline_t				pipeline;
-	vkdescriptor_t				descriptor[3];
+	vkdescriptor_t				descriptor[VK_MAX_SWAPCHAIN_SIZE];
 } vkaccelerationStructures_t;
 
 typedef struct {
@@ -1303,8 +1304,8 @@ typedef struct {
 	vkbottomAS_t*		bottomASList;
 	uint32_t			bottomASCount;
 
-	vkbottomAS_t*		bottomASDynamicList[3];
-	uint32_t			bottomASDynamicCount[3];
+	vkbottomAS_t*		bottomASDynamicList[VK_MAX_SWAPCHAIN_SIZE];
+	uint32_t			bottomASDynamicCount[VK_MAX_SWAPCHAIN_SIZE];
 
 	vkbottomAS_t*		bottomASTraceList;
 	uint32_t			bottomASTraceListCount;
@@ -1318,7 +1319,7 @@ typedef struct {
 	viewParms_t			mirrorViewParms;
 
 	// stores offset and stuff for in shader lookup
-	vkbuffer_t			instanceDataBuffer[3];
+	vkbuffer_t			instanceDataBuffer[VK_MAX_SWAPCHAIN_SIZE];
 
 	vkbuffer_t			basBuffer;
 	VkDeviceSize		basBufferStaticOffset;
@@ -1331,7 +1332,7 @@ typedef struct {
 	vkbuffer_t			instanceBuffer; 
 	VkDeviceSize		instanceBufferOffset;
 
-	vkbuffer_t			uboBuffer[3];
+	vkbuffer_t			uboBuffer[VK_MAX_SWAPCHAIN_SIZE];
     
     //
     qboolean            renderBegan;

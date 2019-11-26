@@ -100,10 +100,7 @@ static void VK_CreateSwapChain() {
 
 	vk.swapchain.imageFormat = surfaceFormat.format;
 
-	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
-		imageCount = swapChainSupport.capabilities.maxImageCount;
-	}
+	uint32_t imageCount = min(swapChainSupport.capabilities.maxImageCount, VK_MAX_SWAPCHAIN_SIZE);
 
 	VkSwapchainCreateInfoKHR createInfo = {0};
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;

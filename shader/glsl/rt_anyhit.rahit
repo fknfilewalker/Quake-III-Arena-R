@@ -58,7 +58,9 @@ void main()
     //rp.transparent = vec4(1,0,0,0);
   } else if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_BULLET_MARK) == MATERIAL_FLAG_BULLET_MARK){
     contrib = texture(texure_array[uint(uint(iData.data[gl_InstanceID].texIdx))], hp.uv);
+    //contrib *= contrib.w;
     rp.transparent.xyz -= contrib.xyz;
+    //rp.transparent = alpha_blend_premultiplied(rp.transparent, contrib);
   }
   else {
     rp.transparent = vec4(1,0,0,0);
