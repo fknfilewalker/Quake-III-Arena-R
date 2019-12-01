@@ -1859,21 +1859,27 @@ static	void R_BuildAccelerationStructure() {
 				R_LoadImage(shader->sky.outerbox[3]->imgName, &pic, &width, &height);
 				if (width == 0 || height == 0) goto skyFromStage;
 				VK_UploadImageData(&cubemap, width, height, pic, 4, 0, 0); // back
+				ri.Free(pic);
 
 				R_LoadImage(shader->sky.outerbox[1]->imgName, &pic, &width, &height);
 				VK_UploadImageData(&cubemap, width, height, pic, 4, 0, 1); // front
+				ri.Free(pic);
 
 				R_LoadImage(shader->sky.outerbox[4]->imgName, &pic, &width, &height);
 				VK_UploadImageData(&cubemap, width, height, pic, 4, 0, 2); // bottom
+				ri.Free(pic);
 					
 				R_LoadImage(shader->sky.outerbox[5]->imgName, &pic, &width, &height); 
 				VK_UploadImageData(&cubemap, width, height, pic, 4, 0, 3); // up
+				ri.Free(pic);
 
 				R_LoadImage(shader->sky.outerbox[0]->imgName, &pic, &width, &height);
 				VK_UploadImageData(&cubemap, width, height, pic, 4, 0, 4); // right
+				ri.Free(pic);
 
 				R_LoadImage(shader->sky.outerbox[2]->imgName, &pic, &width, &height);
 				VK_UploadImageData(&cubemap, width, height, pic, 4, 0, 5); // left
+				ri.Free(pic);
 				
 				VK_UploadImageData(&cubemap, width, height, pic, 4, 0, 5);
 			}
@@ -1912,40 +1918,37 @@ static	void R_BuildAccelerationStructure() {
 	
 	// build top as
 	for (i = 0; i < vk.swapchain.imageCount; i++) {
-		vk_d.tasBufferOffset = i * (65536 * 20);
 		VkCommandBuffer commandBuffer = { 0 };
 		VK_BeginSingleTimeCommands(&commandBuffer);
-		VK_MakeTop(commandBuffer, &vk_d.topAS[i], vk_d.bottomASList, vk_d.bottomASCount, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
+		VK_MakeTopAS(commandBuffer, &vk_d.topAS[i], &vk_d.topASBuffer[i], vk_d.bottomASList, 1, &vk_d.instanceBuffer[i], VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV);
 		VK_EndSingleTimeCommands(&commandBuffer);
 	}
-	//// setup descriptor
-	//struct UniformData {
-	//	float viewInverse[16];
-	//	float projInverse[16];
-	//} uniformData;
-	//VK_CreateUniformBuffer(&vk_d.accelerationStructures.uniformBuffer, sizeof(uniformData));
 
+	// pipeline
 	vkshader_t s = { 0 };
 	VK_RayTracingShaderWithAny(&s);
-
 	for (i = 0; i < vk.swapchain.imageCount; i++) {
-		VK_AddAccelerationStructure(&vk_d.accelerationStructures.descriptor[i], 0, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_AddAccelerationStructure(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_AddStorageImage(&vk_d.accelerationStructures.descriptor[i], 1, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 2, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 3, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 4, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_INSTANCE_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
 
 		VK_AddSampler(&vk_d.accelerationStructures.descriptor[i], 5, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_AddUniformBuffer(&vk_d.accelerationStructures.descriptor[i], 6, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_AddUniformBuffer(&vk_d.accelerationStructures.descriptor[i], 7, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_AddSampler(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_BLUE_NOISE, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		
-		VK_SetAccelerationStructure(&vk_d.accelerationStructures.descriptor[i], 0, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.topAS[i].accelerationStructure);
-		VK_SetStorageImage(&vk_d.accelerationStructures.descriptor[i], 1, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultImage.view);
+		VK_SetAccelerationStructure(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.topAS[i].accelerationStructure);
+		VK_SetStorageImage(&vk_d.accelerationStructures.descriptor[i], 1, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultImage[i].view);
 		//VK_SetStorageImage(&vk_d.accelerationStructures.descriptor[i], 1, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultFramebuffer.image.view);
-		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 2, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz.buffer);
-		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 3, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx.buffer);
-		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], 4, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.instanceDataBuffer[i].buffer);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz.buffer);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx.buffer);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_INSTANCE_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.instanceDataBuffer[i].buffer);
 		VK_SetSampler(&vk_d.accelerationStructures.descriptor[i], 5, VK_SHADER_STAGE_RAYGEN_BIT_NV, cubemap.sampler, cubemap.view);
 		VK_SetUniformBuffer(&vk_d.accelerationStructures.descriptor[i], 6, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.uboBuffer[i].buffer);
+		VK_SetUniformBuffer(&vk_d.accelerationStructures.descriptor[i], 7, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.uboLightList[i].buffer);
+		VK_SetSampler(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_BLUE_NOISE, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.blueNoiseTex.sampler, vk_d.blueNoiseTex.view);
 		//VK_SetSampler(&vk_d.accelerationStructures.descriptor[i], 5, VK_SHADER_STAGE_MISS_BIT_NV, vk_d.images[120].sampler, vk_d.images[120].view);
 		VK_FinishDescriptor(&vk_d.accelerationStructures.descriptor[i]);
 	}

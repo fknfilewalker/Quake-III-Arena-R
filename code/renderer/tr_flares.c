@@ -443,7 +443,7 @@ void RB_RenderFlares (void) {
 
 	if ( backEnd.viewParms.isPortal ) {
 		if (glConfig.driverType == OPENGL) qglDisable(GL_CLIP_PLANE0);
-		else if (glConfig.driverType == VULKAN) vk_d.state.clip = qfalse;
+		else if (glConfig.driverType == VULKAN) vk_d.clip = qfalse;
 	}
 
 	float tmpModel[16];

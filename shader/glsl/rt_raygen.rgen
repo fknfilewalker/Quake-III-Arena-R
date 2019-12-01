@@ -18,7 +18,7 @@ layout(push_constant) uniform PushConstant {
 };
 
 // Bindings
-layout(binding = 0, set = 0) uniform accelerationStructureNV topLevelAS;
+layout(binding = BINDING_OFFSET_AS, set = 0) uniform accelerationStructureNV topLevelAS;
 layout(binding = 1, set = 0, rgba8) uniform image2D image;
 
 
@@ -28,11 +28,20 @@ layout(binding = 6, set = 0) uniform CameraProperties
 	mat4 inverseViewPortal; 
   	mat4 inverseProj;
 	mat4 inverseProjPortal;
+	mat4 viewMat;
+	mat4 projMat;
 	bool hasPortal;
 } ubo;
 
+layout(binding = 7, set = 0) uniform LightList 
+{
+	vec4 pos[RTX_MAX_LIGHTS];
+	uint lightCount;
+} uboLights;
+
 // Specific
-layout(location = 0) rayPayloadNV RayPayload rp;
+layout(location = PAYLOAD_BRDF) rayPayloadNV RayPayload rp;
+layout(location = PAYLOAD_SHADOW) rayPayloadNV RayPayloadShadow rp_shadow;
 
 
 // Ray get_primary_ray(vec2 pos_cs)
@@ -62,6 +71,21 @@ void trace_ray(Ray ray, uint cullMask)
 			SBT_RCHIT_OPAQUE /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_PATH_TRACER /*missIndex*/,
 			ray.origin, ray.t_min, ray.direction, ray.t_max, PAYLOAD_BRDF);
 }
+// void trace_shadow_ray(Ray ray, uint cullMask)
+// {
+// 	const uint rayFlags = 0;//gl_RayFlagsOpaqueNV;// | gl_RayFlagsCullBackFacingTrianglesNV;
+// 	//const uint rayFlags = gl_RayFlagsOpaqueNV | gl_RayFlagsCullBackFacingTrianglesNV;
+// 	//const uint cullMask = RAY_FIRST_PERSON_VISIBLE;
+// 	rp_shadow.missed = 0;
+
+// 	traceNV( topLevelAS, rayFlags, cullMask,
+// 			SBT_RCHIT_OPAQUE /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_PATH_TRACER /*missIndex*/,
+// 			ray.origin, ray.t_min, ray.direction, ray.t_max, PAYLOAD_SHADOW;
+// }
+
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
 
 #define ALBEDO_MULT 1.3
 vec4 path_tracer(){
@@ -83,7 +107,8 @@ vec4 path_tracer(){
 
 	trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
 	if(!found_intersection(rp)){
-		return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
+		//return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
+		return sampleSky(ray.direction);
 	}
 
 	HitPoint hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
@@ -91,43 +116,100 @@ vec4 path_tracer(){
 	vec4 color = vec4(0,0,0,0);
 	vec4 contrib = vec4(0,0,0,0);
 
-	//mirror
-	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_MIRROR) == MATERIAL_FLAG_MIRROR){
-		contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
-		color = alpha_blend_premultiplied(rp.transparent, contrib);
+	color = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	//color = texture(blue_noise, vec3(hp.uv, 16)).rrrr;
+	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT){
+		color += vec4(1,0,0,0);
+	} else
+	if((iData.data[rp.instanceID].material & MATERIAL_KIND_MASK) == MATERIAL_KIND_GLASS){
+		color += vec4(0,0,1,0);
+	}
 
-		ray.origin = ray.origin + ray.direction * rp.hit_distance;
-		ray.direction = reflect(ray.direction, hp.normal);
-		trace_ray(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
-		hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+	vec4 shadow = vec4(0);
 
-		if(!found_intersection(rp)){
-			return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
-		}
-
-		contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
-		vec4 color2 = alpha_blend_premultiplied(rp.transparent, contrib);
-		color =  alpha_blend_premultiplied(color, color2);
-	} 
-	// view through portal
-	else if(ubo.hasPortal && (iData.data[rp.instanceID].material & MATERIAL_FLAG_PORTAL) == MATERIAL_FLAG_PORTAL){
-		ray.origin = positionPortal.xyz;
-		target = ubo.inverseProjPortal * vec4(screen_coord_cs, -1, 1) ;
-		ray.direction = (ubo.inverseViewPortal*vec4(normalize(target.xyz), 0)).xyz;
+	for(int i = 0; i < 1/*uboLights.lightCount*/; i++){
+		vec3 dirToLight = normalize(uboLights.pos[i].xyz - hp.pos.xyz);
+		ray.origin = hp.pos.xyz;
+		ray.direction = dirToLight;
 		trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
-		if(!found_intersection(rp)){
-			return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
-		}
 		hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
-		return color = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+		if((iData.data[rp.instanceID].material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT){
+		} 
+		else	shadow -= vec4(0.3,0.3,0.3,0);
 	}
-	else {
-		contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
-		color = alpha_blend_premultiplied(rp.transparent, contrib);
-	}
+	
+	color += shadow;
+	// //mirror
+	// if((iData.data[rp.instanceID].material & MATERIAL_FLAG_MIRROR) == MATERIAL_FLAG_MIRROR){
+	// 	contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// 	color = alpha_blend_premultiplied(rp.transparent, contrib);
 
-	//color = contrib * ALBEDO_MULT;
+	// 	ray.origin = ray.origin + ray.direction * rp.hit_distance;
+	// 	ray.direction = reflect(ray.direction, hp.normal);
+	// 	trace_ray(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
+	// 	hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
 
+	// 	if(!found_intersection(rp)){
+	// 		return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
+	// 	}
+
+	// 	contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// 	vec4 color2 = alpha_blend_premultiplied(rp.transparent, contrib);
+	// 	color =  alpha_blend_premultiplied(color, color2);
+	// } 
+	// // view through portal
+	// else if(ubo.hasPortal && (iData.data[rp.instanceID].material & MATERIAL_FLAG_PORTAL) == MATERIAL_FLAG_PORTAL){
+	// 	ray.origin = positionPortal.xyz;
+	// 	target = ubo.inverseProjPortal * vec4(screen_coord_cs, -1, 1) ;
+	// 	ray.direction = (ubo.inverseViewPortal*vec4(normalize(target.xyz), 0)).xyz;
+	// 	trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
+	// 	if(!found_intersection(rp)){
+	// 		return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
+	// 	}
+	// 	hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+	// 	return color = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// }
+	// else {
+	// 	contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// 	color = alpha_blend_premultiplied(rp.transparent, contrib);
+	// }
+
+	// if((iData.data[rp.instanceID].material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT){
+	// 	color = vec4(0,1,0,0);
+	// }
+	
+	
+	//for see through objects we need another ray
+	// if((iData.data[rp.instanceID].material & MATERIAL_FLAG_SEE_THROUGH) > 0){
+	// 	ray.origin = hp.pos;
+	// 	trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
+	// 	if(found_intersection(rp)){
+	// 		hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+	// 		contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// 		vec4 color2 = alpha_blend_premultiplied(rp.transparent, contrib);
+	// 		color =  alpha_blend_premultiplied(color, color2);
+	// 	}
+	// }
+	
+	return vec4(color.xyz, false);
+}
+
+void main() 
+{
+	vec4 color = path_tracer();
+	color.rgb = max(vec3(0), color.rgb);
+	if(any(isnan(color.rgb)))
+		color.rgb = vec3(0);
+
+	color.rgb = clamp_color(color.rgb, 128.0);
+
+	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(color.xyz,1));
+
+	
+}
+
+
+//color = contrib * ALBEDO_MULT;
 	// vec3 throughput = vec3(1);
 	// const int num_bounces = 3;
 	// vec3 bounceContrib = color.xyz;
@@ -168,36 +250,6 @@ vec4 path_tracer(){
 	// 	// }
 	// }
 	// color.xyz = bounceContrib;
-	//for see through objects we need another ray
-	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_SEE_THROUGH) > 0){
-		ray.origin = hp.pos;
-		trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
-		if(found_intersection(rp)){
-			hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
-			contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
-			vec4 color2 = alpha_blend_premultiplied(rp.transparent, contrib);
-			color =  alpha_blend_premultiplied(color, color2);
-		}
-	}
-	return vec4(color.xyz, false);
-}
-
-void main() 
-{
-	vec4 color = path_tracer();
-	color.rgb = max(vec3(0), color.rgb);
-	if(any(isnan(color.rgb)))
-		color.rgb = vec3(0);
-
-	color.rgb = clamp_color(color.rgb, 128.0);
-
-	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(color.xyz,1));
-
-	
-}
-
-
-
 	
 	//pixelColor += rp.color;
 

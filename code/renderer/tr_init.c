@@ -262,38 +262,59 @@ static void InitVulkan(void)
 		// <RTX>
 		vk_d.bottomASList = calloc(13000, sizeof(vkbottomAS_t));
 		vk_d.bottomASCount = 0;
-		vk_d.bottomASDynamicList[0] = calloc(1000, sizeof(vkbottomAS_t));
-		vk_d.bottomASDynamicList[1] = calloc(1000, sizeof(vkbottomAS_t));
-		vk_d.bottomASDynamicList[2] = calloc(1000, sizeof(vkbottomAS_t));
-		vk_d.bottomASDynamicCount[0] = 0;
-		vk_d.bottomASDynamicCount[1] = 0;
-		vk_d.bottomASDynamicCount[2] = 0;
 		vk_d.bottomASTraceList = calloc(6000, sizeof(vkbottomAS_t));
 		vk_d.bottomASTraceListCount = 0;
 
+		const uint32_t asMemoryAllignmentSize = 65536; // is the aligment size for as buffers
+		for (int i = 0; i < vk.swapchain.imageCount; i++) {
+			// top AS
+			VK_CreateRayTracingASBuffer(&vk_d.topASBuffer[i], 30 * asMemoryAllignmentSize);
+			VK_CreateRayTracingBuffer(&vk_d.instanceBuffer[i], VK_MAX_BOTTOM_AS_INSTANCES * sizeof(VkGeometryInstanceNV));
+			VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[i], VK_MAX_BOTTOM_AS_INSTANCES * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+
+			// bottom AS
+			vk_d.bottomASDynamicList[i] = calloc(VK_MAX_BOTTOM_AS_INSTANCES, sizeof(vkbottomAS_t));
+			vk_d.bottomASDynamicCount[i] = 0;
+
+			// ubo
+			VK_CreateUniformBuffer(&vk_d.uboBuffer[i], sizeof(qboolean) + 7 * 16 * sizeof(float));
+			VK_CreateUniformBuffer(&vk_d.uboLightList[i], RTX_MAX_LIGHTS * sizeof(vec4_t) + sizeof(uint32_t));
+
+			// result image
+			VK_CreateImage(&vk_d.accelerationStructures.resultImage[i], vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+			VK_CreateSampler(&vk_d.accelerationStructures.resultImage[i], VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+			VK_TransitionImage(&vk_d.accelerationStructures.resultImage[i], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+			// create descriptor
+			VK_AddSampler(&vk_d.accelerationStructures.resultImage[i].descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
+			vk_d.accelerationStructures.resultImage[i].descriptor_set.data[0].descImageInfo->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+			VK_SetSampler(&vk_d.accelerationStructures.resultImage[i].descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, vk_d.accelerationStructures.resultImage[i].sampler, vk_d.accelerationStructures.resultImage[i].view);
+			VK_FinishDescriptor(&vk_d.accelerationStructures.resultImage[i].descriptor_set);
+		}
+
 		VK_CreateAttributeBuffer(&vk_d.geometry.idx, 4 * RTX_STATIC_INDEX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		VK_CreateAttributeBuffer(&vk_d.geometry.xyz, 5 * RTX_STATIC_XYZ_SIZE * 12 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[0], 12000 * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[1], 12000 * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-		VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[2], 12000 * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		VK_CreateRayTracingASBuffer(&vk_d.basBuffer, 2000000000 * sizeof(byte));
-		VK_CreateRayTracingASBuffer(&vk_d.tasBuffer, 1000 * 65536);
-		VK_CreateUniformBuffer(&vk_d.uboBuffer[0], sizeof(qboolean) + 5 * 16 * sizeof(float));
-		VK_CreateUniformBuffer(&vk_d.uboBuffer[1], sizeof(qboolean) + 5 * 16 * sizeof(float));
-		VK_CreateUniformBuffer(&vk_d.uboBuffer[2], sizeof(qboolean) + 5 * 16 * sizeof(float));
+		
 		
 		VK_CreateRayTracingScratchBuffer(&vk_d.scratchBuffer, 5000000000 * sizeof(byte));
-		VK_CreateRayTracingBuffer(&vk_d.instanceBuffer,	15000 * sizeof(VkGeometryInstanceNV));
 
-		// create result image
-		VK_CreateImage(&vk_d.accelerationStructures.resultImage, vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
-		VK_CreateSampler(&vk_d.accelerationStructures.resultImage, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-		VK_TransitionImage(&vk_d.accelerationStructures.resultImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-		// create descriptor
-		VK_AddSampler(&vk_d.accelerationStructures.resultImage.descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
-		vk_d.accelerationStructures.resultImage.descriptor_set.data[0].descImageInfo->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		VK_SetSampler(&vk_d.accelerationStructures.resultImage.descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, vk_d.accelerationStructures.resultImage.sampler, vk_d.accelerationStructures.resultImage.view);
-		VK_FinishDescriptor(&vk_d.accelerationStructures.resultImage.descriptor_set);
+		// load blue noise
+		const int num_blue_noise_images = NUM_BLUE_NOISE_TEX;
+		const int resolution = BLUE_NOISE_RES;
+		const size_t img_size = resolution * resolution;
+		const size_t total_size = img_size * sizeof(uint16_t);
+
+		int		width, height;
+		byte* pic;
+		VK_CreateImageArray(&vk_d.blueNoiseTex, BLUE_NOISE_RES, BLUE_NOISE_RES, VK_FORMAT_R16_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1, NUM_BLUE_NOISE_TEX);
+		for (int i = 0; i < NUM_BLUE_NOISE_TEX; i++) {
+			char buf[1024];
+			snprintf(buf, sizeof buf, "blue_noise/LDR_RGBA_%04d.tga", i);
+			R_LoadImage(buf, &pic, &width, &height);
+			VK_UploadImageData(&vk_d.blueNoiseTex, width, height, pic, 4, 0, i);
+		}
+		VK_CreateSampler(&vk_d.blueNoiseTex, VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+
 		// </RTX>
 
 		// descriptor for all texture array
@@ -1286,7 +1307,6 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			//VK_DestroyBuffer(&vk_d.accelerationStructures.uniformBuffer);
 
 			vk_d.basBufferStaticOffset = 0;
-			vk_d.tasBufferOffset = 0;
 		}
 	}
 
@@ -1318,27 +1338,21 @@ void RE_Shutdown( qboolean destroyWindow ) {
 
 			VK_DestroyBuffer(&vk_d.basBuffer);
 			vk_d.basBufferStaticOffset = 0;
-			VK_DestroyBuffer(&vk_d.tasBuffer);
-			vk_d.tasBufferOffset = 0;
 
 			VK_DestroyBuffer(&vk_d.geometry.xyz);
 			VK_DestroyBuffer(&vk_d.geometry.idx);
 
-			VK_DestroyBuffer(&vk_d.instanceBuffer);
-			VK_DestroyBuffer(&vk_d.instanceDataBuffer[0]);
-			VK_DestroyBuffer(&vk_d.instanceDataBuffer[1]);
-			VK_DestroyBuffer(&vk_d.instanceDataBuffer[2]);
-			/*VK_DestroyBuffer(&vk_d.basBuffer);
-			vk_d.basBufferOffset = 0;
-			VK_DestroyBuffer(&vk_d.tasBuffer);
-			vk_d.tasBufferOffset = 0;*/
+			for (int i = 0; i < vk.swapchain.imageCount; i++) {
+				VK_DestroyBuffer(&vk_d.topASBuffer[i]);
+				VK_DestroyBuffer(&vk_d.instanceBuffer[i]);
+				VK_DestroyBuffer(&vk_d.instanceDataBuffer[i]);
+			}
+
 			VK_DestroyBuffer(&vk_d.scratchBuffer);
 			
 			
 			VK_DestroyAllPipelines();
-
 			VK_DestroyAllShaders();
-
 			VK_Destroy();
 
 			VKimp_Shutdown();

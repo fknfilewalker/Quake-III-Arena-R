@@ -4,10 +4,10 @@
 #include "constants.h"
 
 layout(push_constant) uniform PushConstant {
-	layout(offset = 144) uint textureType;
-    layout(offset = 148) uint discardModeAlpha;
-    layout(offset = 152) uint textureIdx1; 
-    layout(offset = 156) uint textureIdx2;
+	layout(offset = 148) uint textureType;
+    layout(offset = 152) uint discardModeAlpha;
+    layout(offset = 156) uint textureIdx1; 
+    layout(offset = 160) uint textureIdx2;
 };
 layout(binding = 0) uniform sampler2D tex[];
 

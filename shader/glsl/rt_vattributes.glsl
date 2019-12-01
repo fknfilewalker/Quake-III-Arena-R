@@ -1,3 +1,5 @@
+#include "constants.h"
+
 // out data
 struct Triangle {
 	mat3 pos;
@@ -22,7 +24,7 @@ struct InstanceData{
   float shaderSort;
   uint type;
 };
-layout(binding = 4, set = 0) buffer Instance { InstanceData data[]; } iData;
+layout(binding = BINDING_OFFSET_INSTANCE_DATA, set = 0) buffer Instance { InstanceData data[]; } iData;
 
 // Buffer with indices and vertices
 struct VABuffer
@@ -31,8 +33,8 @@ struct VABuffer
   vec4 uv;
   vec4 color;
 };
-layout(binding = 2, set = 0) buffer Vertices { VABuffer v[]; } vertices;
-layout(binding = 3, set = 0) buffer Indices { uint i[]; } indices;
+layout(binding = BINDING_OFFSET_XYZ, set = 0) buffer Vertices { VABuffer v[]; } vertices;
+layout(binding = BINDING_OFFSET_IDX, set = 0) buffer Indices { uint i[]; } indices;
 
 vec3 getBarycentricCoordinates(vec2 hitAttribute) { return vec3(1.0f - hitAttribute.x - hitAttribute.y, hitAttribute.x, hitAttribute.y); }
 

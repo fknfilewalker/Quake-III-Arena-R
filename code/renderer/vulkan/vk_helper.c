@@ -177,16 +177,15 @@ qboolean VK_FindPipeline() {
 		vkrenderState_t* state = &vk_d.pipelineList[i].state;
 		vkpipeline_t* found_p = &vk_d.pipelineList[i].pipeline;
 		if (memcmp(&vk_d.state, state, sizeof(vkrenderState_t)) == 0) {
-			//p = found_p;
-			//Com_Memcpy(p, found_p, sizeof(vkpipeline_t));
 			return i;
 		}
 	}
 	return -1;
 }
-
 uint32_t VK_AddPipeline(vkpipeline_t* p) {
-	//Com_Printf("new pipe \n");
+	if (vk_d.pipelineListSize >= VK_MAX_NUM_PIPELINES) {
+		ri.Error(ERR_FATAL, "Vulkan: Maximum amount of pipelines reached!");
+	}
 	vk_d.pipelineList[vk_d.pipelineListSize] = (vkpipe_t){ *p, vk_d.state };
 	vk_d.pipelineListSize++;
 	return vk_d.pipelineListSize - 1;

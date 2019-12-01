@@ -8,7 +8,6 @@
 #include "../../../shader/header/fullscreenRect.frag.h"
 
 #include "../../../shader/header/texture.vert.h"
-#include "../../../shader/header/textureClip.vert.h"
 #include "../../../shader/header/texture.frag.h"
 
 // RTX
@@ -18,7 +17,6 @@
 #include "../../../shader/header/rt_anyhit.rahit.h"
 
 static vkshader_t *texture;
-static vkshader_t *textureClip;
 static vkshader_t *clearAttachment;
 static vkshader_t *fullscreenRect;
 // rtx
@@ -43,15 +41,6 @@ void VK_SingleTextureShader(vkshader_t *shader){
 		VK_LoadVertFragShadersFromVariable(texture, &textureVert, sizeof(textureVert), &textureFrag, sizeof(textureFrag));
     }
     Com_Memcpy(shader, texture, sizeof(vkshader_t));
-}
-
-void VK_SingleTextureClipShader(vkshader_t* shader) {
-    if (textureClip == NULL) {
-		textureClip = malloc(sizeof(vkshader_t));
-		//VK_LoadVertFragShadersFromFile(singleTextureClip, "../../shader/spv/singleTextureClip.vert.spv", "../../shader/spv/singleTexture.frag.spv");
-		VK_LoadVertFragShadersFromVariable(textureClip, &textureClipVert, sizeof(textureClipVert), &textureFrag, sizeof(textureFrag));
-    }
-    Com_Memcpy(shader, textureClip, sizeof(vkshader_t));
 }
 
 void VK_ClearAttachmentShader(vkshader_t* shader) {
@@ -101,11 +90,6 @@ void VK_DestroyAllShaders() {
 		VK_DestroyShader(texture);
 		free(texture);
 		texture = NULL;
-	}
-	if (textureClip != NULL) {
-		VK_DestroyShader(textureClip);
-		free(textureClip);
-		textureClip = NULL;
 	}
 	if (clearAttachment != NULL) {
 		VK_DestroyShader(clearAttachment);

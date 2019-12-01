@@ -297,23 +297,14 @@ static void SetViewportAndScissor(void) {
 
 
 static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
-    int        primitives;
-    
-    primitives = r_primitives->integer;
-
     VK_UploadBufferDataOffset(&vk_d.indexbuffer, vk_d.offsetIdx * sizeof(uint32_t), numIndexes * sizeof(uint32_t), (void*) &indexes[0]);
     
 	uint32_t index = VK_FindPipeline();
 	vkpipeline_t p = { 0 };
     if (index == -1) {
-        
         vkshader_t s = { 0 };
-		if (vk_d.state.clip == qtrue) {
-			VK_SingleTextureClipShader(&s);
-		}
-		else {
-			VK_SingleTextureShader(&s);
-		}
+		VK_SingleTextureShader(&s);
+
         VK_SetShader(&p, &s);
         VK_AddBindingDescription(&p, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);
         VK_AddBindingDescription(&p, 1, sizeof(color4ub_t), VK_VERTEX_INPUT_RATE_VERTEX);
@@ -325,28 +316,27 @@ static void R_DrawElements( int numIndexes, const glIndex_t *indexes ) {
 		VK_AddAttributeDescription(&p, 3, 3, VK_FORMAT_R32G32_SFLOAT, 0 * sizeof(float));
 
 		VK_SetDescriptorSet(&p, &vk_d.imageDescriptor);
-        VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, 144);
-        VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 144, 4 * sizeof(uint32_t));
+        VK_AddPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, 148);
+        VK_AddPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 148, 4 * sizeof(uint32_t));
         VK_FinishPipeline(&p);
         index = VK_AddPipeline(&p);
-
     }
 	p = vk_d.pipelineList[index].pipeline;
    
 	VK_Bind1DescriptorSet(&p, &vk_d.imageDescriptor);
     VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vk_d.mvp), &vk_d.mvp);
-    if (vk_d.state.clip == qtrue) {
-        VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 64, sizeof(vk_d.modelViewMatrix), &vk_d.modelViewMatrix);
-        VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, sizeof(vk_d.clipPlane), &vk_d.clipPlane);
-    }
+    VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 64, sizeof(vk_d.modelViewMatrix), &vk_d.modelViewMatrix);
+    VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 128, sizeof(vk_d.clipPlane), &vk_d.clipPlane);
+	VK_SetPushConstant(&p, VK_SHADER_STAGE_VERTEX_BIT, 144, sizeof(qboolean), &vk_d.clip);
 	
-	VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 144, sizeof(uint32_t), &vk_d.textureMode);
-    VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 148, sizeof(uint32_t), &vk_d.discardModeAlpha);
-	VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 152, sizeof(uint32_t), &vk_d.currentTexture[0]);
-	VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 156, sizeof(uint32_t), &vk_d.currentTexture[1]);
+	VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 148, sizeof(uint32_t), &vk_d.textureMode);
+    VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 152, sizeof(uint32_t), &vk_d.discardModeAlpha);
+	VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 156, sizeof(uint32_t), &vk_d.currentTexture[0]);
+	VK_SetPushConstant(&p, VK_SHADER_STAGE_FRAGMENT_BIT, 160, sizeof(uint32_t), &vk_d.currentTexture[1]);
 
 	VK_BindPipeline(&p);
 	//if (index != vk_d.currentPipeline) VK_BindPipeline(&p);
+	vk_d.currentPipeline = index;
 
     VK_DrawIndexed(&vk_d.indexbuffer, numIndexes, vk_d.offsetIdx, vk_d.offset);
 }

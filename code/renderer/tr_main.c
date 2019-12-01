@@ -1675,52 +1675,52 @@ void R_RenderView (viewParms_t *parms) {
 	tr.viewCount++;
 
 	// set viewParms.world
-	r_nocull->integer = 1;
+	//r_nocull->integer = 1;
 	R_RotateForViewer ();
 
 	R_SetupFrustum ();
 
 	R_GenerateDrawSurfs();
-	r_nocull->integer = 0;
-	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
-		if (vk_d.portalInView) {
-			// set position to cull position and then back to actual view position
-			float x = vk_d.portalViewParms. or .origin[0];
-			float y = vk_d.portalViewParms. or .origin[1];
-			float z = vk_d.portalViewParms. or .origin[2];
-			vk_d.portalViewParms. or .origin[0] = vk_d.portalViewParms.pvsOrigin[0];
-			vk_d.portalViewParms. or .origin[1] = vk_d.portalViewParms.pvsOrigin[1];
-			vk_d.portalViewParms. or .origin[2] = vk_d.portalViewParms.pvsOrigin[2];
+	//r_nocull->integer = 0;
+	//if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
+	//	if (vk_d.portalInView) {
+	//		// set position to cull position and then back to actual view position
+	//		float x = vk_d.portalViewParms. or .origin[0];
+	//		float y = vk_d.portalViewParms. or .origin[1];
+	//		float z = vk_d.portalViewParms. or .origin[2];
+	//		vk_d.portalViewParms. or .origin[0] = vk_d.portalViewParms.pvsOrigin[0];
+	//		vk_d.portalViewParms. or .origin[1] = vk_d.portalViewParms.pvsOrigin[1];
+	//		vk_d.portalViewParms. or .origin[2] = vk_d.portalViewParms.pvsOrigin[2];
 
-			viewParms_t		oldParms = tr.viewParms;
-			tr.viewParms = vk_d.portalViewParms;
-			//tr.viewParms.fovX *= 1.2;
-			//tr.viewParms.fovY *= 1.2;
-			R_RotateForViewer();
-			R_SetupFrustum();
-			R_GenerateDrawSurfs();
+	//		viewParms_t		oldParms = tr.viewParms;
+	//		tr.viewParms = vk_d.portalViewParms;
+	//		//tr.viewParms.fovX *= 1.2;
+	//		//tr.viewParms.fovY *= 1.2;
+	//		R_RotateForViewer();
+	//		R_SetupFrustum();
+	//		R_GenerateDrawSurfs();
 
-			tr.viewParms = oldParms;
+	//		tr.viewParms = oldParms;
 
-			vk_d.portalViewParms. or .origin[0] = x;
-			vk_d.portalViewParms. or .origin[1] = y;
-			vk_d.portalViewParms. or .origin[2] = z;
-		}
-		if (vk_d.mirrorInView) {
-			viewParms_t		oldParms = tr.viewParms;
-			tr.viewParms = vk_d.mirrorViewParms;
-			//tr.viewParms.fovX *= 0.2;
-			//tr.viewParms.fovY *= 10;
-			R_RotateForViewer();
-			R_SetupFrustum();
-			/*cplane_t buf = tr.viewParms.frustum[0];
-			tr.viewParms.frustum[0] = tr.viewParms.frustum[1];
-			tr.viewParms.frustum[1] = buf;*/
-			R_GenerateDrawSurfs();
-			//vk_d.mirrorViewParms = tr.viewParms;
-			tr.viewParms = oldParms;
-		}
-	}
+	//		vk_d.portalViewParms. or .origin[0] = x;
+	//		vk_d.portalViewParms. or .origin[1] = y;
+	//		vk_d.portalViewParms. or .origin[2] = z;
+	//	}
+	//	if (vk_d.mirrorInView) {
+	//		viewParms_t		oldParms = tr.viewParms;
+	//		tr.viewParms = vk_d.mirrorViewParms;
+	//		//tr.viewParms.fovX *= 0.2;
+	//		//tr.viewParms.fovY *= 10;
+	//		R_RotateForViewer();
+	//		R_SetupFrustum();
+	//		/*cplane_t buf = tr.viewParms.frustum[0];
+	//		tr.viewParms.frustum[0] = tr.viewParms.frustum[1];
+	//		tr.viewParms.frustum[1] = buf;*/
+	//		R_GenerateDrawSurfs();
+	//		//vk_d.mirrorViewParms = tr.viewParms;
+	//		tr.viewParms = oldParms;
+	//	}
+	//}
 
 	R_SortDrawSurfs( tr.refdef.drawSurfs + firstDrawSurf, tr.refdef.numDrawSurfs - firstDrawSurf );
 

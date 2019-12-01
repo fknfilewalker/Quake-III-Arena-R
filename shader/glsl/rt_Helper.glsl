@@ -43,3 +43,12 @@ vec4 alpha_blend_premultiplied(vec4 top, vec4 bottom)
     // assume everything is alpha-premultiplied
     return vec4(top.rgb + bottom.rgb * (1 - top.a), 1 - (1 - top.a) * (1 - bottom.a)); 
 }
+
+#define M_PI 3.14159265358979323846264338327950288
+float
+blinn_phong_based_brdf(vec3 V, vec3 L, vec3 N, float phong_exp)
+{
+	vec3 H = normalize(V + L);
+		float F = pow(1.0 - max(0.0, dot(H, V)), 5.0);
+		return mix(0.15, 0.05 + 10.25 * pow(max(0.0, dot(H, N)), phong_exp), F) / M_PI;
+}

@@ -8,6 +8,7 @@
 // 	uint cullMask;
 // };
 #define PAYLOAD_BRDF 0
+#define PAYLOAD_SHADOW 1
 
 #define ALBEDO_MULT 1.3
 
@@ -18,6 +19,10 @@ struct RayPayload {
 	float hit_distance;
 	vec4 transparent;
 	float max_transparent_distance;
+};
+
+struct RayPayloadShadow {
+	int missed;
 };
 
 struct Ray {

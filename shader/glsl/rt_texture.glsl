@@ -1,4 +1,8 @@
+#include "constants.h"
+
 layout(binding = 0, set = 1) uniform sampler2D texure_array[];
+
+layout(binding = BINDING_OFFSET_BLUE_NOISE, set = 0) uniform sampler2DArray blue_noise;
 
 vec4
 global_textureLod(uint idx, vec2 tex_coord, uint lod)

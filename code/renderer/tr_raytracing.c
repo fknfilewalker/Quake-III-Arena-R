@@ -132,48 +132,86 @@ void RB_CreateBottomAS(vkbottomAS_t** bAS, qboolean dynamic) {
 	}
 }
 
-void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
-	bAS->geometryInstance.instanceCustomIndex = 0;
-	// set visibility for first and third person (eye and mirror)
-	if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) bAS->geometryInstance.mask = RAY_MIRROR_OPAQUE_VISIBLE;
-	else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_OPAQUE_VISIBLE;
-	else bAS->geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
-	
-	// --special cases
-	if (strstr(tess.shader->name, "hologirl")) {
-		//tess.shader->sort = SS_BLEND0;
-	}
-	// --
-	if (tess.shader->sort <= SS_OPAQUE) {
-		bAS->geometries.flags = VK_GEOMETRY_OPAQUE_BIT_NV;
-	}
-	else {
-		bAS->geometries.flags = 0;
-	}
+static void RB_AddLightToLightList() {
+	vec4_t pos = {0,0,0,0};
 
-	if (bAS->data.material & MATERIAL_FLAG_PARTICLE || tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1 || tess.shader->sort == SS_DECAL) {
-		bAS->geometryInstance.instanceOffset = 1;
-		if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) bAS->geometryInstance.mask = RAY_MIRROR_PARTICLE_VISIBLE;
-		else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_PARTICLE_VISIBLE;
-		else bAS->geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_PARTICLE_VISIBLE;
+	for (int i = 0; i < tess.numVertexes; i++) {
+		VectorAdd(pos, tess.xyz[i], pos);
 	}
-	else {
-		bAS->geometryInstance.instanceOffset = 0;
+	VectorScale(pos, 1.0f / tess.numVertexes, pos);
+	if (vk_d.lightCount >= RTX_MAX_LIGHTS) {
+		ri.Error(ERR_FATAL, "Vulkan: Too many lights");
 	}
-	//bAS->geometryInstance.instanceOffset = ;
-	//bAS->geometryInstance.instanceOffset = 1;
+	VectorCopy(pos, vk_d.lightList[vk_d.lightCount]);
+	VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], vk_d.lightCount * sizeof(vec4_t), 1 * sizeof(vec4_t), (void*)&vk_d.lightList[0]);
+	vk_d.lightCount++;
+	VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], RTX_MAX_LIGHTS * sizeof(vec4_t), 1 * sizeof(uint32_t), (void*)&vk_d.lightCount);
+}
 
-	switch (tess.shader->cullType) {
-	case CT_FRONT_SIDED:
-		bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_NV; break;
-	case CT_BACK_SIDED:
-		bAS->geometryInstance.flags = 0; break;
-	case CT_TWO_SIDED:
-		bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV; break;
+static qboolean RB_MaterialException(vkbottomAS_t* bAS) {
+	// -- lights --
+	if (strstr(tess.shader->name, "base_light") || strstr(tess.shader->name, "gothic_light")) { // all lamp textures
+		bAS->data.material = MATERIAL_KIND_REGULAR;
+		bAS->data.material |= MATERIAL_FLAG_LIGHT;
+		RB_AddLightToLightList();
 	}
-	bAS->geometryInstance.accelerationStructureHandle = bAS->handle;
-
-	VK_UploadBufferDataOffset(&vk_d.instanceBuffer, vk_d.instanceBufferOffset + vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&bAS->geometryInstance);
+	else
+	if (strstr(tess.shader->name, "flame")) { // all fire textures
+		bAS->data.material = MATERIAL_KIND_REGULAR;
+		bAS->data.material |= MATERIAL_FLAG_LIGHT;
+		RB_AddLightToLightList();
+	}
+	//else
+	//if (strstr(tess.shader->name, "beam")  /* || (strstr(tess.shader->name, "lamp") && strstr(tess.shader->name, "flare"))*/ ) { // light rect and cones (beam == cones, lamp = squares)
+	//	bAS->data.material = MATERIAL_KIND_INVISIBLE;
+	//	bAS->data.material |= MATERIAL_FLAG_LIGHT;
+	//}
+	else
+	// -- glass --
+	if (strstr(tess.shader->name, "glass") || strstr(tess.shader->name, "jacobs") || strstr(tess.shader->name, "green_sphere") || strstr(tess.shader->name, "yellow_sphere") || strstr(tess.shader->name, "red_sphere")) { // glass (jacobs = console glass, green sphere = life)
+		bAS->data.material = MATERIAL_KIND_GLASS;
+		//bAS->data.material |= MATERIAL_FLAG_LIGHT;
+	} 
+	else
+	if (tess.shader->sort == SS_BLEND0) {
+		int x = 2;
+		//bAS->data.material == MATERIAL_KIND_GLASS;
+	}
+	//	else
+	//if (strstr(tess.shader->name, "gratelamp/gratelamp") && !strstr(tess.shader->name, "flare") && !strstr(tess.shader->name, "_b")) {
+	//	bAS->data.material == MATERIAL_KIND_INVISIBLE;
+	//	//bAS->data.material |= MATERIAL_FLAG_LIGHT;
+	//}
+	//else
+	//if (backEnd.currentEntity->e.reType == (RT_SPRITE) &&
+	//	(strstr(tess.shader->name, "rocketExplosion") || strstr(tess.shader->name, "plasma1") || strstr(tess.shader->name, "grenadeExplosion") || strstr(tess.shader->name, "bfgExplosion"))) {
+	//	//bAS->data.material |= MATERIAL_KIND_BULLET;
+	//	bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
+	//}
+	//else if (backEnd.currentEntity->e.reType == RT_RAIL_CORE || backEnd.currentEntity->e.reType == RT_RAIL_RINGS || backEnd.currentEntity->e.reType == RT_LIGHTNING) {
+	//	//bAS->data.material |= MATERIAL_KIND_BULLET;
+	//	bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
+	//}
+	//else if (strstr(tess.shader->name, "railExplosion")) {
+	//	bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
+	//	bAS->data.material |= MATERIAL_FLAG_TRANSPARENT;
+	//}
+	//else if (tess.shader->sort == SS_DECAL) {
+	//	//bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
+	//	bAS->data.material |= MATERIAL_FLAG_BULLET_MARK;
+	//}else if (strstr(tess.shader->name, "hologirl")) {
+	//	bAS->data.material = MATERIAL_FLAG_SEE_THROUGH;
+	//	//bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
+	//}
+	//else if (strstr(tess.shader->name, "gratelamp/gratelamp") && !strstr(tess.shader->name, "flare") && !strstr(tess.shader->name, "_b")) {
+	//	bAS->data.material = MATERIAL_FLAG_SEE_THROUGH;
+	//}
+	//else if (strstr(tess.shader->name, "flare") || strstr(tess.shader->name, "textures/sfx/beam")) {
+	//	bAS->data.material = MATERIAL_FLAG_LIGHT;
+	//}
+	//else if (strstr(tess.shader->name, "railgun")) bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
+	else return qfalse;
+	return qtrue;
 }
 
 void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
@@ -191,71 +229,71 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 		bAS->data.texIdx = (float)tess.shader->stages[0]->bundle[0].image[indexAnim]->index;
 		tess.shader->stages[0]->bundle[0].image[indexAnim]->frameUsed = tr.frameCount;
 	}
-	if (tess.shader->stages[0]->bundle[1].image[0] != 0)
-	{
-		int x = 2;
-	}
-
 
 	bAS->data.blendfunc = (uint32_t)(tess.shader->stages[0]->stateBits);
+	bAS->data.opaque = tess.shader->sort;
 
-	bAS->data.material &= 0xfffffff0;
-	switch(tess.shader->contentFlags & 0x0000007f){
+	// set material
+	if (!RB_MaterialException(bAS)) {
+
+		bAS->data.material &= 0xfffffff0;
+		switch (tess.shader->contentFlags & 0x0000007f) {
 		case CONTENTS_SOLID: bAS->data.material |= MATERIAL_KIND_REGULAR; break;
 		case CONTENTS_LAVA: bAS->data.material |= MATERIAL_KIND_LAVA; break;
 		case CONTENTS_SLIME: bAS->data.material |= MATERIAL_KIND_SLIME; break;
 		case CONTENTS_WATER: bAS->data.material |= MATERIAL_KIND_WATER; break;
 		case CONTENTS_FOG: bAS->data.material |= MATERIAL_KIND_FOG; break;
 		default: bAS->data.material |= MATERIAL_KIND_INVALID; break;
-	}
-	// --special cases
-	if (backEnd.currentEntity->e.reType == (RT_SPRITE) && 
-		(strstr(tess.shader->name, "rocketExplosion") || strstr(tess.shader->name, "plasma1") || strstr(tess.shader->name, "grenadeExplosion") || strstr(tess.shader->name, "bfgExplosion"))) {
-		bAS->data.material |= MATERIAL_KIND_BULLET;
-		bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
-	}
-	if (backEnd.currentEntity->e.reType == RT_RAIL_CORE || backEnd.currentEntity->e.reType == RT_RAIL_RINGS || backEnd.currentEntity->e.reType == RT_LIGHTNING) {
-		bAS->data.material |= MATERIAL_KIND_BULLET;
-		bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
-	}
-	if (strstr(tess.shader->name, "railExplosion")) {
-		bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
-		bAS->data.material |= MATERIAL_FLAG_TRANSPARENT;
-	}
-	if (tess.shader->sort == SS_DECAL) {
-		//bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
-		bAS->data.material |= MATERIAL_FLAG_BULLET_MARK;
-	}
+		}
 
-	if(strstr(tess.shader->name, "railgun")) bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
-	if (strstr(tess.shader->name, "quad")) {
-		int x;
+		//if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.material |= MATERIAL_FLAG_MIRROR;
+		//else if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") == NULL) bAS->data.material |= MATERIAL_FLAG_PORTAL;
+		////if (tess.shader->sort <= SS_OPAQUE) bAS->data.material |= MATERIAL_FLAG_OPAQUE;
+		//if (tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1) bAS->data.material |= MATERIAL_FLAG_TRANSPARENT;
+		//if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) {
+		//	bAS->data.material |= MATERIAL_FLAG_SEE_THROUGH;
+		//}
+		//if (tess.shader->sort <= SS_OPAQUE && tess.shader->contentFlags != CONTENTS_TRANSLUCENT /*!strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "proto_grate4.tga")*/) bAS->data.material |= MATERIAL_FLAG_OPAQUE;
 	}
-	// --
-
-	if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.material |= MATERIAL_FLAG_MIRROR;
-	else if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") == NULL) bAS->data.material |= MATERIAL_FLAG_PORTAL;
-	if (tess.shader->sort <= SS_OPAQUE) bAS->data.material |= MATERIAL_FLAG_OPAQUE;
-	if (tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1) bAS->data.material |= MATERIAL_FLAG_TRANSPARENT;
-	if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) {
-		bAS->data.material |= MATERIAL_FLAG_SEE_THROUGH;
-	}
-
-	// --
-	// set if surface is a mirror
-	//if(tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.material |= MATERIAL_FLAG_MIRROR;
-	if(tess.shader->sort <= SS_OPAQUE && tess.shader->contentFlags != CONTENTS_TRANSLUCENT /*!strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "proto_grate4.tga")*/) bAS->data.material |= MATERIAL_FLAG_OPAQUE;
-	
-	// --special cases
-	if (strstr(tess.shader->name, "hologirl")) {
-		bAS->data.material = MATERIAL_FLAG_SEE_THROUGH;
-		//bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
-	}
-	//bAS->data.isMirror = tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL;
-	bAS->data.opaque = tess.shader->sort;//(tess.shader->sort <= SS_OPAQUE)/*tess.shader->sort == SS_OPAQUE || tess.shader->isSky*/;
-	//bAS->data.isSky = tess.shader->isSky;
 
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&bAS->data);
+}
+
+void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
+	bAS->geometryInstance.instanceCustomIndex = 0;
+	// set visibility for first and third person (eye and mirror)
+	if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) bAS->geometryInstance.mask = RAY_MIRROR_OPAQUE_VISIBLE;
+	else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_OPAQUE_VISIBLE;
+	else bAS->geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
+
+	if (tess.shader->sort <= SS_OPAQUE) {
+		bAS->geometries.flags = VK_GEOMETRY_OPAQUE_BIT_NV;
+	}
+	else {
+		bAS->geometries.flags = 0;
+	}
+
+	/*if (bAS->data.material & MATERIAL_FLAG_PARTICLE || tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1 || tess.shader->sort == SS_DECAL) {
+		bAS->geometryInstance.instanceOffset = 1;
+		if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) bAS->geometryInstance.mask = RAY_MIRROR_PARTICLE_VISIBLE;
+		else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_PARTICLE_VISIBLE;
+		else bAS->geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_PARTICLE_VISIBLE;
+	}
+	else {
+		bAS->geometryInstance.instanceOffset = 0;
+	}*/
+
+	switch (tess.shader->cullType) {
+		case CT_FRONT_SIDED:
+			bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_NV; break;
+		case CT_BACK_SIDED:
+			bAS->geometryInstance.flags = 0; break;
+		case CT_TWO_SIDED:
+			bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV; break;
+	}
+	bAS->geometryInstance.accelerationStructureHandle = bAS->handle;
+
+	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&bAS->geometryInstance);
 }
 
 void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic, qboolean forceUpdate) {
@@ -264,12 +302,6 @@ void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic, qboolean forceUpdate) {
 
 	if (input->numIndexes == 0) {
 		return;
-	}
-	if (input->indexes[SHADER_MAX_INDEXES - 1] != 0) {
-		ri.Error(ERR_DROP, "RB_EndSurface() - SHADER_MAX_INDEXES hit");
-	}
-	if (input->xyz[SHADER_MAX_VERTEXES - 1][0] != 0) {
-		ri.Error(ERR_DROP, "RB_EndSurface() - SHADER_MAX_VERTEXES hit");
 	}
 	if (tess.shader == tr.shadowShader) return;
 	
@@ -290,9 +322,8 @@ void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic, qboolean forceUpdate) {
 	
 	qboolean anim = tess.shader->stages[0]->bundle[0].numImageAnimations > 0;
 	qboolean cTex = tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD) && tess.shader->stages[0]->bundle[0].numTexMods > 0) : qfalse;
-	qboolean deform = tess.shader->numDeforms > 0 /*|| (*drawSurf->surface == SF_MD3 && ((md3Surface_t*)drawSurf->surface)->numFrames > 1)*/;
-	qboolean frames = backEnd.currentEntity->e.frame > 0 || backEnd.currentEntity->e.oldframe > 0;//backEnd.currentEntity->e.frame != backEnd.currentEntity->e.oldframe;//(*drawSurf->surface == SF_MD3 && ((md3Surface_t*)drawSurf->surface)->numFrames > 1);
-	qboolean sky = qfalse;//tess.shader->isSky;
+	qboolean deform = tess.shader->numDeforms > 0;
+	qboolean frames = backEnd.currentEntity->e.frame > 0 || backEnd.currentEntity->e.oldframe > 0;
 	if (!dynamic) {
 		currentAS = bAS;
 	}
@@ -368,8 +399,8 @@ void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic, qboolean forceUpdate) {
 		}
 	}
 		
-	RB_UpdateInstanceBuffer(currentAS);
 	RB_UpdateInstanceDataBuffer(currentAS);
+	RB_UpdateInstanceBuffer(currentAS);
 	// add bottom to trace as list
 	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], currentAS, sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
@@ -391,16 +422,15 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	
 	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
 		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
-		if (strstr(shader->name, "models/mapobjects/console/under")) {
+		// skip stuff
+		if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
+			|| strstr(shader->name, "Shadow") || shader->isSky) {
 			continue;
 		}
-
+		if (drawSurf->bAS == NULL) continue;
+		
 		// SS_BLEND0 bullets, ball around energy, glow around armore shards, armor glow ,lights/fire
 		// SS_DECAL bullet marks
-		if (shader->isSky /* || shader->sort == SS_DECAL*/ || strstr(shader->name, "Shadow")) {
-			continue;
-			int a = 2;
-		}
 		forceUpdate = qfalse;
 		// just to clean backend state
 		RB_BeginSurface(shader, fogNum);
@@ -439,7 +469,11 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		if (drawSurf->bAS == NULL && drawSurf->surface == SF_ENTITY) {
 			int x = 2;
 		}
-		
+		if (backEnd.refdef.num_dlights > 0) {
+			int x = 2;
+		}
+		//"models/mapobjects/gratelamp/gratelamp_b.tga" ...}, ...} ...}, ...}	textureBundle_t[2]
+
 
 		// add the triangles for this surface
 		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
@@ -470,23 +504,6 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		if (backEnd.currentEntity->e.reType & (RT_SPRITE)) {
 			int x;
 		}
-		// handle dynamic objects
-		// sky
-		//if (i > 7 && i < 10) continue;
-		//if (shader->isSky /*|| shader->polygonOffset == qtrue*/) {
-		//	//continue;
-		//	RB_ClipSkyPolygons(&tess);
-		//	// draw the outer skybox
-		//	if (tess.shader->sky.outerbox[0] && tess.shader->sky.outerbox[0] != tr.defaultImage) {
-		//		//DrawSkyBox(tess.shader);
-		//	}
-		//	// generate the vertexes for all the clouds, which will be drawn
-		//	// by the generic shader routine
-		//	R_BuildCloudData(&tess);
-		//	dynamic = qtrue;
-		//	forceUpdate = qfalse;
-		//	RB_CreateBottomAS(&drawSurf->bAS, dynamic);
-		//}
 
 		// blood ray projectile etc
 		if (drawSurf->bAS == NULL && tess.numIndexes == 6 && tess.numVertexes == 4){//backEnd.currentEntity->e.reType == RT_SPRITE) {RT_BEAM
@@ -516,7 +533,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	backEnd.refdef.floatTime = originalTime;
 
 	VK_DestroyTopAccelerationStructure(&vk_d.topAS[vk.swapchain.currentImage]);
-	VK_MakeTop(vk.swapchain.CurrentCommandBuffer(), &vk_d.topAS[vk.swapchain.currentImage], vk_d.bottomASTraceList, vk_d.bottomASTraceListCount, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV);
+	VK_MakeTopAS(vk.swapchain.CurrentCommandBuffer(), &vk_d.topAS[vk.swapchain.currentImage], &vk_d.topASBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceList, vk_d.bottomASTraceListCount, vk_d.instanceBuffer[vk.swapchain.currentImage], VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV);
 	
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
@@ -615,7 +632,9 @@ static void RB_TraceRays() {
 
 	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 0, 16 * sizeof(float), (void*)&invViewMatrix[0]);
 	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 32 * sizeof(float), 16 * sizeof(float), (void*)&invProjMatrix[0]);
-	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 64 * sizeof(float), 1 * sizeof(qboolean), (void*)&vk_d.portalInView);
+	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 64 * sizeof(float), 16 * sizeof(float), (void*)&viewMatrix[0]);
+	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 80 * sizeof(float), 16 * sizeof(float), (void*)&projMatrix[0]);
+	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 96 * sizeof(float), 1 * sizeof(qboolean), (void*)&vk_d.portalInView);
 
 	// bind rt pipeline
 	VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
@@ -647,14 +666,16 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 	vk_d.bottomASTraceListCount = 0;
 	vk_d.scratchBufferOffset = 0;
-	vk_d.instanceBufferOffset = vk.swapchain.currentImage * (5000 * sizeof(VkGeometryInstanceNV));
+	vk_d.lightCount = 0;
 
-	vk_d.tasBufferOffset = vk.swapchain.currentImage * (65536 * 20);
 	vk_d.geometry.xyzDynamicOffset = vk.swapchain.currentImage * 500000 + 500000;
 	vk_d.geometry.idxDynamicOffset = vk.swapchain.currentImage * 500000 + 500000;
 	vk_d.basBufferDynamicOffset = vk_d.basBufferStaticOffset;
 
+	vk_d.asUpdateTime = Sys_Milliseconds();
 	RB_UpdateRayTraceAS(drawSurfs, numDrawSurfs);
+	vk_d.asUpdateTime = Sys_Milliseconds() - vk_d.asUpdateTime;
+
 	RB_TraceRays();
 
 	memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -670,9 +691,10 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 	vk_d.portalInView = qfalse;
 	vk_d.mirrorInView = qfalse;
-	// draw rt results to swap chain
+
+	// draw pt results to swap chain
 	VK_BeginRenderClear();
-	VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultImage);
+	VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage]);
 	//VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultFramebuffer.image);
 }
 

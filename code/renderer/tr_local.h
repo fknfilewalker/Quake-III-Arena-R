@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "tr_public.h"
 #include "qgl.h"
 #include "qvk.h"
+#include "../../shader/glsl/constants.h"
 
 #define GL_INDEX_TYPE		GL_UNSIGNED_INT
 typedef unsigned int glIndex_t;
@@ -1010,8 +1011,12 @@ Vulkan
 #define VK_MAX_SURFACE_FORMAT_ARRAY_SIZE 10
 #define VK_INDEX_DATA_SIZE 1024 * 1024
 #define VK_VERTEX_ATTRIBUTE_DATA_SIZE 512 * 1024
+#define VK_MAX_NUM_PIPELINES 128
 
 #define VK_GLOBAL_IMAGEARRAY_SHADER_STAGE_FLAGS (VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV)
+
+// RTX
+#define VK_MAX_BOTTOM_AS_INSTANCES 2048
 
 // --Pipeline parts--
 typedef struct {
@@ -1236,7 +1241,7 @@ typedef struct {
 
 typedef struct {
 	vkbuffer_t					uniformBuffer;
-	vkimage_t					resultImage;
+	vkimage_t					resultImage[VK_MAX_SWAPCHAIN_SIZE];
 	vkimage_t					cubemap;
 	vkrtpipeline_t				pipeline;
 	vkdescriptor_t				descriptor[VK_MAX_SWAPCHAIN_SIZE];
@@ -1262,8 +1267,6 @@ typedef struct {
     VkPipelineDepthStencilStateCreateInfo       dsBlend;
     VkPipelineColorBlendAttachmentState         colorBlend;
     
-    // clip
-    qboolean                                    clip;
 } vkrenderState_t;
 
 typedef struct {
@@ -1300,7 +1303,6 @@ typedef struct {
 	// RTX
 	vkaccelerationStructures_t accelerationStructures;
 
-	vktopAS_t			topAS[3];
 	vkbottomAS_t*		bottomASList;
 	uint32_t			bottomASCount;
 
@@ -1318,24 +1320,32 @@ typedef struct {
 	qboolean			mirrorInView;
 	viewParms_t			mirrorViewParms;
 
-	// stores offset and stuff for in shader lookup
-	vkbuffer_t			instanceDataBuffer[VK_MAX_SWAPCHAIN_SIZE];
 
 	vkbuffer_t			basBuffer;
 	VkDeviceSize		basBufferStaticOffset;
 	VkDeviceSize		basBufferDynamicOffset;
 
-	vkbuffer_t			tasBuffer;
-	VkDeviceSize		tasBufferOffset;
+
+	vktopAS_t			topAS[VK_MAX_SWAPCHAIN_SIZE];
+	// AS Buffers for each swapchain image
+	vkbuffer_t			topASBuffer[VK_MAX_SWAPCHAIN_SIZE];
+	// stores offset and stuff for in shader lookup
+	vkbuffer_t			instanceBuffer[VK_MAX_SWAPCHAIN_SIZE];			// for bottom as instance data used by the top as
+	vkbuffer_t			instanceDataBuffer[VK_MAX_SWAPCHAIN_SIZE];		// for custom instance data
+
 	vkbuffer_t			scratchBuffer;	// only required for build, not needed after build
 	VkDeviceSize		scratchBufferOffset;
-	vkbuffer_t			instanceBuffer; 
-	VkDeviceSize		instanceBufferOffset;
 
 	vkbuffer_t			uboBuffer[VK_MAX_SWAPCHAIN_SIZE];
-    
+	vkbuffer_t			uboLightList[VK_MAX_SWAPCHAIN_SIZE];
+	vec4_t				lightList[RTX_MAX_LIGHTS];
+	uint32_t			lightCount;
+	vkimage_t			blueNoiseTex;
     //
     qboolean            renderBegan;
+
+	// statistics
+	int					asUpdateTime;
     
     // render clear
     VkViewport          viewport;
@@ -1347,6 +1357,7 @@ typedef struct {
 	float               projectionMatrix[16];
     float               mvp[16];
 	uint32_t            discardModeAlpha;
+	qboolean            clip;
 	float				clipPlane[4];
     
     // texture
@@ -1358,7 +1369,7 @@ typedef struct {
 	// pipeline
 	uint32_t			currentPipeline;
 	uint32_t			pipelineListSize;
-	vkpipe_t			pipelineList[500];
+	vkpipe_t			pipelineList[VK_MAX_NUM_PIPELINES];
 
 	vkpipeline_t        fullscreenRectPipeline;
 

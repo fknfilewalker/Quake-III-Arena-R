@@ -1015,7 +1015,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
                 //if (a > 20) return;
                 //return;
             }
-            if (vk_d.state.clip == qtrue) {
+            if (vk_d.clip == qtrue) {
                 //`a = 2;
                 //return;
             }

@@ -360,7 +360,7 @@ void RB_ShadowFinish( void ) {
         vk_d.state.dsBlend.front = vk_d.state.dsBlend.back = stencil;
         
         vk_d.state.cullMode = VK_CULL_MODE_NONE;
-        vk_d.state.clip = qfalse;
+        vk_d.clip = qfalse;
         
         VK_Bind( tr.whiteImage );
         

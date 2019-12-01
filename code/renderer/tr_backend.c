@@ -327,13 +327,13 @@ void RB_BeginDrawingView (void) {
             vk_d.clipPlane[1] =  plane2[2];
             vk_d.clipPlane[2] = -plane2[0];
             vk_d.clipPlane[3] =  plane2[3];
-            vk_d.state.clip = qtrue;
+            vk_d.clip = qtrue;
         }
 	} else {
         if ( glConfig.driverType == OPENGL ) {
             qglDisable (GL_CLIP_PLANE0);
         } else if ( glConfig.driverType == VULKAN ) {
-            vk_d.state.clip = qfalse;
+            vk_d.clip = qfalse;
         }
 	}
 }
@@ -436,6 +436,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
 				R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.or );
 			}
+			
 
             if ( glConfig.driverType == OPENGL ) {
                 qglLoadMatrixf( backEnd.or.modelMatrix );

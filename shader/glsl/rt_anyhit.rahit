@@ -13,59 +13,59 @@ layout(location = 0) rayPayloadInNV RayPayload rp;
 
 void main()
 {
-  HitPoint hp = getHitPoint(gl_InstanceID, gl_PrimitiveID, attribs);
+  // HitPoint hp = getHitPoint(gl_InstanceID, gl_PrimitiveID, attribs);
 
 
-  vec4 contrib = vec4(0,0,0,0);
-  // Explotion bullets etc
-  if((iData.data[gl_InstanceID].material & MATERIAL_KIND_BULLET) == MATERIAL_KIND_BULLET){
-    contrib = texture(texure_array[uint(uint(iData.data[gl_InstanceID].texIdx))], hp.uv);
-    if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_NEEDSCOLOR) > 0) {
-      contrib *= (hp.color/255);
-      //contrib.xyz *= contrib.w;
-    }
-    //contrib *= (hp.color/255);
-    contrib = vec4(contrib.xyz,0);
-    if(rp.max_transparent_distance < gl_HitTNV)
-      rp.transparent = alpha_blend_premultiplied(rp.transparent, contrib);
-    else
-      rp.transparent = alpha_blend_premultiplied(contrib, rp.transparent);
-  }
-  // blood smoke etc
-  else if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_PARTICLE) == MATERIAL_FLAG_PARTICLE) {
-    contrib = texture(texure_array[uint(uint(iData.data[gl_InstanceID].texIdx))], hp.uv);
-    if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_NEEDSCOLOR) > 0) {
-      contrib *= (hp.color/255);
-      contrib.xyz *= contrib.w;
-    }
-    if(rp.max_transparent_distance < gl_HitTNV)
-      rp.transparent = alpha_blend_premultiplied(rp.transparent, contrib);
-    else
-      rp.transparent = alpha_blend_premultiplied(contrib, rp.transparent);
-  }
-  else if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_TRANSPARENT) == MATERIAL_FLAG_TRANSPARENT) {
-    contrib = texture(texure_array[uint(uint(iData.data[gl_InstanceID].texIdx))], hp.uv);
-    if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_NEEDSCOLOR) > 0) {
-      contrib *= (hp.color/255);
-      contrib.xyz *= contrib.w;
-    }
-    rp.transparent.xyz += contrib.xyz;
-    //contrib = vec4(contrib.xyz,0);
-    // if(rp.max_transparent_distance < gl_HitTNV)
-    //   rp.transparent = alpha_blend_premultiplied(rp.transparent, contrib);
-    // else
-    //   rp.transparent = alpha_blend_premultiplied(contrib, rp.transparent);
-    //rp.transparent = vec4(1,0,0,0);
-  } else if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_BULLET_MARK) == MATERIAL_FLAG_BULLET_MARK){
-    contrib = texture(texure_array[uint(uint(iData.data[gl_InstanceID].texIdx))], hp.uv);
-    //contrib *= contrib.w;
-    rp.transparent.xyz -= contrib.xyz;
-    //rp.transparent = alpha_blend_premultiplied(rp.transparent, contrib);
-  }
-  else {
-    rp.transparent = vec4(1,0,0,0);
-  }
+  // vec4 contrib = vec4(0,0,0,0);
+  // // Explotion bullets etc
+  // if((iData.data[gl_InstanceID].material & MATERIAL_KIND_BULLET) == MATERIAL_KIND_BULLET){
+  //   contrib = texture(texure_array[uint(uint(iData.data[gl_InstanceID].texIdx))], hp.uv);
+  //   if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_NEEDSCOLOR) > 0) {
+  //     contrib *= (hp.color/255);
+  //     //contrib.xyz *= contrib.w;
+  //   }
+  //   //contrib *= (hp.color/255);
+  //   contrib = vec4(contrib.xyz,0);
+  //   if(rp.max_transparent_distance < gl_HitTNV)
+  //     rp.transparent = alpha_blend_premultiplied(rp.transparent, contrib);
+  //   else
+  //     rp.transparent = alpha_blend_premultiplied(contrib, rp.transparent);
+  // }
+  // // blood smoke etc
+  // else if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_PARTICLE) == MATERIAL_FLAG_PARTICLE) {
+  //   contrib = texture(texure_array[uint(uint(iData.data[gl_InstanceID].texIdx))], hp.uv);
+  //   if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_NEEDSCOLOR) > 0) {
+  //     contrib *= (hp.color/255);
+  //     contrib.xyz *= contrib.w;
+  //   }
+  //   if(rp.max_transparent_distance < gl_HitTNV)
+  //     rp.transparent = alpha_blend_premultiplied(rp.transparent, contrib);
+  //   else
+  //     rp.transparent = alpha_blend_premultiplied(contrib, rp.transparent);
+  // }
+  // else if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_TRANSPARENT) == MATERIAL_FLAG_TRANSPARENT) {
+  //   contrib = texture(texure_array[uint(uint(iData.data[gl_InstanceID].texIdx))], hp.uv);
+  //   if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_NEEDSCOLOR) > 0) {
+  //     contrib *= (hp.color/255);
+  //     contrib.xyz *= contrib.w;
+  //   }
+  //   rp.transparent.xyz += contrib.xyz;
+  //   //contrib = vec4(contrib.xyz,0);
+  //   // if(rp.max_transparent_distance < gl_HitTNV)
+  //   //   rp.transparent = alpha_blend_premultiplied(rp.transparent, contrib);
+  //   // else
+  //   //   rp.transparent = alpha_blend_premultiplied(contrib, rp.transparent);
+  //   //rp.transparent = vec4(1,0,0,0);
+  // } else if((iData.data[gl_InstanceID].material & MATERIAL_FLAG_BULLET_MARK) == MATERIAL_FLAG_BULLET_MARK){
+  //   contrib = texture(texure_array[uint(uint(iData.data[gl_InstanceID].texIdx))], hp.uv);
+  //   //contrib *= contrib.w;
+  //   rp.transparent.xyz -= contrib.xyz;
+  //   //rp.transparent = alpha_blend_premultiplied(rp.transparent, contrib);
+  // }
+  // else {
+  //   rp.transparent = vec4(1,0,0,0);
+  // }
   
-  rp.max_transparent_distance = gl_HitTNV;
+  // rp.max_transparent_distance = gl_HitTNV;
 	ignoreIntersectionNV();
 }

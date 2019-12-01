@@ -4,10 +4,10 @@ void VK_CreateSampler(vkimage_t* image, VkFilter magFilter, VkFilter minFilter,
 	VkSamplerMipmapMode mipmapMode, VkSamplerAddressMode addressMode);
 static void VK_CopyBufferToImage(vkimage_t* image, uint32_t width, uint32_t height, VkBuffer* buffer, uint32_t mipLevel, uint32_t arrayLayer);
 
-void VK_CreateImage(vkimage_t *image, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, uint32_t mipLevels) {
+void VK_CreateImageArray(vkimage_t *image, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, uint32_t mipLevels, uint32_t arrayLayers) {
 	image->extent = (VkExtent3D) { width, height, 1 };
 	image->mipLevels = mipLevels;
-	image->arrayLayers = 1;
+	image->arrayLayers = arrayLayers;
 
 	// create image
 	{
@@ -21,7 +21,7 @@ void VK_CreateImage(vkimage_t *image, uint32_t width, uint32_t height, VkFormat 
 		desc.extent.height = height;
 		desc.extent.depth = 1;
 		desc.mipLevels = image->mipLevels;
-		desc.arrayLayers = 1;
+		desc.arrayLayers = arrayLayers;
 		desc.samples = VK_SAMPLE_COUNT_1_BIT;
 		desc.tiling = VK_IMAGE_TILING_OPTIMAL;
 		desc.usage = usage;
@@ -41,7 +41,7 @@ void VK_CreateImage(vkimage_t *image, uint32_t width, uint32_t height, VkFormat 
 		desc.pNext = NULL;
 		desc.flags = 0;
 		desc.image = image->handle;
-		desc.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		desc.viewType = arrayLayers > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
 		desc.format = format;
 		desc.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 		desc.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -51,9 +51,12 @@ void VK_CreateImage(vkimage_t *image, uint32_t width, uint32_t height, VkFormat 
 		desc.subresourceRange.baseMipLevel = 0;
 		desc.subresourceRange.levelCount = image->mipLevels;//VK_REMAINING_MIP_LEVELS;
 		desc.subresourceRange.baseArrayLayer = 0;
-		desc.subresourceRange.layerCount = 1;
+		desc.subresourceRange.layerCount = arrayLayers;
 		VK_CHECK(vkCreateImageView(vk.device, &desc, NULL, &image->view), "failed to create Image View!");
 	}
+}
+void VK_CreateImage(vkimage_t* image, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, uint32_t mipLevels) {
+	VK_CreateImageArray(image, width, height, format, usage, mipLevels, 1);
 }
 
 void VK_CreateCubeMap(vkimage_t* image, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, uint32_t mipLevels, uint32_t arrayLayers) {
