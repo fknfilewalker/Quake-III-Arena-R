@@ -44,20 +44,21 @@ layout(location = PAYLOAD_BRDF) rayPayloadNV RayPayload rp;
 layout(location = PAYLOAD_SHADOW) rayPayloadNV RayPayloadShadow rp_shadow;
 
 
-// Ray get_primary_ray(vec2 pos_cs)
-// {
-// 	vec4 v_near = inverseView * inverseProj * vec4(pos_cs, -1.0, 1.0);
-// 	vec4 v_far  = inverseView * inverseProj * vec4(pos_cs,  0.0, 1.0);
-// 	v_near /= v_near.w;
-// 	v_far  /= v_far.w;
+Ray
+get_primary_ray(vec2 pos_cs)
+{
+	vec4 v_near = ubo.inverseView * ubo.inverseProj * vec4(pos_cs, -1.0, 1.0);
+	vec4 v_far  = ubo.inverseView * ubo.inverseProj * vec4(pos_cs,  0.0, 1.0);
+	v_near /= v_near.w;
+	v_far  /= v_far.w;
 
-// 	Ray ray;
-// 	ray.origin = v_near.xyz;
-// 	ray.direction = normalize(v_far.xyz - v_near.xyz);
-// 	ray.t_min = 0.01;
-// 	ray.t_max = 10000.0;
-// 	return ray;
-// }
+	Ray ray;
+	ray.origin = v_near.xyz;
+	ray.direction = normalize(v_far.xyz - v_near.xyz);
+	ray.t_min = 0.01;
+	ray.t_max = 10000.0;
+	return ray;
+}
 
 void trace_ray(Ray ray, uint cullMask)
 {
@@ -94,12 +95,12 @@ vec4 path_tracer(){
 	const vec2 screen_coord_cs  = inUV * 2.0 - 1.0;
 
 	// init ray
-	Ray ray;
-	ray.origin = position.xyz;
-	vec4 target = ubo.inverseProj * vec4(screen_coord_cs, -1, 1) ;
-	ray.direction = (ubo.inverseView*vec4(normalize(target.xyz), 0)).xyz;
-	ray.t_min = 0.01;
-	ray.t_max = 10000.0;
+	Ray ray = get_primary_ray(screen_coord_cs);
+	//ray.origin = position.xyz;
+	//vec4 target = ubo.inverseProj * vec4(screen_coord_cs, -1, 1) ;
+	//ray.direction = (ubo.inverseView*vec4(normalize(target.xyz), 0)).xyz;
+	//ray.t_min = 0.01;
+	//ray.t_max = 10000.0;
 
 	// calc ray length
 	//trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE);
@@ -112,12 +113,34 @@ vec4 path_tracer(){
 	}
 
 	HitPoint hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+	Triangle triangle = getTriangle(rp.instanceID, rp.primitiveID);
+	//triangle.pos = triangle.pos * mat3(ubo.viewMat);
 
 	vec4 color = vec4(0,0,0,0);
 	vec4 contrib = vec4(0,0,0,0);
 
-	color = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	//color = global_texture(iData.data[rp.instanceID].texIdx, hp.uv);
+
+	vec2 tex_coord = hp.uv;
+	Ray ray_x = get_primary_ray(screen_coord_cs + vec2(2.0 / float(gl_LaunchSizeNV.x), 0));
+	Ray ray_y = get_primary_ray(screen_coord_cs - vec2(0, 2.0 / float(gl_LaunchSizeNV.y)));
+
+	vec3 bary_x = compute_barycentric(triangle.pos, ray_x.origin, ray_x.direction);
+	vec3 bary_y = compute_barycentric(triangle.pos, ray_y.origin, ray_y.direction);
+
+	vec3 pos_ws_x= triangle.pos * bary_x;
+	vec3 pos_ws_y= triangle.pos * bary_y;
+
+	vec2 tex_coord_x = triangle.uv * bary_x;
+	vec2 tex_coord_y = triangle.uv * bary_y;
+	tex_coord_x -= tex_coord;
+	tex_coord_y -= tex_coord;
+
+	tex_coord_x *= 0.5;
+	tex_coord_y *= 0.5;
+	color = global_textureGrad(iData.data[rp.instanceID].texIdx, hp.uv, tex_coord_x, tex_coord_y);
 	//color = texture(blue_noise, vec3(hp.uv, 16)).rrrr;
+	// mark lights and glass
 	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT){
 		color += vec4(1,0,0,0);
 	} else
@@ -125,20 +148,26 @@ vec4 path_tracer(){
 		color += vec4(0,0,1,0);
 	}
 
-	vec4 shadow = vec4(0);
+	// vec4 shadow = vec4(0);
 
-	for(int i = 0; i < 1/*uboLights.lightCount*/; i++){
-		vec3 dirToLight = normalize(uboLights.pos[i].xyz - hp.pos.xyz);
-		ray.origin = hp.pos.xyz;
-		ray.direction = dirToLight;
-		trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
-		hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
-		if((iData.data[rp.instanceID].material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT){
-		} 
-		else	shadow -= vec4(0.3,0.3,0.3,0);
-	}
+	// for(int i = 0; i < 2/*uboLights.lightCount*/; i++){
+
+	// 	{
+	// 		int lightIDX = int(round(get_rng(i) * float(uboLights.lightCount)));
+	// 		vec3 dirToLight = normalize(uboLights.pos[lightIDX].xyz - hp.pos.xyz);
+	// 		ray.origin = hp.pos.xyz;
+	// 		ray.direction = dirToLight;
+	// 		trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
+	// 		hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+	// 		if((iData.data[rp.instanceID].material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT){
+	// 		} 
+	// 		else	shadow += vec4(0.10,0.1,0.1,0);
+	// 	}
+	// }
 	
-	color += shadow;
+	// color -= shadow;
+
+	//color = vec4(get_rng(1));//texelFetch(blue_noise, ivec3(gl_LaunchIDNV.xy % (BLUE_NOISE_RES ), 0), 0).rrrr;
 	// //mirror
 	// if((iData.data[rp.instanceID].material & MATERIAL_FLAG_MIRROR) == MATERIAL_FLAG_MIRROR){
 	// 	contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);

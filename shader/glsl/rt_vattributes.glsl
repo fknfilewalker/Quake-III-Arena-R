@@ -16,13 +16,14 @@ struct HitPoint {
 
 // buffer with instance data
 struct InstanceData{
-  float offsetIdx;
-  float offsetXYZ;
-  float texIdx;
-  uint material;
-  uint blendfunc;
-  float shaderSort;
-  uint type;
+	float offsetIdx;
+	float offsetXYZ;
+	uint texIdx;
+	uint material;
+	uint blendfunc;
+	float shaderSort;
+	uint type;
+	uint acht;
 };
 layout(binding = BINDING_OFFSET_INSTANCE_DATA, set = 0) buffer Instance { InstanceData data[]; } iData;
 
@@ -47,6 +48,9 @@ Triangle getTriangle(uint instanceID, uint primitiveID){
 	hitTriangle.pos[0] = vertices.v[index.x].pos.xyz;
 	hitTriangle.pos[1] = vertices.v[index.y].pos.xyz;
 	hitTriangle.pos[2] = vertices.v[index.z].pos.xyz;
+	//hitTriangle.pos[0] = (mat4x3(iData.data[instanceID].modelMat) * vec4(vertices.v[index.x].pos.xyz, 1)).xyz;
+	//hitTriangle.pos[1] = (mat4x3(iData.data[instanceID].modelMat) * vec4(vertices.v[index.y].pos.xyz, 1)).xyz;
+	//hitTriangle.pos[2] = (mat4x3(iData.data[instanceID].modelMat) * vec4(vertices.v[index.z].pos.xyz, 1)).xyz;
 	// UV
 	hitTriangle.uv[0] = vertices.v[index.x].uv.xy;
 	hitTriangle.uv[1] = vertices.v[index.y].uv.xy;

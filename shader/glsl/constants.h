@@ -50,8 +50,10 @@
 #define SBT_RCHIT_OPAQUE                    0x00000002
 #define SBT_RAHIT_PARTICLE                  0x00000003
 
+#define NUM_BOUNCES 2
 #define RTX_MAX_LIGHTS 64
 
+// blue noise
 #define NUM_BLUE_NOISE_TEX (32)
 #define BLUE_NOISE_RES     (256)
 

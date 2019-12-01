@@ -286,11 +286,12 @@ typedef struct {
 typedef struct {
 	float offsetIdx;
 	float offsetXYZ;
-	float texIdx;
+	uint32_t texIdx;
 	uint32_t material;
 	uint32_t blendfunc;
 	float opaque;
 	uint32_t type;
+	uint32_t acht;
 } ASInstanceData;
 typedef struct {
 	float          transform[12];

@@ -225,8 +225,8 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 		}
 		indexAnim %= tess.shader->stages[0]->bundle[0].numImageAnimations;	
 	}
-	if (bAS->data.texIdx != (float)tess.shader->stages[0]->bundle[0].image[indexAnim]->index) {
-		bAS->data.texIdx = (float)tess.shader->stages[0]->bundle[0].image[indexAnim]->index;
+	if (bAS->data.texIdx != (uint32_t)tess.shader->stages[0]->bundle[0].image[indexAnim]->index) {
+		bAS->data.texIdx = (uint32_t)tess.shader->stages[0]->bundle[0].image[indexAnim]->index;
 		tess.shader->stages[0]->bundle[0].image[indexAnim]->frameUsed = tr.frameCount;
 	}
 
@@ -528,6 +528,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			continue;
 		}
 		Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
+		
 		RB_AddBottomAS(drawSurf->bAS, dynamic, forceUpdate);
 	}
 	backEnd.refdef.floatTime = originalTime;
@@ -632,7 +633,7 @@ static void RB_TraceRays() {
 
 	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 0, 16 * sizeof(float), (void*)&invViewMatrix[0]);
 	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 32 * sizeof(float), 16 * sizeof(float), (void*)&invProjMatrix[0]);
-	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 64 * sizeof(float), 16 * sizeof(float), (void*)&viewMatrix[0]);
+	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 64 * sizeof(float), 16 * sizeof(float), (void*)&viewMatrixFlipped[0]);
 	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 80 * sizeof(float), 16 * sizeof(float), (void*)&projMatrix[0]);
 	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 96 * sizeof(float), 1 * sizeof(qboolean), (void*)&vk_d.portalInView);
 

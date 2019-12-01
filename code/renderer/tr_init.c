@@ -306,12 +306,18 @@ static void InitVulkan(void)
 
 		int		width, height;
 		byte* pic;
-		VK_CreateImageArray(&vk_d.blueNoiseTex, BLUE_NOISE_RES, BLUE_NOISE_RES, VK_FORMAT_R16_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1, NUM_BLUE_NOISE_TEX);
+		VK_CreateImageArray(&vk_d.blueNoiseTex, BLUE_NOISE_RES, BLUE_NOISE_RES, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1, NUM_BLUE_NOISE_TEX);
 		for (int i = 0; i < NUM_BLUE_NOISE_TEX; i++) {
+			uint8_t img[BLUE_NOISE_RES * BLUE_NOISE_RES];
 			char buf[1024];
 			snprintf(buf, sizeof buf, "blue_noise/LDR_RGBA_%04d.tga", i);
 			R_LoadImage(buf, &pic, &width, &height);
-			VK_UploadImageData(&vk_d.blueNoiseTex, width, height, pic, 4, 0, i);
+
+			for (int j = 0; j < BLUE_NOISE_RES * BLUE_NOISE_RES; j++) {
+				img[j] = *(pic + (j * 4));
+			}
+			
+			VK_UploadImageData(&vk_d.blueNoiseTex, width, height, &img, 1, 0, i);
 		}
 		VK_CreateSampler(&vk_d.blueNoiseTex, VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 
@@ -1329,10 +1335,8 @@ void RE_Shutdown( qboolean destroyWindow ) {
 				for (int i = 0; i < vk_d.bottomASDynamicCount[j]; i++) {
 					VK_DestroyBottomAccelerationStructure(&vk_d.bottomASDynamicList[j][i]);
 				}
+				free(vk_d.bottomASDynamicList[j]);
 			}
-			free(vk_d.bottomASDynamicList[0]);
-			free(vk_d.bottomASDynamicList[1]);
-			free(vk_d.bottomASDynamicList[2]);
 
 			VK_DestroyImage(&vk_d.accelerationStructures.resultImage);
 
