@@ -56,6 +56,7 @@ void main()
   rp.instanceID = gl_InstanceID;
 	rp.primitiveID = gl_PrimitiveID;
 	rp.hit_distance = gl_RayTmaxNV;
+  rp.modelmat = gl_ObjectToWorldNV;
 }  
 
 //gl_WorldRayOriginNV;

@@ -363,7 +363,13 @@ static qboolean R_LoadMD3 (model_t *mod, int lod, void *buffer, const char *mod_
 		//RTX
 		if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
 			shader = (md3Shader_t*)((byte*)surf + surf->ofsShaders);
-			RB_CreateNewBottomAS(surf, tr.shaders[shader->shaderIndex], &mod->bAS[lod][i]);
+			tess.numVertexes = 0;
+			tess.numIndexes = 0;
+			tess.shader = tr.shaders[shader->shaderIndex];
+			rb_surfaceTable[*((surfaceType_t*) surf)]((surfaceType_t*) surf);
+			RB_CreateBottomAS(&mod->bAS[lod][i], qfalse);
+			tess.numVertexes = 0;
+			tess.numIndexes = 0;
 		}
 		
 		surf = (md3Surface_t *)( (byte *)surf + surf->ofsEnd );

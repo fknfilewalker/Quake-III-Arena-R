@@ -266,6 +266,9 @@ static void InitVulkan(void)
 		vk_d.bottomASTraceListCount = 0;
 
 		const uint32_t asMemoryAllignmentSize = 65536; // is the aligment size for as buffers
+		VK_CreateAttributeBuffer(&vk_d.geometry.idx_static, RTX_STATIC_INDEX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		VK_CreateAttributeBuffer(&vk_d.geometry.xyz_static, RTX_STATIC_XYZ_SIZE * 12 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		VK_CreateRayTracingASBuffer(&vk_d.basBufferStatic, 2000000000 * sizeof(byte));
 		for (int i = 0; i < vk.swapchain.imageCount; i++) {
 			// top AS
 			VK_CreateRayTracingASBuffer(&vk_d.topASBuffer[i], 30 * asMemoryAllignmentSize);
@@ -273,8 +276,11 @@ static void InitVulkan(void)
 			VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[i], VK_MAX_BOTTOM_AS_INSTANCES * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
 			// bottom AS
+			VK_CreateRayTracingASBuffer(&vk_d.basBufferDynamic[i], 10000 * asMemoryAllignmentSize);
 			vk_d.bottomASDynamicList[i] = calloc(VK_MAX_BOTTOM_AS_INSTANCES, sizeof(vkbottomAS_t));
 			vk_d.bottomASDynamicCount[i] = 0;
+			VK_CreateAttributeBuffer(&vk_d.geometry.idx_dynamic[i], 50 * RTX_DYNAMIC_INDEX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			VK_CreateAttributeBuffer(&vk_d.geometry.xyz_dynamic[i], 60 * RTX_DYNAMIC_XYZ_SIZE * 12 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
 			// ubo
 			VK_CreateUniformBuffer(&vk_d.uboBuffer[i], sizeof(qboolean) + 7 * 16 * sizeof(float));
@@ -290,37 +296,35 @@ static void InitVulkan(void)
 			VK_SetSampler(&vk_d.accelerationStructures.resultImage[i].descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, vk_d.accelerationStructures.resultImage[i].sampler, vk_d.accelerationStructures.resultImage[i].view);
 			VK_FinishDescriptor(&vk_d.accelerationStructures.resultImage[i].descriptor_set);
 		}
-
-		VK_CreateAttributeBuffer(&vk_d.geometry.idx, 4 * RTX_STATIC_INDEX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-		VK_CreateAttributeBuffer(&vk_d.geometry.xyz, 5 * RTX_STATIC_XYZ_SIZE * 12 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-		VK_CreateRayTracingASBuffer(&vk_d.basBuffer, 2000000000 * sizeof(byte));
 		
 		
 		VK_CreateRayTracingScratchBuffer(&vk_d.scratchBuffer, 5000000000 * sizeof(byte));
 
-		// load blue noise
-		const int num_blue_noise_images = NUM_BLUE_NOISE_TEX;
-		const int resolution = BLUE_NOISE_RES;
-		const size_t img_size = resolution * resolution;
-		const size_t total_size = img_size * sizeof(uint16_t);
+		if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
+			// load blue noise
+			const int num_blue_noise_images = NUM_BLUE_NOISE_TEX;
+			const int resolution = BLUE_NOISE_RES;
+			const size_t img_size = resolution * resolution;
+			const size_t total_size = img_size * sizeof(uint16_t);
 
-		int		width, height;
-		byte* pic;
-		VK_CreateImageArray(&vk_d.blueNoiseTex, BLUE_NOISE_RES, BLUE_NOISE_RES, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1, NUM_BLUE_NOISE_TEX);
-		for (int i = 0; i < NUM_BLUE_NOISE_TEX; i++) {
-			uint8_t img[BLUE_NOISE_RES * BLUE_NOISE_RES];
-			char buf[1024];
-			snprintf(buf, sizeof buf, "blue_noise/LDR_RGBA_%04d.tga", i);
-			R_LoadImage(buf, &pic, &width, &height);
+			int		width, height;
+			byte* pic;
+			VK_CreateImageArray(&vk_d.blueNoiseTex, BLUE_NOISE_RES, BLUE_NOISE_RES, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1, NUM_BLUE_NOISE_TEX);
+			for (int i = 0; i < NUM_BLUE_NOISE_TEX; i++) {
+				uint8_t img[BLUE_NOISE_RES * BLUE_NOISE_RES];
+				char buf[1024];
+				snprintf(buf, sizeof buf, "blue_noise/LDR_RGBA_%04d.tga", i);
+				R_LoadImage(buf, &pic, &width, &height);
 
-			for (int j = 0; j < BLUE_NOISE_RES * BLUE_NOISE_RES; j++) {
-				img[j] = *(pic + (j * 4));
+				for (int j = 0; j < BLUE_NOISE_RES * BLUE_NOISE_RES; j++) {
+					img[j] = *(pic + (j * 4));
+				}
+
+				VK_UploadImageData(&vk_d.blueNoiseTex, width, height, &img, 1, 0, i);
+				ri.Free(pic);
 			}
-			
-			VK_UploadImageData(&vk_d.blueNoiseTex, width, height, &img, 1, 0, i);
+			VK_CreateSampler(&vk_d.blueNoiseTex, VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 		}
-		VK_CreateSampler(&vk_d.blueNoiseTex, VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
-
 		// </RTX>
 
 		// descriptor for all texture array
@@ -1336,15 +1340,16 @@ void RE_Shutdown( qboolean destroyWindow ) {
 					VK_DestroyBottomAccelerationStructure(&vk_d.bottomASDynamicList[j][i]);
 				}
 				free(vk_d.bottomASDynamicList[j]);
+				VK_DestroyImage(&vk_d.accelerationStructures.resultImage[j]);
 			}
 
-			VK_DestroyImage(&vk_d.accelerationStructures.resultImage);
+			VK_DestroyImage(&vk_d.blueNoiseTex);
 
-			VK_DestroyBuffer(&vk_d.basBuffer);
+			VK_DestroyBuffer(&vk_d.basBufferStatic);
 			vk_d.basBufferStaticOffset = 0;
 
-			VK_DestroyBuffer(&vk_d.geometry.xyz);
-			VK_DestroyBuffer(&vk_d.geometry.idx);
+			VK_DestroyBuffer(&vk_d.geometry.xyz_static);
+			VK_DestroyBuffer(&vk_d.geometry.idx_static);
 
 			for (int i = 0; i < vk.swapchain.imageCount; i++) {
 				VK_DestroyBuffer(&vk_d.topASBuffer[i]);

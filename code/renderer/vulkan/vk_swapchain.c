@@ -420,6 +420,7 @@ void VK_EndFrame()
 
 	VK_CHECK(vkQueuePresentKHR(vk.presentQueue, &presentInfo), "failed to Queue Present!");
 
+	vk.swapchain.lastFrame = vk.swapchain.currentFrame;
 	vk.swapchain.currentFrame = (vk.swapchain.currentFrame + 1) % vk.swapchain.imageCount;
 }
 

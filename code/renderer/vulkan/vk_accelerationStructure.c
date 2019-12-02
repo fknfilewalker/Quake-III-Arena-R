@@ -2,7 +2,7 @@
 
 #define max(a,b) (((a)>(b))?(a):(b))
 
-void VK_CreateBottomAS(VkCommandBuffer commandBuffer, vkbottomAS_t* bas, VkBuildAccelerationStructureFlagsNV flag, VkDeviceSize* offset) {
+void VK_CreateBottomAS(VkCommandBuffer commandBuffer, vkbottomAS_t* bas, vkbuffer_t *bottomASBuffer, VkDeviceSize* offset, VkBuildAccelerationStructureFlagsNV flag) {
 	// create
 	VkAccelerationStructureInfoNV accelerationStructureInfo = { 0 };
 	accelerationStructureInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
@@ -27,7 +27,7 @@ void VK_CreateBottomAS(VkCommandBuffer commandBuffer, vkbottomAS_t* bas, VkBuild
 	VkBindAccelerationStructureMemoryInfoNV memoryInfo = { 0 };
 	memoryInfo.sType = VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV;
 	memoryInfo.accelerationStructure = bas->accelerationStructure;
-	memoryInfo.memory = vk_d.basBuffer.memory;
+	memoryInfo.memory = bottomASBuffer->memory;
 	if (offset != NULL) {
 		memoryInfo.memoryOffset = bas->offset = *offset;
 		*offset += (memoryRequirements2.memoryRequirements.size);
@@ -57,7 +57,7 @@ void VK_CreateBottomAS(VkCommandBuffer commandBuffer, vkbottomAS_t* bas, VkBuild
 		vk_d.scratchBufferOffset);
 	vk_d.scratchBufferOffset += memoryRequirements2Scratch.memoryRequirements.size;
 }
-void VK_UpdateBottomAS(VkCommandBuffer commandBuffer, vkbottomAS_t* oldBas, vkbottomAS_t* newBas, VkBuildAccelerationStructureFlagsNV flag, VkDeviceSize* offset) {
+void VK_UpdateBottomAS(VkCommandBuffer commandBuffer, vkbottomAS_t* oldBas, vkbottomAS_t* newBas, vkbuffer_t* bottomASBuffer, VkBuildAccelerationStructureFlagsNV flag, VkDeviceSize* offset) {
 	
 	VkMemoryRequirements2 memoryRequirements2Scratch = { 0 };
 	VkMemoryRequirements2 memoryRequirements2 = { 0 };
@@ -89,7 +89,7 @@ void VK_UpdateBottomAS(VkCommandBuffer commandBuffer, vkbottomAS_t* oldBas, vkbo
 		VkBindAccelerationStructureMemoryInfoNV memoryInfo = { 0 };
 		memoryInfo.sType = VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV;
 		memoryInfo.accelerationStructure = newBas->accelerationStructure;
-		memoryInfo.memory = vk_d.basBuffer.memory;
+		memoryInfo.memory = bottomASBuffer->memory;
 		memoryInfo.memoryOffset = newBas->offset = *offset;
 		*offset += (memoryRequirements2.memoryRequirements.size);
 
@@ -127,10 +127,10 @@ void VK_UpdateBottomAS(VkCommandBuffer commandBuffer, vkbottomAS_t* oldBas, vkbo
 }
 
 // destroy and create same AS
-void VK_RecreateBottomAS(VkCommandBuffer commandBuffer, vkbottomAS_t* bas, VkBuildAccelerationStructureFlagsNV flag) {
+void VK_RecreateBottomAS(VkCommandBuffer commandBuffer, vkbottomAS_t* bas, vkbuffer_t* bottomASBuffer, VkBuildAccelerationStructureFlagsNV flag) {
 	vkDestroyAccelerationStructureNV(vk.device, bas->accelerationStructure, NULL);
 	bas->handle = 0;
-	VK_CreateBottomAS(commandBuffer, bas, flag, NULL);
+	VK_CreateBottomAS(commandBuffer, bas, bottomASBuffer, NULL, flag);
 }
 
 void VK_MakeTopAS(VkCommandBuffer commandBuffer, 

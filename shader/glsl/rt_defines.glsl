@@ -19,6 +19,7 @@ struct RayPayload {
 	float hit_distance;
 	vec4 transparent;
 	float max_transparent_distance;
+	mat4x3 modelmat;
 };
 
 struct RayPayloadShadow {

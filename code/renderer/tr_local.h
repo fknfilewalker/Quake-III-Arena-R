@@ -284,14 +284,14 @@ typedef struct {
 
 // RTX BOTTOM AS
 typedef struct {
-	float offsetIdx;
-	float offsetXYZ;
-	uint32_t texIdx;
-	uint32_t material;
-	uint32_t blendfunc;
-	float opaque;
-	uint32_t type;
-	uint32_t acht;
+	qboolean		dynamic;
+	uint32_t		offsetIDX;
+	uint32_t		offsetXYZ;
+	uint32_t		texIdx;
+	uint32_t		material;
+	uint32_t		blendfunc;
+	float			opaque;
+	uint32_t		type;
 } ASInstanceData;
 typedef struct {
 	float          transform[12];
@@ -307,9 +307,8 @@ typedef struct {
 	VkGeometryNV					geometries;
 	ASInstanceData					data;
 	VkGeometryInstanceNV			geometryInstance;
-	VkDeviceSize					offset;			// vk_d.basBuffer
-	qboolean						dynamic;		// data changing every frame
-	int frames;
+	qboolean						dynamic;		// bas needs updates, allocate in dynamic buffer
+	VkDeviceSize					offset;			// offset in static or dynamic buffer
 } vkbottomAS_t;
 
 #define	MAX_IMAGE_ANIMATIONS	8
@@ -1119,6 +1118,7 @@ typedef struct {
 	VkExtent2D					extent;
 
 	uint32_t					currentFrame;
+	uint32_t					lastFrame;
 	uint32_t					currentImage;
 
 	VkCommandBuffer				*commandBuffers;
@@ -1217,12 +1217,15 @@ typedef struct {
 } vkrtpipeline_t;
 
 typedef struct {
-	uint32_t idxStaticOffset;
-	uint32_t xyzStaticOffset;
-	uint32_t idxDynamicOffset;
-	uint32_t xyzDynamicOffset;
-	vkbuffer_t xyz;
-	vkbuffer_t idx;
+	uint32_t		idx_static_offset;
+	uint32_t		xyz_static_offset;
+	vkbuffer_t		xyz_static;
+	vkbuffer_t		idx_static;
+
+	uint32_t		xyz_dynamic_offset;
+	uint32_t		idx_dynamic_offset;
+	vkbuffer_t		xyz_dynamic[VK_MAX_SWAPCHAIN_SIZE];
+	vkbuffer_t		idx_dynamic[VK_MAX_SWAPCHAIN_SIZE];
 } vkgeometry_t;
 
 typedef struct {
@@ -1314,16 +1317,17 @@ typedef struct {
 	uint32_t			bottomASTraceListCount;
 
 	// RTX BUFFER
-	vkgeometry_t		geometry;
-
 	qboolean			portalInView;
 	viewParms_t			portalViewParms;
 	qboolean			mirrorInView;
 	viewParms_t			mirrorViewParms;
 
 
-	vkbuffer_t			basBuffer;
+	vkgeometry_t		geometry;			// holds buffers and offsets for geometry
+
+	vkbuffer_t			basBufferStatic;
 	VkDeviceSize		basBufferStaticOffset;
+	vkbuffer_t			basBufferDynamic[VK_MAX_SWAPCHAIN_SIZE];
 	VkDeviceSize		basBufferDynamicOffset;
 
 

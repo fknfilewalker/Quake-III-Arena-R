@@ -125,6 +125,10 @@ vec4 path_tracer(){
 	Ray ray_x = get_primary_ray(screen_coord_cs + vec2(2.0 / float(gl_LaunchSizeNV.x), 0));
 	Ray ray_y = get_primary_ray(screen_coord_cs - vec2(0, 2.0 / float(gl_LaunchSizeNV.y)));
 
+	triangle.pos[0] = (rp.modelmat * vec4(triangle.pos[0], 1)).xyz;
+	triangle.pos[1] = (rp.modelmat * vec4(triangle.pos[1], 1)).xyz;
+	triangle.pos[2] = (rp.modelmat * vec4(triangle.pos[2], 1)).xyz;
+
 	vec3 bary_x = compute_barycentric(triangle.pos, ray_x.origin, ray_x.direction);
 	vec3 bary_y = compute_barycentric(triangle.pos, ray_y.origin, ray_y.direction);
 
@@ -139,6 +143,9 @@ vec4 path_tracer(){
 	tex_coord_x *= 0.5;
 	tex_coord_y *= 0.5;
 	color = global_textureGrad(iData.data[rp.instanceID].texIdx, hp.uv, tex_coord_x, tex_coord_y);
+	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_NEEDSCOLOR) > 0) {
+		color *= (hp.color/255);
+  	}
 	//color = texture(blue_noise, vec3(hp.uv, 16)).rrrr;
 	// mark lights and glass
 	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT){
@@ -147,6 +154,21 @@ vec4 path_tracer(){
 	if((iData.data[rp.instanceID].material & MATERIAL_KIND_MASK) == MATERIAL_KIND_GLASS){
 		color += vec4(0,0,1,0);
 	}
+
+	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_MIRROR) == MATERIAL_FLAG_MIRROR){
+
+		ray.origin = ray.origin + ray.direction * rp.hit_distance;
+		ray.direction = reflect(ray.direction, hp.normal);
+		trace_ray(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
+		hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
+
+		if(!found_intersection(rp)){
+			return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
+		}
+
+		color = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+
+	} 
 
 	// vec4 shadow = vec4(0);
 

@@ -16,14 +16,14 @@ struct HitPoint {
 
 // buffer with instance data
 struct InstanceData{
-	float offsetIdx;
-	float offsetXYZ;
-	uint texIdx;
-	uint material;
-	uint blendfunc;
-	float shaderSort;
-	uint type;
-	uint acht;
+	bool	dynamic;
+	uint 	offsetIdx;
+	uint 	offsetXYZ;
+	uint 	texIdx;
+	uint 	material;
+	uint 	blendfunc;
+	float 	shaderSort;
+	uint 	type;
 };
 layout(binding = BINDING_OFFSET_INSTANCE_DATA, set = 0) buffer Instance { InstanceData data[]; } iData;
 
@@ -34,34 +34,50 @@ struct VABuffer
   vec4 uv;
   vec4 color;
 };
-layout(binding = BINDING_OFFSET_XYZ, set = 0) buffer Vertices { VABuffer v[]; } vertices;
-layout(binding = BINDING_OFFSET_IDX, set = 0) buffer Indices { uint i[]; } indices;
+layout(binding = BINDING_OFFSET_IDX_STATIC, set = 0) buffer Indices_static { uint i[]; } indices_static;
+layout(binding = BINDING_OFFSET_XYZ_STATIC, set = 0) buffer Vertices_static { VABuffer v[]; } vertices_static;
+layout(binding = BINDING_OFFSET_IDX_DYNAMIC, set = 0) buffer Indices_dynamic { uint i[]; } indices_dynamic;
+layout(binding = BINDING_OFFSET_XYZ_DYNAMIC, set = 0) buffer Vertices_dynamic { VABuffer v[]; } vertices_dynamic;
 
 vec3 getBarycentricCoordinates(vec2 hitAttribute) { return vec3(1.0f - hitAttribute.x - hitAttribute.y, hitAttribute.x, hitAttribute.y); }
 
 Triangle getTriangle(uint instanceID, uint primitiveID){
   	uint customIndex = uint(iData.data[instanceID].offsetIdx) + (primitiveID * 3);
-	ivec3 index = (ivec3(indices.i[customIndex], indices.i[customIndex + 1], indices.i[customIndex + 2])) + int(iData.data[instanceID].offsetXYZ);
+	ivec3 index;
+	if(!iData.data[instanceID].dynamic) index = (ivec3(indices_static.i[customIndex], indices_static.i[customIndex + 1], indices_static.i[customIndex + 2])) + int(iData.data[instanceID].offsetXYZ);
+	else index = (ivec3(indices_dynamic.i[customIndex], indices_dynamic.i[customIndex + 1], indices_dynamic.i[customIndex + 2])) + int(iData.data[instanceID].offsetXYZ);
+
+	VABuffer vData[3];
+	if(!iData.data[instanceID].dynamic) {
+		vData[0] = vertices_static.v[index.x];
+		vData[1] = vertices_static.v[index.y];
+		vData[2] = vertices_static.v[index.z];
+	}
+	else {
+		vData[0] = vertices_dynamic.v[index.x];
+		vData[1] = vertices_dynamic.v[index.y];
+		vData[2] = vertices_dynamic.v[index.z];
+	}
 
 	Triangle hitTriangle;
 	// POS
-	hitTriangle.pos[0] = vertices.v[index.x].pos.xyz;
-	hitTriangle.pos[1] = vertices.v[index.y].pos.xyz;
-	hitTriangle.pos[2] = vertices.v[index.z].pos.xyz;
-	//hitTriangle.pos[0] = (mat4x3(iData.data[instanceID].modelMat) * vec4(vertices.v[index.x].pos.xyz, 1)).xyz;
-	//hitTriangle.pos[1] = (mat4x3(iData.data[instanceID].modelMat) * vec4(vertices.v[index.y].pos.xyz, 1)).xyz;
-	//hitTriangle.pos[2] = (mat4x3(iData.data[instanceID].modelMat) * vec4(vertices.v[index.z].pos.xyz, 1)).xyz;
+	hitTriangle.pos[0] = vData[0].pos.xyz;
+	hitTriangle.pos[1] = vData[1].pos.xyz;
+	hitTriangle.pos[2] = vData[2].pos.xyz;
+	//hitTriangle.pos[0] = (mat4x3(iData.data[instanceID].modelMat) * vec4(vData[0].pos.xyz, 1)).xyz;
+	//hitTriangle.pos[1] = (mat4x3(iData.data[instanceID].modelMat) * vec4(vData[1].pos.xyz, 1)).xyz;
+	//hitTriangle.pos[2] = (mat4x3(iData.data[instanceID].modelMat) * vec4(vData[2].pos.xyz, 1)).xyz;
 	// UV
-	hitTriangle.uv[0] = vertices.v[index.x].uv.xy;
-	hitTriangle.uv[1] = vertices.v[index.y].uv.xy;
-	hitTriangle.uv[2] = vertices.v[index.z].uv.xy;
+	hitTriangle.uv[0] = vData[0].uv.xy;
+	hitTriangle.uv[1] = vData[1].uv.xy;
+	hitTriangle.uv[2] = vData[2].uv.xy;
 	// Color
-	hitTriangle.color[0] = vertices.v[index.x].color;
-	hitTriangle.color[1] = vertices.v[index.y].color;
-	hitTriangle.color[2] = vertices.v[index.z].color;
+	hitTriangle.color[0] = vData[0].color;
+	hitTriangle.color[1] = vData[1].color;
+	hitTriangle.color[2] = vData[2].color;
 	// NORMAL
-	vec3 AB = vertices.v[index.y].pos.xyz - vertices.v[index.x].pos.xyz;
-	vec3 AC = vertices.v[index.z].pos.xyz - vertices.v[index.x].pos.xyz;
+	vec3 AB = vData[1].pos.xyz - vData[0].pos.xyz;
+	vec3 AC = vData[2].pos.xyz - vData[0].pos.xyz;
 	hitTriangle.normal = normalize(cross(AB, AC));
 
 	return hitTriangle;
