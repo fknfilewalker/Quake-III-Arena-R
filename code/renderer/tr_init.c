@@ -260,28 +260,27 @@ static void InitVulkan(void)
 		VK_CreateVertexBuffer(&vk_d.colorbuffer, vk.swapchain.imageCount * VK_VERTEX_ATTRIBUTE_DATA_SIZE * sizeof(color4ub_t));
 
 		// <RTX>
-		vk_d.bottomASList = calloc(13000, sizeof(vkbottomAS_t));
+		vk_d.bottomASList = calloc(15000, sizeof(vkbottomAS_t));
 		vk_d.bottomASCount = 0;
 		vk_d.bottomASTraceList = calloc(6000, sizeof(vkbottomAS_t));
 		vk_d.bottomASTraceListCount = 0;
 
 		const uint32_t asMemoryAllignmentSize = 65536; // is the aligment size for as buffers
+		// bottom static
 		VK_CreateAttributeBuffer(&vk_d.geometry.idx_static, RTX_STATIC_INDEX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		VK_CreateAttributeBuffer(&vk_d.geometry.xyz_static, RTX_STATIC_XYZ_SIZE * 12 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		VK_CreateRayTracingASBuffer(&vk_d.basBufferStatic, 2000000000 * sizeof(byte));
 		for (int i = 0; i < vk.swapchain.imageCount; i++) {
-			// top AS
-			VK_CreateRayTracingASBuffer(&vk_d.topASBuffer[i], 30 * asMemoryAllignmentSize);
-			VK_CreateRayTracingBuffer(&vk_d.instanceBuffer[i], VK_MAX_BOTTOM_AS_INSTANCES * sizeof(VkGeometryInstanceNV));
-			VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[i], VK_MAX_BOTTOM_AS_INSTANCES * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-
 			// bottom AS
-			VK_CreateRayTracingASBuffer(&vk_d.basBufferDynamic[i], 10000 * asMemoryAllignmentSize);
+			VK_CreateRayTracingASBuffer(&vk_d.basBufferDynamic[i], 1000 * asMemoryAllignmentSize);
 			vk_d.bottomASDynamicList[i] = calloc(VK_MAX_BOTTOM_AS_INSTANCES, sizeof(vkbottomAS_t));
 			vk_d.bottomASDynamicCount[i] = 0;
 			VK_CreateAttributeBuffer(&vk_d.geometry.idx_dynamic[i], 50 * RTX_DYNAMIC_INDEX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 			VK_CreateAttributeBuffer(&vk_d.geometry.xyz_dynamic[i], 60 * RTX_DYNAMIC_XYZ_SIZE * 12 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-
+			// top AS
+			VK_CreateRayTracingASBuffer(&vk_d.topASBuffer[i], 30 * asMemoryAllignmentSize);
+			VK_CreateRayTracingBuffer(&vk_d.instanceBuffer[i], VK_MAX_BOTTOM_AS_INSTANCES * sizeof(VkGeometryInstanceNV));
+			VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[i], VK_MAX_BOTTOM_AS_INSTANCES * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 			// ubo
 			VK_CreateUniformBuffer(&vk_d.uboBuffer[i], sizeof(qboolean) + 7 * 16 * sizeof(float));
 			VK_CreateUniformBuffer(&vk_d.uboLightList[i], RTX_MAX_LIGHTS * sizeof(vec4_t) + sizeof(uint32_t));
@@ -1317,6 +1316,11 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			//VK_DestroyBuffer(&vk_d.accelerationStructures.uniformBuffer);
 
 			vk_d.basBufferStaticOffset = 0;
+			vk_d.geometry.idx_static_offset = 0;
+			vk_d.geometry.xyz_static_offset = 0;
+			vk_d.geometry.idx_dynamic_offset = 0;
+			vk_d.geometry.xyz_dynamic_offset = 0;
+			vk_d.scratchBufferOffset = 0;
 		}
 	}
 

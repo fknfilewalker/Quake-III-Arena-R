@@ -307,7 +307,7 @@ typedef struct {
 	VkGeometryNV					geometries;
 	ASInstanceData					data;
 	VkGeometryInstanceNV			geometryInstance;
-	qboolean						dynamic;		// bas needs updates, allocate in dynamic buffer
+	qboolean						as_for_each_swapchain_image; // [n] after this struct belong to the same object (n == swapchain image count)
 	VkDeviceSize					offset;			// offset in static or dynamic buffer
 } vkbottomAS_t;
 
@@ -1307,12 +1307,13 @@ typedef struct {
 	// RTX
 	vkaccelerationStructures_t accelerationStructures;
 
+	// holds all static bottom as
 	vkbottomAS_t*		bottomASList;
 	uint32_t			bottomASCount;
-
+	// holds all temporal bottom as
 	vkbottomAS_t*		bottomASDynamicList[VK_MAX_SWAPCHAIN_SIZE];
 	uint32_t			bottomASDynamicCount[VK_MAX_SWAPCHAIN_SIZE];
-
+	// holds all bottom as in use for current frame
 	vkbottomAS_t*		bottomASTraceList;
 	uint32_t			bottomASTraceListCount;
 
@@ -1330,9 +1331,8 @@ typedef struct {
 	vkbuffer_t			basBufferDynamic[VK_MAX_SWAPCHAIN_SIZE];
 	VkDeviceSize		basBufferDynamicOffset;
 
-
+	// Top AS (Buffers) for each swapchain image
 	vktopAS_t			topAS[VK_MAX_SWAPCHAIN_SIZE];
-	// AS Buffers for each swapchain image
 	vkbuffer_t			topASBuffer[VK_MAX_SWAPCHAIN_SIZE];
 	// stores offset and stuff for in shader lookup
 	vkbuffer_t			instanceBuffer[VK_MAX_SWAPCHAIN_SIZE];			// for bottom as instance data used by the top as
@@ -1346,8 +1346,6 @@ typedef struct {
 	vec4_t				lightList[RTX_MAX_LIGHTS];
 	uint32_t			lightCount;
 	vkimage_t			blueNoiseTex;
-    //
-    qboolean            renderBegan;
 
 	// statistics
 	int					asUpdateTime;
