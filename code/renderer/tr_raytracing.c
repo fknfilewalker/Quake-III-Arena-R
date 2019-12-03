@@ -13,6 +13,9 @@ glConfig.driverType == VULKAN && r_vertexLight->value == 2
 #define RTX_DYNAMIC_AS		(MODEL_DEFORM || ANIMATE_MODEL)
 #define RTX_DYNAMIC_AS_DATA (RTX_DYNAMIC_AS || UV_CHANGES)
 
+#define RTX_BOTTOM_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV)
+#define RTX_TOP_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV)
+
 static void RB_WriteIDX(uint32_t offset, qboolean dynamic) {
 	for (int j = 0; j < tess.numIndexes; j++) {
 		uint32_t idx = (uint32_t)tess.indexes[j];
@@ -88,14 +91,13 @@ void RB_CreateStaticBottomAS(vkbottomAS_t** bAS) {
 		VkCommandBuffer commandBuffer = { 0 };
 		VK_BeginSingleTimeCommands(&commandBuffer);
 		{
-			VK_CreateBottomAS(commandBuffer, bASList, &vk_d.basBufferStatic, &vk_d.basBufferStaticOffset, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
+			VK_CreateBottomAS(commandBuffer, bASList, &vk_d.basBufferStatic, &vk_d.basBufferStaticOffset, RTX_BOTTOM_AS_FLAG);
 		}
 		VK_EndSingleTimeCommands(&commandBuffer);
 
 		vk_d.bottomASCount++;
 		
 		if(bAS != NULL) (*bAS) = bASList;
-		//(*bAS)->dynamic = qfalse;
 		(*idxOffset) += 3* tess.numIndexes;
 		(*xyzOffset) += 3* tess.numVertexes;
 	}
@@ -407,8 +409,8 @@ void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic, qboolean forceUpdate) {
 		currentAS->geometries.geometry.triangles.vertexCount = tess.numVertexes;
 		currentAS->geometries.geometry.triangles.indexCount = tess.numIndexes;
 
-		if (updateBottom) VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), currentAS, currentAS, &vk_d.basBufferStatic, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV, NULL);
-		else  VK_RecreateBottomAS(vk.swapchain.CurrentCommandBuffer(), currentAS, &vk_d.basBufferStatic, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
+		if (updateBottom) VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), currentAS, currentAS, &vk_d.basBufferStatic, NULL, RTX_BOTTOM_AS_FLAG);
+		else  VK_RecreateBottomAS(vk.swapchain.CurrentCommandBuffer(), currentAS, &vk_d.basBufferStatic, RTX_BOTTOM_AS_FLAG);
 	}
 	if (dynamic) {
 		if (currentAS != bAS) { // (deform || frames)
@@ -418,7 +420,7 @@ void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic, qboolean forceUpdate) {
 			currentAS->geometries.geometry.triangles.vertexCount = tess.numVertexes;
 			currentAS->geometries.geometry.triangles.indexCount = tess.numIndexes;
 
-			VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), bAS, currentAS, &vk_d.basBufferDynamic[vk.swapchain.currentImage], VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV, &vk_d.basBufferDynamicOffset);
+			VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), bAS, currentAS, &vk_d.basBufferDynamic[vk.swapchain.currentImage], &vk_d.basBufferDynamicOffset, RTX_BOTTOM_AS_FLAG);
 			vk_d.bottomASDynamicCount[vk.swapchain.currentImage]++;
 			vk_d.geometry.idx_dynamic_offset += tess.numIndexes;
 			vk_d.geometry.xyz_dynamic_offset += tess.numVertexes;
@@ -575,7 +577,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	backEnd.refdef.floatTime = originalTime;
 
 	VK_DestroyTopAccelerationStructure(&vk_d.topAS[vk.swapchain.currentImage]);
-	VK_MakeTopAS(vk.swapchain.CurrentCommandBuffer(), &vk_d.topAS[vk.swapchain.currentImage], &vk_d.topASBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceList, vk_d.bottomASTraceListCount, vk_d.instanceBuffer[vk.swapchain.currentImage], VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV);
+	VK_MakeTopAS(vk.swapchain.CurrentCommandBuffer(), &vk_d.topAS[vk.swapchain.currentImage], &vk_d.topASBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceList, vk_d.bottomASTraceListCount, vk_d.instanceBuffer[vk.swapchain.currentImage], RTX_TOP_AS_FLAG);
 	
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;

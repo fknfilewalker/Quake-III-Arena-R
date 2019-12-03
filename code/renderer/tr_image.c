@@ -1954,7 +1954,7 @@ void R_DeleteTextures(void) {
 
 	tr.numImages = 0;
 	if (glConfig.driverType == VULKAN) {
-		VK_DestroyImage(&vk_d.accelerationStructures.cubemap);
+		VK_DestroyImage(&vk_d.accelerationStructures.envmap);
 		vk_d.size = 0;
 	}
 

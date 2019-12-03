@@ -1324,7 +1324,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 		if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
 			VK_DestroyRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
 			VK_DestroyAllAccelerationStructures();
-			VK_DestroyImage(&vk_d.accelerationStructures.cubemap);
+			VK_DestroyImage(&vk_d.accelerationStructures.envmap);
 
 			for (int i = 0; i < vk.swapchain.imageCount; i++) {
 				for (int j = 0; j < vk_d.bottomASDynamicCount[i]; j++) {
@@ -1332,7 +1332,6 @@ void RE_Shutdown( qboolean destroyWindow ) {
 				}
 
 				VK_DestroyDescriptor(&vk_d.accelerationStructures.descriptor[i]);
-
 				vk_d.bottomASDynamicCount[i] = 0;
 			}
 			vk_d.geometry.idx_static_offset = 0;

@@ -1248,7 +1248,7 @@ typedef struct {
 
 typedef struct {
 	vkimage_t					resultImage[VK_MAX_SWAPCHAIN_SIZE];
-	vkimage_t					cubemap;
+	vkimage_t					envmap;
 	vkrtpipeline_t				pipeline;
 	vkdescriptor_t				descriptor[VK_MAX_SWAPCHAIN_SIZE];
 } vkaccelerationStructures_t;
