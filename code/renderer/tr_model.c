@@ -363,6 +363,7 @@ static qboolean R_LoadMD3 (model_t *mod, int lod, void *buffer, const char *mod_
 		//RTX
 		if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
 			shader = (md3Shader_t*)((byte*)surf + surf->ofsShaders);
+			vk_d.scratchBufferOffset = 0;
 			tess.numVertexes = 0;
 			tess.numIndexes = 0;
 			tess.shader = tr.shaders[shader->shaderIndex];
@@ -370,6 +371,7 @@ static qboolean R_LoadMD3 (model_t *mod, int lod, void *buffer, const char *mod_
 			RB_CreateBottomAS(&mod->bAS[lod][i], qfalse);
 			tess.numVertexes = 0;
 			tess.numIndexes = 0;
+			vk_d.scratchBufferOffset = 0;
 		}
 		
 		surf = (md3Surface_t *)( (byte *)surf + surf->ofsEnd );

@@ -1901,7 +1901,7 @@ static	void R_BuildAccelerationStructure() {
 			cmInit = qtrue;
 			continue;
 		}
-		
+		vk_d.scratchBufferOffset = 0;
 		tess.numVertexes = 0;
 		tess.numIndexes = 0;
 		tess.shader = shader;
@@ -1909,8 +1909,8 @@ static	void R_BuildAccelerationStructure() {
 		RB_CreateBottomAS(&s_worldData.surfaces[i].bAS, qtrue);
 		tess.numVertexes = 0;
 		tess.numIndexes = 0;
-		//RB_CreateNewBottomAS(s_worldData.surfaces[i].data, tr.shaders[s_worldData.surfaces[i].shader->index], &s_worldData.surfaces[i].bAS);
 	}
+	vk_d.scratchBufferOffset = 0;
 
 	if (!cmInit) {
 		byte black[4] = { 0,0,0,0 };
@@ -1926,9 +1926,11 @@ static	void R_BuildAccelerationStructure() {
 	for (i = 0; i < vk.swapchain.imageCount; i++) {
 		VkCommandBuffer commandBuffer = { 0 };
 		VK_BeginSingleTimeCommands(&commandBuffer);
+		vk_d.scratchBufferOffset = 0;
 		VK_MakeTopAS(commandBuffer, &vk_d.topAS[i], &vk_d.topASBuffer[i], vk_d.bottomASList, 1, &vk_d.instanceBuffer[i], VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV);
 		VK_EndSingleTimeCommands(&commandBuffer);
 	}
+	vk_d.scratchBufferOffset = 0;
 
 	// pipeline
 	vkshader_t s = { 0 };

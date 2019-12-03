@@ -98,8 +98,14 @@ void RB_CreateStaticBottomAS(vkbottomAS_t** bAS) {
 		vk_d.bottomASCount++;
 		
 		if(bAS != NULL) (*bAS) = bASList;
-		(*idxOffset) += 3* tess.numIndexes;
-		(*xyzOffset) += 3* tess.numVertexes;
+		if (RTX_DYNAMIC_AS) {
+			(*idxOffset) += 3 * tess.numIndexes;
+			(*xyzOffset) += 3 * tess.numVertexes;
+		}
+		else {
+			(*idxOffset) += tess.numIndexes;
+			(*xyzOffset) += tess.numVertexes;
+		}
 	}
 }
 

@@ -35,6 +35,10 @@ void VK_CreateBottomAS(VkCommandBuffer commandBuffer,
 		*offset += (memoryRequirements2.memoryRequirements.size);
 	}
 	else memoryInfo.memoryOffset = bas->offset;
+
+	if (memoryRequirements2Scratch.memoryRequirements.size > vk_d.scratchBuffer.allocSize - vk_d.scratchBufferOffset) {
+		ri.Error(ERR_FATAL, "Vulkan: Scratch Buffer to small!");
+	}
 	
 	VK_CHECK(vkBindAccelerationStructureMemoryNV(vk.device, 1, &memoryInfo), "failed to bind Acceleration Structure Memory NV");
 	VK_CHECK(vkGetAccelerationStructureHandleNV(vk.device, bas->accelerationStructure, sizeof(uint64_t), &bas->handle), "failed to get Acceleration Structure Handle NV");
@@ -101,6 +105,10 @@ void VK_UpdateBottomAS(VkCommandBuffer commandBuffer,
 		VK_CHECK(vkGetAccelerationStructureHandleNV(vk.device, newBas->accelerationStructure, sizeof(uint64_t), &newBas->handle), "failed to get Acceleration Structure Handle NV");
 	}
 
+	if (memoryRequirements2Scratch.memoryRequirements.size > vk_d.scratchBuffer.allocSize - vk_d.scratchBufferOffset) {
+		ri.Error(ERR_FATAL, "Vulkan: Scratch Buffer to small!");
+	}
+
 	// build
 	VkAccelerationStructureInfoNV buildInfo = { 0 };
 	buildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
@@ -160,6 +168,9 @@ void VK_MakeTopAS(VkCommandBuffer commandBuffer,
 
 	if (memoryRequirements2.memoryRequirements.size > topASBuffer->allocSize) {
 		ri.Error(ERR_FATAL, "Vulkan: Top Level Buffer to small!");
+	}
+	if (memoryRequirements2Scratch.memoryRequirements.size > vk_d.scratchBuffer.allocSize - vk_d.scratchBufferOffset) {
+		ri.Error(ERR_FATAL, "Vulkan: Scratch Buffer to small!");
 	}
 
 	VkBindAccelerationStructureMemoryInfoNV memoryInfo = { 0 };
