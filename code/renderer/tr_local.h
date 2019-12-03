@@ -1016,7 +1016,10 @@ Vulkan
 #define VK_GLOBAL_IMAGEARRAY_SHADER_STAGE_FLAGS (VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV)
 
 // RTX
-#define VK_MAX_BOTTOM_AS_INSTANCES 2048
+#define VK_MAX_BOTTOM_AS 16383
+#define VK_MAX_STATIC_BOTTOM_AS_INSTANCES 2048
+#define VK_MAX_DYNAMIC_BOTTOM_AS_INSTANCES 512
+#define VK_MAX_BOTTOM_AS_INSTANCES (VK_MAX_STATIC_BOTTOM_AS_INSTANCES + VK_MAX_DYNAMIC_BOTTOM_AS_INSTANCES)
 
 // --Pipeline parts--
 typedef struct {
@@ -1244,7 +1247,6 @@ typedef struct {
 
 
 typedef struct {
-	vkbuffer_t					uniformBuffer;
 	vkimage_t					resultImage[VK_MAX_SWAPCHAIN_SIZE];
 	vkimage_t					cubemap;
 	vkrtpipeline_t				pipeline;
@@ -1304,52 +1306,6 @@ typedef struct {
     vkbuffer_t			uvbuffer2;
     vkbuffer_t			colorbuffer;
 
-	// RTX
-	vkaccelerationStructures_t accelerationStructures;
-
-	// holds all static bottom as
-	vkbottomAS_t*		bottomASList;
-	uint32_t			bottomASCount;
-	// holds all temporal bottom as
-	vkbottomAS_t*		bottomASDynamicList[VK_MAX_SWAPCHAIN_SIZE];
-	uint32_t			bottomASDynamicCount[VK_MAX_SWAPCHAIN_SIZE];
-	// holds all bottom as in use for current frame
-	vkbottomAS_t*		bottomASTraceList;
-	uint32_t			bottomASTraceListCount;
-
-	// RTX BUFFER
-	qboolean			portalInView;
-	viewParms_t			portalViewParms;
-	qboolean			mirrorInView;
-	viewParms_t			mirrorViewParms;
-
-
-	vkgeometry_t		geometry;			// holds buffers and offsets for geometry
-
-	vkbuffer_t			basBufferStatic;
-	VkDeviceSize		basBufferStaticOffset;
-	vkbuffer_t			basBufferDynamic[VK_MAX_SWAPCHAIN_SIZE];
-	VkDeviceSize		basBufferDynamicOffset;
-
-	// Top AS (Buffers) for each swapchain image
-	vktopAS_t			topAS[VK_MAX_SWAPCHAIN_SIZE];
-	vkbuffer_t			topASBuffer[VK_MAX_SWAPCHAIN_SIZE];
-	// stores offset and stuff for in shader lookup
-	vkbuffer_t			instanceBuffer[VK_MAX_SWAPCHAIN_SIZE];			// for bottom as instance data used by the top as
-	vkbuffer_t			instanceDataBuffer[VK_MAX_SWAPCHAIN_SIZE];		// for custom instance data
-
-	vkbuffer_t			scratchBuffer;	// only required for build, not needed after build
-	VkDeviceSize		scratchBufferOffset;
-
-	vkbuffer_t			uboBuffer[VK_MAX_SWAPCHAIN_SIZE];
-	vkbuffer_t			uboLightList[VK_MAX_SWAPCHAIN_SIZE];
-	vec4_t				lightList[RTX_MAX_LIGHTS];
-	uint32_t			lightCount;
-	vkimage_t			blueNoiseTex;
-
-	// statistics
-	int					asUpdateTime;
-    
     // render clear
     VkViewport          viewport;
     VkRect2D            scissor;
@@ -1366,7 +1322,7 @@ typedef struct {
     // texture
 	uint32_t            currentTexture[2];
 	uint32_t			textureMode; // 0: default, 1: add, 2: mul
-    // imagedescriptor
+    // image descriptor for all textures used (dynamic size)
 	vkdescriptor_t		imageDescriptor;
 
 	// pipeline
@@ -1376,7 +1332,56 @@ typedef struct {
 
 	vkpipeline_t        fullscreenRectPipeline;
 
+	// state is used to define a pipeline
     vkrenderState_t     state;
+
+	// <RTX>
+	qboolean			portalInView;
+	viewParms_t			portalViewParms;
+	qboolean			mirrorInView;
+	viewParms_t			mirrorViewParms;
+	
+	vkaccelerationStructures_t accelerationStructures;
+	
+	// holds buffers and offsets for geometry
+	vkgeometry_t		geometry;			
+
+	// AS
+	// holds all static bottom as
+	vkbottomAS_t*		bottomASList;
+	uint32_t			bottomASCount;
+	// holds all temporal bottom as
+	vkbottomAS_t*		bottomASDynamicList[VK_MAX_SWAPCHAIN_SIZE];
+	uint32_t			bottomASDynamicCount[VK_MAX_SWAPCHAIN_SIZE];
+	// holds all bottom as in use for current frame
+	vkbottomAS_t*		bottomASTraceList;
+	uint32_t			bottomASTraceListCount;
+
+	// BOTTOM AS (Buffer) for top an bottom as
+	vkbuffer_t			basBufferStatic;
+	VkDeviceSize		basBufferStaticOffset;
+	vkbuffer_t			basBufferDynamic[VK_MAX_SWAPCHAIN_SIZE];
+	VkDeviceSize		basBufferDynamicOffset;
+	vkbuffer_t			topASBuffer[VK_MAX_SWAPCHAIN_SIZE];
+	// Top AS (Buffers) for each swapchain image
+	vktopAS_t			topAS[VK_MAX_SWAPCHAIN_SIZE];
+
+	// stores offset and stuff for in shader lookup
+	vkbuffer_t			instanceBuffer[VK_MAX_SWAPCHAIN_SIZE];			// for bottom as instance data used by the top as
+	vkbuffer_t			instanceDataBuffer[VK_MAX_SWAPCHAIN_SIZE];		// for custom instance data
+
+	vkbuffer_t			scratchBuffer;	// only required for build, not needed after build
+	VkDeviceSize		scratchBufferOffset;
+
+	vkbuffer_t			uboBuffer[VK_MAX_SWAPCHAIN_SIZE];
+	vkbuffer_t			uboLightList[VK_MAX_SWAPCHAIN_SIZE];
+	vec4_t				lightList[RTX_MAX_LIGHTS];
+	uint32_t			lightCount;
+	vkimage_t			blueNoiseTex;
+
+	// statistics
+	int					asUpdateTime;
+	// </RTX>
 } vkdata_t;
 
 extern vkinstance_t		vk;
