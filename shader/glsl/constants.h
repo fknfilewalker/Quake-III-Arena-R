@@ -61,4 +61,64 @@
 #define NUM_BLUE_NOISE_TEX							(32)
 #define BLUE_NOISE_RES								(256)
 
+// shared structures between GLSL and C
+#ifdef GLSL
+    #define STRUCT(content, name) struct name { content };
+    #define BOOL(n) bool n;
+    #define UINT(n) uint n;
+    #define FLOAT(n) float n;
+    #define VEC2(n) vec2 n;
+    #define VEC3(n) vec3 n;
+    #define VEC4(n) vec4 n;
+    #define MAT4(n) mat4 n;
+#else
+    #define STRUCT(content, name) typedef struct { content } name;
+    #define BOOL(n) uint32_t n;
+    #define UINT(n) uint32_t n;
+    #define FLOAT(n) float n;
+    #define VEC2(n) float n[2];
+    #define VEC3(n) float n[3];
+    #define VEC4(n) float n[4];
+    #define MAT4(n) float n[16];
+#endif
+
+// holds material/offset/etc data for each AS Instance
+STRUCT (
+	BOOL    (dynamic)
+	UINT    (offsetIDX)
+	UINT    (offsetXYZ)
+	UINT    (texIdx)
+	UINT    (material)
+	UINT    (blendfunc)
+	FLOAT   (opaque)
+	UINT    (type)
+,ASInstanceData)
+
+// holds all vertex data
+STRUCT (
+    VEC4    (pos)
+    VEC4    (uv)
+    VEC4    (color)
+,VertexBuffer)
+
+// global ubo
+STRUCT (
+    MAT4    (inverseViewMat)
+    MAT4    (inverseViewMatPortal)
+    MAT4    (inverseProjMat)
+    MAT4    (inverseProjMatPortal)
+    MAT4    (viewMat)
+    MAT4    (projMat)
+	BOOL    (hasPortal)
+	UINT    (frameIndex)
+,RTUbo)
+
+#undef STRUCT
+#undef BOOL
+#undef UINT
+#undef FLOAT
+#undef VEC2
+#undef VEC3
+#undef VEC4
+
 #endif /*_CONSTANTS_H_*/

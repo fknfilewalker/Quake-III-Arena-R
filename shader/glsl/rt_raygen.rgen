@@ -22,16 +22,10 @@ layout(binding = BINDING_OFFSET_AS, set = 0) uniform accelerationStructureNV top
 layout(binding = 1, set = 0, rgba8) uniform image2D image;
 
 
-layout(binding = 6, set = 0) uniform CameraProperties 
+layout(binding = 6, set = 0) uniform global_ubo
 {
-	mat4 inverseView; 
-	mat4 inverseViewPortal; 
-  	mat4 inverseProj;
-	mat4 inverseProjPortal;
-	mat4 viewMat;
-	mat4 projMat;
-	bool hasPortal;
-} ubo;
+	RTUbo ubo;
+};
 
 layout(binding = 7, set = 0) uniform LightList 
 {
@@ -47,8 +41,8 @@ layout(location = PAYLOAD_SHADOW) rayPayloadNV RayPayloadShadow rp_shadow;
 Ray
 get_primary_ray(vec2 pos_cs)
 {
-	vec4 v_near = ubo.inverseView * ubo.inverseProj * vec4(pos_cs, -1.0, 1.0);
-	vec4 v_far  = ubo.inverseView * ubo.inverseProj * vec4(pos_cs,  0.0, 1.0);
+	vec4 v_near = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs, -1.0, 1.0);
+	vec4 v_far  = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs,  0.0, 1.0);
 	v_near /= v_near.w;
 	v_far  /= v_far.w;
 
@@ -170,6 +164,10 @@ vec4 path_tracer(){
 
 	} 
 
+	#ifdef GLSL
+	//color = vec4(vec3( get_rng(gl_LaunchSizeNV.x + gl_LaunchSizeNV.x * gl_LaunchSizeNV.y, int(ubo.frameIndex)) ), color.w);
+	#endif
+	//color = texelFetch(blue_noise, ivec3(gl_LaunchIDNV.xy % (BLUE_NOISE_RES ), 10), 0).rrrr;
 	// vec4 shadow = vec4(0);
 
 	// for(int i = 0; i < 2/*uboLights.lightCount*/; i++){

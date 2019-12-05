@@ -15,39 +15,23 @@ struct HitPoint {
 };
 
 // buffer with instance data
-struct InstanceData{
-	bool	dynamic;
-	uint 	offsetIdx;
-	uint 	offsetXYZ;
-	uint 	texIdx;
-	uint 	material;
-	uint 	blendfunc;
-	float 	shaderSort;
-	uint 	type;
-};
-layout(binding = BINDING_OFFSET_INSTANCE_DATA, set = 0) buffer Instance { InstanceData data[]; } iData;
+layout(binding = BINDING_OFFSET_INSTANCE_DATA, set = 0) buffer Instance { ASInstanceData data[]; } iData;
 
 // Buffer with indices and vertices
-struct VABuffer
-{
-  vec4 pos;
-  vec4 uv;
-  vec4 color;
-};
 layout(binding = BINDING_OFFSET_IDX_STATIC, set = 0) buffer Indices_static { uint i[]; } indices_static;
-layout(binding = BINDING_OFFSET_XYZ_STATIC, set = 0) buffer Vertices_static { VABuffer v[]; } vertices_static;
+layout(binding = BINDING_OFFSET_XYZ_STATIC, set = 0) buffer Vertices_static { VertexBuffer v[]; } vertices_static;
 layout(binding = BINDING_OFFSET_IDX_DYNAMIC, set = 0) buffer Indices_dynamic { uint i[]; } indices_dynamic;
-layout(binding = BINDING_OFFSET_XYZ_DYNAMIC, set = 0) buffer Vertices_dynamic { VABuffer v[]; } vertices_dynamic;
+layout(binding = BINDING_OFFSET_XYZ_DYNAMIC, set = 0) buffer Vertices_dynamic { VertexBuffer v[]; } vertices_dynamic;
 
 vec3 getBarycentricCoordinates(vec2 hitAttribute) { return vec3(1.0f - hitAttribute.x - hitAttribute.y, hitAttribute.x, hitAttribute.y); }
 
 Triangle getTriangle(uint instanceID, uint primitiveID){
-  	uint customIndex = uint(iData.data[instanceID].offsetIdx) + (primitiveID * 3);
+  	uint customIndex = uint(iData.data[instanceID].offsetIDX) + (primitiveID * 3);
 	ivec3 index;
 	if(!iData.data[instanceID].dynamic) index = (ivec3(indices_static.i[customIndex], indices_static.i[customIndex + 1], indices_static.i[customIndex + 2])) + int(iData.data[instanceID].offsetXYZ);
 	else index = (ivec3(indices_dynamic.i[customIndex], indices_dynamic.i[customIndex + 1], indices_dynamic.i[customIndex + 2])) + int(iData.data[instanceID].offsetXYZ);
 
-	VABuffer vData[3];
+	VertexBuffer vData[3];
 	if(!iData.data[instanceID].dynamic) {
 		vData[0] = vertices_static.v[index.x];
 		vData[1] = vertices_static.v[index.y];

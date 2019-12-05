@@ -105,7 +105,7 @@ void VK_Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCount
 	vkCmdDispatch(commandBuffer, groupCountX, groupCountY, groupCountZ);
 }
 
-void VK_DestroyPipeline(vkcpipeline_t* pipeline) {
+void VK_DestroyCPipeline(vkcpipeline_t* pipeline) {
 	free(pipeline->pushConstantRange.p);
 
 	if (pipeline->layout) {

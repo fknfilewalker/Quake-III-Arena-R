@@ -282,17 +282,8 @@ typedef struct {
 
 } texModInfo_t;
 
-// RTX BOTTOM AS
-typedef struct {
-	qboolean		dynamic;
-	uint32_t		offsetIDX;
-	uint32_t		offsetXYZ;
-	uint32_t		texIdx;
-	uint32_t		material;
-	uint32_t		blendfunc;
-	float			opaque;
-	uint32_t		type;
-} ASInstanceData;
+// RTX
+// INSTANCE DATA BUFFER
 typedef struct {
 	float          transform[12];
 	uint32_t       instanceCustomIndex : 24;
@@ -1250,6 +1241,9 @@ typedef struct {
 
 
 typedef struct {
+	vkcpipeline_t				rngPipeline;
+	vkimage_t					rngImage;
+
 	vkimage_t					resultImage[VK_MAX_SWAPCHAIN_SIZE];
 	vkimage_t					envmap;
 	vkrtpipeline_t				pipeline;

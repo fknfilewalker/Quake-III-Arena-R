@@ -25,22 +25,22 @@ static void RB_WriteIDX(uint32_t offset, qboolean dynamic) {
 }
 static void RB_WriteXYZ(uint32_t offset, qboolean dynamic) {
 	for (int j = 0; j < tess.numVertexes; j++) {
-		float p[12] = {
-			p[0] = tess.xyz[j][0],
-			p[1] = tess.xyz[j][1],
-			p[2] = tess.xyz[j][2],
-			p[3] = 0,
-			p[4] = UV_CHANGES ? tess.svars.texcoords[0][j][0] : tess.texCoords[j][0][0],
-			p[5] = UV_CHANGES ? tess.svars.texcoords[0][j][1] : tess.texCoords[j][0][1],
-			p[6] = tess.texCoords[j][1][0],
-			p[7] = tess.texCoords[j][1][1],
-			p[8] = (float)tess.svars.colors[j][0],
-			p[9] = (float)tess.svars.colors[j][1],
-			p[10] = (float)tess.svars.colors[j][2],
-			p[11] = 0
+		VertexBuffer p = {
+			tess.xyz[j][0],
+			tess.xyz[j][1],
+			tess.xyz[j][2],
+			0,
+			UV_CHANGES ? tess.svars.texcoords[0][j][0] : tess.texCoords[j][0][0],
+			UV_CHANGES ? tess.svars.texcoords[0][j][1] : tess.texCoords[j][0][1],
+			tess.texCoords[j][1][0],
+			tess.texCoords[j][1][1],
+			(float)tess.svars.colors[j][0],
+			(float)tess.svars.colors[j][1],
+			(float)tess.svars.colors[j][2],
+			0
 		};
-		if (!dynamic) VK_UploadBufferDataOffset(&vk_d.geometry.xyz_static, offset + (j * 12 * sizeof(float)), 12 * sizeof(float), (void*)&p);
-		else VK_UploadBufferDataOffset(&vk_d.geometry.xyz_dynamic[vk.swapchain.currentImage], offset + (j * 12 * sizeof(float)), 12 * sizeof(float), (void*)&p);
+		if (!dynamic) VK_UploadBufferDataOffset(&vk_d.geometry.xyz_static, offset + (j * sizeof(VertexBuffer)), sizeof(VertexBuffer), (void*)&p);
+		else VK_UploadBufferDataOffset(&vk_d.geometry.xyz_dynamic[vk.swapchain.currentImage], offset + (j * sizeof(VertexBuffer)), sizeof(VertexBuffer), (void*)&p);
 	}
 }
 
@@ -639,52 +639,42 @@ static void RB_TraceRays() {
 
 	vec3_t	origin;	// player position
 	VectorCopy(backEnd.viewParms. or .origin, origin);
-	float	viewMatrix[16];
-	float	viewMatrixFlipped[16];
-	float	invViewMatrix[16];
-	float	invProjMatrix[16];
+	RTUbo ubo = { 0 };
+	ubo.frameIndex = vk.swapchain.currentFrame;
 
-	// projection matrix
-	float projMatrix[16];
-	RB_BuildProjMatrix(&projMatrix, backEnd.viewParms.projectionMatrix, backEnd.viewParms.zFar);
-	// viewMatrix
-	RB_BuildViewMatrix(&viewMatrix[0], &origin, &backEnd.viewParms. or .axis);
-	// flip matrix for vulkan
-	myGlMultMatrix(viewMatrix, s_flipMatrix, viewMatrixFlipped);
+	float viewMatrix[16];
+	// viewMatrix (needs flip)
+	RB_BuildViewMatrix(&viewMatrix, &origin, &backEnd.viewParms. or .axis);
+	// flip view matrix for vulkan
+	myGlMultMatrix(&viewMatrix, &s_flipMatrix, &ubo.viewMat);
 	// inverse view matrix
-	myGLInvertMatrix(&viewMatrixFlipped, &invViewMatrix);
+	myGLInvertMatrix(&ubo.viewMat, &ubo.inverseViewMat);
+	// projection matrix
+	RB_BuildProjMatrix(&ubo.projMat, backEnd.viewParms.projectionMatrix, backEnd.viewParms.zFar);
 	// inverse proj matrix
-	myGLInvertMatrix(&projMatrix, &invProjMatrix);
+	myGLInvertMatrix(&ubo.projMat, &ubo.inverseProjMat);
 	
 	// view portal
 	vec3_t	originPortal;	// portal position
 	//VectorCopy(vk_d.portalViewParms.pvsOrigin, originPortal);
 	VectorCopy(vk_d.portalViewParms. or .origin, originPortal);
 	if (vk_d.portalInView) {
-		float	invViewMatrixPortal[16];
 		float	viewMatrixPortal[16];
 		float	viewMatrixFlippedPortal[16];
 		float	projMatrixPortal[16];
-		float	invProjMatrixPortal[16];
 
+		// portal inv view mat
+		RB_BuildViewMatrix(&viewMatrixPortal, &originPortal, &vk_d.portalViewParms. or .axis);
+		myGlMultMatrix(&viewMatrixPortal, &s_flipMatrix, &viewMatrixFlippedPortal);
+		myGLInvertMatrix(&viewMatrixFlippedPortal, &ubo.inverseViewMatPortal);
+		// portal inv proj mat
 		RB_BuildProjMatrix(&projMatrixPortal, vk_d.portalViewParms.projectionMatrix, vk_d.portalViewParms.zFar);
-		myGLInvertMatrix(&projMatrixPortal, &invProjMatrixPortal);
-
-		RB_BuildViewMatrix(&viewMatrixPortal[0], &originPortal, &vk_d.portalViewParms. or .axis);
-		myGlMultMatrix(viewMatrixPortal, s_flipMatrix, viewMatrixFlippedPortal);
-		myGLInvertMatrix(&viewMatrixFlippedPortal, &invViewMatrixPortal);
-		VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 16 * sizeof(float), 16 * sizeof(float), (void*)&invViewMatrixPortal[0]);
-		VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 48 * sizeof(float), 16 * sizeof(float), (void*)&invProjMatrixPortal[0]);
+		myGLInvertMatrix(&projMatrixPortal, &ubo.inverseProjMatPortal);
 	}
-
+	ubo.hasPortal = vk_d.portalInView;
 	// mvp
-	myGlMultMatrix(&viewMatrixFlipped[0], projMatrix, vk_d.mvp);
-
-	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 0, 16 * sizeof(float), (void*)&invViewMatrix[0]);
-	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 32 * sizeof(float), 16 * sizeof(float), (void*)&invProjMatrix[0]);
-	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 64 * sizeof(float), 16 * sizeof(float), (void*)&viewMatrixFlipped[0]);
-	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 80 * sizeof(float), 16 * sizeof(float), (void*)&projMatrix[0]);
-	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 96 * sizeof(float), 1 * sizeof(qboolean), (void*)&vk_d.portalInView);
+	myGlMultMatrix(&ubo.viewMat[0], ubo.projMat, vk_d.mvp);
+	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 0, sizeof(RTUbo), (void*)&ubo);
 
 	// bind rt pipeline
 	VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
@@ -692,8 +682,6 @@ static void RB_TraceRays() {
 	VK_Bind2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 
 	// push constants
-	//VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0 * sizeof(float), 16 * sizeof(float), &invViewMatrix[0]);
-	//VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 16 * sizeof(float), 16 * sizeof(float), &invProjMatrix[0]);
 	VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0 * sizeof(float), sizeof(vec3_t), &origin);
 	VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 4 * sizeof(float), sizeof(vec3_t), &originPortal);
 	VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, 40 * sizeof(float), 16 * sizeof(float), &vk_d.mvp[0]);
@@ -704,6 +692,10 @@ static void RB_TraceRays() {
 void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	VkMemoryBarrier memoryBarrier = { 0 };
 	vkCmdEndRenderPass(vk.swapchain.CurrentCommandBuffer());
+
+	//VK_BindComputePipeline(&vk_d.accelerationStructures.rngPipeline);
+	//VK_Dispatch(vk.swapchain.extent.width, vk.swapchain.extent.height, 1);
+
 	//VK_BeginFramebuffer(&vk_d.accelerationStructures.resultFramebuffer);
 	//renderSky(drawSurfs, numDrawSurfs);
 	//VK_EndFramebuffer(&vk_d.accelerationStructures.resultFramebuffer);

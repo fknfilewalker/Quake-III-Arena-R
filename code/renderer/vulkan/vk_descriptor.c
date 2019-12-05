@@ -171,7 +171,7 @@ static void VK_CreateDescriptorSetLayout(vkdescriptor_t *descriptor) {
     
 	// VK_EXT_descriptor_indexing 
 	VkDescriptorBindingFlagBitsEXT* flags = calloc(descriptor->size, sizeof(VkDescriptorBindingFlagBitsEXT));
-	flags[descriptor->size-1] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT | VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT;
+	if(descriptor->size > 0) flags[descriptor->size-1] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT | VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT;
 
 	VkDescriptorSetLayoutBindingFlagsCreateInfoEXT layoutCreateInfo = { 0 };
 	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT;
