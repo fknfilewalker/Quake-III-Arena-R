@@ -39,9 +39,9 @@ include_directories(${CMAKE_SOURCE_DIR}/code/botlib)
 # EXECUTABLE
 add_executable(${APP_WIN32} WIN32 ${SOURCES} "winquake.rc")
 target_link_libraries(${APP_WIN32} wsock32 ws2_32 winmm)
-target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_BOTLIB}.lib")
-target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_RENDERER}.lib")
-target_link_libraries(${APP_WIN32} "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_SPLINES}.lib")
+target_link_libraries(${APP_WIN32} debug "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_BOTLIB}.lib" optimized "${CMAKE_SOURCE_DIR}/bin/Release/${LIB_BOTLIB}.lib")
+target_link_libraries(${APP_WIN32} debug "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_RENDERER}.lib" optimized "${CMAKE_SOURCE_DIR}/bin/Release/${LIB_RENDERER}.lib")
+target_link_libraries(${APP_WIN32} debug "${CMAKE_SOURCE_DIR}/bin/Debug/${LIB_SPLINES}.lib" optimized "${CMAKE_SOURCE_DIR}/bin/Release/${LIB_SPLINES}.lib")
 
 # PROPERTIES
 # when Quake III Arena was installed with GOG

@@ -1675,12 +1675,13 @@ void R_RenderView (viewParms_t *parms) {
 	tr.viewCount++;
 
 	// set viewParms.world
-	//r_nocull->integer = 1;
+	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) r_nocull->integer = 1;
 	R_RotateForViewer ();
 
 	R_SetupFrustum ();
 
 	R_GenerateDrawSurfs();
+	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) r_nocull->integer = 0;
 	//r_nocull->integer = 0;
 	//if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
 	//	if (vk_d.portalInView) {

@@ -1018,7 +1018,7 @@ void GfxInfo_f( void )
 		ri.Printf( PRINT_ALL, "rendering primitives: " );
 		primitives = r_primitives->integer;
 		if ( primitives == 0 ) {
-			if ( qglLockArraysEXT ) {
+			if (glConfig.driverType == OPENGL && qglLockArraysEXT ) {
 				primitives = 2;
 			} else {
 				primitives = 1;
@@ -1333,26 +1333,28 @@ void RE_Shutdown( qboolean destroyWindow ) {
 		R_ShutdownCommandBuffers();
 		R_DeleteTextures();
 
-		// <RTX>
-		VK_DestroyRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
-		VK_DestroyAllAccelerationStructures();
-		VK_DestroyImage(&vk_d.accelerationStructures.envmap);
+		if (glConfig.driverType == VULKAN) {
+			// <RTX>
+			VK_DestroyRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
+			VK_DestroyAllAccelerationStructures();
+			VK_DestroyImage(&vk_d.accelerationStructures.envmap);
 
-		for (int i = 0; i < vk.swapchain.imageCount; i++) {
-			for (int j = 0; j < vk_d.bottomASDynamicCount[i]; j++) {
-				VK_DestroyBottomAccelerationStructure(&vk_d.bottomASDynamicList[i][j]);
+			for (int i = 0; i < vk.swapchain.imageCount; i++) {
+				for (int j = 0; j < vk_d.bottomASDynamicCount[i]; j++) {
+					VK_DestroyBottomAccelerationStructure(&vk_d.bottomASDynamicList[i][j]);
+				}
+				VK_DestroyDescriptor(&vk_d.accelerationStructures.descriptor[i]);
+				vk_d.bottomASDynamicCount[i] = 0;
 			}
-			VK_DestroyDescriptor(&vk_d.accelerationStructures.descriptor[i]);
-			vk_d.bottomASDynamicCount[i] = 0;
+			vk_d.geometry.idx_static_offset = 0;
+			vk_d.geometry.xyz_static_offset = 0;
+			vk_d.geometry.idx_dynamic_offset = 0;
+			vk_d.geometry.xyz_dynamic_offset = 0;
+			vk_d.basBufferStaticOffset = 0;
+			vk_d.basBufferDynamicOffset = 0;
+			vk_d.scratchBufferOffset = 0;
+			// </RTX>
 		}
-		vk_d.geometry.idx_static_offset = 0;
-		vk_d.geometry.xyz_static_offset = 0;
-		vk_d.geometry.idx_dynamic_offset = 0;
-		vk_d.geometry.xyz_dynamic_offset = 0;
-		vk_d.basBufferStaticOffset = 0;
-		vk_d.basBufferDynamicOffset = 0;
-		vk_d.scratchBufferOffset = 0;
-		// </RTX>
 	}
 
 	R_DoneFreeType();

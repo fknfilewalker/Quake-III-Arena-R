@@ -128,13 +128,15 @@ static void RB_AddLightToLightList() {
 		VectorAdd(pos, tess.xyz[i], pos);
 	}
 	VectorScale(pos, 1.0f / tess.numVertexes, pos);
-	if (vk_d.lightCount >= RTX_MAX_LIGHTS) {
-		ri.Error(ERR_FATAL, "Vulkan: Too many lights");
+	if (vk_d.lightCount < RTX_MAX_LIGHTS) {
+		if (vk_d.lightCount >= RTX_MAX_LIGHTS) {
+			ri.Error(ERR_FATAL, "Vulkan: Too many lights");
+		}
+		VectorCopy(pos, vk_d.lightList[vk_d.lightCount]);
+		VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], vk_d.lightCount * sizeof(vec4_t), 1 * sizeof(vec4_t), (void*)&vk_d.lightList[vk_d.lightCount]);
+		vk_d.lightCount++;
+		VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], RTX_MAX_LIGHTS * sizeof(vec4_t), 1 * sizeof(uint32_t), (void*)&vk_d.lightCount);
 	}
-	VectorCopy(pos, vk_d.lightList[vk_d.lightCount]);
-	VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], vk_d.lightCount * sizeof(vec4_t), 1 * sizeof(vec4_t), (void*)&vk_d.lightList[0]);
-	vk_d.lightCount++;
-	VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], RTX_MAX_LIGHTS * sizeof(vec4_t), 1 * sizeof(uint32_t), (void*)&vk_d.lightCount);
 }
 
 static qboolean RB_MaterialException(vkbottomAS_t* bAS) {
@@ -255,12 +257,7 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_OPAQUE_VISIBLE;
 	else bAS->geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 
-	if (tess.shader->sort <= SS_OPAQUE) {
-		bAS->geometries.flags = VK_GEOMETRY_OPAQUE_BIT_NV;
-	}
-	else {
-		bAS->geometries.flags = 0;
-	}
+	
 
 	/*if (bAS->data.material & MATERIAL_FLAG_PARTICLE || tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1 || tess.shader->sort == SS_DECAL) {
 		bAS->geometryInstance.instanceOffset = 1;
@@ -272,14 +269,21 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 		bAS->geometryInstance.instanceOffset = 0;
 	}*/
 
+	if (tess.shader->sort <= SS_OPAQUE) {
+		bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
+	}
+	else {
+		bAS->geometryInstance.flags = 0;
+	}
 	switch (tess.shader->cullType) {
 		case CT_FRONT_SIDED:
-			bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_NV; break;
+			bAS->geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_NV; break;
 		case CT_BACK_SIDED:
-			bAS->geometryInstance.flags = 0; break;
+			bAS->geometryInstance.flags |= 0; break;
 		case CT_TWO_SIDED:
-			bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV; break;
+			bAS->geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV; break;
 	}
+	bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
 	bAS->geometryInstance.accelerationStructureHandle = bAS->handle;
 
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&bAS->geometryInstance);
@@ -676,6 +680,9 @@ static void RB_TraceRays() {
 	myGlMultMatrix(&ubo.viewMat[0], ubo.projMat, vk_d.mvp);
 	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 0, sizeof(RTUbo), (void*)&ubo);
 
+
+	VK_SetAccelerationStructure(&vk_d.accelerationStructures.descriptor[vk.swapchain.currentImage], BINDING_OFFSET_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.topAS[vk.swapchain.currentImage].accelerationStructure);
+	VK_UpdateDescriptorSet(&vk_d.accelerationStructures.descriptor[vk.swapchain.currentImage]);
 	// bind rt pipeline
 	VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
 	// bind descriptor (rt data and texture array)
@@ -713,9 +720,11 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	vk_d.scratchBufferOffset = 0;
 	vk_d.lightCount = 0;
 
+	//VK_MapBuffer(&vk_d.instanceBuffer[vk.swapchain.currentImage]);
 	vk_d.asUpdateTime = Sys_Milliseconds();
 	RB_UpdateRayTraceAS(drawSurfs, numDrawSurfs);
 	vk_d.asUpdateTime = Sys_Milliseconds() - vk_d.asUpdateTime;
+	//VK_UnmapBuffer(&vk_d.instanceBuffer[vk.swapchain.currentImage]);
 
 	RB_TraceRays();
 
@@ -733,6 +742,15 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	vk_d.portalInView = qfalse;
 	vk_d.mirrorInView = qfalse;
 
+
+	//VK_UnmapBuffer(&vk_d.uboBuffer[vk.swapchain.currentImage]);
+	//VK_UnmapBuffer(&vk_d.uboLightList[vk.swapchain.currentImage]);
+	//VK_UnmapBuffer(&vk_d.instanceDataBuffer[vk.swapchain.currentImage]);
+	//VK_UnmapBuffer(&vk_d.geometry.idx_static);
+	//VK_UnmapBuffer(&vk_d.geometry.xyz_static);
+	//VK_UnmapBuffer(&vk_d.geometry.xyz_dynamic[vk.swapchain.currentImage]);
+	//VK_UnmapBuffer(&vk_d.geometry.idx_dynamic[vk.swapchain.currentImage]);
+	
 	// draw pt results to swap chain
 	VK_BeginRenderClear();
 	VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage]);

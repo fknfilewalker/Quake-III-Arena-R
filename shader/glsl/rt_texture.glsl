@@ -1,7 +1,8 @@
 #include "constants.h"
 
+// global texture
 layout(binding = 0, set = 1) uniform sampler2D texure_array[];
-
+// blue noise
 layout(binding = BINDING_OFFSET_BLUE_NOISE, set = 0) uniform sampler2DArray blue_noise;
 
 // texture getter
@@ -10,19 +11,16 @@ global_texture(uint idx, vec2 tex_coord)
 {
 	return texture(texure_array[idx], tex_coord);
 }
-
 vec4
 global_textureLod(uint idx, vec2 tex_coord, uint lod)
 {
 	return textureLod(texure_array[idx], tex_coord, lod);
 }
-
 vec4
 global_textureGrad(uint idx, vec2 tex_coord, vec2 d_x, vec2 d_y)
 {
 	return textureGrad(texure_array[idx], tex_coord, d_x, d_y);
 }
-
 ivec2
 global_textureSize(uint idx, int level)
 {
@@ -41,7 +39,6 @@ get_rng_seed(int frame_num)
 	rng_seed |= uint(frame_num) << 20;
 	return rng_seed;
 }
-
 float
 get_rng(uint idx, int frame_num)
 {

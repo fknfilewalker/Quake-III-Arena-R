@@ -627,7 +627,7 @@ static void R_MarkLeaves (void) {
 
 		// check general pvs
 		if ( !(vis[cluster>>3] & (1<<(cluster&7))) ) {
-			continue;
+			//continue;
 		}
 
 		// check for door connection

@@ -73,8 +73,8 @@
     #define MAT4(n) mat4 n;
 #else
     #define STRUCT(content, name) typedef struct { content } name;
-    #define BOOL(n) uint32_t n;
-    #define UINT(n) uint32_t n;
+    #define BOOL(n) unsigned int n;
+    #define UINT(n) unsigned int n;
     #define FLOAT(n) float n;
     #define VEC2(n) float n[2];
     #define VEC3(n) float n[3];

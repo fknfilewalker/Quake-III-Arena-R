@@ -11,6 +11,9 @@ static const char* deviceExtensions[] = {
 		VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
 		VK_KHR_MAINTENANCE3_EXTENSION_NAME,
 #endif
+#ifndef NDEBUG
+		//VK_EXT_DEBUG_MARKER_EXTENSION_NAME,
+#endif
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
@@ -118,11 +121,20 @@ static void VK_CreateInstance() {
 
 	// create instance
 	{
+		VkApplicationInfo vk_app_info = {
+			.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+			.pApplicationName = "Quake 3",
+			.applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+			.pEngineName = "q3pt",
+			.engineVersion = VK_MAKE_VERSION(1, 0, 0),
+			.apiVersion = VK_API_VERSION_1_1,
+		};
+
 		VkInstanceCreateInfo desc = { 0 };
 		desc.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 		desc.pNext = NULL;
 		desc.flags = 0;
-		desc.pApplicationInfo = NULL;
+		desc.pApplicationInfo = &vk_app_info;
 		desc.enabledLayerCount = 0;
 		desc.ppEnabledLayerNames = NULL;
 		desc.enabledExtensionCount = sizeof(instanceExtensions) / sizeof(instanceExtensions[0]);
@@ -182,6 +194,11 @@ static void VK_PickPhysicalDevice()
 	}
 
 	if (vk.physicalDevice == VK_NULL_HANDLE) {
+#if defined( _WIN32 )
+		MessageBoxEx(NULL, "Vulkan: failed to find a suitable GPU!",
+			"Error", MB_OK | MB_ICONEXCLAMATION | MB_DEFBUTTON2 | MB_TOPMOST | MB_SETFOREGROUND,
+			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT));
+#endif
 		ri.Error(ERR_FATAL, "Vulkan: failed to find a suitable GPU!");
 	}
 
@@ -246,9 +263,13 @@ static void VK_CreateLogicalDevice()
 	indexingFeatures.descriptorBindingVariableDescriptorCount = qtrue;
 	indexingFeatures.descriptorBindingPartiallyBound = qtrue;
 
+	VkPhysicalDeviceFeatures2 device_features = { 0 };
+	device_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
+	device_features.pNext = &indexingFeatures;
+
 	VkDeviceCreateInfo desc = { 0 };
 	desc.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	desc.pNext = &indexingFeatures;
+	desc.pNext = &device_features;
 	desc.queueCreateInfoCount = queueCreateInfosCount;
 	desc.pQueueCreateInfos = &queueCreateInfos[0];
 
@@ -304,6 +325,26 @@ static qboolean VK_CheckValidationLayerSupport() {
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL VK_DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
 	ri.Printf(PRINT_WARNING, "Vulkan Validation Layer: %s\n", pCallbackData->pMessage);
+
+	if (pCallbackData->cmdBufLabelCount)
+	{
+		ri.Printf(PRINT_WARNING, "~~~");
+		for (uint32_t i = 0; i < pCallbackData->cmdBufLabelCount; ++i)
+		{
+			VkDebugUtilsLabelEXT* label = &pCallbackData->pCmdBufLabels[i];
+			ri.Printf(PRINT_WARNING, "%s ~", label->pLabelName);
+		}
+		ri.Printf(PRINT_WARNING, "\n");
+	}
+
+	if (pCallbackData->objectCount)
+	{
+		for (uint32_t i = 0; i < pCallbackData->objectCount; ++i)
+		{
+			VkDebugUtilsObjectNameInfoEXT* obj = &pCallbackData->pObjects[i];
+			ri.Printf(PRINT_WARNING, "--- %s %i\n", obj->pObjectName, (int32_t)obj->objectType);\
+		}
+	}
 
 	return VK_FALSE;
 }
@@ -380,7 +421,10 @@ static qboolean VK_CheckDeviceExtensionSupport(VkPhysicalDevice device) {
 				break;
 			}
 		}
-		if (!supported) ri.Error(ERR_FATAL, "Vulkan: required instance extension is not available: %s", deviceExtensions[i]);
+		if (!supported) {
+			free(availableExtensions);
+			return qfalse;
+		}
 	}
 
 	free(availableExtensions);

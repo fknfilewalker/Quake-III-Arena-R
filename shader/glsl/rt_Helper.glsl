@@ -1,4 +1,5 @@
 
+
 void initPayload(out RayPayload rp){
 	// rp.color = vec4(0,0,0,0);
 	// rp.normal = vec4(0,0,0,0);
@@ -13,13 +14,22 @@ void initRay(){
 }
 
 
-
-bool
-found_intersection(RayPayload rp)
+vec2
+sample_disk(vec2 uv)
 {
-	return rp.instanceID != ~0u;
+	float theta = 2.0 * 3.141592653589 * uv.x;
+	float r = sqrt(uv.y);
+
+	return vec2(cos(theta), sin(theta)) * r;
 }
 
+vec3
+sample_cos_hemisphere(vec2 uv)
+{
+	vec2 disk = sample_disk(uv);
+
+	return vec3(disk.x, sqrt(max(0.0, 1.0 - dot(disk, disk))), disk.y);
+}
 
 vec3
 clamp_color(vec3 color, float max_val)
@@ -52,6 +62,14 @@ blinn_phong_based_brdf(vec3 V, vec3 L, vec3 N, float phong_exp)
 	vec3 H = normalize(V + L);
 		float F = pow(1.0 - max(0.0, dot(H, V)), 5.0);
 		return mix(0.15, 0.05 + 10.25 * pow(max(0.0, dot(H, N)), phong_exp), F) / M_PI;
+}
+float schlick_ross_fresnel(float F0, float roughness, float NdotV)
+{
+    if(F0 < 0)
+        return 0;
+
+    // Shlick's approximation for Ross BRDF -- makes Fresnel converge to less than 1.0 when N.V is low
+    return F0 + (1 - F0) * pow(1 - NdotV, 5 * exp(-2.69 * roughness)) / (1.0 + 22.7 * pow(roughness, 1.5));
 }
 
 vec3
