@@ -275,6 +275,7 @@ static void InitVulkan(void)
 			VK_CreateAttributeBuffer(&vk_d.geometry.xyz_static, RTX_STATIC_XYZ_SIZE * 12 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 			// Static Bottom AS Buffer
 			VK_CreateRayTracingASBuffer(&vk_d.basBufferStatic, 1073741823 * sizeof(byte));
+			VK_CreateRayTracingASBuffer(&vk_d.basBufferStaticWorld, 1073741823 * sizeof(byte));
 			vk_d.basBufferStaticOffset = 0;
 			vk_d.basBufferDynamicOffset = 0;
 
@@ -1377,6 +1378,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			VK_DestroyBuffer(&vk_d.geometry.xyz_static);
 			VK_DestroyBuffer(&vk_d.geometry.idx_static);
 			VK_DestroyBuffer(&vk_d.basBufferStatic);
+			VK_DestroyBuffer(&vk_d.basBufferStaticWorld);
 				
 			for (int i = 0; i < vk.swapchain.imageCount; i++) {
 				if (vk_d.bottomASDynamicList[i] == NULL) free(vk_d.bottomASDynamicList[i]);

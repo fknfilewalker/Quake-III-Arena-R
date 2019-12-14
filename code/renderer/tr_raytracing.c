@@ -5,14 +5,6 @@
 glConfig.driverType == VULKAN && r_vertexLight->value == 2
 */
 
-#define ANIMATE_TEXTURE (tess.shader->stages[0]->bundle[0].numImageAnimations > 0)
-#define UV_CHANGES		(tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD) && tess.shader->stages[0]->bundle[0].numTexMods > 0) : qfalse)
-#define MODEL_DEFORM	(tess.shader->numDeforms > 0)
-#define ANIMATE_MODEL	(backEnd.currentEntity->e.frame > 0 || backEnd.currentEntity->e.oldframe > 0)
-
-#define RTX_DYNAMIC_AS		(MODEL_DEFORM || ANIMATE_MODEL)
-#define RTX_DYNAMIC_AS_DATA (RTX_DYNAMIC_AS || UV_CHANGES)
-
 #define RTX_BOTTOM_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV)
 #define RTX_TOP_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV)
 
@@ -29,7 +21,7 @@ static void RB_WriteXYZ(uint32_t offset, qboolean dynamic) {
 			tess.xyz[j][0],
 			tess.xyz[j][1],
 			tess.xyz[j][2],
-			0,
+			tess.shader->stages[0]->bundle[0].image[0]->index,
 			UV_CHANGES ? tess.svars.texcoords[0][j][0] : tess.texCoords[j][0][0],
 			UV_CHANGES ? tess.svars.texcoords[0][j][1] : tess.texCoords[j][0][1],
 			tess.texCoords[j][1][0],
@@ -458,11 +450,20 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	originalTime = backEnd.refdef.floatTime;
 	backEnd.currentEntity = &tr.worldEntity;
 	
+	// add world
+	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorld.data);
+	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorld.geometryInstance);
+	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorld, sizeof(vkbottomAS_t));
+	vk_d.bottomASTraceListCount++;
+
 	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
 		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
 		// skip stuff
 		if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
 			|| strstr(shader->name, "Shadow") || shader->isSky) {
+			continue;
+		}
+		if (drawSurf->bAS == NULL) {
 			continue;
 		}
 		

@@ -680,6 +680,7 @@ typedef struct msurface_s {
 	struct shader_s		*shader;
 	int					fogIndex;
 	vkbottomAS_t*		bAS;			// bottom Acceleration Structure
+	qboolean			added;
 
 	surfaceType_t		*data;			// any of srf*_t
 } msurface_t;
@@ -1289,6 +1290,15 @@ typedef struct {
 #define RTX_STATIC_INDEX_SIZE 1024 * 1024 
 #define RTX_DYNAMIC_XYZ_SIZE 128 * 1024
 #define RTX_DYNAMIC_INDEX_SIZE 256 * 1024 
+
+#define ANIMATE_TEXTURE (tess.shader->stages[0]->bundle[0].numImageAnimations > 0)
+#define UV_CHANGES		(tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD)  && tess.shader->stages[0]->bundle[0].numTexMods > 0 /*&& tess.shader->stages[0]->bundle[0].texMods[0].type != TMOD_NONE*/) : qfalse)
+#define MODEL_DEFORM	(tess.shader->numDeforms > 0)
+#define ANIMATE_MODEL	(backEnd.currentEntity->e.frame > 0 || backEnd.currentEntity->e.oldframe > 0)
+
+#define RTX_DYNAMIC_AS		(MODEL_DEFORM || ANIMATE_MODEL)
+#define RTX_DYNAMIC_AS_DATA (RTX_DYNAMIC_AS || UV_CHANGES || ANIMATE_TEXTURE)
+
 typedef struct {
     size_t              size; // images
     vkimage_t           images[MAX_DRAWIMAGES];
@@ -1344,9 +1354,11 @@ typedef struct {
 	vkgeometry_t		geometry;			
 
 	// AS
+	qboolean			worldASInit;
 	// holds all static bottom as
 	vkbottomAS_t*		bottomASList;
 	uint32_t			bottomASCount;
+	vkbottomAS_t		bottomASWorld;
 	// holds all temporal bottom as
 	vkbottomAS_t*		bottomASDynamicList[VK_MAX_SWAPCHAIN_SIZE];
 	uint32_t			bottomASDynamicCount[VK_MAX_SWAPCHAIN_SIZE];
@@ -1357,6 +1369,9 @@ typedef struct {
 	// BOTTOM AS (Buffer) for top an bottom as
 	vkbuffer_t			basBufferStatic;
 	VkDeviceSize		basBufferStaticOffset;
+	vkbuffer_t			basBufferStaticWorld;
+
+
 	vkbuffer_t			basBufferDynamic[VK_MAX_SWAPCHAIN_SIZE];
 	VkDeviceSize		basBufferDynamicOffset;
 	vkbuffer_t			topASBuffer[VK_MAX_SWAPCHAIN_SIZE];

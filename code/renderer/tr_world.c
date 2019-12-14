@@ -627,7 +627,7 @@ static void R_MarkLeaves (void) {
 
 		// check general pvs
 		if ( !(vis[cluster>>3] & (1<<(cluster&7))) ) {
-			//continue;
+			continue;
 		}
 
 		// check for door connection
@@ -644,6 +644,134 @@ static void R_MarkLeaves (void) {
 		} while (parent);
 	}
 }
+/*
+static void R_MarkLeaves (void) {
+	const byte	*vis;
+	mnode_t	*leaf, *parent;
+	int		i;
+	int		cluster;
+
+	// lockpvs lets designers walk around to determine the
+	// extent of the current pvs
+	if ( r_lockpvs->integer ) {
+		return;
+	}
+
+	// current viewcluster
+	leaf = R_PointInLeaf( tr.viewParms.pvsOrigin );
+	//mnode_t* leaf1 = R_PointInLeaf((vec3_t) { tr.viewParms.pvsOrigin[0], tr.viewParms.pvsOrigin[1], tr.viewParms.pvsOrigin[2]})->cluster;
+	//mnode_t* leaf2 = R_PointInLeaf(tr.viewParms.pvsOrigin);
+
+	cluster = leaf->cluster;
+
+	// if the cluster is the same and the area visibility matrix
+	// hasn't changed, we don't need to mark everything again
+
+	// if r_showcluster was just turned on, remark everything
+	//ri.Printf(PRINT_ALL, "cluster:%i numNodes:%i\n", tr.viewCluster, tr.world->numnodes);
+	if ( tr.viewCluster == cluster && !tr.refdef.areamaskModified
+		&& !r_showcluster->modified ) {
+		return;
+	}
+
+	if ( r_showcluster->modified || r_showcluster->integer ) {
+		r_showcluster->modified = qfalse;
+		if ( r_showcluster->integer ) {
+			ri.Printf( PRINT_ALL, "cluster:%i  area:%i\n", cluster, leaf->area );
+		}
+	}
+	//ri.Printf(PRINT_ALL, "cluster:%i  area:%i\n", cluster, leaf->area);
+	tr.visCount++;
+	tr.viewCluster = cluster;
+
+	if ( r_novis->integer || tr.viewCluster == -1 ) {
+		for (i=0 ; i<tr.world->numnodes ; i++) {
+			if (tr.world->nodes[i].contents != CONTENTS_SOLID) {
+				tr.world->nodes[i].visframe = tr.visCount;
+			}
+		}
+		return;
+	}
+
+	vis = R_ClusterPVS (tr.viewCluster);
+	int count = 0;
+	int clusterList[300];
+
+	for (i=0,leaf=tr.world->nodes ; i<tr.world->numnodes ; i++, leaf++) {
+		cluster = leaf->cluster;
+		if (cluster < 0 || cluster >= tr.world->numClusters) {
+			continue;
+		}
+
+		// check general pvs
+		//ri.Printf(PRINT_ALL, "vis[cluster>>3]:%i cluster&7:%i\n", vis[cluster >> 3], cluster & 7);
+		if (!(vis[cluster >> 3] & (1 << (cluster & 7)))) {
+			//if (!(vis[cluster >> 3])) {
+			continue;
+		}
+
+		// check for door connection
+		if ((tr.refdef.areamask[leaf->area >> 3] & (1 << (leaf->area & 7)))) {
+			continue;		// not visible
+		}
+
+		qboolean inside = qfalse;
+		//for (int j = 0; j < count; j++) {
+			if (cluster < (clusterList[count-1] + tr.world->numClusters/3)) {
+				inside = qtrue;
+
+			}
+		//}
+		if (!inside) {
+			clusterList[count] = cluster;
+			count++;
+		}
+
+		parent = leaf;
+
+
+		do {
+			if (parent->visframe == tr.visCount)
+				break;
+			parent->visframe = tr.visCount;
+			parent = parent->parent;
+		} while (parent);
+	}
+	int x = 2l;
+	ri.Printf(PRINT_ALL, "visChainCount:%i\n", count);
+
+	for (i = 0, leaf = tr.world->nodes; i < tr.world->numnodes; i++, leaf++) {
+		for (int j = 0; j < count; j++) {
+			vis = R_ClusterPVS(clusterList[j]);
+
+			cluster = leaf->cluster;
+			if (cluster < 0 || cluster >= tr.world->numClusters) {
+				continue;
+			}
+
+			// check general pvs
+			if (!(vis[cluster >> 3] & (1 << (cluster & 7)))) {
+				continue;
+			}
+
+			// check for door connection
+			if ((tr.refdef.areamask[leaf->area >> 3] & (1 << (leaf->area & 7)))) {
+				continue;		// not visible
+			}
+
+			parent = leaf;
+	
+
+			do {
+				if (parent->visframe == tr.visCount)
+					break;
+				parent->visframe = tr.visCount;
+				parent = parent->parent;
+			} while (parent);
+		}
+	}
+}
+*/
 
 
 /*
@@ -674,4 +802,12 @@ void R_AddWorldSurfaces (void) {
 		tr.refdef.num_dlights = 32 ;
 	}
 	R_RecursiveWorldNode( tr.world->nodes, 15, ( 1 << tr.refdef.num_dlights ) - 1 );
+}
+
+void R_AddWorldSurfaces2(void) {
+	for (int i = 0; i < tr.world->numsurfaces; i++) {
+		if (tr.world->surfaces[i].bAS != NULL) {
+			R_AddDrawSurf(tr.world->surfaces[i].data, tr.world->surfaces[i].shader, tr.world->surfaces[i].fogIndex, 0, tr.world->surfaces[i].bAS);
+		}
+	}
 }
