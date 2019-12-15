@@ -1354,6 +1354,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			vk_d.basBufferStaticOffset = 0;
 			vk_d.basBufferDynamicOffset = 0;
 			vk_d.scratchBufferOffset = 0;
+
 			// </RTX>
 		}
 	}

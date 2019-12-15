@@ -681,6 +681,7 @@ typedef struct msurface_s {
 	int					fogIndex;
 	vkbottomAS_t*		bAS;			// bottom Acceleration Structure
 	qboolean			added;
+	qboolean			skip;
 
 	surfaceType_t		*data;			// any of srf*_t
 } msurface_t;
@@ -1298,6 +1299,7 @@ typedef struct {
 
 #define RTX_DYNAMIC_AS		(MODEL_DEFORM || ANIMATE_MODEL)
 #define RTX_DYNAMIC_AS_DATA (RTX_DYNAMIC_AS || UV_CHANGES || ANIMATE_TEXTURE)
+#define RTX_DYNAMIC_DATA (UV_CHANGES || ANIMATE_TEXTURE)
 
 typedef struct {
     size_t              size; // images
@@ -1371,6 +1373,12 @@ typedef struct {
 	VkDeviceSize		basBufferStaticOffset;
 	vkbuffer_t			basBufferStaticWorld;
 
+	/*struct {
+		uint32_t offset;
+		shader_t* shader;
+		msurface_t* surf;
+	} updateDataOffsetXYZ[3500];
+	uint32_t			updateDataOffsetXYZCount;*/
 
 	vkbuffer_t			basBufferDynamic[VK_MAX_SWAPCHAIN_SIZE];
 	VkDeviceSize		basBufferDynamicOffset;
@@ -1387,8 +1395,9 @@ typedef struct {
 
 	vkbuffer_t			uboBuffer[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t			uboLightList[VK_MAX_SWAPCHAIN_SIZE];
-	vec4_t				lightList[RTX_MAX_LIGHTS];
-	uint32_t			lightCount;
+	LightList_s			lightList;
+	/*vec4_t				lightList[RTX_MAX_LIGHTS];
+	uint32_t			lightCount;*/
 	vkimage_t			blueNoiseTex;
 
 	// statistics

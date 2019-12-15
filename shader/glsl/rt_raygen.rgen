@@ -29,8 +29,7 @@ layout(binding = 6, set = 0) uniform global_ubo
 
 layout(binding = 7, set = 0) uniform LightList 
 {
-	vec4 pos[RTX_MAX_LIGHTS];
-	uint lightCount;
+	LightList_s lightList;
 } uboLights;
 
 // Specific
@@ -66,10 +65,10 @@ void trace_ray(Ray ray, uint cullMask)
 			SBT_RCHIT_OPAQUE /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_PATH_TRACER /*missIndex*/,
 			ray.origin, ray.t_min, ray.direction, ray.t_max, PAYLOAD_BRDF);
 }
-bool trace_shadow_ray(vec3 pos, vec3 dir, float t_min)
+bool trace_shadow_ray(vec3 pos, vec3 dir, float t_min, bool isPlayer)
 {
 	const uint rayFlags = 0;
-	uint cullMask = RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE;
+	uint cullMask = isPlayer ? RAY_FIRST_PERSON_OPAQUE_VISIBLE : RAY_MIRROR_OPAQUE_VISIBLE;
 	Ray ray;
 	ray.origin = pos;
 	ray.direction = dir;
@@ -120,17 +119,7 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 	tex_coord_x *= 0.5;
 	tex_coord_y *= 0.5;
 
-	vec4 color = vec4(0);
-	if(iData.data[rp.instanceID].world) {
-		ivec3 index = ivec3(indices_static.i[iData.data[rp.instanceID].offsetIDX + 3 * rp.primitiveID], indices_static.i[iData.data[rp.instanceID].offsetIDX + 3 * rp.primitiveID + 1], indices_static.i[iData.data[rp.instanceID].offsetIDX + 3 * rp.primitiveID + 2]);
-
-		const vec3 barycentricCoords = vec3(1.0f - rp.barycentric.x - rp.barycentric.y, rp.barycentric.x, rp.barycentric.y);
-		vec2 uv = 		vertices_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].uv.xy * barycentricCoords.x +
-                  	vertices_static.v[index.y + iData.data[rp.instanceID].offsetXYZ].uv.xy * barycentricCoords.y +
-                  	vertices_static.v[index.z + iData.data[rp.instanceID].offsetXYZ].uv.xy * barycentricCoords.z;
-		color = global_textureGrad(int(vertices_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].pos.w), uv, tex_coord_x, tex_coord_y);
-	}
-	else color = global_textureGrad(iData.data[rp.instanceID].texIdx, hp.uv, tex_coord_x, tex_coord_y);
+	vec4 color = global_textureGrad(hp.tex, hp.uv, tex_coord_x, tex_coord_y);
 	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_NEEDSCOLOR) > 0) {
 		color *= (hp.color/255);
   	}
@@ -139,9 +128,9 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 
 vec3
 getLightDir(vec3 pos, int i){
-	int lightIDX = int( round( get_rng(i, int(ubo.frameIndex)) * uboLights.lightCount ) );//float(uboLights.lightCount));
+	int lightIDX = int( round( get_rng(i, int(ubo.frameIndex)) * uboLights.lightList.numLights ) );//float(uboLights.lightCount));
 	//int lightIDX = 0;
-	vec3 dirToLight = normalize(uboLights.pos[lightIDX].xyz - pos);
+	vec3 dirToLight = normalize(uboLights.lightList.lights[lightIDX].pos.xyz - pos);
 	return dirToLight;
 }
 
@@ -175,56 +164,60 @@ vec4 path_tracer(){
 	Triangle triangle = getTriangle(rp);
 
 	vec4 color = vec4(0,0,0,0);
-	// if(is_mirror(rp)){
-	// 	ray.origin = ray.origin + ray.direction * rp.hit_distance;
-	// 	ray.direction = reflect(ray.direction, hp.normal);
-	// 	trace_ray(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
-	// 	hp = getHitPoint(rp);
-	// 	if(!found_intersection(rp)){
-	// 		return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
-	// 	}
-	// 	color = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
-	// 	return color;
-	// } 
+	if(is_mirror(rp)){
+		ray.origin = ray.origin + ray.direction * rp.hit_distance;
+		ray.direction = reflect(ray.direction, hp.normal);
+		trace_ray(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
+		hp = getHitPoint(rp);
+		if(!found_intersection(rp)){
+			return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
+		}
+		color = global_texture(hp.tex, hp.uv);
+		return color;
+	} 
 
 	vec4 contrib = vec4(0,0,0,0);
 
 	vec3 fromCam = ray.direction.xyz;
 	vec3 primary_albedo = getTextureLod(screen_coord_cs, triangle, hp).xyz;
-	if(is_light(rp)){
-	 	primary_albedo += vec3(1,0,0);
-	}
 	if(is_glass(rp)){
 		primary_albedo += vec3(0,0,1);
 	}
+	if(is_light(rp)){
+	 	primary_albedo += vec3(1,0,0);
+		return vec4(primary_albedo,1);
+	}
+
+
+	bool isPlayer = is_player(rp);
 
 	vec3 directLightContrib = vec3(0); 
 	vec3 indirectLightContrib = vec3(0); 
 
-	// vec3 P = hp.pos.xyz;
-	// vec3 N = hp.normal;
-	// for(int i = 0; i < 2/*uboLights.lightCount*/; i++){
-	// 	vec3 L =  getLightDir(P, i);
-	// 	//vec3 L =  normalize(uboLights.pos[i].xyz - P);
-	// 	//vec2 L = scene->lights[i].getLightDirection(P); 
-    //     vec3 L_i = 1.0f * vec3(0.5,0.5,0.5); // intensity * l color
-    //     // we assume the surface at P is diffuse
-	// 	ray.origin = P;
-	// 	ray.direction = L;
+	vec3 P = hp.pos.xyz;
+	vec3 N = hp.normal;
+	for(int i = 0; i < 120/*uboLights.lightCount*/; i++){
+		vec3 L =  getLightDir(P, i);
+		//vec3 L =  normalize(uboLights.pos[i].xyz - P);
+		//vec2 L = scene->lights[i].getLightDirection(P); 
+        vec3 L_i = 1.0f * vec3(0.5,0.5,0.5); // intensity * l color
+        // we assume the surface at P is diffuse
+		ray.origin = P;
+		ray.direction = L;
 
-	// 	float t_min = 0.01;
-	// 	//if(dot(L, N) > 0) t_min = -0.01;
-	// 	if(dot(L, N) > 0) {
-	// 		//continue;
-	// 		N = -N;
-	// 		//t_min = -0.01;
-	// 	}
-	// 	directLightContrib += int(trace_shadow_ray(P, L, t_min)) * max(0.f, dot(N,-L)) * L_i; 
+		float t_min = 0.01;
+		//if(dot(L, N) > 0) t_min = -0.01;
+		if(dot(L, N) > 0) {
+			//continue;
+			N = -N;
+			//t_min = -0.01;
+		}
+		directLightContrib += int(trace_shadow_ray(P, L, t_min, isPlayer)) * max(0.f, dot(N,-L)) * L_i; 
 
-	// }
+	}
 
-	// color = vec4((directLightContrib) * primary_albedo, 1);
- color = vec4(primary_albedo, 1);
+	color = vec4((directLightContrib) * primary_albedo, 1);
+ //color = vec4(primary_albedo, 1);
 
 	//vec3 contrib    = vec3(0);
 	//vec3 throughput = vec3(1);

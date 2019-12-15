@@ -1584,7 +1584,7 @@ R_GenerateDrawSurfs
 ====================
 */
 void R_GenerateDrawSurfs( void ) {
-	R_AddWorldSurfaces ();
+	if (!(glConfig.driverType == VULKAN && r_vertexLight->value == 2)) R_AddWorldSurfaces ();
 
 	R_AddPolygonSurfaces();
 

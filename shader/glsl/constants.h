@@ -36,6 +36,7 @@
 #define MATERIAL_FLAG_PARTICLE 						0x00000200
 #define MATERIAL_FLAG_PORTAL						0x00000400
 #define MATERIAL_FLAG_BULLET_MARK					0x00000800
+#define MATERIAL_FLAG_PLAYER_OR_WEAPON			    0x00001000
 
 // binding offset
 #define BINDING_OFFSET_AS							0x00000000
@@ -55,7 +56,7 @@
 #define SBT_RAHIT_PARTICLE							0x00000003
 
 #define NUM_BOUNCES									(2)
-#define RTX_MAX_LIGHTS								(128)
+#define RTX_MAX_LIGHTS								(256)
 
 // blue noise
 #define NUM_BLUE_NOISE_TEX							(32)
@@ -65,21 +66,25 @@
 #ifdef GLSL
     #define STRUCT(content, name) struct name { content };
     #define BOOL(n) bool n;
+    #define INT(n) int n;
     #define UINT(n) uint n;
     #define FLOAT(n) float n;
     #define VEC2(n) vec2 n;
     #define VEC3(n) vec3 n;
     #define VEC4(n) vec4 n;
     #define MAT4(n) mat4 n;
+    #define UVEC2(n) uvec2 n;
 #else
     #define STRUCT(content, name) typedef struct { content } name;
     #define BOOL(n) unsigned int n;
+    #define INT(n) int n;
     #define UINT(n) unsigned int n;
     #define FLOAT(n) float n;
     #define VEC2(n) float n[2];
     #define VEC3(n) float n[3];
     #define VEC4(n) float n[4];
     #define MAT4(n) float n[16];
+    #define UVEC2(n) unsigned int[2] n;
 #endif
 
 // holds material/offset/etc data for each AS Instance
@@ -100,6 +105,10 @@ STRUCT (
     VEC4    (pos)
     VEC4    (uv)
     VEC4    (color)
+    INT     (texIdx0)
+    INT     (texIdx1)
+    INT     (texIdx2)
+    UINT    (material)
 ,VertexBuffer)
 
 // global ubo
@@ -113,6 +122,16 @@ STRUCT (
 	BOOL    (hasPortal)
 	UINT    (frameIndex)
 ,RTUbo)
+
+// holds a light
+STRUCT (
+    VEC4    (pos)
+,Light)
+
+STRUCT (
+    Light   lights[RTX_MAX_LIGHTS];
+    UINT    (numLights)
+,LightList_s)
 
 #undef STRUCT
 #undef BOOL
