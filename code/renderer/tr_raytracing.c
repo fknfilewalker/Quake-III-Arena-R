@@ -8,6 +8,40 @@ glConfig.driverType == VULKAN && r_vertexLight->value == 2
 #define RTX_BOTTOM_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV)
 #define RTX_TOP_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV)
 
+uint32_t RB_FindNextTex(int skipNum) {
+	int found = 0;
+	if (strstr(tess.shader->name, "wall")) {
+		int x = 2;
+
+	}
+
+	for (int i = 0; i < MAX_SHADER_STAGES; i++) {
+		if (tess.shader->stages[i] != NULL && tess.shader->stages[i]->active) {
+			for (int j = 0; j < NUM_TEXTURE_BUNDLES; j++) {
+				if (tess.shader->stages[i]->bundle[j].image[0] != NULL) {
+					if (strstr(tess.shader->stages[i]->bundle[j].image[0]->imgName, "*white") || strstr(tess.shader->stages[i]->bundle[j].image[0]->imgName, "*identityLight") ||
+						strstr(tess.shader->stages[i]->bundle[j].image[0]->imgName, "chrome_env") ||
+						strstr(tess.shader->stages[i]->bundle[j].image[0]->imgName, "textures/effects") || 
+						strstr(tess.shader->stages[i]->bundle[j].image[0]->imgName, "shadow")) continue;
+					//ri.Printf(PRINT_ALL, "%s\n", tess.shader->stages[i]->bundle[j].image[0]->imgName);
+					/*if (i > 0 && strstr(tess.shader->stages[i]->bundle[j].image[0]->imgName, "chrome_metal")) {
+						int x = 2;
+						continue;
+					}*/
+					found++;
+					if (found > skipNum) {
+						qboolean blend = qfalse;
+						uint32_t stateBits = tess.shader->stages[i]->stateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS);
+						if ((stateBits & GLS_SRCBLEND_BITS) > GLS_SRCBLEND_ONE && (stateBits & GLS_DSTBLEND_BITS) > GLS_DSTBLEND_ONE) blend = qtrue;
+						return ((uint32_t)tess.shader->stages[i]->bundle[j].image[0]->index) | (blend ? TEX0_BLEND_MASK : 0);
+					}
+				}
+			}
+		}
+	}
+	return TEX0_IDX_MASK;
+}
+
 void RB_WriteIDX(uint32_t offset, qboolean dynamic) {
 	for (int j = 0; j < tess.numIndexes; j++) {
 		uint32_t idx = (uint32_t)tess.indexes[j];
@@ -16,7 +50,14 @@ void RB_WriteIDX(uint32_t offset, qboolean dynamic) {
 	}
 }
 void RB_WriteXYZ(uint32_t offset, qboolean dynamic, uint32_t material) {
+	uint32_t tex0 = (RB_FindNextTex(0)) | (RB_FindNextTex(1) << TEX_SHIFT_BITS) | (RB_FindNextTex(2) << (2*TEX_SHIFT_BITS));
+	uint32_t tex1 = (RB_FindNextTex(3)) | (RB_FindNextTex(4) << TEX_SHIFT_BITS) | (RB_FindNextTex(5) << (2 * TEX_SHIFT_BITS));
+	uint32_t tex2 = RB_FindNextTex(2);
+	uint32_t tex3 = RB_FindNextTex(3);
+	//if(tex3 != )
+
 	for (int j = 0; j < tess.numVertexes; j++) {
+
 		VertexBuffer p = {
 			tess.xyz[j][0],
 			tess.xyz[j][1],
@@ -30,9 +71,9 @@ void RB_WriteXYZ(uint32_t offset, qboolean dynamic, uint32_t material) {
 			(float)tess.svars.colors[j][1],
 			(float)tess.svars.colors[j][2],
 			(float)tess.svars.colors[j][3],
-			tess.shader->stages[0]->bundle[0].image[0]->index,
-			0,
-			0,
+			tex0,//tess.shader->stages[0]->bundle[0].image[0]->index,
+			tex1,//tex1,//(tess.shader->stages[1] != NULL && tess.shader->stages[1]->active) ? tess.shader->stages[1]->bundle[0].image[0]->index : -1,
+			tex2,//tex2,//(tess.shader->stages[2] != NULL && tess.shader->stages[2]->active) ? tess.shader->stages[2]->bundle[0].image[0]->index : -1,
 			material
 		};
 

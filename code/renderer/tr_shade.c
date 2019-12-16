@@ -927,11 +927,6 @@ ComputeTexCoords
 static void RB_IterateStagesGeneric( shaderCommands_t *input )
 {
 
-	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && backEnd.refdef.rdflags != RDF_NOWORLDMODEL && !backEnd.projection2D) {
-		//RB_IterateStagesRayTracing(input);
-		//return;
-	}
-
 	int stage;
 
 	for ( stage = 0; stage < MAX_SHADER_STAGES; stage++ )

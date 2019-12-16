@@ -1867,15 +1867,19 @@ void R_Recursive(mnode_t* node, uint32_t *offsetIDX, uint32_t *offsetXYZ) {
 			surf = mark[j];
 
 			shader_t* shader = tr.shaders[surf->shader->index];
-			if (tess.shader->stages[0] == NULL) continue;
+
+			/*if (strstr(tess.shader->stages[0]->bundle[0].image[0]->imgName, "*white")) {
+				continue;
+			}*/
 			if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
-				|| strstr(shader->name, "Shadow") /*|| (shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT*/ || shader->isSky || shader->sort > SS_OPAQUE) {
+				|| strstr(shader->name, "Shadow") /*|| (shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT*/ || shader->isSky || shader->sort > SS_OPAQUE
+				|| *surf->data == SF_BAD || *surf->data == SF_SKIP
+				|| shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP
+				|| shader->stages[0] == NULL || !shader->stages[0]->active) {
 				surf->skip = qtrue;
 				continue;
 			}
-			if (*surf->data == SF_BAD || *surf->data == SF_SKIP) continue;
-			if (shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP) continue;
-			if (shader->stages[0] == NULL) continue;//grate1_3
+			//grate1_3
 			tess.shader = shader;
 
 			rb_surfaceTable[*surf->data](surf->data);
@@ -1894,7 +1898,9 @@ void R_Recursive(mnode_t* node, uint32_t *offsetIDX, uint32_t *offsetXYZ) {
 				//ComputeColors(tess.shader->stages[0]);
 
 				uint32_t material = 0;
-				if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) material |= MATERIAL_FLAG_MIRROR;
+				if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) {
+					material |= MATERIAL_FLAG_MIRROR;
+				}
 				if (strstr(tess.shader->name, "base_light") || strstr(tess.shader->name, "gothic_light") || strstr(tess.shader->name, "eye")) { // all lamp textures
 					material = MATERIAL_KIND_REGULAR;
 					material |= MATERIAL_FLAG_LIGHT;

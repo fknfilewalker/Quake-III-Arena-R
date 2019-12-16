@@ -6,14 +6,27 @@ struct Triangle {
 	mat3x2 uv;
 	vec3 normal;
 	mat3x4 color;
-	uint tex;
+	uint tex0;
+	uint tex1;
+	uint tex2;
 };
 struct HitPoint {
 	vec3 pos;
 	vec3 normal;
 	vec2 uv;
 	vec4 color;
-	uint tex;
+	uint tex0;
+	uint tex1;
+	uint tex2;
+};
+
+struct TextureData {
+	int tex0;
+	int tex1;
+	int tex2;
+	bool tex0Blend;
+	bool tex1Blend;
+	bool tex2Blend;
 };
 
 // buffer with instance data
@@ -79,8 +92,16 @@ Triangle getTriangle(RayPayload rp){
 	vec3 AC = hitTriangle.pos[2] - hitTriangle.pos[0];
 	hitTriangle.normal = normalize(cross(AB, AC));
 
-	if(iData.data[rp.instanceID].world) hitTriangle.tex = uint(vertices_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx0);
-	else hitTriangle.tex = iData.data[rp.instanceID].texIdx;
+	if(iData.data[rp.instanceID].world) {
+		hitTriangle.tex0 = (vertices_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx0);
+		hitTriangle.tex1 = (vertices_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx1);
+		hitTriangle.tex2 = (vertices_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx2);
+	}
+	else {
+		hitTriangle.tex0 = TEX2_IDX_MASK | TEX1_IDX_MASK | (iData.data[rp.instanceID].texIdx & TEX0_IDX_MASK);
+		hitTriangle.tex1 = UINT_MAX;
+		hitTriangle.tex2 = UINT_MAX;
+	}
 
 	return hitTriangle;
 }
@@ -101,9 +122,25 @@ HitPoint getHitPoint(RayPayload rp){
   	           		triangle.color[2] * barycentricCoords.z;
 	hitPoint.normal = triangle.normal;
 
-	hitPoint.tex = triangle.tex;
+	hitPoint.tex0 = triangle.tex0;
+	hitPoint.tex1 = triangle.tex1;
+	hitPoint.tex2 = triangle.tex2;
 
 	return hitPoint;
+}
+
+TextureData unpackTextureData(uint data){
+	TextureData d;
+	d.tex0 = int(data & TEX0_IDX_MASK);
+	d.tex1 = int((data & TEX1_IDX_MASK) >> TEX_SHIFT_BITS);
+	d.tex2 = int((data & TEX2_IDX_MASK) >> (2*TEX_SHIFT_BITS));
+	if(d.tex0 == TEX0_IDX_MASK) d.tex0 = -1;
+	if(d.tex1 == TEX0_IDX_MASK) d.tex1 = -1;
+	if(d.tex2 == TEX0_IDX_MASK) d.tex2 = -1;
+	d.tex0Blend = (data & TEX0_BLEND_MASK) != 0;
+	d.tex1Blend = (data & TEX1_BLEND_MASK) != 0;
+	d.tex2Blend = (data & TEX2_BLEND_MASK) != 0;
+	return d;
 }
 
 bool

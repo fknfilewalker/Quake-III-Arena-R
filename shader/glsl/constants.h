@@ -62,6 +62,19 @@
 #define NUM_BLUE_NOISE_TEX							(32)
 #define BLUE_NOISE_RES								(256)
 
+#define UINT_MAX                                    0xffffffff
+#define UINT_TOP_16BITS_MASK                        0xffff0000
+#define UINT_BOTTOM_16BITS_MASK                     0x0000ffff
+
+#define TEX_SHIFT_BITS                              10
+#define TEX0_IDX_MASK                               0x000001ff
+#define TEX1_IDX_MASK                               0x0007FC00
+#define TEX2_IDX_MASK                               0x1ff00000
+
+#define TEX0_BLEND_MASK                             0x00000200
+#define TEX1_BLEND_MASK                             0x00080000
+#define TEX2_BLEND_MASK                             0x20000000
+
 // shared structures between GLSL and C
 #ifdef GLSL
     #define STRUCT(content, name) struct name { content };
@@ -105,9 +118,9 @@ STRUCT (
     VEC4    (pos)
     VEC4    (uv)
     VEC4    (color)
-    INT     (texIdx0)
-    INT     (texIdx1)
-    INT     (texIdx2)
+    UINT     (texIdx0)
+    UINT     (texIdx1)
+    UINT     (texIdx2)
     UINT    (material)
 ,VertexBuffer)
 

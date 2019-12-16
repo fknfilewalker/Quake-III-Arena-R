@@ -1612,81 +1612,6 @@ SHADER OPTIMIZATION AND FOGGING
 
 ========================================================================================
 */
-static float	s_flipMatrix[16] = {
-	// convert from our coordinate system (looking down X)
-	// to OpenGL's coordinate system (looking down -Z)
-	0, 0, -1, 0,
-	-1, 0, 0, 0,
-	0, 1, 0, 0,
-	0, 0, 0, 1
-};
-void RB_StageIteratorRTMirror(void) {
-	//float invView[16];
-	//float invProj[16];
-
-	//float	viewerMatrix[16];
-	//float	viewerMatrix2[16];
-	//vec3_t	origin;
-
-	//Com_Memset(&backEnd. or , 0, sizeof(backEnd. or ));
-	//backEnd. or .axis[0][0] = 1;
-	//backEnd. or .axis[1][1] = 1;
-	//backEnd. or .axis[2][2] = 1;
-	//VectorCopy(backEnd.viewParms. or .origin, backEnd. or .viewOrigin);
-
-	//// transform by the camera placement
-	//VectorCopy(backEnd.viewParms. or .origin, origin);
-
-	//viewerMatrix[0] = backEnd.viewParms. or .axis[0][0];
-	//viewerMatrix[4] = backEnd.viewParms. or .axis[0][1];
-	//viewerMatrix[8] = backEnd.viewParms. or .axis[0][2];
-	//viewerMatrix[12] = -origin[0] * viewerMatrix[0] + -origin[1] * viewerMatrix[4] + -origin[2] * viewerMatrix[8];
-
-	//viewerMatrix[1] = backEnd.viewParms. or .axis[1][0];
-	//viewerMatrix[5] = backEnd.viewParms. or .axis[1][1];
-	//viewerMatrix[9] = backEnd.viewParms. or .axis[1][2];
-	//viewerMatrix[13] = -origin[0] * viewerMatrix[1] + -origin[1] * viewerMatrix[5] + -origin[2] * viewerMatrix[9];
-
-	//viewerMatrix[2] = backEnd.viewParms. or .axis[2][0];
-	//viewerMatrix[6] = backEnd.viewParms. or .axis[2][1];
-	//viewerMatrix[10] = backEnd.viewParms. or .axis[2][2];
-	//viewerMatrix[14] = -origin[0] * viewerMatrix[2] + -origin[1] * viewerMatrix[6] + -origin[2] * viewerMatrix[10];
-
-	//viewerMatrix[3] = 0;
-	//viewerMatrix[7] = 0;
-	//viewerMatrix[11] = 0;
-	//viewerMatrix[15] = 1;
-
-	//myGlMultMatrix(viewerMatrix, s_flipMatrix, viewerMatrix2);
-
-	//myGLInvertMatrix(&viewerMatrix2, &invView);
-	//myGLInvertMatrix(&vk_d.projectionMatrix, &invProj);
-
-
-	//VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
-	//VK_Bind2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor, &vk_d.imageDescriptor);
-
-	//float pos[3];
-	//pos[0] = backEnd.viewParms. or .origin[0];// -650;
-	//pos[1] = backEnd.viewParms. or .origin[1];//630;
-	//pos[2] = backEnd.viewParms. or .origin[2];//140;
-	//////tr.viewParms.or.origin;
-	//float direction[3];
-	//direction[0] = 1;// -650;
-	//direction[1] = 0;//630;
-	//direction[2] = 0;//140;
-	//////tr. or .modelMatrix
-	////	//ri.Printf(PRINT_ALL, "%f %f %f\n", tr. or .modelMatrix[3],
-	////		//tr. or .modelMatrix[7],
-	////		//tr. or .modelMatrix[11]);
-	//VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0 * sizeof(float), 16 * sizeof(float), &invView[0]);
-	//VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 16 * sizeof(float), 16 * sizeof(float), &invProj[0]);
-	//VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 32 * sizeof(float), sizeof(vec3_t), &origin);
-	////VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 4 * sizeof(float), sizeof(vec3_t), &direction);
-	//VK_TraceRays();
-	//VK_CopyImageToSwapchain(&vk_d.accelerationStructures.resultImage);
-	//vk_d.drawMirror = qfalse;
-}
 
 /*
 ===================
@@ -2173,6 +2098,34 @@ static void VertexLightingCollapse( void ) {
 	}
 }
 
+static void PathTracingsCollapse(void) {
+	for (int k = 0; k < MAX_SHADER_STAGES; k++) {
+		qboolean found = qfalse;
+		for (int i = 0; i < MAX_SHADER_STAGES; i++) {
+			if (stages[i].active == qtrue) {
+				if (strstr(stages[i].bundle[0].image[0]->imgName, "*white") || strstr(stages[i].bundle[0].image[0]->imgName, "chrome_env") || strstr(stages[i].bundle[0].image[0]->imgName, "*identityLight") || 
+					strstr(stages[i].bundle[0].image[0]->imgName, "textures/effects") ||
+					strstr(stages[i].bundle[0].image[0]->imgName, "shadow")) {
+
+					found = qtrue;
+					memset(&stages[i], 0, sizeof(shaderStage_t));
+					stages[i].active == qfalse;
+					stages[i] = stages[i + 1];
+				}
+			}
+			if (found) stages[i] = stages[i + 1];
+		}
+		if (found == qfalse)break;
+	}
+
+	if(strstr(shader.name, "bluemetalsupport")) {
+		for (int i = 0; i < MAX_SHADER_STAGES; i++) {
+			if (stages[i].active > qtrue) stages[i].active = qfalse;
+			int x = 2;
+		}
+	}
+}
+
 /*
 =========================
 FinishShader
@@ -2307,16 +2260,20 @@ static shader_t *FinishShader( void ) {
 	//
 	// if we are in r_vertexLight mode, never use a lightmap texture
 	//
-	if ( stage > 1 && (r_vertexLight->integer >= 1 && !r_uiFullScreen->integer) ) {
+	if ( stage > 1 && (r_vertexLight->integer == 1 && !r_uiFullScreen->integer) ) {
 		VertexLightingCollapse();
 		stage = 1;
 		hasLightmapStage = qfalse;
+	} else if (stage > 1 && (r_vertexLight->integer == 2 && !r_uiFullScreen->integer)) {
+		PathTracingsCollapse();
+		//hasLightmapStage = qfalse;
 	}
+
 
 	//
 	// look for multitexture potential
 	//
-	if ( stage > 1 && CollapseMultitexture() ) {
+	if (r_vertexLight->integer != 2 && stage > 1 && CollapseMultitexture() ) {
 		stage--;
 	}
 
