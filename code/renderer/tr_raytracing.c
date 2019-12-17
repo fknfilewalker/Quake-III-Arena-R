@@ -81,6 +81,37 @@ void RB_WriteXYZ(uint32_t offset, qboolean dynamic, uint32_t material) {
 		else VK_UploadBufferDataOffset(&vk_d.geometry.xyz_dynamic[vk.swapchain.currentImage], offset + (j * sizeof(VertexBuffer)), sizeof(VertexBuffer), (void*)&p);
 	}
 }
+void RB_WriteXYZ2(uint32_t offset, vkbuffer_t *buffer, uint32_t material) {
+	uint32_t tex0 = (RB_FindNextTex(0)) | (RB_FindNextTex(1) << TEX_SHIFT_BITS) | (RB_FindNextTex(2) << (2 * TEX_SHIFT_BITS));
+	uint32_t tex1 = (RB_FindNextTex(3)) | (RB_FindNextTex(4) << TEX_SHIFT_BITS) | (RB_FindNextTex(5) << (2 * TEX_SHIFT_BITS));
+	uint32_t tex2 = RB_FindNextTex(2);
+	uint32_t tex3 = RB_FindNextTex(3);
+	//if(tex3 != )
+
+	for (int j = 0; j < tess.numVertexes; j++) {
+
+		VertexBuffer p = {
+			tess.xyz[j][0],
+			tess.xyz[j][1],
+			tess.xyz[j][2],
+			tess.shader->stages[0]->bundle[0].image[0]->index,
+			UV_CHANGES ? tess.svars.texcoords[0][j][0] : tess.texCoords[j][0][0],
+			UV_CHANGES ? tess.svars.texcoords[0][j][1] : tess.texCoords[j][0][1],
+			tess.texCoords[j][1][0],
+			tess.texCoords[j][1][1],
+			(float)tess.svars.colors[j][0],
+			(float)tess.svars.colors[j][1],
+			(float)tess.svars.colors[j][2],
+			(float)tess.svars.colors[j][3],
+			tex0,//tess.shader->stages[0]->bundle[0].image[0]->index,
+			tex1,//tex1,//(tess.shader->stages[1] != NULL && tess.shader->stages[1]->active) ? tess.shader->stages[1]->bundle[0].image[0]->index : -1,
+			tex2,//tex2,//(tess.shader->stages[2] != NULL && tess.shader->stages[2]->active) ? tess.shader->stages[2]->bundle[0].image[0]->index : -1,
+			material
+		};
+
+		VK_UploadBufferDataOffset(buffer, offset + (j * sizeof(VertexBuffer)), sizeof(VertexBuffer), (void*)&p);
+	}
+}
 
 void RB_CreateStaticBottomAS(vkbottomAS_t** bAS) {
 	for (int stage = 0; stage < 1/*MAX_SHADER_STAGES*/; stage++)
@@ -352,6 +383,7 @@ void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic, qboolean forceUpdate) {
 	qboolean deform = tess.shader->numDeforms > 0;
 	qboolean frames = backEnd.currentEntity->e.frame > 0 || backEnd.currentEntity->e.oldframe > 0;
 	
+	//currentAS = bAS;
 	if (!dynamic) {
 		currentAS = bAS;
 	}
@@ -372,7 +404,10 @@ void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic, qboolean forceUpdate) {
 		}
 		else {
 			currentAS = bAS;
-
+			currentAS->geometries.geometry.triangles.indexOffset = vk_d.geometry.idx_dynamic_offset * sizeof(uint32_t);
+			currentAS->geometries.geometry.triangles.vertexOffset = vk_d.geometry.xyz_dynamic_offset * sizeof(VertexBuffer);
+			currentAS->data.offsetIDX = vk_d.geometry.idx_dynamic_offset;
+			currentAS->data.offsetXYZ = vk_d.geometry.xyz_dynamic_offset;
 		}
 		currentAS->data.dynamic = qtrue;
 	}
@@ -410,9 +445,9 @@ void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic, qboolean forceUpdate) {
 
 			VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), bAS, currentAS, &vk_d.basBufferDynamic[vk.swapchain.currentImage], &vk_d.basBufferDynamicOffset, RTX_BOTTOM_AS_FLAG);
 			vk_d.bottomASDynamicCount[vk.swapchain.currentImage]++;
-			vk_d.geometry.idx_dynamic_offset += tess.numIndexes;
-			vk_d.geometry.xyz_dynamic_offset += tess.numVertexes;
 		}
+		vk_d.geometry.idx_dynamic_offset += tess.numIndexes;
+		vk_d.geometry.xyz_dynamic_offset += tess.numVertexes;
 	}
 		
 	RB_UpdateInstanceDataBuffer(currentAS);
@@ -437,10 +472,15 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	originalTime = backEnd.refdef.floatTime;
 	backEnd.currentEntity = &tr.worldEntity;
 	
-	// add world
-	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorld.data);
-	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorld.geometryInstance);
-	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorld, sizeof(vkbottomAS_t));
+	// add static world
+	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldStatic.data);
+	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldStatic.geometryInstance);
+	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldStatic, sizeof(vkbottomAS_t));
+	vk_d.bottomASTraceListCount++;
+	// add world with dynamic data
+	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldDynamicData.data);
+	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldDynamicData.geometryInstance);
+	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicData, sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
 
 	// lights
@@ -516,6 +556,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		if (drawSurf->bAS == NULL) {
 			continue;
 		}
+		
 		//if (shader->sort == SS_DECAL) {
 		//	continue;
 		//	vec3_t a;

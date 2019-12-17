@@ -1780,51 +1780,6 @@ qboolean R_GetEntityToken( char *buffer, int size ) {
 	}
 }
 
-qboolean isTransparent(unsigned long stateBits)
-{
-	qboolean src = qfalse;
-	qboolean dst = qfalse;
-
-	switch (stateBits & GLS_SRCBLEND_BITS)
-	{
-	case GLS_SRCBLEND_ZERO:
-	case GLS_SRCBLEND_DST_COLOR:
-	case GLS_SRCBLEND_ONE_MINUS_DST_COLOR:
-	case GLS_SRCBLEND_SRC_ALPHA:
-	case GLS_SRCBLEND_ONE_MINUS_SRC_ALPHA:
-	case GLS_SRCBLEND_DST_ALPHA:
-	case GLS_SRCBLEND_ONE_MINUS_DST_ALPHA:
-	case GLS_SRCBLEND_ALPHA_SATURATE:
-		break;
-	case GLS_SRCBLEND_ONE:
-		src = qtrue;
-		break;
-	default:
-		src = qtrue;
-		break;
-	}
-
-	switch (stateBits & GLS_DSTBLEND_BITS)
-	{
-	case GLS_DSTBLEND_ZERO:
-	case GLS_DSTBLEND_SRC_COLOR:
-	case GLS_DSTBLEND_ONE_MINUS_SRC_COLOR:
-	case GLS_DSTBLEND_SRC_ALPHA:
-	case GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA:
-	case GLS_DSTBLEND_DST_ALPHA:
-	case GLS_DSTBLEND_ONE_MINUS_DST_ALPHA:
-		break;
-	case GLS_DSTBLEND_ONE:
-		dst = qtrue;
-		break;
-	default:
-		dst = qtrue;
-		break;
-	}
-
-	return src && dst;
-}
-
 static void RB_AddLightToLightList() {
 	vec4_t pos = { 0,0,0,0 };
 
@@ -1843,13 +1798,31 @@ static void RB_AddLightToLightList() {
 	}
 }
 
-void R_Recursive(mnode_t* node, uint32_t *offsetIDX, uint32_t *offsetXYZ) {
+//#define ANIMATE_TEXTURE (tess.shader->stages[0]->bundle[0].numImageAnimations > 0)
+//#define UV_CHANGES		(tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD)  && tess.shader->stages[0]->bundle[0].numTexMods > 0) : qfalse)
+static qboolean RB_ASDataDynamic(shader_t* shader) {
+	qboolean changes = qfalse;
+	for (int i = 0; i < MAX_SHADER_STAGES; i++) {
+		if (tess.shader->stages[i] != NULL && tess.shader->stages[i]->active) {
+			for (int j = 0; j < NUM_TEXTURE_BUNDLES; j++) {
+				if (shader->stages[i]->bundle[j].numImageAnimations > 0) return qtrue;
+				if((shader->stages[i]->bundle[j].tcGen != TCGEN_BAD) && (shader->stages[i]->bundle[j].numTexMods > 0)) return qtrue;
+				if (shader->stages[i]->rgbGen == CGEN_WAVEFORM) {
+					return qtrue;
+				}
+			}
+		}
+	}
+	return changes;
+}
+
+void R_Recursive(mnode_t* node, uint32_t *offsetIDX, uint32_t *offsetXYZ, uint32_t* offsetIDXdynamic, uint32_t* offsetXYZdynamic) {
 	do {
 		if (node->contents != -1) {
 			break;
 		}
 		// recurse down the children, front side first
-		R_Recursive(node->children[0], offsetIDX, offsetXYZ);
+		R_Recursive(node->children[0], offsetIDX, offsetXYZ, offsetIDXdynamic, offsetXYZdynamic);
 
 		// tail recurse
 		node = node->children[1];
@@ -1889,8 +1862,10 @@ void R_Recursive(mnode_t* node, uint32_t *offsetIDX, uint32_t *offsetXYZ) {
 				int x = 1;
 			}
 
+			 
 			if (!surf->added && !surf->skip && !RTX_DYNAMIC_AS) {
 				surf->added = qtrue;
+				qboolean dynamicData = RB_ASDataDynamic(tess.shader);
 
 				if (UV_CHANGES) ComputeTexCoords(tess.shader->stages[0]);
 				ComputeColors(tess.shader->stages[0]);
@@ -1915,15 +1890,29 @@ void R_Recursive(mnode_t* node, uint32_t *offsetIDX, uint32_t *offsetXYZ) {
 				{
 					int x = 1;
 				}
-				for (int j = 0; j < tess.numIndexes; j++) {
-					uint32_t idx = (uint32_t)(tess.indexes[j] + (*offsetXYZ));
-					VK_UploadBufferDataOffset(&vk_d.geometry.idx_static, (((*offsetIDX) + vk_d.geometry.idx_static_offset) * sizeof(uint32_t)) + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)&idx);
+				if (!dynamicData) {
+					for (int j = 0; j < tess.numIndexes; j++) {
+						uint32_t idx = (uint32_t)(tess.indexes[j] + (*offsetXYZ));
+						VK_UploadBufferDataOffset(&vk_d.geometry.idx_world_static, (((*offsetIDX) + vk_d.geometry.idx_world_static_offset) * sizeof(uint32_t)) + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)&idx);
+					}
+
+					RB_WriteXYZ2((((*offsetXYZ) + vk_d.geometry.xyz_world_static_offset) * sizeof(VertexBuffer)), &vk_d.geometry.xyz_world_static, material);
+
+					(*offsetIDX) += tess.numIndexes;
+					(*offsetXYZ) += tess.numVertexes;
 				}
+				else {
+					for (int i = 0; i < vk.swapchain.imageCount; i++) {
+						for (int j = 0; j < tess.numIndexes; j++) {
+							uint32_t idx = (uint32_t)(tess.indexes[j] + (*offsetXYZdynamic));
+							VK_UploadBufferDataOffset(&vk_d.geometry.idx_world_dynamic_data[i], (((*offsetIDXdynamic) + vk_d.geometry.idx_world_dynamic_data_offset) * sizeof(uint32_t)) + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)&idx);
+						}
 
-				RB_WriteXYZ((((*offsetXYZ) + vk_d.geometry.xyz_static_offset) * sizeof(VertexBuffer)), qfalse, material);
-
-				(*offsetIDX) += tess.numIndexes;
-				(*offsetXYZ) += tess.numVertexes;
+						RB_WriteXYZ2((((*offsetXYZdynamic) + vk_d.geometry.xyz_world_dynamic_data_offset) * sizeof(VertexBuffer)), &vk_d.geometry.xyz_world_dynamic_data[i], material);
+					}
+					(*offsetIDXdynamic) += tess.numIndexes;
+					(*offsetXYZdynamic) += tess.numVertexes;
+				}
 			}
 			
 			tess.numVertexes = 0;
@@ -1935,60 +1924,105 @@ void R_Recursive(mnode_t* node, uint32_t *offsetIDX, uint32_t *offsetXYZ) {
 
 void R_BuildAccelerationStructure2() {
 	int i;
-	
-
 
 	uint32_t offsetIDX = 0;
 	uint32_t offsetXYZ = 0;
+	uint32_t offsetIDXdynamic = 0;
+	uint32_t offsetXYZdynamic = 0;
 
-	R_Recursive(s_worldData.nodes, &offsetIDX, &offsetXYZ);
-
-	vk_d.bottomASWorld.geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
-	vk_d.bottomASWorld.geometries.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
-	vk_d.bottomASWorld.geometries.geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
-	vk_d.bottomASWorld.geometries.geometry.triangles.vertexCount = offsetXYZ;
-	vk_d.bottomASWorld.geometries.geometry.triangles.vertexStride = sizeof(VertexBuffer);
-	vk_d.bottomASWorld.geometries.geometry.triangles.indexCount = offsetIDX;
-	vk_d.bottomASWorld.geometries.geometry.triangles.vertexOffset = vk_d.geometry.xyz_static_offset * sizeof(VertexBuffer);
-	vk_d.bottomASWorld.geometries.geometry.triangles.indexOffset = vk_d.geometry.idx_static_offset * sizeof(uint32_t);
+	R_Recursive(s_worldData.nodes, &offsetIDX, &offsetXYZ, &offsetIDXdynamic, &offsetXYZdynamic);
 	{
-		vk_d.bottomASWorld.geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_static.buffer;
-		vk_d.bottomASWorld.geometries.geometry.triangles.indexData = vk_d.geometry.idx_static.buffer;
+		vk_d.bottomASWorldStatic.geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
+		vk_d.bottomASWorldStatic.geometries.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
+		vk_d.bottomASWorldStatic.geometries.geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
+		vk_d.bottomASWorldStatic.geometries.geometry.triangles.vertexCount = offsetXYZ;
+		vk_d.bottomASWorldStatic.geometries.geometry.triangles.vertexStride = sizeof(VertexBuffer);
+		vk_d.bottomASWorldStatic.geometries.geometry.triangles.indexCount = offsetIDX;
+		vk_d.bottomASWorldStatic.geometries.geometry.triangles.vertexOffset = vk_d.geometry.xyz_world_static_offset * sizeof(VertexBuffer);
+		vk_d.bottomASWorldStatic.geometries.geometry.triangles.indexOffset = vk_d.geometry.idx_world_static_offset * sizeof(uint32_t);
+		{
+			vk_d.bottomASWorldStatic.geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_world_static.buffer;
+			vk_d.bottomASWorldStatic.geometries.geometry.triangles.indexData = vk_d.geometry.idx_world_static.buffer;
+		}
+		vk_d.bottomASWorldStatic.geometries.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+		vk_d.bottomASWorldStatic.geometries.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+		vk_d.bottomASWorldStatic.geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
+		vk_d.bottomASWorldStatic.geometries.flags = 0;
+
+		vk_d.bottomASWorldStatic.data.offsetIDX = vk_d.geometry.idx_world_static_offset;
+		vk_d.bottomASWorldStatic.data.offsetXYZ = vk_d.geometry.xyz_world_static_offset;
+		vk_d.geometry.idx_world_static_offset += offsetIDX;
+		vk_d.geometry.xyz_world_static_offset += offsetXYZ;
+
+		VkCommandBuffer commandBuffer = { 0 };
+		VK_BeginSingleTimeCommands(&commandBuffer);
+		VkDeviceSize offset = 0;
+		VK_CreateBottomAS(commandBuffer,
+			&vk_d.bottomASWorldStatic, &vk_d.basBufferStaticWorld,
+			&offset, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_NV);
+		VK_EndSingleTimeCommands(&commandBuffer);
+
+		vk_d.bottomASWorldStatic.data.world = BAS_WORLD_STATIC;
+		vk_d.bottomASWorldStatic.data.texIdx = 60;
+		vk_d.bottomASWorldStatic.data.material |= MATERIAL_KIND_REGULAR;
+		vk_d.bottomASWorldStatic.geometryInstance.instanceCustomIndex = 0;
+		vk_d.bottomASWorldStatic.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
+		vk_d.bottomASWorldStatic.geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
+		vk_d.bottomASWorldStatic.geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+		vk_d.bottomASWorldStatic.geometryInstance.accelerationStructureHandle = vk_d.bottomASWorldStatic.handle;
+
+		float tM[12];
+		tM[0] = 1; tM[1] = 0; tM[2] = 0; tM[3] = 0;
+		tM[4] = 0; tM[5] = 1; tM[6] = 0; tM[7] = 0;
+		tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
+		Com_Memcpy(&vk_d.bottomASWorldStatic.geometryInstance.transform, &tM, sizeof(float[12]));
 	}
-	vk_d.bottomASWorld.geometries.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
-	vk_d.bottomASWorld.geometries.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
-	vk_d.bottomASWorld.geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
-	vk_d.bottomASWorld.geometries.flags = 0;
-	
-	vk_d.bottomASWorld.data.offsetIDX = vk_d.geometry.idx_static_offset;
-	vk_d.bottomASWorld.data.offsetXYZ = vk_d.geometry.xyz_static_offset;
-	vk_d.geometry.idx_static_offset += offsetIDX;
-	vk_d.geometry.xyz_static_offset += offsetXYZ;
-	
-	VkCommandBuffer commandBuffer = { 0 };
-	VK_BeginSingleTimeCommands(&commandBuffer);
-	VkDeviceSize offset = 0;
-	VK_CreateBottomAS(commandBuffer,
-		&vk_d.bottomASWorld, &vk_d.basBufferStaticWorld,
-		&offset, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_NV);
-	VK_EndSingleTimeCommands(&commandBuffer);
-	
-	vk_d.bottomASWorld.data.world = qtrue;
-	vk_d.bottomASWorld.data.texIdx = 60;
-	vk_d.bottomASWorld.data.material |= MATERIAL_KIND_REGULAR;
-	vk_d.bottomASWorld.geometryInstance.instanceCustomIndex = 0;
-	vk_d.bottomASWorld.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
-	vk_d.bottomASWorld.geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
-	vk_d.bottomASWorld.geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
-	
-	vk_d.bottomASWorld.geometryInstance.accelerationStructureHandle = vk_d.bottomASWorld.handle;
-	
-	float tM[12];
-	tM[0] = 1; tM[1] = 0; tM[2] = 0; tM[3] = 0;
-	tM[4] = 0; tM[5] = 1; tM[6] = 0; tM[7] = 0;
-	tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
-	Com_Memcpy(&vk_d.bottomASWorld.geometryInstance.transform, &tM, sizeof(float[12]));
-	
+	{
+		vk_d.bottomASWorldDynamicData.geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
+		vk_d.bottomASWorldDynamicData.geometries.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
+		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
+		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.vertexCount = offsetXYZdynamic;
+		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.vertexStride = sizeof(VertexBuffer);
+		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.indexCount = offsetIDXdynamic;
+		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.vertexOffset = vk_d.geometry.xyz_world_dynamic_data_offset * sizeof(VertexBuffer);
+		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.indexOffset = vk_d.geometry.idx_world_dynamic_data_offset * sizeof(uint32_t);
+		{
+			vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_world_dynamic_data[0].buffer;
+			vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.indexData = vk_d.geometry.idx_world_dynamic_data[0].buffer;
+		}
+		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+		vk_d.bottomASWorldDynamicData.geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
+		vk_d.bottomASWorldDynamicData.geometries.flags = 0;
+
+		vk_d.bottomASWorldDynamicData.data.offsetIDX = vk_d.geometry.idx_world_dynamic_data_offset;
+		vk_d.bottomASWorldDynamicData.data.offsetXYZ = vk_d.geometry.xyz_world_dynamic_data_offset;
+		vk_d.geometry.idx_world_dynamic_data_offset += offsetIDXdynamic;
+		vk_d.geometry.xyz_world_dynamic_data_offset += offsetXYZdynamic;
+
+		VkCommandBuffer commandBuffer = { 0 };
+		VK_BeginSingleTimeCommands(&commandBuffer);
+		VkDeviceSize offset = 0;
+		VK_CreateBottomAS(commandBuffer,
+			&vk_d.bottomASWorldDynamicData, &vk_d.basBufferWorldDynamicData,
+			&offset, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_NV);
+		VK_EndSingleTimeCommands(&commandBuffer);
+
+		vk_d.bottomASWorldDynamicData.data.world = BAS_WORLD_DYNAMIC_DATA;
+		vk_d.bottomASWorldDynamicData.data.texIdx = 60;
+		vk_d.bottomASWorldDynamicData.data.material |= MATERIAL_KIND_REGULAR;
+		vk_d.bottomASWorldDynamicData.geometryInstance.instanceCustomIndex = 0;
+		vk_d.bottomASWorldDynamicData.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
+		vk_d.bottomASWorldDynamicData.geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
+		vk_d.bottomASWorldDynamicData.geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+		vk_d.bottomASWorldDynamicData.geometryInstance.accelerationStructureHandle = vk_d.bottomASWorldDynamicData.handle;
+
+		float tM[12];
+		tM[0] = 1; tM[1] = 0; tM[2] = 0; tM[3] = 0;
+		tM[4] = 0; tM[5] = 1; tM[6] = 0; tM[7] = 0;
+		tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
+		Com_Memcpy(&vk_d.bottomASWorldDynamicData.geometryInstance.transform, &tM, sizeof(float[12]));
+	}
 	// skybox
 	qboolean cmInit = qfalse;
 
@@ -2080,7 +2114,7 @@ void R_BuildAccelerationStructure2() {
 		VkCommandBuffer commandBuffer = { 0 };
 		VK_BeginSingleTimeCommands(&commandBuffer);
 		vk_d.scratchBufferOffset = 0;
-		VK_MakeTopAS(commandBuffer, &vk_d.topAS[i], &vk_d.topASBuffer[i], vk_d.bottomASList, 1, &vk_d.instanceBuffer[i], VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV);
+		VK_MakeTopAS(commandBuffer, &vk_d.topAS[i], &vk_d.topASBuffer[i], vk_d.bottomASWorldStatic, 1, &vk_d.instanceBuffer[i], VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV);
 		VK_EndSingleTimeCommands(&commandBuffer);
 	}
 	vk_d.scratchBufferOffset = 0;
@@ -2097,20 +2131,32 @@ void R_BuildAccelerationStructure2() {
 		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_DYNAMIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
 		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_INSTANCE_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
 
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+
 		VK_AddSampler(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_ENVMAP, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_AddUniformBuffer(&vk_d.accelerationStructures.descriptor[i], 6, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_AddUniformBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_GLOBAL_UBO, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_AddUniformBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_AddSampler(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_BLUE_NOISE, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 
 		VK_SetAccelerationStructure(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.topAS[i].accelerationStructure);
 		VK_SetStorageImage(&vk_d.accelerationStructures.descriptor[i], 1, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultImage[i].view);
+		
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_world_static.buffer);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_world_static.buffer);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_world_dynamic_data[i].buffer);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_world_dynamic_data[i].buffer);
+
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_static.buffer);
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_static.buffer);
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_DYNAMIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_dynamic[i].buffer);
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_DYNAMIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_dynamic[i].buffer);
+
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_INSTANCE_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.instanceDataBuffer[i].buffer);
 		VK_SetSampler(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_ENVMAP, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.envmap.sampler, vk_d.accelerationStructures.envmap.view);
-		VK_SetUniformBuffer(&vk_d.accelerationStructures.descriptor[i], 6, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.uboBuffer[i].buffer);
+		VK_SetUniformBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_GLOBAL_UBO, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.uboBuffer[i].buffer);
 		VK_SetUniformBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.uboLightList[i].buffer);
 		VK_SetSampler(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_BLUE_NOISE, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.blueNoiseTex.sampler, vk_d.blueNoiseTex.view);
 		VK_FinishDescriptor(&vk_d.accelerationStructures.descriptor[i]);

@@ -1,6 +1,12 @@
 #ifndef  _CONSTANTS_H_
 #define  _CONSTANTS_H_
 
+//
+#define BAS_DEFAULT                                 (0)
+#define BAS_WORLD_STATIC                            (1)
+#define BAS_WORLD_DYNAMIC_DATA                      (2)
+#define BAS_WORLD_DYNAMIC_AS                        (3)
+
 // texture
 #define TEXTURE_DEFAULT 							0x00000000
 #define TEXTURE_ADD 								0x00000001
@@ -43,7 +49,13 @@
 #define BINDING_OFFSET_XYZ_STATIC					0x00000002
 #define BINDING_OFFSET_IDX_STATIC					0x00000003
 #define BINDING_OFFSET_ENVMAP						0x00000005
+#define BINDING_OFFSET_GLOBAL_UBO					0x00000006
 #define BINDING_OFFSET_UBO_LIGHTS					0x00000007
+
+#define BINDING_OFFSET_XYZ_WORLD_STATIC             0x0000000d
+#define BINDING_OFFSET_IDX_WORLD_STATIC             0x0000000e
+#define BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA		0x0000000b
+#define BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA		0x0000000c
 #define BINDING_OFFSET_XYZ_DYNAMIC					0x00000009
 #define BINDING_OFFSET_IDX_DYNAMIC					0x0000000a
 #define BINDING_OFFSET_INSTANCE_DATA				0x00000004
@@ -102,7 +114,7 @@
 
 // holds material/offset/etc data for each AS Instance
 STRUCT (
-    BOOL    (world)
+    UINT    (world)
 	BOOL    (dynamic)
 	UINT    (offsetIDX)
 	UINT    (offsetXYZ)

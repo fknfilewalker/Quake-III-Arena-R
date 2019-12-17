@@ -22,12 +22,12 @@ layout(binding = BINDING_OFFSET_AS, set = 0) uniform accelerationStructureNV top
 layout(binding = 1, set = 0, rgba8) uniform image2D image;
 
 
-layout(binding = 6, set = 0) uniform global_ubo
+layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 {
 	RTUbo ubo;
 };
 
-layout(binding = 7, set = 0) uniform LightList 
+layout(binding = BINDING_OFFSET_UBO_LIGHTS, set = 0) uniform LightList 
 {
 	LightList_s lightList;
 } uboLights;

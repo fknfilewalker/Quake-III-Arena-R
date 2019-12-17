@@ -1218,8 +1218,18 @@ typedef struct {
 typedef struct {
 	uint32_t		idx_static_offset;
 	uint32_t		xyz_static_offset;
-	vkbuffer_t		xyz_static;
 	vkbuffer_t		idx_static;
+	vkbuffer_t		xyz_static;
+
+	uint32_t		idx_world_static_offset;
+	uint32_t		xyz_world_static_offset;
+	vkbuffer_t		idx_world_static;
+	vkbuffer_t		xyz_world_static;
+
+	uint32_t		idx_world_dynamic_data_offset;
+	uint32_t		xyz_world_dynamic_data_offset;
+	vkbuffer_t		idx_world_dynamic_data[VK_MAX_SWAPCHAIN_SIZE];
+	vkbuffer_t		xyz_world_dynamic_data[VK_MAX_SWAPCHAIN_SIZE];
 
 	uint32_t		xyz_dynamic_offset;
 	uint32_t		idx_dynamic_offset;
@@ -1287,10 +1297,15 @@ typedef struct {
 } vkattachmentClearPipe_t;
 
 
-#define RTX_STATIC_XYZ_SIZE 512 * 1024
-#define RTX_STATIC_INDEX_SIZE 1024 * 1024 
-#define RTX_DYNAMIC_XYZ_SIZE 128 * 1024
-#define RTX_DYNAMIC_INDEX_SIZE 256 * 1024 
+#define RTX_STATIC_XYZ_SIZE 128 * 1024
+#define RTX_STATIC_INDEX_SIZE 256 * 1024 
+#define RTX_DYNAMIC_XYZ_SIZE 64 * 1024
+#define RTX_DYNAMIC_INDEX_SIZE 128 * 1024 
+
+#define RTX_WORLD_STATIC_XYZ_SIZE 64 * 1024
+#define RTX_WORLD_STATIC_IDX_SIZE 128 * 1024 
+#define RTX_WORLD_DYNAMIC_DATA_XYZ_SIZE 4 * 1024
+#define RTX_WORLD_DYNAMIC_DATA_IDX_SIZE 8 * 1024 
 
 #define ANIMATE_TEXTURE (tess.shader->stages[0]->bundle[0].numImageAnimations > 0)
 #define UV_CHANGES		(tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD)  && tess.shader->stages[0]->bundle[0].numTexMods > 0 /*&& tess.shader->stages[0]->bundle[0].texMods[0].type != TMOD_NONE*/) : qfalse)
@@ -1355,12 +1370,19 @@ typedef struct {
 	// holds buffers and offsets for geometry
 	vkgeometry_t		geometry;			
 
+	// world static
+	vkbottomAS_t		bottomASWorldStatic;
+	vkbuffer_t			basBufferStaticWorld;
+	// world dynamic data
+	vkbottomAS_t		bottomASWorldDynamicData;
+	vkbuffer_t			basBufferWorldDynamicData;
+
 	// AS
 	qboolean			worldASInit;
 	// holds all static bottom as
 	vkbottomAS_t*		bottomASList;
 	uint32_t			bottomASCount;
-	vkbottomAS_t		bottomASWorld;
+
 	// holds all temporal bottom as
 	vkbottomAS_t*		bottomASDynamicList[VK_MAX_SWAPCHAIN_SIZE];
 	uint32_t			bottomASDynamicCount[VK_MAX_SWAPCHAIN_SIZE];
@@ -1371,7 +1393,6 @@ typedef struct {
 	// BOTTOM AS (Buffer) for top an bottom as
 	vkbuffer_t			basBufferStatic;
 	VkDeviceSize		basBufferStaticOffset;
-	vkbuffer_t			basBufferStaticWorld;
 
 	/*struct {
 		uint32_t offset;
@@ -1382,9 +1403,9 @@ typedef struct {
 
 	vkbuffer_t			basBufferDynamic[VK_MAX_SWAPCHAIN_SIZE];
 	VkDeviceSize		basBufferDynamicOffset;
-	vkbuffer_t			topASBuffer[VK_MAX_SWAPCHAIN_SIZE];
 	// Top AS (Buffers) for each swapchain image
 	vktopAS_t			topAS[VK_MAX_SWAPCHAIN_SIZE];
+	vkbuffer_t			topASBuffer[VK_MAX_SWAPCHAIN_SIZE];
 
 	// stores offset and stuff for in shader lookup
 	vkbuffer_t			instanceBuffer[VK_MAX_SWAPCHAIN_SIZE];			// for bottom as instance data used by the top as
