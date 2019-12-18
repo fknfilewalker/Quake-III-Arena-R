@@ -277,6 +277,7 @@ static void InitVulkan(void)
 			vk_d.geometry.idx_world_dynamic_data_offset = 0;
 			vk_d.geometry.xyz_world_dynamic_data_offset = 0;
 
+
 			VK_CreateAttributeBuffer(&vk_d.geometry.idx_world_static, RTX_WORLD_STATIC_IDX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 			VK_CreateAttributeBuffer(&vk_d.geometry.xyz_world_static, RTX_WORLD_STATIC_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 			
@@ -1388,6 +1389,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			vk_d.basBufferDynamicOffset = 0;
 			vk_d.scratchBufferOffset = 0;
 
+			vk_d.updateDataOffsetXYZCount = 0;
 			// </RTX>
 
 			vk_d.offset = 0;

@@ -3,21 +3,31 @@
 // out data
 struct Triangle {
 	mat3 pos;
-	mat3x2 uv;
+	mat3x2 uv0;
+	mat3x2 uv1;
+	mat3x2 uv2;
+	mat3x2 uv3;
 	vec3 normal;
-	mat3x4 color;
+	mat3x4 color0;
+	mat3x4 color1;
+	mat3x4 color2;
+	mat3x4 color3;
 	uint tex0;
 	uint tex1;
-	uint tex2;
 };
 struct HitPoint {
 	vec3 pos;
 	vec3 normal;
-	vec2 uv;
-	vec4 color;
+	vec2 uv0;
+	vec2 uv1;
+	vec2 uv2;
+	vec2 uv3;
+	vec4 color0;
+	vec4 color1;
+	vec4 color2;
+	vec4 color3;
 	uint tex0;
 	uint tex1;
-	uint tex2;
 };
 
 struct TextureData {
@@ -43,6 +53,15 @@ layout(binding = BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA, set = 0) buffer Indices_
 layout(binding = BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA, set = 0) buffer Vertices_dynamic_data { VertexBuffer v[]; } vertices_dynamic_data;
 
 vec3 getBarycentricCoordinates(vec2 hitAttribute) { return vec3(1.0f - hitAttribute.x - hitAttribute.y, hitAttribute.x, hitAttribute.y); }
+
+vec4 unpackColor(uint color) {
+	return vec4(
+		color & 0xff,
+		(color & (0xff << 8)) >> 8,
+		(color & (0xff << 16)) >> 16,
+		(color & (0xff << 24)) >> 24
+	);
+}
 
 Triangle getTriangle(RayPayload rp){
 // if(iData.data[rp.instanceID].world) {
@@ -95,14 +114,39 @@ Triangle getTriangle(RayPayload rp){
 	hitTriangle.pos[0] = (rp.modelmat * vec4(vData[0].pos.xyz, 1)).xyz;
 	hitTriangle.pos[1] = (rp.modelmat * vec4(vData[1].pos.xyz, 1)).xyz;
 	hitTriangle.pos[2] = (rp.modelmat * vec4(vData[2].pos.xyz, 1)).xyz;
-	// UV
-	hitTriangle.uv[0] = vData[0].uv.xy;
-	hitTriangle.uv[1] = vData[1].uv.xy;
-	hitTriangle.uv[2] = vData[2].uv.xy;
 	// Color
-	hitTriangle.color[0] = vData[0].color;
-	hitTriangle.color[1] = vData[1].color;
-	hitTriangle.color[2] = vData[2].color;
+	hitTriangle.color0[0] = unpackColor(vData[0].color0);
+	hitTriangle.color0[1] = unpackColor(vData[1].color0);
+	hitTriangle.color0[2] = unpackColor(vData[2].color0);
+
+	hitTriangle.color1[0] = unpackColor(vData[0].color1);
+	hitTriangle.color1[1] = unpackColor(vData[1].color1);
+	hitTriangle.color1[2] = unpackColor(vData[2].color1);
+
+	hitTriangle.color2[0] = unpackColor(vData[0].color2);
+	hitTriangle.color2[1] = unpackColor(vData[1].color2);
+	hitTriangle.color2[2] = unpackColor(vData[2].color2);
+	
+	hitTriangle.color3[0] = unpackColor(vData[0].color3);
+	hitTriangle.color3[1] = unpackColor(vData[1].color3);
+	hitTriangle.color3[2] = unpackColor(vData[2].color3);
+
+	// UV
+	hitTriangle.uv0[0] = vData[0].uv0.xy;
+	hitTriangle.uv0[1] = vData[1].uv0.xy;
+	hitTriangle.uv0[2] = vData[2].uv0.xy;
+
+	hitTriangle.uv1[0] = vData[0].uv1.xy;
+	hitTriangle.uv1[1] = vData[1].uv1.xy;
+	hitTriangle.uv1[2] = vData[2].uv1.xy;
+
+	hitTriangle.uv2[0] = vData[0].uv2.xy;
+	hitTriangle.uv2[1] = vData[1].uv2.xy;
+	hitTriangle.uv2[2] = vData[2].uv2.xy;
+
+	hitTriangle.uv3[0] = vData[0].uv3.xy;
+	hitTriangle.uv3[1] = vData[1].uv3.xy;
+	hitTriangle.uv3[2] = vData[2].uv3.xy;
 	// NORMAL
 	//vec3 AB = vData[1].pos.xyz - vData[0].pos.xyz;
 	//vec3 AC = vData[2].pos.xyz - vData[0].pos.xyz;
@@ -113,15 +157,12 @@ Triangle getTriangle(RayPayload rp){
 	if(iData.data[rp.instanceID].world == BAS_WORLD_STATIC) {
 		hitTriangle.tex0 = (vertices_world_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx0);
 		hitTriangle.tex1 = (vertices_world_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx1);
-		hitTriangle.tex2 = (vertices_world_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx2);
 	}else if(iData.data[rp.instanceID].world == BAS_WORLD_DYNAMIC_DATA) {
 		hitTriangle.tex0 = (vertices_dynamic_data.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx0);
 		hitTriangle.tex1 = (vertices_dynamic_data.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx1);
-		hitTriangle.tex2 = (vertices_dynamic_data.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx2);
 	} else {
 		hitTriangle.tex0 = TEX2_IDX_MASK | TEX1_IDX_MASK | (iData.data[rp.instanceID].texIdx & TEX0_IDX_MASK);
 		hitTriangle.tex1 = UINT_MAX;
-		hitTriangle.tex2 = UINT_MAX;
 	}
 
 	return hitTriangle;
@@ -135,17 +176,34 @@ HitPoint getHitPoint(RayPayload rp){
 	hitPoint.pos = triangle.pos[0] * barycentricCoords.x +
 					triangle.pos[1] * barycentricCoords.y +
             		triangle.pos[2] * barycentricCoords.z;
-	hitPoint.uv = triangle.uv[0] * barycentricCoords.x +
-            		triangle.uv[1] * barycentricCoords.y +
-            		triangle.uv[2] * barycentricCoords.z;
-	hitPoint.color = triangle.color[0] * barycentricCoords.x +
-  	          		triangle.color[1] * barycentricCoords.y +
-  	           		triangle.color[2] * barycentricCoords.z;
+	hitPoint.color0 = triangle.color0[0] * barycentricCoords.x +
+  	          		triangle.color0[1] * barycentricCoords.y +
+  	           		triangle.color0[2] * barycentricCoords.z;
+	hitPoint.color1 = triangle.color1[0] * barycentricCoords.x +
+  	          		triangle.color1[1] * barycentricCoords.y +
+  	           		triangle.color1[2] * barycentricCoords.z;
+	hitPoint.color2 = triangle.color2[0] * barycentricCoords.x +
+  	          		triangle.color2[1] * barycentricCoords.y +
+  	           		triangle.color2[2] * barycentricCoords.z;
+	hitPoint.color3 = triangle.color3[0] * barycentricCoords.x +
+  	          		triangle.color3[1] * barycentricCoords.y +
+  	           		triangle.color3[2] * barycentricCoords.z;
+	hitPoint.uv0 = triangle.uv0[0] * barycentricCoords.x +
+            		triangle.uv0[1] * barycentricCoords.y +
+            		triangle.uv0[2] * barycentricCoords.z;
+	hitPoint.uv1 = triangle.uv1[0] * barycentricCoords.x +
+            		triangle.uv1[1] * barycentricCoords.y +
+            		triangle.uv1[2] * barycentricCoords.z;
+	hitPoint.uv2 = triangle.uv2[0] * barycentricCoords.x +
+            		triangle.uv2[1] * barycentricCoords.y +
+            		triangle.uv2[2] * barycentricCoords.z;
+	hitPoint.uv3 = triangle.uv3[0] * barycentricCoords.x +
+            		triangle.uv3[1] * barycentricCoords.y +
+            		triangle.uv3[2] * barycentricCoords.z;
 	hitPoint.normal = triangle.normal;
 
 	hitPoint.tex0 = triangle.tex0;
 	hitPoint.tex1 = triangle.tex1;
-	hitPoint.tex2 = triangle.tex2;
 
 	return hitPoint;
 }
@@ -200,4 +258,19 @@ is_player(RayPayload rp) // for shadows etc, so the third person model does not 
 {
 	if(iData.data[rp.instanceID].world == BAS_WORLD_STATIC) return false;
 	return (iData.data[rp.instanceID].material & MATERIAL_FLAG_MASK) == MATERIAL_FLAG_PLAYER_OR_WEAPON;
+}
+
+bool
+needs_color(RayPayload rp)
+{
+	uint customIndex = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID * 3);
+	if(iData.data[rp.instanceID].world == BAS_WORLD_STATIC) {
+		ivec3 index = (ivec3(indices_world_static.i[customIndex], indices_world_static.i[customIndex + 1], indices_world_static.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
+		return (vertices_world_static.v[index.x].material & MATERIAL_FLAG_NEEDSCOLOR) == MATERIAL_FLAG_NEEDSCOLOR;
+	}
+	else if(iData.data[rp.instanceID].world == BAS_WORLD_DYNAMIC_DATA) {
+		ivec3 index = (ivec3(indices_dynamic_data.i[customIndex], indices_dynamic_data.i[customIndex + 1], indices_dynamic_data.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
+		return (vertices_dynamic_data.v[index.x].material & MATERIAL_FLAG_NEEDSCOLOR) == MATERIAL_FLAG_NEEDSCOLOR;
+	}
+	else return (iData.data[rp.instanceID].material & MATERIAL_FLAG_NEEDSCOLOR) == MATERIAL_FLAG_NEEDSCOLOR;
 }

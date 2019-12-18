@@ -101,7 +101,7 @@ bool trace_shadow_ray(vec3 pos, vec3 dir, float t_min, bool isPlayer)
 // }
 
 vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
-	vec2 tex_coord = hp.uv;
+	vec2 tex_coord = hp.uv0;
 	Ray ray_x = get_primary_ray(screen_coord_cs + vec2(2.0 / float(gl_LaunchSizeNV.x), 0));
 	Ray ray_y = get_primary_ray(screen_coord_cs - vec2(0, 2.0 / float(gl_LaunchSizeNV.y)));
 
@@ -111,45 +111,78 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 	vec3 pos_ws_x= triangle.pos * bary_x;
 	vec3 pos_ws_y= triangle.pos * bary_y;
 
-	vec2 tex_coord_x = triangle.uv * bary_x;
-	vec2 tex_coord_y = triangle.uv * bary_y;
+	vec2 tex_coord_x = triangle.uv0 * bary_x;
+	vec2 tex_coord_y = triangle.uv0 * bary_y;
 	tex_coord_x -= tex_coord;
 	tex_coord_y -= tex_coord;
-
 	tex_coord_x *= 0.5;
 	tex_coord_y *= 0.5;
 
 	TextureData d = unpackTextureData(hp.tex0);
-	vec4 color = global_textureGrad(d.tex0, hp.uv, tex_coord_x, tex_coord_y);
-	if((iData.data[rp.instanceID].material & MATERIAL_FLAG_NEEDSCOLOR) > 0) {
-		color *= (hp.color/255);
-  	}
+	vec4 color;
+	vec4 tex = global_textureGrad(d.tex0, hp.uv0, tex_coord_x, tex_coord_y);
+	color = vec4(tex.xyz, 1);
+
+	bool add_color = false;
+	if(needs_color(rp)) {
+		add_color = true;
+		color *= (hp.color0/255);
+	}
+	// // 	color *= (hp.color/255);
+	//color *= (hp.color0/255);
+	// // if((iData.data[rp.instanceID].material & MATERIAL_FLAG_NEEDSCOLOR) > 0) {
+	// // 	color *= (hp.color/255);
+  	// // }
 	if(d.tex1 != -1){
+		tex_coord = hp.uv1;
+		tex_coord_x = triangle.uv1 * bary_x;
+		tex_coord_y = triangle.uv1 * bary_y;
+		tex_coord_x -= tex_coord;
+		tex_coord_y -= tex_coord;
+		tex_coord_x *= 0.5;
+		tex_coord_y *= 0.5;
+		tex = global_textureGrad(d.tex1, hp.uv1, tex_coord_x, tex_coord_y);
+		if(add_color) tex *= (hp.color1/255);
+
 		if(d.tex1Blend) {
-			color = alpha_blend(global_textureGrad(d.tex1, hp.uv, tex_coord_x, tex_coord_y), color);
+			color = alpha_blend(tex, color);
 		}
-		else color += global_textureGrad(d.tex1, hp.uv, tex_coord_x, tex_coord_y);
+		else color += tex;
 	} else return color;
 	if(d.tex2 != -1){
+		tex_coord = hp.uv2;
+		tex_coord_x = triangle.uv2 * bary_x;
+		tex_coord_y = triangle.uv2 * bary_y;
+		tex_coord_x -= tex_coord;
+		tex_coord_y -= tex_coord;
+		tex_coord_x *= 0.5;
+		tex_coord_y *= 0.5;
+		tex = global_textureGrad(d.tex2, hp.uv2, tex_coord_x, tex_coord_y);
+		if(add_color) tex *= (hp.color2/255);
+
 		if(d.tex2Blend) {
-			color = alpha_blend(global_textureGrad(d.tex2, hp.uv, tex_coord_x, tex_coord_y), color);
+			color = alpha_blend(tex, color);
 		}
-		else color += global_textureGrad(d.tex2, hp.uv, tex_coord_x, tex_coord_y);
+		else color += tex;
 	} else return color;
 
 	d = unpackTextureData(hp.tex1);
 	if(d.tex0 != -1){
+		tex_coord = hp.uv3;
+		tex_coord_x = triangle.uv3 * bary_x;
+		tex_coord_y = triangle.uv3 * bary_y;
+		tex_coord_x -= tex_coord;
+		tex_coord_y -= tex_coord;
+		tex_coord_x *= 0.5;
+		tex_coord_y *= 0.5;
+		tex = global_textureGrad(d.tex0, hp.uv3, tex_coord_x, tex_coord_y);
+		if(add_color) tex *= (hp.color3/255);
+
 		if(d.tex0Blend) {
-			color = alpha_blend(global_textureGrad(d.tex0, hp.uv, tex_coord_x, tex_coord_y), color);
+			color = alpha_blend(tex, color);
 		}
-		else color += global_textureGrad(d.tex0, hp.uv, tex_coord_x, tex_coord_y);
-	} else return color;
-	if(d.tex1 != -1){
-		if(d.tex1Blend) {
-			color = alpha_blend(global_textureGrad(d.tex1, hp.uv, tex_coord_x, tex_coord_y), color);
-		}
-		else color += global_textureGrad(d.tex1, hp.uv, tex_coord_x, tex_coord_y);
-	}
+		else color += tex;
+	} 
 	return color;
 }
 
@@ -166,8 +199,8 @@ getLightDir(vec3 pos, int i){
 #define ALBEDO_MULT 1.3
 vec4 path_tracer(){
 	const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + vec2(0.5);
-	const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeNV.xy);
-	const vec2 screen_coord_cs  = inUV * 2.0 - 1.0;
+	const vec2 inUV0 = pixelCenter/vec2(gl_LaunchSizeNV.xy);
+	const vec2 screen_coord_cs  = inUV0 * 2.0 - 1.0;
 
 	// init ray
 	Ray ray = get_primary_ray(screen_coord_cs);
@@ -190,9 +223,9 @@ vec4 path_tracer(){
 	HitPoint hp = getHitPoint(rp);
 	Triangle triangle = getTriangle(rp);
 
-	vec4 color = vec4(0,0,0,0);
+	 vec4 color = vec4(0,0,0,0);
 	if(is_mirror(rp)){
-		color = global_texture((hp.tex0 & TEX1_IDX_MASK) >> TEX_SHIFT_BITS, hp.uv);
+		color = global_texture((hp.tex0 & TEX1_IDX_MASK) >> TEX_SHIFT_BITS, hp.uv0);
 		color = 1 - vec4(color/1);
 		// 1 - vec4(src/1)
 		ray.origin = ray.origin + ray.direction * rp.hit_distance;
@@ -203,8 +236,8 @@ vec4 path_tracer(){
 		}
 		HitPoint hp2 = getHitPoint(rp);
 		Triangle triangle2 = getTriangle(rp);
-		//color += global_texture(hp2.tex0 & TEX0_IDX_MASK, hp2.uv);
-		return global_texture(hp2.tex0 & TEX0_IDX_MASK, hp2.uv) * color;
+		//color += global_texture(hp2.tex0 & TEX0_IDX_MASK, hp2.uv0);
+		return global_texture(hp2.tex0 & TEX0_IDX_MASK, hp2.uv0) * color;
 	} 
 
 	vec4 contrib = vec4(0,0,0,0);
@@ -220,17 +253,17 @@ vec4 path_tracer(){
 	}
 
 	// if(hp.tex0 >= 0){
-	// 	primary_albedo = global_texture(hp.tex0, hp.uv).xyz;
+	// 	primary_albedo = global_texture(hp.tex0, hp.uv0).xyz;
 	//}
 	// if(hp.tex1 >= 0){
-	// 	//primary_albedo = alpha_blend(global_texture(hp.tex1, hp.uv) ,global_texture(hp.tex0, hp.uv)).xyz;
-	// 	primary_albedo += global_texture(hp.tex1, hp.uv).xyz;
+	// 	//primary_albedo = alpha_blend(global_texture(hp.tex1, hp.uv0) ,global_texture(hp.tex0, hp.uv0)).xyz;
+	// 	primary_albedo += global_texture(hp.tex1, hp.uv0).xyz;
 	// }
 	// if(hp.tex2 >= 0){
-	// 	primary_albedo += global_texture(hp.tex2, hp.uv).xyz;
+	// 	primary_albedo += global_texture(hp.tex2, hp.uv0).xyz;
 	// }
 	// if(hp.tex1 != -1){
-	// 	primary_albedo += global_texture(hp.tex2, hp.uv).xyz;
+	// 	primary_albedo += global_texture(hp.tex2, hp.uv0).xyz;
 	// }
 
 	bool isPlayer = is_player(rp);
@@ -267,7 +300,7 @@ vec4 path_tracer(){
 	//vec3 throughput = vec3(1);
 	//color = getTextureLod(screen_coord_cs, triangle, hp);
 
-	//color = texture(blue_noise, vec3(hp.uv, 16)).rrrr;
+	//color = texture(blue_noise, vec3(hp.uv0, 16)).rrrr;
 	// mark lights and glass
 	// if(is_light(rp)){
 	// 	color += vec4(1,0,0,0);
@@ -362,7 +395,7 @@ vec4 path_tracer(){
 	//color = vec4(get_rng(1));//texelFetch(blue_noise, ivec3(gl_LaunchIDNV.xy % (BLUE_NOISE_RES ), 0), 0).rrrr;
 	// //mirror
 	// if((iData.data[rp.instanceID].material & MATERIAL_FLAG_MIRROR) == MATERIAL_FLAG_MIRROR){
-	// 	contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// 	contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv0);
 	// 	color = alpha_blend_premultiplied(rp.transparent, contrib);
 
 	// 	ray.origin = ray.origin + ray.direction * rp.hit_distance;
@@ -374,7 +407,7 @@ vec4 path_tracer(){
 	// 		return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
 	// 	}
 
-	// 	contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// 	contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv0);
 	// 	vec4 color2 = alpha_blend_premultiplied(rp.transparent, contrib);
 	// 	color =  alpha_blend_premultiplied(color, color2);
 	// } 
@@ -388,10 +421,10 @@ vec4 path_tracer(){
 	// 		return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
 	// 	}
 	// 	hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
-	// 	return color = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// 	return color = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv0);
 	// }
 	// else {
-	// 	contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// 	contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv0);
 	// 	color = alpha_blend_premultiplied(rp.transparent, contrib);
 	// }
 
@@ -406,7 +439,7 @@ vec4 path_tracer(){
 	// 	trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
 	// 	if(found_intersection(rp)){
 	// 		hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
-	// 		contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// 		contrib = texture(texure_array[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv0);
 	// 		vec4 color2 = alpha_blend_premultiplied(rp.transparent, contrib);
 	// 		color =  alpha_blend_premultiplied(color, color2);
 	// 	}
@@ -448,7 +481,7 @@ void main()
 	// 		break;
 	// 	}
 
-	// 	vec4 contrib2 = global_textureLod(uint(uint(iData.data[rp.instanceID].texIdx)), hp.uv, i/2);
+	// 	vec4 contrib2 = global_textureLod(uint(uint(iData.data[rp.instanceID].texIdx)), hp.uv0, i/2);
 	// 	bounceContrib.xyz += contrib2.xyz * throughput;
 	// 	throughput *= 0.8;
 	// 	// {
@@ -477,7 +510,7 @@ void main()
 	//initPayload(rp);
 	// } else{
 	// 	HitPoint hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
-	// 	vec4 c = texture(tex[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// 	vec4 c = texture(tex[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv0);
 	// 	if((iData.data[rp.instanceID].type & S_TYPE_NEEDSCOLOR) > 0){
 	// 		c = c * (hp.color/255);
 	// 	} 
@@ -494,11 +527,11 @@ void main()
 
 	// 		hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
 	// 		if(blendFunc == (GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA)){
-	// 			vec4 c2 = /*(hp.color/255) */ texture(tex[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// 			vec4 c2 = /*(hp.color/255) */ texture(tex[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv0);
 	// 			if((iData.data[rp.instanceID].type & S_TYPE_NEEDSCOLOR) > 0) c2 = c2 * (hp.color/255);
 	// 			c = blendColor(c, c2, blendFunc );
 	// 		} else {
-	// 			c += /*(hp.color/255) */ texture(tex[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+	// 			c += /*(hp.color/255) */ texture(tex[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv0);
 	// 		}
 	// 		//c = ((hp.color/255) * c).wwww;
 	// 	}
@@ -506,7 +539,7 @@ void main()
 		// ray.origin += ray.direction * rp.hit_distance;
 		// trace_ray(ray);
 		// hp = getHitPoint(rp.instanceID, rp.primitiveID, rp.barycentric);
-		// c += (hp.color/255) * texture(tex[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv);
+		// c += (hp.color/255) * texture(tex[uint(uint(iData.data[rp.instanceID].texIdx))], hp.uv0);
 		// }
 /*
 // Trace hit.

@@ -1012,8 +1012,8 @@ Vulkan
 // the aligment size for AS buffers
 #define VK_AS_MEMORY_ALLIGNMENT_SIZE 65536
 
-#define VK_MAX_BOTTOM_AS 16383
-#define VK_MAX_STATIC_BOTTOM_AS_INSTANCES 5000
+#define VK_MAX_BOTTOM_AS 1024
+#define VK_MAX_STATIC_BOTTOM_AS_INSTANCES 1024
 #define VK_MAX_DYNAMIC_BOTTOM_AS_INSTANCES 256
 #define VK_MAX_BOTTOM_AS_INSTANCES (VK_MAX_STATIC_BOTTOM_AS_INSTANCES + VK_MAX_DYNAMIC_BOTTOM_AS_INSTANCES)
 
@@ -1309,6 +1309,7 @@ typedef struct {
 
 #define ANIMATE_TEXTURE (tess.shader->stages[0]->bundle[0].numImageAnimations > 0)
 #define UV_CHANGES		(tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD)  && tess.shader->stages[0]->bundle[0].numTexMods > 0 /*&& tess.shader->stages[0]->bundle[0].texMods[0].type != TMOD_NONE*/) : qfalse)
+#define UV_CHANGES_S(s)	(tess.shader->stages[s] != NULL ? ((tess.shader->stages[s]->bundle[0].tcGen != TCGEN_BAD)  && tess.shader->stages[s]->bundle[0].numTexMods > 0 /*&& tess.shader->stages[0]->bundle[0].texMods[0].type != TMOD_NONE*/) : qfalse)
 #define MODEL_DEFORM	(tess.shader->numDeforms > 0)
 #define ANIMATE_MODEL	(backEnd.currentEntity->e.frame > 0 || backEnd.currentEntity->e.oldframe > 0)
 
@@ -1394,12 +1395,13 @@ typedef struct {
 	vkbuffer_t			basBufferStatic;
 	VkDeviceSize		basBufferStaticOffset;
 
-	/*struct {
+	struct {
 		uint32_t offset;
+		uint32_t numXYZ;
 		shader_t* shader;
 		msurface_t* surf;
 	} updateDataOffsetXYZ[3500];
-	uint32_t			updateDataOffsetXYZCount;*/
+	uint32_t			updateDataOffsetXYZCount;
 
 	vkbuffer_t			basBufferDynamic[VK_MAX_SWAPCHAIN_SIZE];
 	VkDeviceSize		basBufferDynamicOffset;

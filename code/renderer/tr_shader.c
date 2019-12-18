@@ -2104,7 +2104,7 @@ static void PathTracingsCollapse(void) {
 		for (int i = 0; i < MAX_SHADER_STAGES; i++) {
 			if (stages[i].active == qtrue) {
 				if (strstr(stages[i].bundle[0].image[0]->imgName, "*white") || strstr(stages[i].bundle[0].image[0]->imgName, "chrome_env") || strstr(stages[i].bundle[0].image[0]->imgName, "*identityLight") || 
-					strstr(stages[i].bundle[0].image[0]->imgName, "textures/effects") ||
+					strstr(stages[i].bundle[0].image[0]->imgName, "textures/effects") || strstr(stages[i].bundle[0].image[0]->imgName, "textures/sfx/specular") ||
 					strstr(stages[i].bundle[0].image[0]->imgName, "shadow")) {
 
 					found = qtrue;

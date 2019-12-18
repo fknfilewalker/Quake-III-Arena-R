@@ -927,6 +927,8 @@ void RB_SurfaceGrid( srfGridMesh_t *cv ) {
 
 	// determine the allowable discrepance
 	lodError = LodErrorForVolume( cv->lodOrigin, cv->lodRadius );
+	// for our path tracer we only want fixed lod, so the size does not change
+	if(glConfig.driverType == VULKAN && r_vertexLight->value == 2) lodError = 0xffffffff;
 
 	// determine which rows and columns of the subdivision
 	// we are actually going to use

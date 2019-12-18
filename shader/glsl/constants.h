@@ -127,13 +127,24 @@ STRUCT (
 
 // holds all vertex data
 STRUCT (
-    VEC4    (pos)
-    VEC4    (uv)
-    VEC4    (color)
+    VEC3    (pos)
+    UINT    (material)
+
+    UINT    (color0)
+    UINT    (color1)
+    UINT    (color2)
+    UINT    (color3)
+
+    VEC2    (uv0)
+    VEC2    (uv1)
+
+    VEC2    (uv2)
+    VEC2    (uv3)
+
     UINT     (texIdx0)
     UINT     (texIdx1)
-    UINT     (texIdx2)
-    UINT    (material)
+    UINT     (buff)
+    UINT     (buff2)
 ,VertexBuffer)
 
 // global ubo

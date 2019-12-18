@@ -8,109 +8,146 @@ glConfig.driverType == VULKAN && r_vertexLight->value == 2
 #define RTX_BOTTOM_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV)
 #define RTX_TOP_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV)
 
-uint32_t RB_FindNextTex(int skipNum) {
-	int found = 0;
-	if (strstr(tess.shader->name, "wall")) {
-		int x = 2;
-
+void RB_UploadIDX(vkbuffer_t* buffer, uint32_t offsetIDX, uint32_t offsetXYZ) {
+	uint32_t* idxData = calloc(tess.numIndexes, sizeof(uint32_t));
+	for (int j = 0; j < tess.numIndexes; j++) {
+		idxData[j] = (uint32_t)(tess.indexes[j] + offsetXYZ);
 	}
+	VK_UploadBufferDataOffset(buffer, offsetIDX * sizeof(uint32_t), tess.numIndexes * sizeof(uint32_t), (void*)idxData);
+	free(idxData);
+}
 
-	for (int i = 0; i < MAX_SHADER_STAGES; i++) {
-		if (tess.shader->stages[i] != NULL && tess.shader->stages[i]->active) {
-			for (int j = 0; j < NUM_TEXTURE_BUNDLES; j++) {
-				if (tess.shader->stages[i]->bundle[j].image[0] != NULL) {
-					if (strstr(tess.shader->stages[i]->bundle[j].image[0]->imgName, "*white") || strstr(tess.shader->stages[i]->bundle[j].image[0]->imgName, "*identityLight") ||
-						strstr(tess.shader->stages[i]->bundle[j].image[0]->imgName, "chrome_env") ||
-						strstr(tess.shader->stages[i]->bundle[j].image[0]->imgName, "textures/effects") || 
-						strstr(tess.shader->stages[i]->bundle[j].image[0]->imgName, "shadow")) continue;
-					//ri.Printf(PRINT_ALL, "%s\n", tess.shader->stages[i]->bundle[j].image[0]->imgName);
-					/*if (i > 0 && strstr(tess.shader->stages[i]->bundle[j].image[0]->imgName, "chrome_metal")) {
-						int x = 2;
-						continue;
-					}*/
-					found++;
-					if (found > skipNum) {
-						qboolean blend = qfalse;
-						uint32_t stateBits = tess.shader->stages[i]->stateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS);
-						if ((stateBits & GLS_SRCBLEND_BITS) > GLS_SRCBLEND_ONE && (stateBits & GLS_DSTBLEND_BITS) > GLS_DSTBLEND_ONE) blend = qtrue;
-						return ((uint32_t)tess.shader->stages[i]->bundle[j].image[0]->index) | (blend ? TEX0_BLEND_MASK : 0);
-					}
-				}
-			}
+void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ) {
+	uint32_t material = RB_GetMaterial();
+	uint32_t tex0 = (RB_GetNextTexEncoded(0)) | (RB_GetNextTexEncoded(1) << TEX_SHIFT_BITS) | (RB_GetNextTexEncoded(2) << (2 * TEX_SHIFT_BITS));
+	uint32_t tex1 = (RB_GetNextTexEncoded(3)) | (RB_GetNextTexEncoded(4) << TEX_SHIFT_BITS) | (RB_GetNextTexEncoded(5) << (2 * TEX_SHIFT_BITS));
+	VertexBuffer* vData = calloc(tess.numVertexes, sizeof(VertexBuffer));
+	for (int j = 0; j < tess.numVertexes; j++) {
+		vData[j].pos[0] = tess.xyz[j][0];
+		vData[j].pos[1] = tess.xyz[j][1];
+		vData[j].pos[2] = tess.xyz[j][2];
+		vData[j].material = material;
+		vData[j].texIdx0 = tex0;
+		vData[j].texIdx1 = tex1;
+	}
+	if (tess.shader->stages[0] != NULL && tess.shader->stages[0]->active) {
+		if (tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD){
+		int x = 2;
+		//tess.shader->stages[0]->bundle[0].tcGen = TCGEN_TEXTURE;
+		//tess.svars.texcoords[b][i][0] = tess.texCoords[j][0][0];
+		//tess.svars.texcoords[b][i][1] = tess.texCoords[j][0][1];
+}
+		ComputeTexCoords(tess.shader->stages[0]);
+		ComputeColors(tess.shader->stages[0]);
+		for (int j = 0; j < tess.numVertexes; j++) {
+			vData[j].color0 = tess.svars.colors[j][0] | tess.svars.colors[j][1] << 8 | tess.svars.colors[j][2] << 16 | tess.svars.colors[j][3] << 24;
+			vData[j].uv0[0] = tess.svars.texcoords[0][j][0];
+			vData[j].uv0[1] = tess.svars.texcoords[0][j][1];
 		}
+	}
+	if (tess.shader->stages[1] != NULL && tess.shader->stages[1]->active) {
+		ComputeTexCoords(tess.shader->stages[1]);
+		ComputeColors(tess.shader->stages[1]);
+		for (int j = 0; j < tess.numVertexes; j++) {
+			vData[j].color1 = tess.svars.colors[j][0] | tess.svars.colors[j][1] << 8 | tess.svars.colors[j][2] << 16 | tess.svars.colors[j][3] << 24;
+			vData[j].uv1[0] = tess.svars.texcoords[0][j][0];
+			vData[j].uv1[1] = tess.svars.texcoords[0][j][1];
+		}
+	}
+	if (tess.shader->stages[2] != NULL && tess.shader->stages[2]->active) {
+		ComputeTexCoords(tess.shader->stages[2]);
+		ComputeColors(tess.shader->stages[2]);
+		for (int j = 0; j < tess.numVertexes; j++) {
+			vData[j].color2 = tess.svars.colors[j][0] | tess.svars.colors[j][1] << 8 | tess.svars.colors[j][2] << 16 | tess.svars.colors[j][3] << 24;
+			vData[j].uv2[0] = tess.svars.texcoords[0][j][0];
+			vData[j].uv2[1] = tess.svars.texcoords[0][j][1];
+		}
+	}
+	if (tess.shader->stages[3] != NULL && tess.shader->stages[3]->active) {
+		ComputeTexCoords(tess.shader->stages[3]);
+		ComputeColors(tess.shader->stages[3]);
+		for (int j = 0; j < tess.numVertexes; j++) {
+			vData[j].color3 = tess.svars.colors[j][0] | tess.svars.colors[j][1] << 8 | tess.svars.colors[j][2] << 16 | tess.svars.colors[j][3] << 24;
+			vData[j].uv3[0] = tess.svars.texcoords[0][j][0];
+			vData[j].uv3[1] = tess.svars.texcoords[0][j][1];
+		}
+	}
+	VK_UploadBufferDataOffset(buffer,
+		offsetXYZ * sizeof(VertexBuffer),
+		tess.numVertexes * sizeof(VertexBuffer), (void*)vData);
+	free(vData);
+}
+
+uint32_t RB_GetNextTex(int stage) {
+	int indexAnim = 0;
+	if (tess.shader->stages[stage]->bundle[0].numImageAnimations > 1) {
+		indexAnim = (int)(tess.shaderTime * tess.shader->stages[stage]->bundle[0].imageAnimationSpeed * FUNCTABLE_SIZE);
+		indexAnim >>= FUNCTABLE_SIZE2;
+		if (indexAnim < 0) {
+			indexAnim = 0;	// may happen with shader time offsets
+		}
+		indexAnim %= tess.shader->stages[stage]->bundle[0].numImageAnimations;
+	}
+	return indexAnim;
+}
+
+uint32_t RB_GetNextTexEncoded(int stage) {
+	if (tess.shader->stages[stage] != NULL && tess.shader->stages[stage]->active) {
+		int indexAnim = RB_GetNextTex(stage);
+
+		qboolean blend = qfalse;
+		uint32_t stateBits = tess.shader->stages[stage]->stateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS);
+		if ((stateBits & GLS_SRCBLEND_BITS) > GLS_SRCBLEND_ONE && (stateBits & GLS_DSTBLEND_BITS) > GLS_DSTBLEND_ONE) blend = qtrue;
+
+		uint32_t nextidx = (uint32_t)indexAnim;
+		uint32_t idx = (uint32_t)tess.shader->stages[stage]->bundle[0].image[nextidx]->index;
+		tess.shader->stages[stage]->bundle[0].image[nextidx]->frameUsed = tr.frameCount;
+		return (idx) | (blend ? TEX0_BLEND_MASK : 0);
 	}
 	return TEX0_IDX_MASK;
 }
 
+
 void RB_WriteIDX(uint32_t offset, qboolean dynamic) {
-	for (int j = 0; j < tess.numIndexes; j++) {
+	/*for (int j = 0; j < tess.numIndexes; j++) {
 		uint32_t idx = (uint32_t)tess.indexes[j];
 		if(!dynamic) VK_UploadBufferDataOffset(&vk_d.geometry.idx_static, offset + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)&idx);
 		else VK_UploadBufferDataOffset(&vk_d.geometry.idx_dynamic[vk.swapchain.currentImage], offset + (j * sizeof(uint32_t)), sizeof(uint32_t), (void*)&idx);
-	}
+	}*/
 }
 void RB_WriteXYZ(uint32_t offset, qboolean dynamic, uint32_t material) {
-	uint32_t tex0 = (RB_FindNextTex(0)) | (RB_FindNextTex(1) << TEX_SHIFT_BITS) | (RB_FindNextTex(2) << (2*TEX_SHIFT_BITS));
-	uint32_t tex1 = (RB_FindNextTex(3)) | (RB_FindNextTex(4) << TEX_SHIFT_BITS) | (RB_FindNextTex(5) << (2 * TEX_SHIFT_BITS));
-	uint32_t tex2 = RB_FindNextTex(2);
-	uint32_t tex3 = RB_FindNextTex(3);
-	//if(tex3 != )
+	//uint32_t tex0 = (RB_FindNextTex(0)) | (RB_FindNextTex(1) << TEX_SHIFT_BITS) | (RB_FindNextTex(2) << (2*TEX_SHIFT_BITS));
+	//uint32_t tex1 = (RB_FindNextTex(3)) | (RB_FindNextTex(4) << TEX_SHIFT_BITS) | (RB_FindNextTex(5) << (2 * TEX_SHIFT_BITS));
+	//uint32_t tex2 = RB_FindNextTex(2);
+	//uint32_t tex3 = RB_FindNextTex(3);
+	////if(tex3 != )
 
-	for (int j = 0; j < tess.numVertexes; j++) {
+	//for (int j = 0; j < tess.numVertexes; j++) {
 
-		VertexBuffer p = {
-			tess.xyz[j][0],
-			tess.xyz[j][1],
-			tess.xyz[j][2],
-			tess.shader->stages[0]->bundle[0].image[0]->index,
-			UV_CHANGES ? tess.svars.texcoords[0][j][0] : tess.texCoords[j][0][0],
-			UV_CHANGES ? tess.svars.texcoords[0][j][1] : tess.texCoords[j][0][1],
-			tess.texCoords[j][1][0],
-			tess.texCoords[j][1][1],
-			(float)tess.svars.colors[j][0],
-			(float)tess.svars.colors[j][1],
-			(float)tess.svars.colors[j][2],
-			(float)tess.svars.colors[j][3],
-			tex0,//tess.shader->stages[0]->bundle[0].image[0]->index,
-			tex1,//tex1,//(tess.shader->stages[1] != NULL && tess.shader->stages[1]->active) ? tess.shader->stages[1]->bundle[0].image[0]->index : -1,
-			tex2,//tex2,//(tess.shader->stages[2] != NULL && tess.shader->stages[2]->active) ? tess.shader->stages[2]->bundle[0].image[0]->index : -1,
-			material
-		};
+	//	VertexBuffer p = {
+	//		tess.xyz[j][0],
+	//		tess.xyz[j][1],
+	//		tess.xyz[j][2],
+	//		material,
+	//		(float)tess.svars.colors[j][0],
+	//		(float)tess.svars.colors[j][1],
+	//		(float)tess.svars.colors[j][2],
+	//		(float)tess.svars.colors[j][3],
+	//		UV_CHANGES ? tess.svars.texcoords[0][j][0] : tess.texCoords[j][0][0],
+	//		UV_CHANGES ? tess.svars.texcoords[0][j][1] : tess.texCoords[j][0][1],
+	//		tess.texCoords[j][1][0],
+	//		tess.texCoords[j][1][1],
+	//		0,
+	//		0,
+	//		0,
+	//		0,
+	//		tex0,//tess.shader->stages[0]->bundle[0].image[0]->index,
+	//		tex1,//tex1,//(tess.shader->stages[1] != NULL && tess.shader->stages[1]->active) ? tess.shader->stages[1]->bundle[0].image[0]->index : -1,
+	//	};
 
-		if (!dynamic) VK_UploadBufferDataOffset(&vk_d.geometry.xyz_static, offset + (j * sizeof(VertexBuffer)), sizeof(VertexBuffer), (void*)&p);
-		else VK_UploadBufferDataOffset(&vk_d.geometry.xyz_dynamic[vk.swapchain.currentImage], offset + (j * sizeof(VertexBuffer)), sizeof(VertexBuffer), (void*)&p);
-	}
-}
-void RB_WriteXYZ2(uint32_t offset, vkbuffer_t *buffer, uint32_t material) {
-	uint32_t tex0 = (RB_FindNextTex(0)) | (RB_FindNextTex(1) << TEX_SHIFT_BITS) | (RB_FindNextTex(2) << (2 * TEX_SHIFT_BITS));
-	uint32_t tex1 = (RB_FindNextTex(3)) | (RB_FindNextTex(4) << TEX_SHIFT_BITS) | (RB_FindNextTex(5) << (2 * TEX_SHIFT_BITS));
-	uint32_t tex2 = RB_FindNextTex(2);
-	uint32_t tex3 = RB_FindNextTex(3);
-	//if(tex3 != )
-
-	for (int j = 0; j < tess.numVertexes; j++) {
-
-		VertexBuffer p = {
-			tess.xyz[j][0],
-			tess.xyz[j][1],
-			tess.xyz[j][2],
-			tess.shader->stages[0]->bundle[0].image[0]->index,
-			UV_CHANGES ? tess.svars.texcoords[0][j][0] : tess.texCoords[j][0][0],
-			UV_CHANGES ? tess.svars.texcoords[0][j][1] : tess.texCoords[j][0][1],
-			tess.texCoords[j][1][0],
-			tess.texCoords[j][1][1],
-			(float)tess.svars.colors[j][0],
-			(float)tess.svars.colors[j][1],
-			(float)tess.svars.colors[j][2],
-			(float)tess.svars.colors[j][3],
-			tex0,//tess.shader->stages[0]->bundle[0].image[0]->index,
-			tex1,//tex1,//(tess.shader->stages[1] != NULL && tess.shader->stages[1]->active) ? tess.shader->stages[1]->bundle[0].image[0]->index : -1,
-			tex2,//tex2,//(tess.shader->stages[2] != NULL && tess.shader->stages[2]->active) ? tess.shader->stages[2]->bundle[0].image[0]->index : -1,
-			material
-		};
-
-		VK_UploadBufferDataOffset(buffer, offset + (j * sizeof(VertexBuffer)), sizeof(VertexBuffer), (void*)&p);
-	}
+	//	if (!dynamic) VK_UploadBufferDataOffset(&vk_d.geometry.xyz_static, offset + (j * sizeof(VertexBuffer)), sizeof(VertexBuffer), (void*)&p);
+	//	else VK_UploadBufferDataOffset(&vk_d.geometry.xyz_dynamic[vk.swapchain.currentImage], offset + (j * sizeof(VertexBuffer)), sizeof(VertexBuffer), (void*)&p);
+	//}
 }
 
 void RB_CreateStaticBottomAS(vkbottomAS_t** bAS) {
@@ -256,22 +293,11 @@ static qboolean RB_MaterialException(vkbottomAS_t* bAS) {
 	return qtrue;
 }
 
-int RB_GetNextTex() {
-	int indexAnim = 0;
-	if (tess.shader->stages[0]->bundle[0].numImageAnimations > 1) {
-		indexAnim = (int)(tess.shaderTime * tess.shader->stages[0]->bundle[0].imageAnimationSpeed * FUNCTABLE_SIZE);
-		indexAnim >>= FUNCTABLE_SIZE2;
-		if (indexAnim < 0) {
-			indexAnim = 0;	// may happen with shader time offsets
-		}
-		indexAnim %= tess.shader->stages[0]->bundle[0].numImageAnimations;
-	}
-	return indexAnim;
-}
+
 
 void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 	// set texture id and calc texture animation
-	int indexAnim = RB_GetNextTex();
+	int indexAnim = RB_GetNextTex(0);
 	//if (tess.shader->stages[0]->bundle[0].numImageAnimations > 1) {
 	//	indexAnim = (int)(tess.shaderTime * tess.shader->stages[0]->bundle[0].imageAnimationSpeed * FUNCTABLE_SIZE);
 	//	indexAnim >>= FUNCTABLE_SIZE2;
@@ -482,141 +508,166 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldDynamicData.geometryInstance);
 	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicData, sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
+	// update world with dynamic data
+	for (int i = 0; i < vk_d.updateDataOffsetXYZCount; i++) {
+		shader_t* shader = vk_d.updateDataOffsetXYZ[i].shader;
+		msurface_t* surf = vk_d.updateDataOffsetXYZ[i].surf;
+		uint32_t offset = vk_d.updateDataOffsetXYZ[i].offset;
+
+
+		tess.numVertexes = 0;
+		tess.numIndexes = 0;
+		tess.shader = shader;
+		backEnd.refdef.floatTime = originalTime;
+		tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+		rb_surfaceTable[*surf->data](surf->data);
+
+		if (vk_d.updateDataOffsetXYZ[i].numXYZ != tess.numVertexes)
+		{
+			int x = 2;
+		}
+
+		RB_UploadXYZ(&vk_d.geometry.xyz_world_dynamic_data[vk.swapchain.currentImage], offset);
+		tess.numVertexes = 0;
+		tess.numIndexes = 0;
+			
+	}
+	backEnd.refdef.floatTime = originalTime;
 
 	// lights
 	VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], 0, sizeof(LightList_s), (void*)&vk_d.lightList);
 	//VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], RTX_MAX_LIGHTS * sizeof(vec4_t), 1 * sizeof(uint32_t), (void*)&vk_d.lightCount);
 
-	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
-		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
-		// skip stuff
-		if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
-			|| strstr(shader->name, "Shadow") || shader->isSky) {
-			continue;
-		}
-		if (drawSurf->bAS == NULL) {
-			continue;
-		}
-		
-		// SS_BLEND0 bullets, ball around energy, glow around armore shards, armor glow ,lights/fire
-		// SS_DECAL bullet marks
-		forceUpdate = qfalse;
-		// just to clean backend state
-		RB_BeginSurface(shader, fogNum);
+	//for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
+	//	R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
+	//	// skip stuff
+	//	if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
+	//		|| strstr(shader->name, "Shadow") || shader->isSky) {
+	//		continue;
+	//	}
+	//	if (drawSurf->bAS == NULL) {
+	//		continue;
+	//	}
+	//	
+	//	// SS_BLEND0 bullets, ball around energy, glow around armore shards, armor glow ,lights/fire
+	//	// SS_DECAL bullet marks
+	//	forceUpdate = qfalse;
+	//	// just to clean backend state
+	//	RB_BeginSurface(shader, fogNum);
 
-		float tM[12];
-		if (entityNum != ENTITYNUM_WORLD) {
-			backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
-			backEnd.refdef.floatTime = originalTime - backEnd.currentEntity->e.shaderTime;
-			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+	//	float tM[12];
+	//	if (entityNum != ENTITYNUM_WORLD) {
+	//		backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
+	//		backEnd.refdef.floatTime = originalTime - backEnd.currentEntity->e.shaderTime;
+	//		tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
 
-			R_RotateForEntity(backEnd.currentEntity, &backEnd.viewParms, &backEnd. or );
-			
-			tM[0] = backEnd.currentEntity->e.axis[0][0]; tM[1] = backEnd.currentEntity->e.axis[1][0]; tM[2] = backEnd.currentEntity->e.axis[2][0]; tM[3] = backEnd.currentEntity->e.origin[0];
-			tM[4] = backEnd.currentEntity->e.axis[0][1]; tM[5] = backEnd.currentEntity->e.axis[1][1]; tM[6] = backEnd.currentEntity->e.axis[2][1]; tM[7] = backEnd.currentEntity->e.origin[1];
-			tM[8] = backEnd.currentEntity->e.axis[0][2]; tM[9] = backEnd.currentEntity->e.axis[1][2]; tM[10] = backEnd.currentEntity->e.axis[2][2]; tM[11] = backEnd.currentEntity->e.origin[2];
-			dynamic = qtrue;
+	//		R_RotateForEntity(backEnd.currentEntity, &backEnd.viewParms, &backEnd. or );
+	//		
+	//		tM[0] = backEnd.currentEntity->e.axis[0][0]; tM[1] = backEnd.currentEntity->e.axis[1][0]; tM[2] = backEnd.currentEntity->e.axis[2][0]; tM[3] = backEnd.currentEntity->e.origin[0];
+	//		tM[4] = backEnd.currentEntity->e.axis[0][1]; tM[5] = backEnd.currentEntity->e.axis[1][1]; tM[6] = backEnd.currentEntity->e.axis[2][1]; tM[7] = backEnd.currentEntity->e.origin[1];
+	//		tM[8] = backEnd.currentEntity->e.axis[0][2]; tM[9] = backEnd.currentEntity->e.axis[1][2]; tM[10] = backEnd.currentEntity->e.axis[2][2]; tM[11] = backEnd.currentEntity->e.origin[2];
+	//		dynamic = qtrue;
 
-			if (backEnd.currentEntity->e.reType & (RT_SPRITE | RT_BEAM | RT_LIGHTNING | RT_RAIL_CORE | RT_RAIL_RINGS)) {
-				tM[0] = 1; tM[1] = 0; tM[2] = 0; tM[3] = 0;
-				tM[4] = 0; tM[5] = 1; tM[6] = 0; tM[7] = 0;
-				tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
-			}
-		}
-		else {
-			backEnd.currentEntity = &tr.worldEntity;
-			backEnd.refdef.floatTime = originalTime;
-			backEnd. or = backEnd.viewParms.world;
-			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+	//		if (backEnd.currentEntity->e.reType & (RT_SPRITE | RT_BEAM | RT_LIGHTNING | RT_RAIL_CORE | RT_RAIL_RINGS)) {
+	//			tM[0] = 1; tM[1] = 0; tM[2] = 0; tM[3] = 0;
+	//			tM[4] = 0; tM[5] = 1; tM[6] = 0; tM[7] = 0;
+	//			tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
+	//		}
+	//	}
+	//	else {
+	//		backEnd.currentEntity = &tr.worldEntity;
+	//		backEnd.refdef.floatTime = originalTime;
+	//		backEnd. or = backEnd.viewParms.world;
+	//		tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
 
-			tM[0] = 1; tM[1] = 0; tM[2] = 0; tM[3] = 0;
-			tM[4] = 0; tM[5] = 1; tM[6] = 0; tM[7] = 0;
-			tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
+	//		tM[0] = 1; tM[1] = 0; tM[2] = 0; tM[3] = 0;
+	//		tM[4] = 0; tM[5] = 1; tM[6] = 0; tM[7] = 0;
+	//		tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
 
-			dynamic = qfalse;
-		}
-		if (drawSurf->bAS == NULL && drawSurf->surface == SF_ENTITY) {
-			int x = 2;
-		}
-		if (backEnd.refdef.num_dlights > 0) {
-			int x = 2;
-		}
-		//"models/mapobjects/gratelamp/gratelamp_b.tga" ...}, ...} ...}, ...}	textureBundle_t[2]
+	//		dynamic = qfalse;
+	//	}
+	//	if (drawSurf->bAS == NULL && drawSurf->surface == SF_ENTITY) {
+	//		int x = 2;
+	//	}
+	//	if (backEnd.refdef.num_dlights > 0) {
+	//		int x = 2;
+	//	}
+	//	//"models/mapobjects/gratelamp/gratelamp_b.tga" ...}, ...} ...}, ...}	textureBundle_t[2]
 
 
-		// add the triangles for this surface
-		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
-		
-		if (drawSurf->bAS != NULL && drawSurf->bAS->as_for_each_swapchain_image) {
-			//continue;
-			//VK_DestroyBottomAccelerationStructure(drawSurf->bAS);
-			//RB_CreateDynamicBottomAS(drawSurf->bAS);
-			//continue;
-		}
-		if (drawSurf->bAS == NULL) {
-			continue;
-		}
-		
-		//if (shader->sort == SS_DECAL) {
-		//	continue;
-		//	vec3_t a;
-		//	vec3_t b;
-		//	VectorSubtract(tess.xyz[0], tess.xyz[1], a);
-		//	VectorSubtract(tess.xyz[0], tess.xyz[2], b);
+	//	// add the triangles for this surface
+	//	rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
+	//	
+	//	if (drawSurf->bAS != NULL && drawSurf->bAS->as_for_each_swapchain_image) {
+	//		//continue;
+	//		//VK_DestroyBottomAccelerationStructure(drawSurf->bAS);
+	//		//RB_CreateDynamicBottomAS(drawSurf->bAS);
+	//		//continue;
+	//	}
+	//	if (drawSurf->bAS == NULL) {
+	//		continue;
+	//	}
+	//	
+	//	//if (shader->sort == SS_DECAL) {
+	//	//	continue;
+	//	//	vec3_t a;
+	//	//	vec3_t b;
+	//	//	VectorSubtract(tess.xyz[0], tess.xyz[1], a);
+	//	//	VectorSubtract(tess.xyz[0], tess.xyz[2], b);
 
-		//	vec3_t normal;
-		//	CrossProduct(a, b, normal);
-		//	VectorNormalizeFast(normal);
-		//	for (int u = 0; u < tess.numVertexes; u++) {
-		//		tess.xyz[u][0] += 0.5f * normal[0];
-		//		tess.xyz[u][1] += 0.5f * normal[1];
-		//		tess.xyz[u][2] -= 0.5f * normal[2];
-		//	}
-		//	if (drawSurf->bAS == NULL && tess.numIndexes == 6 && tess.numVertexes == 4) {//backEnd.currentEntity->e.reType == RT_SPRITE) {RT_BEAM
-		//		drawSurf->bAS = &vk_d.bottomASList[0];
-		//		dynamic = qtrue;
-		//		forceUpdate = qtrue;
-		//		if (shader->stages[0]->stateBits == 65/*strstr(shader->name, "bullet_mrk") || strstr(shader->name, "burn_med_mrk")*/) drawSurf->bAS->data.material = MATERIAL_FLAG_BULLET_MARK | MATERIAL_FLAG_NEEDSCOLOR;
-		//		else drawSurf->bAS->data.material = MATERIAL_FLAG_NEEDSCOLOR | MATERIAL_FLAG_PARTICLE;//MATERIAL_FLAG_BULLET_MARK;
-		//	}
-		//}
-		//if (backEnd.currentEntity->e.reType & (RT_SPRITE)) {
-		//	int x;
-		//}
+	//	//	vec3_t normal;
+	//	//	CrossProduct(a, b, normal);
+	//	//	VectorNormalizeFast(normal);
+	//	//	for (int u = 0; u < tess.numVertexes; u++) {
+	//	//		tess.xyz[u][0] += 0.5f * normal[0];
+	//	//		tess.xyz[u][1] += 0.5f * normal[1];
+	//	//		tess.xyz[u][2] -= 0.5f * normal[2];
+	//	//	}
+	//	//	if (drawSurf->bAS == NULL && tess.numIndexes == 6 && tess.numVertexes == 4) {//backEnd.currentEntity->e.reType == RT_SPRITE) {RT_BEAM
+	//	//		drawSurf->bAS = &vk_d.bottomASList[0];
+	//	//		dynamic = qtrue;
+	//	//		forceUpdate = qtrue;
+	//	//		if (shader->stages[0]->stateBits == 65/*strstr(shader->name, "bullet_mrk") || strstr(shader->name, "burn_med_mrk")*/) drawSurf->bAS->data.material = MATERIAL_FLAG_BULLET_MARK | MATERIAL_FLAG_NEEDSCOLOR;
+	//	//		else drawSurf->bAS->data.material = MATERIAL_FLAG_NEEDSCOLOR | MATERIAL_FLAG_PARTICLE;//MATERIAL_FLAG_BULLET_MARK;
+	//	//	}
+	//	//}
+	//	//if (backEnd.currentEntity->e.reType & (RT_SPRITE)) {
+	//	//	int x;
+	//	//}
 
-		//// blood ray projectile etc
-		//if (drawSurf->bAS == NULL && tess.numIndexes == 6 && tess.numVertexes == 4){//backEnd.currentEntity->e.reType == RT_SPRITE) {RT_BEAM
-		//	drawSurf->bAS = &vk_d.bottomASList[0];
-		//	dynamic = qtrue;
-		//	forceUpdate = qtrue;
-		//	drawSurf->bAS->data.material |= (MATERIAL_FLAG_NEEDSCOLOR | MATERIAL_FLAG_PARTICLE);
-		//}
-		//
-		//if (i > 30) //continue;
-		//if (strstr(shader->name, "wire")) {
-		//	//continue;
-		//}
-		//// everything else
-		///*if (drawSurf->bAS == NULL && tess.shader->stages[0] != NULL) {
-		//	dynamic = qtrue;
-		//	forceUpdate = qtrue;
-		//	RB_CreateBottomAS(&drawSurf->bAS, dynamic);
-		//}*/
-		
-		if (drawSurf->bAS == NULL) {
-			continue;
-		}
-		
-		
-		if (drawSurf->bAS->as_for_each_swapchain_image) {
-			Com_Memcpy(&drawSurf->bAS[vk.swapchain.currentImage].geometryInstance.transform, &tM, sizeof(float[12]));
-			RB_AddBottomAS(&drawSurf->bAS[vk.swapchain.currentImage], dynamic, forceUpdate);
-		}
-		else {
-			Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
-			RB_AddBottomAS(drawSurf->bAS, dynamic, forceUpdate);
-		}
-	}
+	//	//// blood ray projectile etc
+	//	//if (drawSurf->bAS == NULL && tess.numIndexes == 6 && tess.numVertexes == 4){//backEnd.currentEntity->e.reType == RT_SPRITE) {RT_BEAM
+	//	//	drawSurf->bAS = &vk_d.bottomASList[0];
+	//	//	dynamic = qtrue;
+	//	//	forceUpdate = qtrue;
+	//	//	drawSurf->bAS->data.material |= (MATERIAL_FLAG_NEEDSCOLOR | MATERIAL_FLAG_PARTICLE);
+	//	//}
+	//	//
+	//	//if (i > 30) //continue;
+	//	//if (strstr(shader->name, "wire")) {
+	//	//	//continue;
+	//	//}
+	//	//// everything else
+	//	///*if (drawSurf->bAS == NULL && tess.shader->stages[0] != NULL) {
+	//	//	dynamic = qtrue;
+	//	//	forceUpdate = qtrue;
+	//	//	RB_CreateBottomAS(&drawSurf->bAS, dynamic);
+	//	//}*/
+	//	
+	//	if (drawSurf->bAS == NULL) {
+	//		continue;
+	//	}
+	//	
+	//	
+	//	if (drawSurf->bAS->as_for_each_swapchain_image) {
+	//		Com_Memcpy(&drawSurf->bAS[vk.swapchain.currentImage].geometryInstance.transform, &tM, sizeof(float[12]));
+	//		RB_AddBottomAS(&drawSurf->bAS[vk.swapchain.currentImage], dynamic, forceUpdate);
+	//	}
+	//	else {
+	//		Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
+	//		RB_AddBottomAS(drawSurf->bAS, dynamic, forceUpdate);
+	//	}
+	//}
 	backEnd.refdef.floatTime = originalTime;
 
 	VK_DestroyTopAccelerationStructure(&vk_d.topAS[vk.swapchain.currentImage]);
