@@ -303,7 +303,8 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 	//
 	// compute LOD
 	//
-	lod = R_ComputeLOD( ent );
+	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) lod = 0;
+	else lod = R_ComputeLOD(ent);
 
 	header = tr.currentModel->md3[lod];
 

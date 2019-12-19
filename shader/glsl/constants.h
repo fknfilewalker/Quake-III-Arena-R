@@ -6,6 +6,7 @@
 #define BAS_WORLD_STATIC                            (1)
 #define BAS_WORLD_DYNAMIC_DATA                      (2)
 #define BAS_WORLD_DYNAMIC_AS                        (3)
+#define BAS_ENTITY                                  (4)
 
 // texture
 #define TEXTURE_DEFAULT 							0x00000000

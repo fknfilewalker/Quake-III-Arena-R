@@ -2175,7 +2175,7 @@ void R_BuildAccelerationStructure2() {
 			continue;
 		}
 		if (tess.shader->stages[0] == NULL) continue;
-		if (!s_worldData.surfaces[i].added && !s_worldData.surfaces[i].skip && !RTX_DYNAMIC_DATA) {
+		/*if (!s_worldData.surfaces[i].added && !s_worldData.surfaces[i].skip && !RTX_DYNAMIC_DATA) {
 			vk_d.scratchBufferOffset = 0;
 			tess.numVertexes = 0;
 			tess.numIndexes = 0;
@@ -2184,7 +2184,7 @@ void R_BuildAccelerationStructure2() {
 			RB_CreateBottomAS(&s_worldData.surfaces[i].bAS, qtrue);
 			tess.numVertexes = 0;
 			tess.numIndexes = 0;
-		}
+		}*/
 	}
 
 	vk_d.scratchBufferOffset = 0;

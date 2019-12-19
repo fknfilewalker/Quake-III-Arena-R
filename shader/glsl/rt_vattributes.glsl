@@ -178,6 +178,10 @@ Triangle getTriangle(RayPayload rp){
 			hitTriangle.tex0 = TEX1_IDX_MASK | (iData.data[rp.instanceID].texIdx & TEX0_IDX_MASK);
 			hitTriangle.tex1 = UINT_MAX;
 	}
+	if(iData.data[rp.instanceID].dynamic) {
+		hitTriangle.tex0 = vertices_dynamic.v[index.x].texIdx0;
+		hitTriangle.tex1 = vertices_dynamic.v[index.x].texIdx1;
+	}
 	
 
 	return hitTriangle;

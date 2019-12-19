@@ -215,6 +215,53 @@ void VK_MakeTopAS(VkCommandBuffer commandBuffer,
 	vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
 }
 
+void VK_UpdateTopAS(VkCommandBuffer commandBuffer,
+	vktopAS_t* topASold, vktopAS_t* topASnew, vkbuffer_t* topASBuffer,
+	vkbottomAS_t* basList, uint32_t basCount, vkbuffer_t* instanceBuffer,
+	VkBuildAccelerationStructureFlagsNV flag) {
+
+	// Get Memory Info
+	VkMemoryRequirements2 memoryRequirements2Scratch = { 0 };
+	VK_GetAccelerationStructureMemoryRequirements(topASold->accelerationStructure, VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_UPDATE_SCRATCH_NV, &memoryRequirements2Scratch);
+	VkMemoryRequirements2 memoryRequirements2 = { 0 };
+	VK_GetAccelerationStructureMemoryRequirements(topASold->accelerationStructure, VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_OBJECT_NV, &memoryRequirements2);
+
+	if (memoryRequirements2.memoryRequirements.size > topASBuffer->allocSize) {
+		ri.Error(ERR_FATAL, "Vulkan: Top Level Buffer to small!");
+	}
+	if (memoryRequirements2Scratch.memoryRequirements.size > vk_d.scratchBuffer.allocSize - vk_d.scratchBufferOffset) {
+		ri.Error(ERR_FATAL, "Vulkan: Scratch Buffer to small!");
+	}
+
+	// build
+	VkAccelerationStructureInfoNV buildInfo = { 0 };
+	buildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV;
+	buildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_NV;
+	buildInfo.flags = flag;
+	buildInfo.pGeometries = 0;
+	buildInfo.geometryCount = 0;
+	buildInfo.instanceCount = basCount;
+
+	VkMemoryBarrier memoryBarrier = { 0 };
+	memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+	memoryBarrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
+	memoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
+
+	vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
+	vkCmdBuildAccelerationStructureNV(
+		commandBuffer,
+		&buildInfo,
+		instanceBuffer->buffer,
+		0,
+		VK_TRUE,
+		topASnew->accelerationStructure,
+		topASold->accelerationStructure,
+		vk_d.scratchBuffer.buffer,
+		vk_d.scratchBufferOffset);
+	vk_d.scratchBufferOffset += memoryRequirements2Scratch.memoryRequirements.size;
+	vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
+}
+
 void VK_DestroyTopAccelerationStructure(vktopAS_t* as) {
 	if (as->accelerationStructure != VK_NULL_HANDLE) {
 		vkDestroyAccelerationStructureNV(vk.device, as->accelerationStructure, NULL);
