@@ -514,7 +514,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	for (int i = 0; i < vk_d.updateDataOffsetXYZCount; i++) {
 		shader_t* shader = vk_d.updateDataOffsetXYZ[i].shader;
 		msurface_t* surf = vk_d.updateDataOffsetXYZ[i].surf;
-		uint32_t offset = vk_d.updateDataOffsetXYZ[i].offset;
+		uint32_t offset = vk_d.updateDataOffsetXYZ[i].offsetXYZ;
 
 
 		tess.numVertexes = 0;
@@ -535,6 +535,42 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			
 	}
 	backEnd.refdef.floatTime = originalTime;
+
+	// update world with dynamic as
+	for (int i = 0; i < vk_d.updateASOffsetXYZCount; i++) {
+		shader_t* shader = vk_d.updateASOffsetXYZ[i].shader;
+		msurface_t* surf = vk_d.updateASOffsetXYZ[i].surf;
+		uint32_t offsetIDX = vk_d.updateASOffsetXYZ[i].offsetIDX;
+		uint32_t offsetXYZ = vk_d.updateASOffsetXYZ[i].offsetXYZ;
+
+
+		tess.numVertexes = 0;
+		tess.numIndexes = 0;
+		tess.shader = shader;
+		backEnd.refdef.floatTime = originalTime;
+		tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+		rb_surfaceTable[*surf->data](surf->data);
+		RB_DeformTessGeometry();
+
+		if (vk_d.updateASOffsetXYZ[i].numXYZ != tess.numVertexes)
+		{
+			int x = 2;
+		}
+
+		RB_UploadIDX(&vk_d.geometry.idx_world_dynamic_as[vk.swapchain.currentImage], offsetIDX, offsetXYZ);
+		RB_UploadXYZ(&vk_d.geometry.xyz_world_dynamic_as[vk.swapchain.currentImage], offsetXYZ);
+		tess.numVertexes = 0;
+		tess.numIndexes = 0;
+
+	}
+	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldDynamicAS[vk.swapchain.currentImage].data);
+	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldDynamicAS[vk.swapchain.currentImage].geometryInstance);
+	VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), &vk_d.bottomASWorldDynamicAS[vk.swapchain.currentImage],
+		&vk_d.bottomASWorldDynamicAS[vk.swapchain.currentImage],
+		&vk_d.basBufferWorldDynamicAS, NULL, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
+	backEnd.refdef.floatTime = originalTime;
+	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicAS[vk.swapchain.currentImage], sizeof(vkbottomAS_t));
+	vk_d.bottomASTraceListCount++;
 
 	// lights
 	VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], 0, sizeof(LightList_s), (void*)&vk_d.lightList);

@@ -1815,15 +1815,18 @@ static qboolean RB_ASDataDynamic(shader_t* shader) {
 	}
 	return changes;
 }
+static qboolean RB_ASDynamic(shader_t* shader) {
+	return (shader->numDeforms > 0) || (backEnd.currentEntity->e.frame > 0 || backEnd.currentEntity->e.oldframe > 0);
+}
 
 
 
-void R_Recursive(mnode_t* node, uint32_t *offsetIDXstatic, uint32_t *offsetXYZstatic, uint32_t* offsetIDXdynamic, uint32_t* offsetXYZdynamic) {
+void R_Recursive(mnode_t* node, uint32_t *offsetIDXstatic, uint32_t *offsetXYZstatic, uint32_t* offsetIDXdynamicData, uint32_t* offsetXYZdynamicData, uint32_t* offsetIDXdynamicAS, uint32_t* offsetXYZdynamicAS) {
 	do {
 		if (node->contents != -1) {
 			break;
 		}
-		R_Recursive(node->children[0], offsetIDXstatic, offsetXYZstatic, offsetIDXdynamic, offsetXYZdynamic);
+		R_Recursive(node->children[0], offsetIDXstatic, offsetXYZstatic, offsetIDXdynamicData, offsetXYZdynamicData, offsetIDXdynamicAS, offsetXYZdynamicAS);
 		node = node->children[1];
 	} while (1);
 	{
@@ -1875,55 +1878,77 @@ void R_Recursive(mnode_t* node, uint32_t *offsetIDXstatic, uint32_t *offsetXYZst
 			}
 
 			 
-			if (!surf->added && !surf->skip && !RTX_DYNAMIC_AS) {
-				surf->added = qtrue;
-				qboolean dynamicData = RB_ASDataDynamic(tess.shader);
+			if (!surf->added && !surf->skip) {
+				
+				//if (strstr(tess.shader->name, "base_light") || strstr(tess.shader->name, "gothic_light") || strstr(tess.shader->name, "eye")) { // all lamp textures
+				//	RB_AddLightToLightList();
+				//}
+				//else if (strstr(tess.shader->name, "flame")) { // all fire textures
+				//	RB_AddLightToLightList();
+				//}
+				//if(strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "bluemetalsupport2eye"))
+				//{ int x = 1; }
 				
 				uint32_t material = 0;
-				if (strstr(tess.shader->name, "base_light") || strstr(tess.shader->name, "gothic_light") || strstr(tess.shader->name, "eye")) { // all lamp textures
-					RB_AddLightToLightList();
-				}
-				else if (strstr(tess.shader->name, "flame")) { // all fire textures
-					RB_AddLightToLightList();
-				}
-				if(strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "bluemetalsupport2eye"))
-				{ int x = 1; }
-				
 				// different buffer and offsets for static, dynamic data and dynamic as
 				uint32_t* offsetIDX;
 				uint32_t* offsetXYZ;
 				vkbuffer_t *idx_buffer;
 				vkbuffer_t* xyz_buffer;
-				if (!dynamicData) {
+				qboolean dynamic = qfalse;
+				if (!RB_ASDynamic(tess.shader) && !RB_ASDataDynamic(tess.shader)) {
 					offsetIDX = offsetIDXstatic;
 					offsetXYZ = offsetXYZstatic;
 					idx_buffer = &vk_d.geometry.idx_world_static;
 					xyz_buffer = &vk_d.geometry.xyz_world_static;
-				} else {
-					offsetIDX = offsetIDXdynamic;
-					offsetXYZ = offsetXYZdynamic;
+				}
+				else if (!RB_ASDynamic(tess.shader) && RB_ASDataDynamic(tess.shader)) {
+					offsetIDX = offsetIDXdynamicData;
+					offsetXYZ = offsetXYZdynamicData;
 					idx_buffer = &vk_d.geometry.idx_world_dynamic_data;
 					xyz_buffer = &vk_d.geometry.xyz_world_dynamic_data;
+					dynamic = qtrue;
 
 					// keep track of dynamic data surf
 					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].shader = tess.shader;
 					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].numXYZ = tess.numVertexes;
 					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].surf = surf;
-					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].offset = *offsetXYZ;
+					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].offsetIDX = *offsetIDX;
+					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].offsetXYZ = *offsetXYZ;
 					vk_d.updateDataOffsetXYZCount++;
+				}
+				else if (RB_ASDynamic(tess.shader)) {
+					offsetIDX = offsetIDXdynamicAS;
+					offsetXYZ = offsetXYZdynamicAS;
+					idx_buffer = &vk_d.geometry.idx_world_dynamic_as;
+					xyz_buffer = &vk_d.geometry.xyz_world_dynamic_as;
+					dynamic = qtrue;
+
+					// keep track of dynamic as surf
+					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].shader = tess.shader;
+					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].numXYZ = tess.numVertexes;
+					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].surf = surf;
+					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].offsetIDX = *offsetIDX;
+					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].offsetXYZ = *offsetXYZ;
+					vk_d.updateASOffsetXYZCount++;
+				}
+				else {
+					surf->skip = qtrue;
+					continue;
 				}
 				
 				// write idx
 				RB_UploadIDX(idx_buffer, (*offsetIDX), (*offsetXYZ));
-				if (dynamicData)for (int i = 1; i < vk.swapchain.imageCount; i++) RB_UploadIDX(idx_buffer[i], (*offsetIDX), (*offsetXYZ));
+				if (dynamic)for (int i = 1; i < vk.swapchain.imageCount; i++) RB_UploadIDX(idx_buffer[i], (*offsetIDX), (*offsetXYZ));
 				
 				// write xyz
-				RB_UploadXYZ(xyz_buffer, (*offsetXYZ), material);
-				if (dynamicData) {
+				RB_UploadXYZ(xyz_buffer, (*offsetXYZ));
+				if (dynamic) {
 					for (int i = 1; i < vk.swapchain.imageCount; i++) {
 						RB_UploadXYZ(&xyz_buffer[i], (*offsetXYZ));
 					}
 				}	
+				surf->added = qtrue;
 				(*offsetIDX) += tess.numIndexes;
 				(*offsetXYZ) += tess.numVertexes;
 			}
@@ -1939,10 +1964,13 @@ void R_BuildAccelerationStructure2() {
 
 	uint32_t offsetIDX = 0;
 	uint32_t offsetXYZ = 0;
-	uint32_t offsetIDXdynamic = 0;
-	uint32_t offsetXYZdynamic = 0;
+	uint32_t offsetIDXdynamicData = 0;
+	uint32_t offsetXYZdynamicData = 0;
+	uint32_t offsetIDXdynamicAS = 0;
+	uint32_t offsetXYZdynamicAS = 0;
 
-	R_Recursive(s_worldData.nodes, &offsetIDX, &offsetXYZ, &offsetIDXdynamic, &offsetXYZdynamic);
+	R_Recursive(s_worldData.nodes, &offsetIDX, &offsetXYZ, &offsetIDXdynamicData, &offsetXYZdynamicData, &offsetIDXdynamicAS, &offsetXYZdynamicAS);
+	// world static
 	{
 		vk_d.bottomASWorldStatic.geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
 		vk_d.bottomASWorldStatic.geometries.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
@@ -1989,13 +2017,14 @@ void R_BuildAccelerationStructure2() {
 		tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
 		Com_Memcpy(&vk_d.bottomASWorldStatic.geometryInstance.transform, &tM, sizeof(float[12]));
 	}
+	// world dynamic data
 	{
 		vk_d.bottomASWorldDynamicData.geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
 		vk_d.bottomASWorldDynamicData.geometries.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
 		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
-		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.vertexCount = offsetXYZdynamic;
+		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.vertexCount = offsetXYZdynamicData;
 		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.vertexStride = sizeof(VertexBuffer);
-		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.indexCount = offsetIDXdynamic;
+		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.indexCount = offsetIDXdynamicData;
 		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.vertexOffset = vk_d.geometry.xyz_world_dynamic_data_offset * sizeof(VertexBuffer);
 		vk_d.bottomASWorldDynamicData.geometries.geometry.triangles.indexOffset = vk_d.geometry.idx_world_dynamic_data_offset * sizeof(uint32_t);
 		{
@@ -2009,8 +2038,8 @@ void R_BuildAccelerationStructure2() {
 
 		vk_d.bottomASWorldDynamicData.data.offsetIDX = vk_d.geometry.idx_world_dynamic_data_offset;
 		vk_d.bottomASWorldDynamicData.data.offsetXYZ = vk_d.geometry.xyz_world_dynamic_data_offset;
-		vk_d.geometry.idx_world_dynamic_data_offset += offsetIDXdynamic;
-		vk_d.geometry.xyz_world_dynamic_data_offset += offsetXYZdynamic;
+		vk_d.geometry.idx_world_dynamic_data_offset += offsetIDXdynamicData;
+		vk_d.geometry.xyz_world_dynamic_data_offset += offsetXYZdynamicData;
 
 		VkCommandBuffer commandBuffer = { 0 };
 		VK_BeginSingleTimeCommands(&commandBuffer);
@@ -2034,6 +2063,55 @@ void R_BuildAccelerationStructure2() {
 		tM[4] = 0; tM[5] = 1; tM[6] = 0; tM[7] = 0;
 		tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
 		Com_Memcpy(&vk_d.bottomASWorldDynamicData.geometryInstance.transform, &tM, sizeof(float[12]));
+	}
+	// world dynamic as
+	{
+		for (int i = 0; i < vk.swapchain.imageCount; i++) {
+			vk_d.bottomASWorldDynamicAS[i].geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
+			vk_d.bottomASWorldDynamicAS[i].geometries.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
+			vk_d.bottomASWorldDynamicAS[i].geometries.geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
+			vk_d.bottomASWorldDynamicAS[i].geometries.geometry.triangles.vertexCount = offsetXYZdynamicAS;
+			vk_d.bottomASWorldDynamicAS[i].geometries.geometry.triangles.vertexStride = sizeof(VertexBuffer);
+			vk_d.bottomASWorldDynamicAS[i].geometries.geometry.triangles.indexCount = offsetIDXdynamicAS;
+			vk_d.bottomASWorldDynamicAS[i].geometries.geometry.triangles.vertexOffset = vk_d.geometry.xyz_world_dynamic_as_offset[i] * sizeof(VertexBuffer);
+			vk_d.bottomASWorldDynamicAS[i].geometries.geometry.triangles.indexOffset = vk_d.geometry.idx_world_dynamic_as_offset[i] * sizeof(uint32_t);
+			{
+				vk_d.bottomASWorldDynamicAS[i].geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_world_dynamic_as[i].buffer;
+				vk_d.bottomASWorldDynamicAS[i].geometries.geometry.triangles.indexData = vk_d.geometry.idx_world_dynamic_as[i].buffer;
+			}
+			vk_d.bottomASWorldDynamicAS[i].geometries.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+			vk_d.bottomASWorldDynamicAS[i].geometries.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+			vk_d.bottomASWorldDynamicAS[i].geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
+			vk_d.bottomASWorldDynamicAS[i].geometries.flags = 0;
+
+			vk_d.bottomASWorldDynamicAS[i].data.offsetIDX = vk_d.geometry.idx_world_dynamic_as_offset[i];
+			vk_d.bottomASWorldDynamicAS[i].data.offsetXYZ = vk_d.geometry.xyz_world_dynamic_as_offset[i];
+			vk_d.geometry.idx_world_dynamic_as_offset[i] += offsetIDXdynamicAS;
+			vk_d.geometry.xyz_world_dynamic_as_offset[i] += offsetXYZdynamicAS;
+
+			VkCommandBuffer commandBuffer = { 0 };
+			VK_BeginSingleTimeCommands(&commandBuffer);
+			VkDeviceSize offset = 0;
+			VK_CreateBottomAS(commandBuffer,
+				&vk_d.bottomASWorldDynamicAS[i], &vk_d.basBufferWorldDynamicAS[i],
+				&offset, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
+			VK_EndSingleTimeCommands(&commandBuffer);
+
+			vk_d.bottomASWorldDynamicAS[i].data.world = BAS_WORLD_DYNAMIC_AS;
+			vk_d.bottomASWorldDynamicAS[i].data.texIdx = 60;
+			vk_d.bottomASWorldDynamicAS[i].data.material |= MATERIAL_KIND_REGULAR;
+			vk_d.bottomASWorldDynamicAS[i].geometryInstance.instanceCustomIndex = 0;
+			vk_d.bottomASWorldDynamicAS[i].geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
+			vk_d.bottomASWorldDynamicAS[i].geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
+			vk_d.bottomASWorldDynamicAS[i].geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+			vk_d.bottomASWorldDynamicAS[i].geometryInstance.accelerationStructureHandle = vk_d.bottomASWorldDynamicAS[i].handle;
+
+			float tM[12];
+			tM[0] = 1; tM[1] = 0; tM[2] = 0; tM[3] = 0;
+			tM[4] = 0; tM[5] = 1; tM[6] = 0; tM[7] = 0;
+			tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
+			Com_Memcpy(&vk_d.bottomASWorldDynamicAS[i].geometryInstance.transform, &tM, sizeof(float[12]));
+		}
 	}
 	// skybox
 	qboolean cmInit = qfalse;
@@ -2147,6 +2225,8 @@ void R_BuildAccelerationStructure2() {
 		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
 		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
 		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
 
 		VK_AddSampler(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_ENVMAP, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_AddUniformBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_GLOBAL_UBO, VK_SHADER_STAGE_RAYGEN_BIT_NV);
@@ -2160,6 +2240,8 @@ void R_BuildAccelerationStructure2() {
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_world_static.buffer);
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_world_dynamic_data[i].buffer);
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_world_dynamic_data[i].buffer);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_world_dynamic_as[i].buffer);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_world_dynamic_as[i].buffer);
 
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_static.buffer);
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_static.buffer);

@@ -347,7 +347,8 @@ void VK_BeginFrame()
 
     // wait for command buffer submission for last imageclock_t start = clock();
     
-    
+	// save current image as last and acquire next
+	vk.swapchain.lastImage = vk.swapchain.currentImage;
 	vkAcquireNextImageKHR(vk.device, vk.swapchain.handle, UINT64_MAX, vk.swapchain.imageAvailableSemaphores[vk.swapchain.currentFrame], VK_NULL_HANDLE, &vk.swapchain.currentImage);
 
     //Com_Printf("fence %d %d %d\n", vkGetFenceStatus(vk.device, vk.swapchain.inFlightFences[0]) == VK_SUCCESS,

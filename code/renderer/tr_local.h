@@ -1119,6 +1119,7 @@ typedef struct {
 	uint32_t					currentFrame;
 	uint32_t					lastFrame;
 	uint32_t					currentImage;
+	uint32_t					lastImage;
 
 	VkCommandBuffer				*commandBuffers;
 	VkSemaphore					*imageAvailableSemaphores;
@@ -1231,6 +1232,11 @@ typedef struct {
 	vkbuffer_t		idx_world_dynamic_data[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t		xyz_world_dynamic_data[VK_MAX_SWAPCHAIN_SIZE];
 
+	uint32_t		idx_world_dynamic_as_offset[VK_MAX_SWAPCHAIN_SIZE];
+	uint32_t		xyz_world_dynamic_as_offset[VK_MAX_SWAPCHAIN_SIZE];
+	vkbuffer_t		idx_world_dynamic_as[VK_MAX_SWAPCHAIN_SIZE];
+	vkbuffer_t		xyz_world_dynamic_as[VK_MAX_SWAPCHAIN_SIZE];
+
 	uint32_t		xyz_dynamic_offset;
 	uint32_t		idx_dynamic_offset;
 	vkbuffer_t		xyz_dynamic[VK_MAX_SWAPCHAIN_SIZE];
@@ -1306,6 +1312,8 @@ typedef struct {
 #define RTX_WORLD_STATIC_IDX_SIZE 128 * 1024 
 #define RTX_WORLD_DYNAMIC_DATA_XYZ_SIZE 4 * 1024
 #define RTX_WORLD_DYNAMIC_DATA_IDX_SIZE 8 * 1024 
+#define RTX_WORLD_DYNAMIC_AS_XYZ_SIZE 8 * 1024
+#define RTX_WORLD_DYNAMIC_AS_IDX_SIZE 16 * 1024 
 
 #define ANIMATE_TEXTURE (tess.shader->stages[0]->bundle[0].numImageAnimations > 0)
 #define UV_CHANGES		(tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD)  && tess.shader->stages[0]->bundle[0].numTexMods > 0 /*&& tess.shader->stages[0]->bundle[0].texMods[0].type != TMOD_NONE*/) : qfalse)
@@ -1377,6 +1385,9 @@ typedef struct {
 	// world dynamic data
 	vkbottomAS_t		bottomASWorldDynamicData;
 	vkbuffer_t			basBufferWorldDynamicData;
+	// world dynamic AS
+	vkbottomAS_t		bottomASWorldDynamicAS[VK_MAX_SWAPCHAIN_SIZE];
+	vkbuffer_t			basBufferWorldDynamicAS[VK_MAX_SWAPCHAIN_SIZE];
 
 	// AS
 	qboolean			worldASInit;
@@ -1396,12 +1407,22 @@ typedef struct {
 	VkDeviceSize		basBufferStaticOffset;
 
 	struct {
-		uint32_t offset;
+		uint32_t offsetIDX;
+		uint32_t offsetXYZ;
 		uint32_t numXYZ;
 		shader_t* shader;
 		msurface_t* surf;
 	} updateDataOffsetXYZ[3500];
 	uint32_t			updateDataOffsetXYZCount;
+
+	struct {
+		uint32_t offsetIDX;
+		uint32_t offsetXYZ;
+		uint32_t numXYZ;
+		shader_t* shader;
+		msurface_t* surf;
+	} updateASOffsetXYZ[3500];
+	uint32_t			updateASOffsetXYZCount;
 
 	vkbuffer_t			basBufferDynamic[VK_MAX_SWAPCHAIN_SIZE];
 	VkDeviceSize		basBufferDynamicOffset;
