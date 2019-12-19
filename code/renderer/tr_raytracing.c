@@ -19,8 +19,8 @@ void RB_UploadIDX(vkbuffer_t* buffer, uint32_t offsetIDX, uint32_t offsetXYZ) {
 
 void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ) {
 	uint32_t material = RB_GetMaterial();
-	uint32_t tex0 = (RB_GetNextTexEncoded(0)) | (RB_GetNextTexEncoded(1) << TEX_SHIFT_BITS) | (RB_GetNextTexEncoded(2) << (2 * TEX_SHIFT_BITS));
-	uint32_t tex1 = (RB_GetNextTexEncoded(3)) | (RB_GetNextTexEncoded(4) << TEX_SHIFT_BITS) | (RB_GetNextTexEncoded(5) << (2 * TEX_SHIFT_BITS));
+	uint32_t tex0 = (RB_GetNextTexEncoded(0)) | (RB_GetNextTexEncoded(1) << TEX_SHIFT_BITS);
+	uint32_t tex1 = (RB_GetNextTexEncoded(2)) | (RB_GetNextTexEncoded(3) << TEX_SHIFT_BITS);
 	VertexBuffer* vData = calloc(tess.numVertexes, sizeof(VertexBuffer));
 	for (int j = 0; j < tess.numVertexes; j++) {
 		vData[j].pos[0] = tess.xyz[j][0];
@@ -99,10 +99,12 @@ uint32_t RB_GetNextTexEncoded(int stage) {
 		uint32_t stateBits = tess.shader->stages[stage]->stateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS);
 		if ((stateBits & GLS_SRCBLEND_BITS) > GLS_SRCBLEND_ONE && (stateBits & GLS_DSTBLEND_BITS) > GLS_DSTBLEND_ONE) blend = qtrue;
 
+		qboolean color = RB_StageNeedsColor(stage);
+
 		uint32_t nextidx = (uint32_t)indexAnim;
 		uint32_t idx = (uint32_t)tess.shader->stages[stage]->bundle[0].image[nextidx]->index;
 		tess.shader->stages[stage]->bundle[0].image[nextidx]->frameUsed = tr.frameCount;
-		return (idx) | (blend ? TEX0_BLEND_MASK : 0);
+		return (idx) | (blend ? TEX0_BLEND_MASK : 0) | (color ? TEX0_COLOR_MASK : 0);
 	}
 	return TEX0_IDX_MASK;
 }

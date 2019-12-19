@@ -122,17 +122,8 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 	vec4 color;
 	vec4 tex = global_textureGrad(d.tex0, hp.uv0, tex_coord_x, tex_coord_y);
 	color = vec4(tex.xyz, 1);
+	if(d.tex0Color) color *= (hp.color0/255);
 
-	bool add_color = false;
-	if(needs_color(rp)) {
-		add_color = true;
-		color *= (hp.color0/255);
-	}
-	// // 	color *= (hp.color/255);
-	//color *= (hp.color0/255);
-	// // if((iData.data[rp.instanceID].material & MATERIAL_FLAG_NEEDSCOLOR) > 0) {
-	// // 	color *= (hp.color/255);
-  	// // }
 	if(d.tex1 != -1){
 		tex_coord = hp.uv1;
 		tex_coord_x = triangle.uv1 * bary_x;
@@ -142,25 +133,9 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 		tex_coord_x *= 0.5;
 		tex_coord_y *= 0.5;
 		tex = global_textureGrad(d.tex1, hp.uv1, tex_coord_x, tex_coord_y);
-		if(add_color) tex *= (hp.color1/255);
+		if(d.tex1Color) tex *= (hp.color1/255);
 
 		if(d.tex1Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} else return color;
-	if(d.tex2 != -1){
-		tex_coord = hp.uv2;
-		tex_coord_x = triangle.uv2 * bary_x;
-		tex_coord_y = triangle.uv2 * bary_y;
-		tex_coord_x -= tex_coord;
-		tex_coord_y -= tex_coord;
-		tex_coord_x *= 0.5;
-		tex_coord_y *= 0.5;
-		tex = global_textureGrad(d.tex2, hp.uv2, tex_coord_x, tex_coord_y);
-		if(add_color) tex *= (hp.color2/255);
-
-		if(d.tex2Blend) {
 			color = alpha_blend(tex, color);
 		}
 		else color += tex;
@@ -168,6 +143,23 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 
 	d = unpackTextureData(hp.tex1);
 	if(d.tex0 != -1){
+		tex_coord = hp.uv2;
+		tex_coord_x = triangle.uv2 * bary_x;
+		tex_coord_y = triangle.uv2 * bary_y;
+		tex_coord_x -= tex_coord;
+		tex_coord_y -= tex_coord;
+		tex_coord_x *= 0.5;
+		tex_coord_y *= 0.5;
+		tex = global_textureGrad(d.tex0, hp.uv2, tex_coord_x, tex_coord_y);
+		if(d.tex0Color) tex *= (hp.color2/255);
+
+		if(d.tex0Blend) {
+			color = alpha_blend(tex, color);
+		}
+		else color += tex;
+	} else return color;
+
+	if(d.tex1 != -1){
 		tex_coord = hp.uv3;
 		tex_coord_x = triangle.uv3 * bary_x;
 		tex_coord_y = triangle.uv3 * bary_y;
@@ -175,10 +167,10 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 		tex_coord_y -= tex_coord;
 		tex_coord_x *= 0.5;
 		tex_coord_y *= 0.5;
-		tex = global_textureGrad(d.tex0, hp.uv3, tex_coord_x, tex_coord_y);
-		if(add_color) tex *= (hp.color3/255);
+		tex = global_textureGrad(d.tex1, hp.uv3, tex_coord_x, tex_coord_y);
+		if(d.tex1Color) tex *= (hp.color3/255);
 
-		if(d.tex0Blend) {
+		if(d.tex1Blend) {
 			color = alpha_blend(tex, color);
 		}
 		else color += tex;

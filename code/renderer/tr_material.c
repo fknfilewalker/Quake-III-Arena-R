@@ -11,6 +11,15 @@ static qboolean RB_NeedsColor() {
 	return qfalse;
 }
 
+qboolean RB_StageNeedsColor(int stage) {
+	if (tess.shader->stages[stage] != NULL && tess.shader->stages[stage]->active) {
+		if (tess.shader->stages[stage]->rgbGen == CGEN_WAVEFORM) {
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
 uint32_t RB_GetMaterial() {
 	uint32_t material = 0;
 	if (strstr(tess.shader->name, "base_light") || strstr(tess.shader->name, "gothic_light") || strstr(tess.shader->name, "eye")) { // all lamp textures

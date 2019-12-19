@@ -33,10 +33,10 @@ struct HitPoint {
 struct TextureData {
 	int tex0;
 	int tex1;
-	int tex2;
 	bool tex0Blend;
 	bool tex1Blend;
-	bool tex2Blend;
+	bool tex0Color;
+	bool tex1Color;
 };
 
 // buffer with instance data
@@ -161,7 +161,7 @@ Triangle getTriangle(RayPayload rp){
 		hitTriangle.tex0 = (vertices_dynamic_data.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx0);
 		hitTriangle.tex1 = (vertices_dynamic_data.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx1);
 	} else {
-		hitTriangle.tex0 = TEX2_IDX_MASK | TEX1_IDX_MASK | (iData.data[rp.instanceID].texIdx & TEX0_IDX_MASK);
+		hitTriangle.tex0 = TEX1_IDX_MASK | (iData.data[rp.instanceID].texIdx & TEX0_IDX_MASK);
 		hitTriangle.tex1 = UINT_MAX;
 	}
 
@@ -212,13 +212,12 @@ TextureData unpackTextureData(uint data){
 	TextureData d;
 	d.tex0 = int(data & TEX0_IDX_MASK);
 	d.tex1 = int((data & TEX1_IDX_MASK) >> TEX_SHIFT_BITS);
-	d.tex2 = int((data & TEX2_IDX_MASK) >> (2*TEX_SHIFT_BITS));
 	if(d.tex0 == TEX0_IDX_MASK) d.tex0 = -1;
 	if(d.tex1 == TEX0_IDX_MASK) d.tex1 = -1;
-	if(d.tex2 == TEX0_IDX_MASK) d.tex2 = -1;
 	d.tex0Blend = (data & TEX0_BLEND_MASK) != 0;
 	d.tex1Blend = (data & TEX1_BLEND_MASK) != 0;
-	d.tex2Blend = (data & TEX2_BLEND_MASK) != 0;
+	d.tex0Color = (data & TEX0_COLOR_MASK) != 0;
+	d.tex1Color = (data & TEX1_COLOR_MASK) != 0;
 	return d;
 }
 
