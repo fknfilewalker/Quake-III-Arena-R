@@ -1237,6 +1237,11 @@ typedef struct {
 	vkbuffer_t		idx_world_dynamic_as[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t		xyz_world_dynamic_as[VK_MAX_SWAPCHAIN_SIZE];
 
+	uint32_t		idx_entity_offset[VK_MAX_SWAPCHAIN_SIZE];
+	uint32_t		xyz_entity_offset[VK_MAX_SWAPCHAIN_SIZE];
+	vkbuffer_t		idx_entity[VK_MAX_SWAPCHAIN_SIZE];
+	vkbuffer_t		xyz_entity[VK_MAX_SWAPCHAIN_SIZE];
+
 	uint32_t		xyz_dynamic_offset;
 	uint32_t		idx_dynamic_offset;
 	vkbuffer_t		xyz_dynamic[VK_MAX_SWAPCHAIN_SIZE];
@@ -1314,6 +1319,8 @@ typedef struct {
 #define RTX_WORLD_DYNAMIC_DATA_IDX_SIZE 8 * 1024 
 #define RTX_WORLD_DYNAMIC_AS_XYZ_SIZE 8 * 1024
 #define RTX_WORLD_DYNAMIC_AS_IDX_SIZE 16 * 1024 
+#define RTX_ENTITY_XYZ_SIZE 16 * 1024
+#define RTX_ENTITY_IDX_SIZE 32 * 1024 
 
 #define ANIMATE_TEXTURE (tess.shader->stages[0]->bundle[0].numImageAnimations > 0)
 #define UV_CHANGES		(tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD)  && tess.shader->stages[0]->bundle[0].numTexMods > 0 /*&& tess.shader->stages[0]->bundle[0].texMods[0].type != TMOD_NONE*/) : qfalse)
@@ -1388,6 +1395,9 @@ typedef struct {
 	// world dynamic AS
 	vkbottomAS_t		bottomASWorldDynamicAS[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t			basBufferWorldDynamicAS[VK_MAX_SWAPCHAIN_SIZE];
+	// entity dynamic AS
+	vkbuffer_t			basBufferEntityAS[VK_MAX_SWAPCHAIN_SIZE];
+	VkDeviceSize		basBufferEntityASOffset[VK_MAX_SWAPCHAIN_SIZE];
 
 	// AS
 	qboolean			worldASInit;

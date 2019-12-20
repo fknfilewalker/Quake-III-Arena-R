@@ -1800,7 +1800,7 @@ static void RB_AddLightToLightList() {
 
 //#define ANIMATE_TEXTURE (tess.shader->stages[0]->bundle[0].numImageAnimations > 0)
 //#define UV_CHANGES		(tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD)  && tess.shader->stages[0]->bundle[0].numTexMods > 0) : qfalse)
-static qboolean RB_ASDataDynamic(shader_t* shader) {
+qboolean RB_ASDataDynamic(shader_t* shader) {
 	qboolean changes = qfalse;
 	for (int i = 0; i < MAX_SHADER_STAGES; i++) {
 		if (tess.shader->stages[i] != NULL && tess.shader->stages[i]->active) {
@@ -1815,7 +1815,21 @@ static qboolean RB_ASDataDynamic(shader_t* shader) {
 	}
 	return changes;
 }
-static qboolean RB_ASDynamic(shader_t* shader) {
+qboolean RB_ASDataDynamic2(shader_t* shader) {
+	qboolean changes = qfalse;
+	for (int i = 0; i < MAX_SHADER_STAGES; i++) {
+		if (tess.shader->stages[i] != NULL && tess.shader->stages[i]->active) {
+			for (int j = 0; j < NUM_TEXTURE_BUNDLES; j++) {
+				if ((shader->stages[i]->bundle[j].tcGen != TCGEN_BAD) && (shader->stages[i]->bundle[j].numTexMods > 0)) return qtrue;
+				if (shader->stages[i]->rgbGen == CGEN_WAVEFORM) {
+					return qtrue;
+				}
+			}
+		}
+	}
+	return changes;
+}
+qboolean RB_ASDynamic(shader_t* shader) {
 	return (shader->numDeforms > 0) || (backEnd.currentEntity->e.frame > 0 || backEnd.currentEntity->e.oldframe > 0);
 }
 
@@ -2003,8 +2017,8 @@ void R_BuildAccelerationStructure2() {
 		VK_EndSingleTimeCommands(&commandBuffer);
 
 		vk_d.bottomASWorldStatic.data.world = BAS_WORLD_STATIC;
-		vk_d.bottomASWorldStatic.data.texIdx = 60;
-		vk_d.bottomASWorldStatic.data.material |= MATERIAL_KIND_REGULAR;
+		//vk_d.bottomASWorldStatic.data.texIdx = 60;
+		//vk_d.bottomASWorldStatic.data.material |= MATERIAL_KIND_REGULAR;
 		vk_d.bottomASWorldStatic.geometryInstance.instanceCustomIndex = 0;
 		vk_d.bottomASWorldStatic.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 		vk_d.bottomASWorldStatic.geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
@@ -2050,8 +2064,8 @@ void R_BuildAccelerationStructure2() {
 		VK_EndSingleTimeCommands(&commandBuffer);
 
 		vk_d.bottomASWorldDynamicData.data.world = BAS_WORLD_DYNAMIC_DATA;
-		vk_d.bottomASWorldDynamicData.data.texIdx = 60;
-		vk_d.bottomASWorldDynamicData.data.material |= MATERIAL_KIND_REGULAR;
+		//vk_d.bottomASWorldDynamicData.data.texIdx = 60;
+		//vk_d.bottomASWorldDynamicData.data.material |= MATERIAL_KIND_REGULAR;
 		vk_d.bottomASWorldDynamicData.geometryInstance.instanceCustomIndex = 0;
 		vk_d.bottomASWorldDynamicData.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 		vk_d.bottomASWorldDynamicData.geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
@@ -2098,8 +2112,8 @@ void R_BuildAccelerationStructure2() {
 			VK_EndSingleTimeCommands(&commandBuffer);
 
 			vk_d.bottomASWorldDynamicAS[i].data.world = BAS_WORLD_DYNAMIC_AS;
-			vk_d.bottomASWorldDynamicAS[i].data.texIdx = 60;
-			vk_d.bottomASWorldDynamicAS[i].data.material |= MATERIAL_KIND_REGULAR;
+			//vk_d.bottomASWorldDynamicAS[i].data.texIdx = 60;
+			//vk_d.bottomASWorldDynamicAS[i].data.material |= MATERIAL_KIND_REGULAR;
 			vk_d.bottomASWorldDynamicAS[i].geometryInstance.instanceCustomIndex = 0;
 			vk_d.bottomASWorldDynamicAS[i].geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 			vk_d.bottomASWorldDynamicAS[i].geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
@@ -2227,6 +2241,8 @@ void R_BuildAccelerationStructure2() {
 		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
 		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
 		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_ENTITY, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_ENTITY, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
 
 		VK_AddSampler(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_ENVMAP, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_AddUniformBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_GLOBAL_UBO, VK_SHADER_STAGE_RAYGEN_BIT_NV);
@@ -2242,6 +2258,8 @@ void R_BuildAccelerationStructure2() {
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_world_dynamic_data[i].buffer);
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_world_dynamic_as[i].buffer);
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_world_dynamic_as[i].buffer);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_ENTITY, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_entity[i].buffer);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_ENTITY, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_entity[i].buffer);
 
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_XYZ_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_static.buffer);
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_IDX_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_static.buffer);

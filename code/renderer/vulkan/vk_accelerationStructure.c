@@ -25,7 +25,7 @@ void VK_CreateBottomAS(VkCommandBuffer commandBuffer,
 	VkMemoryRequirements2 memoryRequirements2 = { 0 };
 	VK_GetAccelerationStructureMemoryRequirements(bas->accelerationStructure, VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_OBJECT_NV, &memoryRequirements2);
 	if (memoryRequirements2.memoryRequirements.size > bottomASBuffer->allocSize - (offset != NULL ? *offset : bas->offset)) {
-		ri.Error(ERR_FATAL, "Vulkan: Top Level Buffer to small!");
+		ri.Error(ERR_FATAL, "Vulkan: Bottom Level Buffer to small!");
 	}
 	if (memoryRequirements2Scratch.memoryRequirements.size > vk_d.scratchBuffer.allocSize - vk_d.scratchBufferOffset) {
 		ri.Error(ERR_FATAL, "Vulkan: Scratch Buffer to small!");

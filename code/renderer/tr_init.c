@@ -295,6 +295,15 @@ static void InitVulkan(void)
 				VK_CreateAttributeBuffer(&vk_d.geometry.xyz_world_dynamic_as[i], RTX_WORLD_DYNAMIC_AS_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 				VK_CreateRayTracingASBuffer(&vk_d.basBufferWorldDynamicAS[i], 10 * VK_AS_MEMORY_ALLIGNMENT_SIZE * sizeof(byte));
 			}
+			// entitys
+			for (int i = 0; i < vk.swapchain.imageCount; i++) {
+				vk_d.geometry.idx_entity_offset[i] = 0;
+				vk_d.geometry.xyz_entity_offset[i] = 0;
+				VK_CreateAttributeBuffer(&vk_d.geometry.idx_entity[i], RTX_ENTITY_IDX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+				VK_CreateAttributeBuffer(&vk_d.geometry.xyz_entity[i], RTX_ENTITY_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+				vk_d.basBufferEntityASOffset[i] = 0;
+				VK_CreateRayTracingASBuffer(&vk_d.basBufferEntityAS[i], 100 * VK_AS_MEMORY_ALLIGNMENT_SIZE * sizeof(byte));
+			}
 
 			VK_CreateAttributeBuffer(&vk_d.geometry.idx_static, RTX_STATIC_INDEX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 			VK_CreateAttributeBuffer(&vk_d.geometry.xyz_static, RTX_STATIC_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -1394,6 +1403,9 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			for (int i = 0; i < vk.swapchain.imageCount; i++) {
 				vk_d.geometry.idx_world_dynamic_as_offset[i] = 0;
 				vk_d.geometry.xyz_world_dynamic_as_offset[i] = 0;
+				vk_d.geometry.idx_entity_offset[i] = 0;
+				vk_d.geometry.xyz_entity_offset[i] = 0;
+				vk_d.basBufferEntityASOffset[i] = 0;
 			}
 
 			vk_d.basBufferStaticOffset = 0;
@@ -1436,14 +1448,18 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			VK_DestroyBuffer(&vk_d.basBufferWorldDynamicData);
 			for (int i = 0; i < vk.swapchain.imageCount; i++) {
 				VK_DestroyBuffer(&vk_d.basBufferWorldDynamicAS[i]);
+				VK_DestroyBuffer(&vk_d.basBufferEntityAS[i]);
 			}
 				
 			for (int i = 0; i < vk.swapchain.imageCount; i++) {
 				if (vk_d.bottomASDynamicList[i] == NULL) free(vk_d.bottomASDynamicList[i]);
 				VK_DestroyBuffer(&vk_d.geometry.xyz_world_dynamic_data[i]);
 				VK_DestroyBuffer(&vk_d.geometry.idx_world_dynamic_data[i]);
+				VK_DestroyBuffer(&vk_d.geometry.xyz_entity[i]);
+				VK_DestroyBuffer(&vk_d.geometry.idx_entity[i]);
 				VK_DestroyBuffer(&vk_d.geometry.xyz_dynamic[i]);
 				VK_DestroyBuffer(&vk_d.geometry.idx_dynamic[i]);
+
 				VK_DestroyBuffer(&vk_d.basBufferDynamic[i]);
 				VK_DestroyBuffer(&vk_d.topASBuffer[i]);
 				VK_DestroyBuffer(&vk_d.instanceBuffer[i]);

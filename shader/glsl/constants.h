@@ -59,6 +59,9 @@
 #define BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA		0x0000000c
 #define BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS		    0x0000000f
 #define BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS		    0x00000010
+#define BINDING_OFFSET_XYZ_ENTITY		            0x00000020
+#define BINDING_OFFSET_IDX_ENTITY	                0x00000030
+
 #define BINDING_OFFSET_XYZ_DYNAMIC					0x00000009
 #define BINDING_OFFSET_IDX_DYNAMIC					0x0000000a
 #define BINDING_OFFSET_INSTANCE_DATA				0x00000004
@@ -121,8 +124,8 @@ STRUCT (
 	BOOL    (dynamic)
 	UINT    (offsetIDX)
 	UINT    (offsetXYZ)
-	UINT    (texIdx)
-	UINT    (material)
+    UINT     (texIdx0)
+    UINT     (texIdx1)
 	UINT    (blendfunc)
 	FLOAT   (opaque)
 	UINT    (type)

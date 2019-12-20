@@ -18,6 +18,7 @@ qboolean RB_StageNeedsColor(int stage) {
 		}
 	}
 	return qfalse;
+	//tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD) && tess.shader->stages[0]->bundle[0].numTexMods > 0) : qfalse;
 }
 
 uint32_t RB_GetMaterial() {
