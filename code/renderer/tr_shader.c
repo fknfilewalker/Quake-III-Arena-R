@@ -2104,13 +2104,15 @@ static void PathTracingsCollapse(void) {
 		for (int i = 0; i < MAX_SHADER_STAGES; i++) {
 			if (stages[i].active == qtrue) {
 				if (strstr(stages[i].bundle[0].image[0]->imgName, "*white") || strstr(stages[i].bundle[0].image[0]->imgName, "chrome_env") || strstr(stages[i].bundle[0].image[0]->imgName, "*identityLight") || 
-					strstr(stages[i].bundle[0].image[0]->imgName, "textures/effects") || strstr(stages[i].bundle[0].image[0]->imgName, "textures/sfx/specular") ||
+					/*strstr(stages[i].bundle[0].image[0]->imgName, "textures/effects/envmap") || */strstr(stages[i].bundle[0].image[0]->imgName, "textures/effects") || strstr(stages[i].bundle[0].image[0]->imgName, "textures/sfx/specular") ||
+					strstr(stages[i].bundle[0].image[0]->imgName, "textures/liquids/bubbles.tga") || // for green slime
+					strstr(stages[i].bundle[0].image[0]->imgName, "textures/base_trim/tinfx") || (i > 0 && strstr(stages[i].bundle[0].image[0]->imgName, "textures/base_trim/tin.tga")) ||
 					strstr(stages[i].bundle[0].image[0]->imgName, "shadow")) {
 
 					found = qtrue;
 					memset(&stages[i], 0, sizeof(shaderStage_t));
-					stages[i].active == qfalse;
-					stages[i] = stages[i + 1];
+					stages[i].active = qfalse;
+					//stages[i] = stages[i + 1];
 				}
 			}
 			if (found) stages[i] = stages[i + 1];
@@ -2118,12 +2120,12 @@ static void PathTracingsCollapse(void) {
 		if (found == qfalse)break;
 	}
 
-	if(strstr(shader.name, "bluemetalsupport")) {
+	/*if(strstr(shader.name, "bluemetalsupport")) {
 		for (int i = 0; i < MAX_SHADER_STAGES; i++) {
 			if (stages[i].active > qtrue) stages[i].active = qfalse;
 			int x = 2;
 		}
-	}
+	}*/
 }
 
 /*
