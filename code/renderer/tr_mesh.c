@@ -366,6 +366,30 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 			shader = tr.shaders[ md3Shader->shaderIndex ];
 		}
 
+		if(lod > 0) ri.Printf(PRINT_ERROR, "RTX: Lod should be 0\n");
+
+		// create bas for entity if not yet done
+		if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
+			if (tr.currentModel->bAS[lod][i] == NULL){
+				vk_d.scratchBufferOffset = 0;
+				tess.numVertexes = 0;
+				tess.numIndexes = 0;
+				RB_BeginSurface(shader, 0);
+				float originalTime = backEnd.refdef.floatTime;
+				backEnd.refdef.floatTime = originalTime;
+				tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+
+				// create bas
+				rb_surfaceTable[*((surfaceType_t*)surface)]((surfaceType_t*)surface);
+				RB_CreateBottomAS(&tr.currentModel->bAS[lod][i], qfalse);
+
+				backEnd.refdef.floatTime = originalTime;
+				tess.numVertexes = 0;
+				tess.numIndexes = 0;
+				vk_d.scratchBufferOffset = 0;
+			}
+		
+		}
 
 		// we will add shadows even if the main object isn't visible in the view
 

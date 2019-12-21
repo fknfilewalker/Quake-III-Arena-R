@@ -167,10 +167,9 @@ void RB_CreateEntityBottomAS(vkbottomAS_t** bAS) {
 
 
 void RB_CreateStaticBottomAS(vkbottomAS_t** bAS) {
-	for (int stage = 0; stage < 1/*MAX_SHADER_STAGES*/; stage++)
-	{
-		shaderStage_t* pStage = tess.shader->stages[stage];
-		if (!pStage || pStage->bundle[0].isLightmap || !pStage->active) continue;
+	
+		//shaderStage_t* pStage = tess.shader->stages[stage];
+		//if (!pStage || pStage->bundle[0].isLightmap || !pStage->active) continue;
 
 		//ComputeColors(pStage);
 		//if(UV_CHANGES) ComputeTexCoords(pStage);
@@ -227,10 +226,10 @@ void RB_CreateStaticBottomAS(vkbottomAS_t** bAS) {
 			(*xyzOffset) += 3 * tess.numVertexes;
 		}
 		else {
-			(*idxOffset) += tess.numIndexes;
-			(*xyzOffset) += tess.numVertexes;
+			(*idxOffset) += 3 *tess.numIndexes;
+			(*xyzOffset) += 3 *tess.numVertexes;
 		}
-	}
+	
 }
 
 // create a bottom as, sometimes we need one AS for each swapchain image (in order to update them independently between frames)
@@ -624,9 +623,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			|| strstr(shader->name, "Shadow") || shader->isSky) {
 			continue;
 		}
-		if (drawSurf->bAS == NULL) {
-			continue;
-		} 
+		if (shader->stages[0] == NULL || drawSurf->bAS == NULL) continue;
 		
 		// SS_BLEND0 bullets, ball around energy, glow around armore shards, armor glow ,lights/fire
 		// SS_DECAL bullet marks
@@ -670,16 +667,12 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				vk_d.geometry.idx_entity_offset[vk.swapchain.currentImage] += tess.numIndexes;
 				vk_d.geometry.xyz_entity_offset[vk.swapchain.currentImage] += tess.numVertexes;
 
-
-
 				Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
 				RB_UpdateInstanceDataBuffer(drawSurf->bAS);
 				RB_UpdateInstanceBuffer(drawSurf->bAS);
 				// add bottom to trace as list
 				memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], drawSurf->bAS, sizeof(vkbottomAS_t));
 				vk_d.bottomASTraceListCount++;
-				continue;
-
 			}
 			else if (RB_ASDynamic(tess.shader)) {
 				vkbottomAS_t *newAS = &vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]];
@@ -712,7 +705,6 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				// add bottom to trace as list
 				memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], newAS, sizeof(vkbottomAS_t));
 				vk_d.bottomASTraceListCount++;
-				continue;
 			}
 			else {
 				drawSurf->bAS->data.world = 0;
@@ -724,8 +716,8 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				// add bottom to trace as list
 				memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], drawSurf->bAS, sizeof(vkbottomAS_t));
 				vk_d.bottomASTraceListCount++;
-				continue;
 			}
+			continue;
 			//if (RB_ASDataDynamic2(tess.shader) || RB_ASDynamic(tess.shader)) {
 			//	rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
 			//	// write idx

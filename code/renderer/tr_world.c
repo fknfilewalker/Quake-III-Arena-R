@@ -343,7 +343,28 @@ void R_AddBrushModelSurfaces ( trRefEntity_t *ent ) {
 	R_DlightBmodel( bmodel );
 
 	for ( i = 0 ; i < bmodel->numSurfaces ; i++ ) {
-		R_AddWorldSurface( bmodel->firstSurface + i, tr.currentEntity->needDlights );
+		msurface_t* surf = (bmodel->firstSurface + i);
+		// create bas for world entity if not yet done
+		if (surf->bAS == NULL && !surf->added && !surf->skip
+			&& glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
+			vk_d.scratchBufferOffset = 0;
+			tess.numVertexes = 0;
+			tess.numIndexes = 0;
+			float originalTime = backEnd.refdef.floatTime;
+			RB_BeginSurface(surf->shader, 0);
+			backEnd.refdef.floatTime = originalTime;
+			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+
+			// create bas
+			rb_surfaceTable[*((surfaceType_t*)surf->data)]((surfaceType_t*)surf->data);
+			RB_CreateBottomAS(&surf->bAS, qfalse);
+
+			backEnd.refdef.floatTime = originalTime;
+			tess.numVertexes = 0;
+			tess.numIndexes = 0;
+			vk_d.scratchBufferOffset = 0;
+		}
+		R_AddWorldSurface(surf, tr.currentEntity->needDlights );
 	}
 }
 

@@ -361,24 +361,31 @@ static qboolean R_LoadMD3 (model_t *mod, int lod, void *buffer, const char *mod_
         }
 
 		//RTX
-		if (lod == 0) {
-			if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
-				shader = (md3Shader_t*)((byte*)surf + surf->ofsShaders);
-				vk_d.scratchBufferOffset = 0;
-				tess.numVertexes = 0;
-				tess.numIndexes = 0;
-				tess.shader = tr.shaders[shader->shaderIndex];
-				rb_surfaceTable[*((surfaceType_t*)surf)]((surfaceType_t*)surf);
-				RB_CreateBottomAS(&mod->bAS[lod][i], qfalse);
-				//RB_CreateEntityBottomAS(&mod->bAS[lod][i]);
-				/*for (int j = 1; j < vk.swapchain.imageCount; j++) {
-					RB_CreateEntityBottomAS(NULL);
-				}*/
-				tess.numVertexes = 0;
-				tess.numIndexes = 0;
-				vk_d.scratchBufferOffset = 0;
-			}
-		}
+		//if (lod == 0) {
+		//	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
+		//		shader = (md3Shader_t*)((byte*)surf + surf->ofsShaders);
+		//		vk_d.scratchBufferOffset = 0;
+		//		tess.numVertexes = 0;
+		//		tess.numIndexes = 0;
+		//		float originalTime = backEnd.refdef.floatTime;
+		//		/*tess.shader = tr.shaders[shader->shaderIndex]; */RB_BeginSurface(tr.shaders[shader->shaderIndex], 0);
+		//		backEnd.refdef.floatTime = originalTime;
+		//		tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+		//		if (strstr(tess.shader->name, "orbb")) {
+		//			int x = 2;
+		//		}
+		//		rb_surfaceTable[*((surfaceType_t*)surf)]((surfaceType_t*)surf);
+		//		RB_CreateBottomAS(&mod->bAS[lod][i], qfalse);
+		//		//RB_CreateEntityBottomAS(&mod->bAS[lod][i]);
+		//		/*for (int j = 1; j < vk.swapchain.imageCount; j++) {
+		//			RB_CreateEntityBottomAS(NULL);
+		//		}*/
+		//		backEnd.refdef.floatTime = originalTime;
+		//		tess.numVertexes = 0;
+		//		tess.numIndexes = 0;
+		//		vk_d.scratchBufferOffset = 0;
+		//	}
+		//}
 		
 		surf = (md3Surface_t *)( (byte *)surf + surf->ofsEnd );
 	}
