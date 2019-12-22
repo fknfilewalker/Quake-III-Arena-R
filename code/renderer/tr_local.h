@@ -298,7 +298,6 @@ typedef struct {
 	VkGeometryNV					geometries;
 	ASInstanceData					data;
 	VkGeometryInstanceNV			geometryInstance;
-	qboolean						as_for_each_swapchain_image; // [n] after this struct belong to the same object (n == swapchain image count)
 	VkDeviceSize					offset;			// offset in static or dynamic buffer
 } vkbottomAS_t;
 
@@ -1012,9 +1011,9 @@ Vulkan
 // the aligment size for AS buffers
 #define VK_AS_MEMORY_ALLIGNMENT_SIZE 65536
 
-#define VK_MAX_BOTTOM_AS 1024
-#define VK_MAX_STATIC_BOTTOM_AS_INSTANCES 1024
-#define VK_MAX_DYNAMIC_BOTTOM_AS_INSTANCES 256
+#define VK_MAX_BOTTOM_AS 512
+#define VK_MAX_STATIC_BOTTOM_AS_INSTANCES 16
+#define VK_MAX_DYNAMIC_BOTTOM_AS_INSTANCES 240
 #define VK_MAX_BOTTOM_AS_INSTANCES (VK_MAX_STATIC_BOTTOM_AS_INSTANCES + VK_MAX_DYNAMIC_BOTTOM_AS_INSTANCES)
 
 // --Pipeline parts--
@@ -1237,8 +1236,8 @@ typedef struct {
 	vkbuffer_t		idx_entity_static;
 	vkbuffer_t		xyz_entity_static;
 
-	uint32_t		idx_entity_dynamic_offset[VK_MAX_SWAPCHAIN_SIZE];
-	uint32_t		xyz_entity_dynamic_offset[VK_MAX_SWAPCHAIN_SIZE];
+	uint32_t		idx_entity_dynamic_offset;
+	uint32_t		xyz_entity_dynamic_offset;
 	vkbuffer_t		idx_entity_dynamic[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t		xyz_entity_dynamic[VK_MAX_SWAPCHAIN_SIZE];
 } vkgeometry_t;
@@ -1303,19 +1302,16 @@ typedef struct {
 } vkattachmentClearPipe_t;
 
 
-#define RTX_STATIC_XYZ_SIZE 128 * 1024
-#define RTX_STATIC_INDEX_SIZE 256 * 1024 
-#define RTX_DYNAMIC_XYZ_SIZE 64 * 1024
-#define RTX_DYNAMIC_INDEX_SIZE 128 * 1024 
-
 #define RTX_WORLD_STATIC_XYZ_SIZE 64 * 1024
 #define RTX_WORLD_STATIC_IDX_SIZE 128 * 1024 
 #define RTX_WORLD_DYNAMIC_DATA_XYZ_SIZE 4 * 1024
 #define RTX_WORLD_DYNAMIC_DATA_IDX_SIZE 8 * 1024 
 #define RTX_WORLD_DYNAMIC_AS_XYZ_SIZE 8 * 1024
 #define RTX_WORLD_DYNAMIC_AS_IDX_SIZE 16 * 1024 
-#define RTX_ENTITY_XYZ_SIZE 16 * 1024
-#define RTX_ENTITY_IDX_SIZE 32 * 1024 
+#define RTX_ENTITY_STATIC_XYZ_SIZE 128 * 1024
+#define RTX_ENTITY_STATIC_INDEX_SIZE 256 * 1024 
+#define RTX_ENTITY_DYNAMIC_XYZ_SIZE 16 * 1024
+#define RTX_ENTITY_DYNAMIC_IDX_SIZE 32 * 1024 
 
 #define ANIMATE_TEXTURE (tess.shader->stages[0]->bundle[0].numImageAnimations > 0)
 #define UV_CHANGES		(tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD)  && tess.shader->stages[0]->bundle[0].numTexMods > 0 /*&& tess.shader->stages[0]->bundle[0].texMods[0].type != TMOD_NONE*/) : qfalse)
@@ -1371,13 +1367,15 @@ typedef struct {
     vkrenderState_t     state;
 
 	// <RTX>
+	// AS
+	qboolean			worldASInit;
+
 	qboolean			portalInView;
 	viewParms_t			portalViewParms;
 	qboolean			mirrorInView;
 	viewParms_t			mirrorViewParms;
 	
 	vkaccelerationStructures_t accelerationStructures;
-	
 	// holds buffers and offsets for geometry
 	vkgeometry_t		geometry;			
 
@@ -1390,23 +1388,22 @@ typedef struct {
 	// world dynamic AS (world geometry that requieres AS updates)
 	vkbottomAS_t		bottomASWorldDynamicAS[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t			basBufferWorldDynamicAS[VK_MAX_SWAPCHAIN_SIZE];
+	// entity
 	// entity static AS (entities that do no requiere updates)
 	vkbuffer_t			basBufferEntityStatic;
 	VkDeviceSize		basBufferEntityStaticOffset;
 	// entity dynamic AS (entities that do requiere texture/color/uv or AS updates)
 	vkbuffer_t			basBufferEntityDynamic[VK_MAX_SWAPCHAIN_SIZE];
-	VkDeviceSize		basBufferEntityDynamicOffset[VK_MAX_SWAPCHAIN_SIZE];
+	VkDeviceSize		basBufferEntityDynamicOffset;
+	// holds all entity bottom as from entity dynamic AS for current frame
+	vkbottomAS_t*		bottomASDynamicList[VK_MAX_SWAPCHAIN_SIZE];
+	uint32_t			bottomASDynamicCount[VK_MAX_SWAPCHAIN_SIZE];
 
-	// AS
-	qboolean			worldASInit;
-	// holds all static bottom as
+	// holds all bottom as ever created
 	vkbottomAS_t*		bottomASList;
 	uint32_t			bottomASCount;
 
-	// holds all temporal bottom as
-	vkbottomAS_t*		bottomASDynamicList[VK_MAX_SWAPCHAIN_SIZE];
-	uint32_t			bottomASDynamicCount[VK_MAX_SWAPCHAIN_SIZE];
-	// holds all bottom as in use for current frame
+	// holds all bottom as to use for current frame
 	vkbottomAS_t*		bottomASTraceList;
 	uint32_t			bottomASTraceListCount;
 

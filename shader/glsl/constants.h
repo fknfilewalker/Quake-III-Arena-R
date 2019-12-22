@@ -120,7 +120,6 @@
 // holds material/offset/etc data for each AS Instance
 STRUCT (
     UINT    (world)
-	BOOL    (dynamic)
 	UINT    (offsetIDX)
 	UINT    (offsetXYZ)
     UINT     (texIdx0)
