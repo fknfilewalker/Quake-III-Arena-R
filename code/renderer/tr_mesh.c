@@ -381,7 +381,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 
 				// create bas
 				rb_surfaceTable[*((surfaceType_t*)surface)]((surfaceType_t*)surface);
-				RB_CreateBottomAS(&tr.currentModel->bAS[lod][i], qfalse);
+				RB_CreateEntityBottomAS(&tr.currentModel->bAS[lod][i]);
 
 				backEnd.refdef.floatTime = originalTime;
 				tess.numVertexes = 0;

@@ -113,136 +113,57 @@ void RB_CreateEntityBottomAS(vkbottomAS_t** bAS) {
 
 	shaderStage_t* pStage = tess.shader->stages[0];
 
-	for (int i = 0; i < vk.swapchain.imageCount; i++) {
-		// set offsets and 
-		uint32_t* idxOffset = &vk_d.geometry.idx_entity_offset[i];
-		uint32_t* xyzOffset = &vk_d.geometry.xyz_entity_offset[i];
-		// save bas in static or dynamic list
-		vkbottomAS_t* bASList;
-		{
-			bASList = &vk_d.bottomASList[vk_d.bottomASCount];
-		}
-		//define as geometry
-		bASList->geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
-		bASList->geometries.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
-		bASList->geometries.geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
-		bASList->geometries.geometry.triangles.vertexCount = tess.numVertexes;
-		bASList->geometries.geometry.triangles.vertexStride = sizeof(VertexBuffer);
-		bASList->geometries.geometry.triangles.indexCount = tess.numIndexes;
-		bASList->geometries.geometry.triangles.vertexOffset = (*xyzOffset) * sizeof(VertexBuffer);
-		bASList->geometries.geometry.triangles.indexOffset = (*idxOffset) * sizeof(uint32_t);
-		{
-			bASList->geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_entity[i].buffer;
-			bASList->geometries.geometry.triangles.indexData = vk_d.geometry.idx_entity[i].buffer;
-		}
-		bASList->geometries.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
-		bASList->geometries.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
-		bASList->geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
-		bASList->geometries.flags = 0;
-
-		bASList->data.offsetIDX = (*idxOffset);
-		bASList->data.offsetXYZ = (*xyzOffset);
-		// write idx
-		RB_UploadIDX(&vk_d.geometry.idx_entity[i], bASList->data.offsetIDX, 0);
-		// write xyz and other vertex attribs
-		RB_UploadXYZ(&vk_d.geometry.xyz_entity[i], bASList->data.offsetXYZ);
-
-		VkCommandBuffer commandBuffer = { 0 };
-		VK_BeginSingleTimeCommands(&commandBuffer);
-		{
-			VK_CreateBottomAS(commandBuffer, bASList, &vk_d.basBufferEntityAS[i], &vk_d.basBufferEntityASOffset[i], RTX_BOTTOM_AS_FLAG);
-		}
-		VK_EndSingleTimeCommands(&commandBuffer);
-
-		vk_d.bottomASCount++;
-
-		if (i == 0) (*bAS) = bASList;
-
-		(*idxOffset) += tess.numIndexes;
-		(*xyzOffset) += tess.numVertexes;
-		
+	// set offsets and 
+	uint32_t* idxOffset = &vk_d.geometry.idx_entity_static_offset;
+	uint32_t* xyzOffset = &vk_d.geometry.xyz_entity_static_offset;
+	// save bas in static or dynamic list
+	vkbottomAS_t* bASList;
+	{
+		bASList = &vk_d.bottomASList[vk_d.bottomASCount];
 	}
-	
-}
-
-
-void RB_CreateStaticBottomAS(vkbottomAS_t** bAS) {
-	
-		//shaderStage_t* pStage = tess.shader->stages[stage];
-		//if (!pStage || pStage->bundle[0].isLightmap || !pStage->active) continue;
-
-		//ComputeColors(pStage);
-		//if(UV_CHANGES) ComputeTexCoords(pStage);
-		
-		// set offsets and 
-		uint32_t* idxOffset;
-		uint32_t* xyzOffset;
-		// save bas in static or dynamic list
-		vkbottomAS_t* bASList;
-		{
-			idxOffset = &vk_d.geometry.idx_static_offset;
-			xyzOffset = &vk_d.geometry.xyz_static_offset;
-			bASList = &vk_d.bottomASList[vk_d.bottomASCount];
-		}
-		//define as geometry
-		bASList->geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
-		bASList->geometries.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
-		bASList->geometries.geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
-		bASList->geometries.geometry.triangles.vertexCount = tess.numVertexes;
-		bASList->geometries.geometry.triangles.vertexStride = sizeof(VertexBuffer);
-		bASList->geometries.geometry.triangles.indexCount = tess.numIndexes;
-		bASList->geometries.geometry.triangles.vertexOffset = (*xyzOffset) * sizeof(VertexBuffer);
-		bASList->geometries.geometry.triangles.indexOffset = (*idxOffset) * sizeof(uint32_t);
-		{
-			bASList->geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_static.buffer;
-			bASList->geometries.geometry.triangles.indexData = vk_d.geometry.idx_static.buffer;
-		}
-		bASList->geometries.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
-		bASList->geometries.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
-		bASList->geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
-		bASList->geometries.flags = 0;
-		
-		bASList->data.offsetIDX = (*idxOffset);
-		bASList->data.offsetXYZ = (*xyzOffset);
-		// write idx
-		RB_UploadIDX(&vk_d.geometry.idx_static, bASList->data.offsetIDX, 0);
-		//RB_WriteIDX(bASList->data.offsetIDX * sizeof(uint32_t), qfalse);
-		// write xyz and other vertex attribs
-		RB_UploadXYZ(&vk_d.geometry.xyz_static, bASList->data.offsetXYZ);
-		//RB_WriteXYZ(bASList->data.offsetXYZ * sizeof(VertexBuffer), qfalse, 0);
-
-		VkCommandBuffer commandBuffer = { 0 };
-		VK_BeginSingleTimeCommands(&commandBuffer);
-		{
-			VK_CreateBottomAS(commandBuffer, bASList, &vk_d.basBufferStatic, &vk_d.basBufferStaticOffset, RTX_BOTTOM_AS_FLAG);
-		}
-		VK_EndSingleTimeCommands(&commandBuffer);
-
-		vk_d.bottomASCount++;
-		
-		if(bAS != NULL) (*bAS) = bASList;
-		if (RTX_DYNAMIC_AS) {
-			(*idxOffset) += 3 * tess.numIndexes;
-			(*xyzOffset) += 3 * tess.numVertexes;
-		}
-		else {
-			(*idxOffset) += 3 *tess.numIndexes;
-			(*xyzOffset) += 3 *tess.numVertexes;
-		}
-	
-}
-
-// create a bottom as, sometimes we need one AS for each swapchain image (in order to update them independently between frames)
-void RB_CreateBottomAS(vkbottomAS_t** bAS, qboolean for_each_swapchain_image) {
-	RB_CreateStaticBottomAS(bAS);
-	if (RTX_DYNAMIC_AS && for_each_swapchain_image) {
-		vk_d.bottomASList[vk_d.bottomASCount-1].as_for_each_swapchain_image = qtrue;
-		for (int i = 1; i < vk.swapchain.imageCount; i++) {
-			RB_CreateStaticBottomAS(NULL);
-			RB_CreateStaticBottomAS(NULL);
-		}
+	//define as geometry
+	bASList->geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
+	bASList->geometries.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
+	bASList->geometries.geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
+	bASList->geometries.geometry.triangles.vertexCount = tess.numVertexes;
+	bASList->geometries.geometry.triangles.vertexStride = sizeof(VertexBuffer);
+	bASList->geometries.geometry.triangles.indexCount = tess.numIndexes;
+	bASList->geometries.geometry.triangles.vertexOffset = (*xyzOffset) * sizeof(VertexBuffer);
+	bASList->geometries.geometry.triangles.indexOffset = (*idxOffset) * sizeof(uint32_t);
+	{
+		bASList->geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_entity_static.buffer;
+		bASList->geometries.geometry.triangles.indexData = vk_d.geometry.idx_entity_static.buffer;
 	}
+	bASList->geometries.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+	bASList->geometries.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+	bASList->geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
+	bASList->geometries.flags = 0;
+
+	bASList->data.offsetIDX = (*idxOffset);
+	bASList->data.offsetXYZ = (*xyzOffset);
+	// write idx
+	RB_UploadIDX(&vk_d.geometry.idx_entity_static, bASList->data.offsetIDX, 0);
+	// write xyz and other vertex attribs
+	RB_UploadXYZ(&vk_d.geometry.xyz_entity_static, bASList->data.offsetXYZ);
+
+	VkCommandBuffer commandBuffer = { 0 };
+	VK_BeginSingleTimeCommands(&commandBuffer);
+	{
+		VK_CreateBottomAS(commandBuffer, bASList, &vk_d.basBufferEntityStatic, &vk_d.basBufferEntityStaticOffset, RTX_BOTTOM_AS_FLAG);
+	}
+	VK_EndSingleTimeCommands(&commandBuffer);
+
+	vk_d.bottomASCount++;
+
+	if (bAS != NULL) (*bAS) = bASList;
+
+	(*idxOffset) += tess.numIndexes;
+	(*xyzOffset) += tess.numVertexes;
+		
+	
 }
+
+
 //
 //static qboolean RB_MaterialException(vkbottomAS_t* bAS) {
 //	// -- lights --
@@ -408,122 +329,122 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&bAS->geometryInstance);
 }
 
-void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic, qboolean forceUpdate) {
-	shaderCommands_t* input  = &tess;
-	vkbottomAS_t* currentAS;
-
-	if (input->numIndexes == 0) {
-		return;
-	}
-	if (tess.shader == tr.shadowShader) return;
-	
-	// for debugging of sort order issues, stop rendering after a given sort value
-	if (r_debugSort->integer && r_debugSort->integer < tess.shader->sort) return;
-	if (tess.shader->stages[0] == NULL) return;
-
-	// just stuff
-	if (!strcmp(tess.shader->name, "textures/common/mirror2")) {
-		int aaaaa = 2;
-	}
-	if (input->shader->sort == SS_PORTAL) {
-		int x = 2l;
-	}
-	if (input->shader->sort == SS_STENCIL_SHADOW) {
-		int x = 2l;
-	}
-	
-	qboolean anim = tess.shader->stages[0]->bundle[0].numImageAnimations > 0;
-	qboolean cTex = tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD) && tess.shader->stages[0]->bundle[0].numTexMods > 0) : qfalse;
-	qboolean deform = tess.shader->numDeforms > 0;
-	qboolean frames = backEnd.currentEntity->e.frame > 0 || backEnd.currentEntity->e.oldframe > 0;
-	
-	//currentAS = bAS;
-	if (!dynamic) {
-		currentAS = bAS;
-	}
-	else {
-		if (deform || frames || forceUpdate) {
-			currentAS = &vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]];
-			currentAS->geometries = bAS->geometries;
-			currentAS->data = bAS->data;
-			currentAS->geometryInstance = bAS->geometryInstance;
-			currentAS->offset = vk_d.basBufferDynamicOffset;
-
-			currentAS->geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_dynamic[vk.swapchain.currentImage].buffer;
-			currentAS->geometries.geometry.triangles.indexData = vk_d.geometry.idx_dynamic[vk.swapchain.currentImage].buffer;
-			currentAS->geometries.geometry.triangles.indexOffset = vk_d.geometry.idx_dynamic_offset * sizeof(uint32_t);
-			currentAS->geometries.geometry.triangles.vertexOffset = vk_d.geometry.xyz_dynamic_offset * sizeof(VertexBuffer);
-			currentAS->data.offsetIDX = vk_d.geometry.idx_dynamic_offset;
-			currentAS->data.offsetXYZ = vk_d.geometry.xyz_dynamic_offset;
-		}
-		else {
-			currentAS = bAS;
-			currentAS->geometries.geometry.triangles.indexOffset = vk_d.geometry.idx_dynamic_offset * sizeof(uint32_t);
-			currentAS->geometries.geometry.triangles.vertexOffset = vk_d.geometry.xyz_dynamic_offset * sizeof(VertexBuffer);
-			currentAS->data.offsetIDX = vk_d.geometry.idx_dynamic_offset;
-			currentAS->data.offsetXYZ = vk_d.geometry.xyz_dynamic_offset;
-		}
-		currentAS->data.dynamic = qtrue;
-	}
-
-
-	if (deform) RB_DeformTessGeometry();
-	if (cTex) {
-		ComputeTexCoords(tess.shader->stages[0]);
-		//bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
-	}
-	ComputeColors(tess.shader->stages[0]);
-	
-	if (dynamic || frames || deform || cTex) {
-		//&vk_d.geometry.idx_dynamic[vk.swapchain.currentImage]
-		if (!dynamic) {
-			RB_UploadIDX(&vk_d.geometry.idx_static, currentAS->data.offsetIDX, 0);
-			RB_UploadXYZ(&vk_d.geometry.xyz_static, currentAS->data.offsetXYZ);
-		}
-		else{
-			RB_UploadIDX(&vk_d.geometry.idx_dynamic[vk.swapchain.currentImage], vk_d.geometry.idx_dynamic_offset, 0);
-			RB_UploadXYZ(&vk_d.geometry.xyz_dynamic[vk.swapchain.currentImage], vk_d.geometry.xyz_dynamic_offset);
-		}
-		//RB_WriteIDX(currentAS->geometries.geometry.triangles.indexOffset, dynamic);
-		//RB_WriteXYZ(currentAS->geometries.geometry.triangles.vertexOffset, dynamic, 0);
-	}
-	if (!dynamic && (deform || frames)) {
-
-		qboolean updateBottom = (currentAS->geometries.geometry.triangles.vertexCount >= tess.numVertexes &&
-			currentAS->geometries.geometry.triangles.indexCount == tess.numIndexes);
-
-		currentAS->geometries.geometry.triangles.vertexCount = tess.numVertexes;
-		currentAS->geometries.geometry.triangles.indexCount = tess.numIndexes;
-
-		if (updateBottom) VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), currentAS, currentAS, &vk_d.basBufferStatic, NULL, RTX_BOTTOM_AS_FLAG);
-		else  VK_RecreateBottomAS(vk.swapchain.CurrentCommandBuffer(), currentAS, &vk_d.basBufferStatic, RTX_BOTTOM_AS_FLAG);
-	}
-	if (dynamic) {
-		if (currentAS != bAS) { // (deform || frames)
-			qboolean updateBottom = (currentAS->geometries.geometry.triangles.vertexCount >= tess.numVertexes &&
-				currentAS->geometries.geometry.triangles.indexCount == tess.numIndexes);
-
-			currentAS->geometries.geometry.triangles.vertexCount = tess.numVertexes;
-			currentAS->geometries.geometry.triangles.indexCount = tess.numIndexes;
-
-			VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), bAS, currentAS, &vk_d.basBufferDynamic[vk.swapchain.currentImage], &vk_d.basBufferDynamicOffset, RTX_BOTTOM_AS_FLAG);
-			vk_d.bottomASDynamicCount[vk.swapchain.currentImage]++;
-		}
-		vk_d.geometry.idx_dynamic_offset += tess.numIndexes;
-		vk_d.geometry.xyz_dynamic_offset += tess.numVertexes;
-	}
-		
-	RB_UpdateInstanceDataBuffer(currentAS);
-	RB_UpdateInstanceBuffer(currentAS);
-	// add bottom to trace as list
-	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], currentAS, sizeof(vkbottomAS_t));
-	vk_d.bottomASTraceListCount++;
-	
-	/*RB_UpdateInstanceDataBuffer(currentAS);
-	RB_UpdateInstanceBuffer(currentAS);
-	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], currentAS, sizeof(vkbottomAS_t));
-	vk_d.bottomASTraceListCount++;*/
-}
+//void RB_AddBottomAS(vkbottomAS_t* bAS, qboolean dynamic, qboolean forceUpdate) {
+//	shaderCommands_t* input  = &tess;
+//	vkbottomAS_t* currentAS;
+//
+//	if (input->numIndexes == 0) {
+//		return;
+//	}
+//	if (tess.shader == tr.shadowShader) return;
+//	
+//	// for debugging of sort order issues, stop rendering after a given sort value
+//	if (r_debugSort->integer && r_debugSort->integer < tess.shader->sort) return;
+//	if (tess.shader->stages[0] == NULL) return;
+//
+//	// just stuff
+//	if (!strcmp(tess.shader->name, "textures/common/mirror2")) {
+//		int aaaaa = 2;
+//	}
+//	if (input->shader->sort == SS_PORTAL) {
+//		int x = 2l;
+//	}
+//	if (input->shader->sort == SS_STENCIL_SHADOW) {
+//		int x = 2l;
+//	}
+//	
+//	qboolean anim = tess.shader->stages[0]->bundle[0].numImageAnimations > 0;
+//	qboolean cTex = tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD) && tess.shader->stages[0]->bundle[0].numTexMods > 0) : qfalse;
+//	qboolean deform = tess.shader->numDeforms > 0;
+//	qboolean frames = backEnd.currentEntity->e.frame > 0 || backEnd.currentEntity->e.oldframe > 0;
+//	
+//	//currentAS = bAS;
+//	if (!dynamic) {
+//		currentAS = bAS;
+//	}
+//	else {
+//		if (deform || frames || forceUpdate) {
+//			currentAS = &vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]];
+//			currentAS->geometries = bAS->geometries;
+//			currentAS->data = bAS->data;
+//			currentAS->geometryInstance = bAS->geometryInstance;
+//			currentAS->offset = vk_d.basBufferDynamicOffset;
+//
+//			currentAS->geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_dynamic[vk.swapchain.currentImage].buffer;
+//			currentAS->geometries.geometry.triangles.indexData = vk_d.geometry.idx_dynamic[vk.swapchain.currentImage].buffer;
+//			currentAS->geometries.geometry.triangles.indexOffset = vk_d.geometry.idx_dynamic_offset * sizeof(uint32_t);
+//			currentAS->geometries.geometry.triangles.vertexOffset = vk_d.geometry.xyz_dynamic_offset * sizeof(VertexBuffer);
+//			currentAS->data.offsetIDX = vk_d.geometry.idx_dynamic_offset;
+//			currentAS->data.offsetXYZ = vk_d.geometry.xyz_dynamic_offset;
+//		}
+//		else {
+//			currentAS = bAS;
+//			currentAS->geometries.geometry.triangles.indexOffset = vk_d.geometry.idx_dynamic_offset * sizeof(uint32_t);
+//			currentAS->geometries.geometry.triangles.vertexOffset = vk_d.geometry.xyz_dynamic_offset * sizeof(VertexBuffer);
+//			currentAS->data.offsetIDX = vk_d.geometry.idx_dynamic_offset;
+//			currentAS->data.offsetXYZ = vk_d.geometry.xyz_dynamic_offset;
+//		}
+//		currentAS->data.dynamic = qtrue;
+//	}
+//
+//
+//	if (deform) RB_DeformTessGeometry();
+//	if (cTex) {
+//		ComputeTexCoords(tess.shader->stages[0]);
+//		//bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
+//	}
+//	ComputeColors(tess.shader->stages[0]);
+//	
+//	if (dynamic || frames || deform || cTex) {
+//		//&vk_d.geometry.idx_dynamic[vk.swapchain.currentImage]
+//		if (!dynamic) {
+//			RB_UploadIDX(&vk_d.geometry.idx_entity_static, currentAS->data.offsetIDX, 0);
+//			RB_UploadXYZ(&vk_d.geometry.xyz_entity_static, currentAS->data.offsetXYZ);
+//		}
+//		else{
+//			RB_UploadIDX(&vk_d.geometry.idx_dynamic[vk.swapchain.currentImage], vk_d.geometry.idx_dynamic_offset, 0);
+//			RB_UploadXYZ(&vk_d.geometry.xyz_dynamic[vk.swapchain.currentImage], vk_d.geometry.xyz_dynamic_offset);
+//		}
+//		//RB_WriteIDX(currentAS->geometries.geometry.triangles.indexOffset, dynamic);
+//		//RB_WriteXYZ(currentAS->geometries.geometry.triangles.vertexOffset, dynamic, 0);
+//	}
+//	if (!dynamic && (deform || frames)) {
+//
+//		qboolean updateBottom = (currentAS->geometries.geometry.triangles.vertexCount >= tess.numVertexes &&
+//			currentAS->geometries.geometry.triangles.indexCount == tess.numIndexes);
+//
+//		currentAS->geometries.geometry.triangles.vertexCount = tess.numVertexes;
+//		currentAS->geometries.geometry.triangles.indexCount = tess.numIndexes;
+//
+//		if (updateBottom) VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), currentAS, currentAS, &vk_d.basBufferEntityStatic, NULL, RTX_BOTTOM_AS_FLAG);
+//		else  VK_RecreateBottomAS(vk.swapchain.CurrentCommandBuffer(), currentAS, &vk_d.basBufferEntityStatic, RTX_BOTTOM_AS_FLAG);
+//	}
+//	if (dynamic) {
+//		if (currentAS != bAS) { // (deform || frames)
+//			qboolean updateBottom = (currentAS->geometries.geometry.triangles.vertexCount >= tess.numVertexes &&
+//				currentAS->geometries.geometry.triangles.indexCount == tess.numIndexes);
+//
+//			currentAS->geometries.geometry.triangles.vertexCount = tess.numVertexes;
+//			currentAS->geometries.geometry.triangles.indexCount = tess.numIndexes;
+//
+//			VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), bAS, currentAS, &vk_d.basBufferDynamic[vk.swapchain.currentImage], &vk_d.basBufferDynamicOffset, RTX_BOTTOM_AS_FLAG);
+//			vk_d.bottomASDynamicCount[vk.swapchain.currentImage]++;
+//		}
+//		vk_d.geometry.idx_dynamic_offset += tess.numIndexes;
+//		vk_d.geometry.xyz_dynamic_offset += tess.numVertexes;
+//	}
+//		
+//	RB_UpdateInstanceDataBuffer(currentAS);
+//	RB_UpdateInstanceBuffer(currentAS);
+//	// add bottom to trace as list
+//	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], currentAS, sizeof(vkbottomAS_t));
+//	vk_d.bottomASTraceListCount++;
+//	
+//	/*RB_UpdateInstanceDataBuffer(currentAS);
+//	RB_UpdateInstanceBuffer(currentAS);
+//	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], currentAS, sizeof(vkbottomAS_t));
+//	vk_d.bottomASTraceListCount++;*/
+//}
 
 
 static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
@@ -655,17 +576,17 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			}
 
 			if (RB_ASDataDynamic(tess.shader) && !RB_ASDynamic(tess.shader)) {
-				drawSurf->bAS->data.world = BAS_ENTITY;
+				drawSurf->bAS->data.world = BAS_ENTITY_DYNAMIC;
 
 				rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
 
-				drawSurf->bAS->data.offsetIDX = vk_d.geometry.idx_entity_offset[vk.swapchain.currentImage];
-				drawSurf->bAS->data.offsetXYZ = vk_d.geometry.xyz_entity_offset[vk.swapchain.currentImage];
-				RB_UploadIDX(&vk_d.geometry.idx_entity[vk.swapchain.currentImage], drawSurf->bAS->data.offsetIDX, 0);
-				RB_UploadXYZ(&vk_d.geometry.xyz_entity[vk.swapchain.currentImage], drawSurf->bAS->data.offsetXYZ);
+				drawSurf->bAS->data.offsetIDX = vk_d.geometry.idx_entity_dynamic_offset[vk.swapchain.currentImage];
+				drawSurf->bAS->data.offsetXYZ = vk_d.geometry.xyz_entity_dynamic_offset[vk.swapchain.currentImage];
+				RB_UploadIDX(&vk_d.geometry.idx_entity_dynamic[vk.swapchain.currentImage], drawSurf->bAS->data.offsetIDX, 0);
+				RB_UploadXYZ(&vk_d.geometry.xyz_entity_dynamic[vk.swapchain.currentImage], drawSurf->bAS->data.offsetXYZ);
 
-				vk_d.geometry.idx_entity_offset[vk.swapchain.currentImage] += tess.numIndexes;
-				vk_d.geometry.xyz_entity_offset[vk.swapchain.currentImage] += tess.numVertexes;
+				vk_d.geometry.idx_entity_dynamic_offset[vk.swapchain.currentImage] += tess.numIndexes;
+				vk_d.geometry.xyz_entity_dynamic_offset[vk.swapchain.currentImage] += tess.numVertexes;
 
 				Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
 				RB_UpdateInstanceDataBuffer(drawSurf->bAS);
@@ -678,26 +599,26 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				vkbottomAS_t *newAS = &vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]];
 				memcpy(newAS, drawSurf->bAS, sizeof(vkbottomAS_t));
 
-				newAS->data.world = BAS_ENTITY;
+				newAS->data.world = BAS_ENTITY_DYNAMIC;
 
 				rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
 				RB_DeformTessGeometry();
 
-				newAS->data.offsetIDX = vk_d.geometry.idx_entity_offset[vk.swapchain.currentImage];
-				newAS->data.offsetXYZ = vk_d.geometry.xyz_entity_offset[vk.swapchain.currentImage];
-				RB_UploadIDX(&vk_d.geometry.idx_entity[vk.swapchain.currentImage], newAS->data.offsetIDX, 0);
-				RB_UploadXYZ(&vk_d.geometry.xyz_entity[vk.swapchain.currentImage], newAS->data.offsetXYZ);
+				newAS->data.offsetIDX = vk_d.geometry.idx_entity_dynamic_offset[vk.swapchain.currentImage];
+				newAS->data.offsetXYZ = vk_d.geometry.xyz_entity_dynamic_offset[vk.swapchain.currentImage];
+				RB_UploadIDX(&vk_d.geometry.idx_entity_dynamic[vk.swapchain.currentImage], newAS->data.offsetIDX, 0);
+				RB_UploadXYZ(&vk_d.geometry.xyz_entity_dynamic[vk.swapchain.currentImage], newAS->data.offsetXYZ);
 
 				newAS->geometries.geometry.triangles.indexOffset = newAS->data.offsetIDX * sizeof(uint32_t);
 				newAS->geometries.geometry.triangles.vertexOffset = newAS->data.offsetXYZ * sizeof(VertexBuffer);
-				newAS->geometries.geometry.triangles.indexData = vk_d.geometry.idx_entity[vk.swapchain.currentImage].buffer;
-				newAS->geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_entity[vk.swapchain.currentImage].buffer;
+				newAS->geometries.geometry.triangles.indexData = vk_d.geometry.idx_entity_dynamic[vk.swapchain.currentImage].buffer;
+				newAS->geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_entity_dynamic[vk.swapchain.currentImage].buffer;
 
-				vk_d.geometry.idx_entity_offset[vk.swapchain.currentImage] += tess.numIndexes;
-				vk_d.geometry.xyz_entity_offset[vk.swapchain.currentImage] += tess.numVertexes;
+				vk_d.geometry.idx_entity_dynamic_offset[vk.swapchain.currentImage] += tess.numIndexes;
+				vk_d.geometry.xyz_entity_dynamic_offset[vk.swapchain.currentImage] += tess.numVertexes;
 
 				
-				VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), drawSurf->bAS, newAS, &vk_d.basBufferEntityAS, &vk_d.basBufferEntityASOffset[vk.swapchain.currentImage], RTX_BOTTOM_AS_FLAG);
+				VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), drawSurf->bAS, newAS, &vk_d.basBufferEntityDynamic, &vk_d.basBufferEntityDynamicOffset[vk.swapchain.currentImage], RTX_BOTTOM_AS_FLAG);
 
 				Com_Memcpy(&newAS->geometryInstance.transform, &tM, sizeof(float[12]));
 				RB_UpdateInstanceDataBuffer(newAS);
@@ -707,7 +628,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				vk_d.bottomASTraceListCount++;
 			}
 			else {
-				drawSurf->bAS->data.world = 0;
+				drawSurf->bAS->data.world = BAS_ENTITY_STATIC;
 				drawSurf->bAS->data.dynamic = qfalse;
 
 				Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
@@ -721,9 +642,9 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			//if (RB_ASDataDynamic2(tess.shader) || RB_ASDynamic(tess.shader)) {
 			//	rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
 			//	// write idx
-			//	RB_UploadIDX(&vk_d.geometry.idx_entity[vk.swapchain.currentImage], drawSurf->bAS[vk.swapchain.currentImage].data.offsetIDX, 0);
+			//	RB_UploadIDX(&vk_d.geometry.idx_entity_dynamic[vk.swapchain.currentImage], drawSurf->bAS[vk.swapchain.currentImage].data.offsetIDX, 0);
 			//	// write xyz and other vertex attribs
-			//	RB_UploadXYZ(&vk_d.geometry.xyz_entity[vk.swapchain.currentImage], drawSurf->bAS[vk.swapchain.currentImage].data.offsetXYZ);
+			//	RB_UploadXYZ(&vk_d.geometry.xyz_entity_dynamic[vk.swapchain.currentImage], drawSurf->bAS[vk.swapchain.currentImage].data.offsetXYZ);
 
 			//	if (RB_ASDynamic(tess.shader)) {
 			//		RB_DeformTessGeometry();
@@ -731,8 +652,8 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			//			int a = 2;
 			//		}
 			//		VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), &drawSurf->bAS[vk.swapchain.currentImage], 
-			//			&drawSurf->bAS[vk.swapchain.currentImage], &vk_d.basBufferEntityAS, NULL, RTX_BOTTOM_AS_FLAG);
-			//		//VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), currentAS, currentAS, &vk_d.basBufferStatic, NULL, RTX_BOTTOM_AS_FLAG);
+			//			&drawSurf->bAS[vk.swapchain.currentImage], &vk_d.basBufferEntityDynamic, NULL, RTX_BOTTOM_AS_FLAG);
+			//		//VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), currentAS, currentAS, &vk_d.basBufferEntityStatic, NULL, RTX_BOTTOM_AS_FLAG);
 			//	}
 			//}
 			//drawSurf->bAS[vk.swapchain.currentImage].data.world = BAS_ENTITY;
@@ -765,7 +686,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		}
 		//"models/mapobjects/gratelamp/gratelamp_b.tga" ...}, ...} ...}, ...}	textureBundle_t[2]
 
-
+		continue;
 		// add the triangles for this surface
 		rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
 		
@@ -830,14 +751,14 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		}
 		
 		
-		if (drawSurf->bAS->as_for_each_swapchain_image) {
+		/*if (drawSurf->bAS->as_for_each_swapchain_image) {
 			Com_Memcpy(&drawSurf->bAS[vk.swapchain.currentImage].geometryInstance.transform, &tM, sizeof(float[12]));
 			RB_AddBottomAS(&drawSurf->bAS[vk.swapchain.currentImage], dynamic, forceUpdate);
 		}
 		else {
 			Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
 			RB_AddBottomAS(drawSurf->bAS, dynamic, forceUpdate);
-		}
+		}*/
 	}
 	backEnd.refdef.floatTime = originalTime;
 
@@ -967,14 +888,11 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	for (int i = 0; i < vk_d.bottomASDynamicCount[vk.swapchain.currentImage]; i++) {
 		VK_DestroyBottomAccelerationStructure(&vk_d.bottomASDynamicList[vk.swapchain.currentImage][i]);
 	}
-	vk_d.basBufferDynamicOffset = 0;
 	vk_d.bottomASDynamicCount[vk.swapchain.currentImage] = 0;
-	vk_d.geometry.xyz_dynamic_offset = 0;
-	vk_d.geometry.idx_dynamic_offset = 0;
 
-	vk_d.basBufferEntityASOffset[vk.swapchain.currentImage] = 0;
-	vk_d.geometry.idx_entity_offset[vk.swapchain.currentImage] = 0;
-	vk_d.geometry.xyz_entity_offset[vk.swapchain.currentImage] = 0;
+	vk_d.basBufferEntityDynamicOffset[vk.swapchain.currentImage] = 0;
+	vk_d.geometry.idx_entity_dynamic_offset[vk.swapchain.currentImage] = 0;
+	vk_d.geometry.xyz_entity_dynamic_offset[vk.swapchain.currentImage] = 0;
 
 	vk_d.bottomASTraceListCount = 0;
 	vk_d.scratchBufferOffset = 0;
@@ -1006,8 +924,8 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	//VK_UnmapBuffer(&vk_d.uboBuffer[vk.swapchain.currentImage]);
 	//VK_UnmapBuffer(&vk_d.uboLightList[vk.swapchain.currentImage]);
 	//VK_UnmapBuffer(&vk_d.instanceDataBuffer[vk.swapchain.currentImage]);
-	//VK_UnmapBuffer(&vk_d.geometry.idx_static);
-	//VK_UnmapBuffer(&vk_d.geometry.xyz_static);
+	//VK_UnmapBuffer(&vk_d.geometry.idx_entity_static);
+	//VK_UnmapBuffer(&vk_d.geometry.xyz_entity_static);
 	//VK_UnmapBuffer(&vk_d.geometry.xyz_dynamic[vk.swapchain.currentImage]);
 	//VK_UnmapBuffer(&vk_d.geometry.idx_dynamic[vk.swapchain.currentImage]);
 	

@@ -1217,11 +1217,6 @@ typedef struct {
 } vkrtpipeline_t;
 
 typedef struct {
-	uint32_t		idx_static_offset;
-	uint32_t		xyz_static_offset;
-	vkbuffer_t		idx_static;
-	vkbuffer_t		xyz_static;
-
 	uint32_t		idx_world_static_offset;
 	uint32_t		xyz_world_static_offset;
 	vkbuffer_t		idx_world_static;
@@ -1237,15 +1232,15 @@ typedef struct {
 	vkbuffer_t		idx_world_dynamic_as[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t		xyz_world_dynamic_as[VK_MAX_SWAPCHAIN_SIZE];
 
-	uint32_t		idx_entity_offset[VK_MAX_SWAPCHAIN_SIZE];
-	uint32_t		xyz_entity_offset[VK_MAX_SWAPCHAIN_SIZE];
-	vkbuffer_t		idx_entity[VK_MAX_SWAPCHAIN_SIZE];
-	vkbuffer_t		xyz_entity[VK_MAX_SWAPCHAIN_SIZE];
+	uint32_t		idx_entity_static_offset;
+	uint32_t		xyz_entity_static_offset;
+	vkbuffer_t		idx_entity_static;
+	vkbuffer_t		xyz_entity_static;
 
-	uint32_t		xyz_dynamic_offset;
-	uint32_t		idx_dynamic_offset;
-	vkbuffer_t		xyz_dynamic[VK_MAX_SWAPCHAIN_SIZE];
-	vkbuffer_t		idx_dynamic[VK_MAX_SWAPCHAIN_SIZE];
+	uint32_t		idx_entity_dynamic_offset[VK_MAX_SWAPCHAIN_SIZE];
+	uint32_t		xyz_entity_dynamic_offset[VK_MAX_SWAPCHAIN_SIZE];
+	vkbuffer_t		idx_entity_dynamic[VK_MAX_SWAPCHAIN_SIZE];
+	vkbuffer_t		xyz_entity_dynamic[VK_MAX_SWAPCHAIN_SIZE];
 } vkgeometry_t;
 
 typedef struct {
@@ -1386,18 +1381,21 @@ typedef struct {
 	// holds buffers and offsets for geometry
 	vkgeometry_t		geometry;			
 
-	// world static
+	// world static (world geometry that does not requiere updates)
 	vkbottomAS_t		bottomASWorldStatic;
 	vkbuffer_t			basBufferStaticWorld;
-	// world dynamic data
+	// world dynamic data (world geometry that requieres texture/color or uv updates)
 	vkbottomAS_t		bottomASWorldDynamicData;
 	vkbuffer_t			basBufferWorldDynamicData;
-	// world dynamic AS
+	// world dynamic AS (world geometry that requieres AS updates)
 	vkbottomAS_t		bottomASWorldDynamicAS[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t			basBufferWorldDynamicAS[VK_MAX_SWAPCHAIN_SIZE];
-	// entity dynamic AS
-	vkbuffer_t			basBufferEntityAS[VK_MAX_SWAPCHAIN_SIZE];
-	VkDeviceSize		basBufferEntityASOffset[VK_MAX_SWAPCHAIN_SIZE];
+	// entity static AS (entities that do no requiere updates)
+	vkbuffer_t			basBufferEntityStatic;
+	VkDeviceSize		basBufferEntityStaticOffset;
+	// entity dynamic AS (entities that do requiere texture/color/uv or AS updates)
+	vkbuffer_t			basBufferEntityDynamic[VK_MAX_SWAPCHAIN_SIZE];
+	VkDeviceSize		basBufferEntityDynamicOffset[VK_MAX_SWAPCHAIN_SIZE];
 
 	// AS
 	qboolean			worldASInit;
@@ -1412,9 +1410,6 @@ typedef struct {
 	vkbottomAS_t*		bottomASTraceList;
 	uint32_t			bottomASTraceListCount;
 
-	// BOTTOM AS (Buffer) for top an bottom as
-	vkbuffer_t			basBufferStatic;
-	VkDeviceSize		basBufferStaticOffset;
 
 	struct {
 		uint32_t offsetIDX;
@@ -1434,8 +1429,6 @@ typedef struct {
 	} updateASOffsetXYZ[3500];
 	uint32_t			updateASOffsetXYZCount;
 
-	vkbuffer_t			basBufferDynamic[VK_MAX_SWAPCHAIN_SIZE];
-	VkDeviceSize		basBufferDynamicOffset;
 	// Top AS (Buffers) for each swapchain image
 	vktopAS_t			topAS[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t			topASBuffer[VK_MAX_SWAPCHAIN_SIZE];

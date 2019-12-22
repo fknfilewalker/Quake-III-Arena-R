@@ -357,7 +357,7 @@ void R_AddBrushModelSurfaces ( trRefEntity_t *ent ) {
 
 			// create bas
 			rb_surfaceTable[*((surfaceType_t*)surf->data)]((surfaceType_t*)surf->data);
-			RB_CreateBottomAS(&surf->bAS, qfalse);
+			RB_CreateEntityBottomAS(&surf->bAS);
 
 			backEnd.refdef.floatTime = originalTime;
 			tess.numVertexes = 0;

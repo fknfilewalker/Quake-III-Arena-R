@@ -42,19 +42,16 @@ struct TextureData {
 // buffer with instance data
 layout(binding = BINDING_OFFSET_INSTANCE_DATA, set = 0) buffer Instance { ASInstanceData data[]; } iData;
 // Buffer with indices and vertices
-layout(binding = BINDING_OFFSET_IDX_STATIC, set = 0) buffer Indices_static { uint i[]; } indices_static;
-layout(binding = BINDING_OFFSET_XYZ_STATIC, set = 0) buffer Vertices_static { VertexBuffer v[]; } vertices_static;
-layout(binding = BINDING_OFFSET_IDX_DYNAMIC, set = 0) buffer Indices_dynamic { uint i[]; } indices_dynamic;
-layout(binding = BINDING_OFFSET_XYZ_DYNAMIC, set = 0) buffer Vertices_dynamic { VertexBuffer v[]; } vertices_dynamic;
-
 layout(binding = BINDING_OFFSET_IDX_WORLD_STATIC, set = 0) buffer Indices_World_static { uint i[]; } indices_world_static;
 layout(binding = BINDING_OFFSET_XYZ_WORLD_STATIC, set = 0) buffer Vertices_World_static { VertexBuffer v[]; } vertices_world_static;
 layout(binding = BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA, set = 0) buffer Indices_dynamic_data { uint i[]; } indices_dynamic_data;
 layout(binding = BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA, set = 0) buffer Vertices_dynamic_data { VertexBuffer v[]; } vertices_dynamic_data;
 layout(binding = BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS, set = 0) buffer Indices_dynamic_as { uint i[]; } indices_dynamic_as;
 layout(binding = BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS, set = 0) buffer Vertices_dynamic_as { VertexBuffer v[]; } vertices_dynamic_as;
-layout(binding = BINDING_OFFSET_IDX_ENTITY, set = 0) buffer Indices_entity { uint i[]; } indices_entity;
-layout(binding = BINDING_OFFSET_XYZ_ENTITY, set = 0) buffer Vertices_entity { VertexBuffer v[]; } vertices_entity;
+layout(binding = BINDING_OFFSET_IDX_ENTITY_STATIC, set = 0) buffer Indices_entity_static { uint i[]; } indices_entity_static;
+layout(binding = BINDING_OFFSET_XYZ_ENTITY_STATIC, set = 0) buffer Vertices_entity_static { VertexBuffer v[]; } vertices_entity_static;
+layout(binding = BINDING_OFFSET_IDX_ENTITY_DYNAMIC, set = 0) buffer Indices_entity_dynamic { uint i[]; } indices_entity_dynamic;
+layout(binding = BINDING_OFFSET_XYZ_ENTITY_DYNAMIC, set = 0) buffer Vertices_entity_dynamic { VertexBuffer v[]; } vertices_entity_dynamic;
 
 vec3 getBarycentricCoordinates(vec2 hitAttribute) { return vec3(1.0f - hitAttribute.x - hitAttribute.y, hitAttribute.x, hitAttribute.y); }
 
@@ -69,44 +66,29 @@ vec4 unpackColor(uint color) {
 
 Triangle getTriangle(RayPayload rp){
 // if(iData.data[rp.instanceID].world) {
-// 		ivec3 index = ivec3(indices_static.i[iData.data[rp.instanceID].offsetIDX + 3 * rp.primitiveID], indices_static.i[iData.data[rp.instanceID].offsetIDX + 3 * rp.primitiveID + 1], indices_static.i[iData.data[rp.instanceID].offsetIDX + 3 * rp.primitiveID + 2]);
+// 		ivec3 index = ivec3(indices_entity_static.i[iData.data[rp.instanceID].offsetIDX + 3 * rp.primitiveID], indices_entity_static.i[iData.data[rp.instanceID].offsetIDX + 3 * rp.primitiveID + 1], indices_entity_static.i[iData.data[rp.instanceID].offsetIDX + 3 * rp.primitiveID + 2]);
 
 // 		const vec3 barycentricCoords = vec3(1.0f - rp.barycentric.x - rp.barycentric.y, rp.barycentric.x, rp.barycentric.y);
-// 		vec2 uv = 		vertices_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].uv.xy * barycentricCoords.x +
-//                   	vertices_static.v[index.y + iData.data[rp.instanceID].offsetXYZ].uv.xy * barycentricCoords.y +
-//                   	vertices_static.v[index.z + iData.data[rp.instanceID].offsetXYZ].uv.xy * barycentricCoords.z;
-// 		color = global_textureGrad(int(vertices_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].pos.w), uv, tex_coord_x, tex_coord_y);
+// 		vec2 uv = 		vertices_entity_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].uv.xy * barycentricCoords.x +
+//                   	vertices_entity_static.v[index.y + iData.data[rp.instanceID].offsetXYZ].uv.xy * barycentricCoords.y +
+//                   	vertices_entity_static.v[index.z + iData.data[rp.instanceID].offsetXYZ].uv.xy * barycentricCoords.z;
+// 		color = global_textureGrad(int(vertices_entity_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].pos.w), uv, tex_coord_x, tex_coord_y);
 // 	}
 
   	uint customIndex = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID * 3);
 	ivec3 index;
-	if(!iData.data[rp.instanceID].dynamic) index = (ivec3(indices_static.i[customIndex], indices_static.i[customIndex + 1], indices_static.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
-	else index = (ivec3(indices_dynamic.i[customIndex], indices_dynamic.i[customIndex + 1], indices_dynamic.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
-	//if(!iData.data[rp.instanceID].world) index + int(iData.data[rp.instanceID].offsetXYZ);
-
 	if(iData.data[rp.instanceID].world == BAS_WORLD_STATIC) index = (ivec3(indices_world_static.i[customIndex], indices_world_static.i[customIndex + 1], indices_world_static.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
 	else if(iData.data[rp.instanceID].world == BAS_WORLD_DYNAMIC_DATA)  index = (ivec3(indices_dynamic_data.i[customIndex], indices_dynamic_data.i[customIndex + 1], indices_dynamic_data.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
 	else if(iData.data[rp.instanceID].world == BAS_WORLD_DYNAMIC_AS)  index = (ivec3(indices_dynamic_as.i[customIndex], indices_dynamic_as.i[customIndex + 1], indices_dynamic_as.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
-	else if(iData.data[rp.instanceID].world == BAS_ENTITY)  index = (ivec3(indices_entity.i[customIndex], indices_entity.i[customIndex + 1], indices_entity.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
-
+	else if(iData.data[rp.instanceID].world == BAS_ENTITY_STATIC)  index = (ivec3(indices_entity_static.i[customIndex], indices_entity_static.i[customIndex + 1], indices_entity_static.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
+	else if(iData.data[rp.instanceID].world == BAS_ENTITY_DYNAMIC)  index = (ivec3(indices_entity_dynamic.i[customIndex], indices_entity_dynamic.i[customIndex + 1], indices_entity_dynamic.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
 
 	VertexBuffer vData[3];
-	if(!iData.data[rp.instanceID].dynamic) {
-		vData[0] = vertices_static.v[index.x];
-		vData[1] = vertices_static.v[index.y];
-		vData[2] = vertices_static.v[index.z];
-	}
-	else {
-		vData[0] = vertices_dynamic.v[index.x];
-		vData[1] = vertices_dynamic.v[index.y];
-		vData[2] = vertices_dynamic.v[index.z];
-	}
 	if(iData.data[rp.instanceID].world == BAS_WORLD_STATIC){
 		vData[0] = vertices_world_static.v[index.x];
 		vData[1] = vertices_world_static.v[index.y];
 		vData[2] = vertices_world_static.v[index.z];
-	}
-	else if(iData.data[rp.instanceID].world == BAS_WORLD_DYNAMIC_DATA){
+	}else if(iData.data[rp.instanceID].world == BAS_WORLD_DYNAMIC_DATA){
 		vData[0] = vertices_dynamic_data.v[index.x];
 		vData[1] = vertices_dynamic_data.v[index.y];
 		vData[2] = vertices_dynamic_data.v[index.z];
@@ -114,17 +96,18 @@ Triangle getTriangle(RayPayload rp){
 		vData[0] = vertices_dynamic_as.v[index.x];
 		vData[1] = vertices_dynamic_as.v[index.y];
 		vData[2] = vertices_dynamic_as.v[index.z];
-	}else if(iData.data[rp.instanceID].world == BAS_ENTITY){
-		vData[0] = vertices_entity.v[index.x];
-		vData[1] = vertices_entity.v[index.y];
-		vData[2] = vertices_entity.v[index.z];
+	}else if(iData.data[rp.instanceID].world == BAS_ENTITY_STATIC){
+		vData[0] = vertices_entity_static.v[index.x];
+		vData[1] = vertices_entity_static.v[index.y];
+		vData[2] = vertices_entity_static.v[index.z];
+	}else if(iData.data[rp.instanceID].world == BAS_ENTITY_DYNAMIC){
+		vData[0] = vertices_entity_dynamic.v[index.x];
+		vData[1] = vertices_entity_dynamic.v[index.y];
+		vData[2] = vertices_entity_dynamic.v[index.z];
 	}
 
 	Triangle hitTriangle;
 	// POS
-	// hitTriangle.pos[0] = vData[0].pos.xyz;
-	// hitTriangle.pos[1] = vData[1].pos.xyz;
-	// hitTriangle.pos[2] = vData[2].pos.xyz;
 	// Some Entitiys are in Object Space
 	hitTriangle.pos[0] = (rp.modelmat * vec4(vData[0].pos.xyz, 1)).xyz;
 	hitTriangle.pos[1] = (rp.modelmat * vec4(vData[1].pos.xyz, 1)).xyz;
@@ -182,7 +165,11 @@ Triangle getTriangle(RayPayload rp){
 			hitTriangle.tex0 = (vertices_dynamic_as.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx0);
 			hitTriangle.tex1 = (vertices_dynamic_as.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx1);
 			break;
-		case BAS_ENTITY:
+		case BAS_ENTITY_STATIC:
+			hitTriangle.tex0 = (iData.data[rp.instanceID].texIdx0);
+			hitTriangle.tex1 = (iData.data[rp.instanceID].texIdx1);
+			break;
+		case BAS_ENTITY_DYNAMIC:
 			hitTriangle.tex0 = (iData.data[rp.instanceID].texIdx0);
 			hitTriangle.tex1 = (iData.data[rp.instanceID].texIdx1);
 			break;
@@ -190,8 +177,6 @@ Triangle getTriangle(RayPayload rp){
 			hitTriangle.tex0 = (iData.data[rp.instanceID].texIdx0);
 			hitTriangle.tex1 = (iData.data[rp.instanceID].texIdx1);
 	}
-
-	
 
 	return hitTriangle;
 }
@@ -236,6 +221,7 @@ HitPoint getHitPoint(RayPayload rp){
 	return hitPoint;
 }
 
+// unpack texture idx, blend/add, and req color, data
 TextureData unpackTextureData(uint data){
 	TextureData d;
 	d.tex0 = int(data & TEX0_IDX_MASK);
@@ -289,22 +275,4 @@ is_player(RayPayload rp) // for shadows etc, so the third person model does not 
 	if(iData.data[rp.instanceID].world == BAS_WORLD_STATIC) return false;
 	return false;
 	//return (iData.data[rp.instanceID].material & MATERIAL_FLAG_MASK) == MATERIAL_FLAG_PLAYER_OR_WEAPON;
-}
-
-bool
-needs_color(RayPayload rp)
-{
-	uint customIndex = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID * 3);
-	ivec3 index;
-	switch(iData.data[rp.instanceID].world){
-		case BAS_WORLD_STATIC:
-			index = (ivec3(indices_world_static.i[customIndex], indices_world_static.i[customIndex + 1], indices_world_static.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
-			return (vertices_world_static.v[index.x].material & MATERIAL_FLAG_NEEDSCOLOR) == MATERIAL_FLAG_NEEDSCOLOR;
-		case BAS_WORLD_DYNAMIC_DATA:
-			index = (ivec3(indices_dynamic_data.i[customIndex], indices_dynamic_data.i[customIndex + 1], indices_dynamic_data.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
-			return (vertices_dynamic_data.v[index.x].material & MATERIAL_FLAG_NEEDSCOLOR) == MATERIAL_FLAG_NEEDSCOLOR;
-		default:
-			//return (iData.data[rp.instanceID].material & MATERIAL_FLAG_NEEDSCOLOR) == MATERIAL_FLAG_NEEDSCOLOR;
-	}
-	return false;
 }
