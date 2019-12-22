@@ -1894,12 +1894,12 @@ void R_Recursive(mnode_t* node, uint32_t *offsetIDXstatic, uint32_t *offsetXYZst
 			 
 			if (!surf->added && !surf->skip) {
 				
-				//if (strstr(tess.shader->name, "base_light") || strstr(tess.shader->name, "gothic_light") || strstr(tess.shader->name, "eye")) { // all lamp textures
-				//	RB_AddLightToLightList();
-				//}
-				//else if (strstr(tess.shader->name, "flame")) { // all fire textures
-				//	RB_AddLightToLightList();
-				//}
+				if (strstr(tess.shader->name, "base_light") || strstr(tess.shader->name, "gothic_light") || strstr(tess.shader->name, "eye")) { // all lamp textures
+					RB_AddLightToLightList();
+				}
+				else if (strstr(tess.shader->name, "flame")) { // all fire textures
+					RB_AddLightToLightList();
+				}
 				//if(strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "bluemetalsupport2eye"))
 				//{ int x = 1; }
 				

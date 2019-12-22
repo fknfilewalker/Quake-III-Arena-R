@@ -232,8 +232,6 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 	// set texture id and calc texture animation
 	//int indexAnim = RB_GetNextTex(0);
 
-
-
 	uint32_t tex0 = (RB_GetNextTexEncoded(0)) | (RB_GetNextTexEncoded(1) << TEX_SHIFT_BITS);
 	uint32_t tex1 = (RB_GetNextTexEncoded(2)) | (RB_GetNextTexEncoded(3) << TEX_SHIFT_BITS);
 	bAS->data.texIdx0 = tex0;

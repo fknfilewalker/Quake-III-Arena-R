@@ -235,6 +235,31 @@ TextureData unpackTextureData(uint data){
 	return d;
 }
 
+uint 
+get_material(RayPayload rp){
+	uint customIndex = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID * 3);
+	ivec3 index;
+	switch(iData.data[rp.instanceID].world){
+		case BAS_WORLD_STATIC:
+			index = (ivec3(indices_world_static.i[customIndex], indices_world_static.i[customIndex + 1], indices_world_static.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
+			return vertices_world_static.v[index.x].material;
+		case BAS_WORLD_DYNAMIC_DATA:
+			index = (ivec3(indices_dynamic_data.i[customIndex], indices_dynamic_data.i[customIndex + 1], indices_dynamic_data.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
+			return vertices_dynamic_data.v[index.x].material;
+		case BAS_WORLD_DYNAMIC_AS:
+			index = (ivec3(indices_dynamic_as.i[customIndex], indices_dynamic_as.i[customIndex + 1], indices_dynamic_as.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
+			return vertices_dynamic_as.v[index.x].material;
+		case BAS_ENTITY_STATIC:
+			index = (ivec3(indices_entity_static.i[customIndex], indices_entity_static.i[customIndex + 1], indices_entity_static.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
+			return vertices_entity_static.v[index.x].material;
+		case BAS_ENTITY_DYNAMIC:
+			index = (ivec3(indices_entity_dynamic.i[customIndex], indices_entity_dynamic.i[customIndex + 1], indices_entity_dynamic.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
+			return vertices_entity_dynamic.v[index.x].material;
+		default:
+			return 0;
+	}
+}
+
 bool
 found_intersection(RayPayload rp)
 {
@@ -243,36 +268,22 @@ found_intersection(RayPayload rp)
 bool
 is_light(RayPayload rp)
 {
-	if(iData.data[rp.instanceID].world == BAS_WORLD_STATIC) {
-		uint customIndex = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID * 3);
-		ivec3 index = (ivec3(indices_world_static.i[customIndex], indices_world_static.i[customIndex + 1], indices_world_static.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
-		return (vertices_world_static.v[index.x].material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT;
-	}
-	return false;
-	//return (iData.data[rp.instanceID].material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT;
+	return (get_material(rp) & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT;
+	
 }
 bool
 is_mirror(RayPayload rp)
 {
-	if(iData.data[rp.instanceID].world == BAS_WORLD_STATIC) {
-		uint customIndex = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID * 3);
-		ivec3 index = (ivec3(indices_world_static.i[customIndex], indices_world_static.i[customIndex + 1], indices_world_static.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
-		return (vertices_world_static.v[index.x].material & MATERIAL_FLAG_MIRROR) == MATERIAL_FLAG_MIRROR;
-	}
-	return false;
-	//else return (iData.data[rp.instanceID].material & MATERIAL_FLAG_MIRROR) == MATERIAL_FLAG_MIRROR;
+	return (get_material(rp) & MATERIAL_FLAG_MIRROR) == MATERIAL_FLAG_MIRROR;
 }
 bool
 is_glass(RayPayload rp)
 {
-	return false;
-	//return (iData.data[rp.instanceID].material & MATERIAL_KIND_MASK) == MATERIAL_KIND_GLASS;
+	return (get_material(rp) & MATERIAL_KIND_MASK) == MATERIAL_KIND_GLASS;
 }
 
 bool
 is_player(RayPayload rp) // for shadows etc, so the third person model does not cast shadows on the first person weapon
 {
-	if(iData.data[rp.instanceID].world == BAS_WORLD_STATIC) return false;
-	return false;
-	//return (iData.data[rp.instanceID].material & MATERIAL_FLAG_MASK) == MATERIAL_FLAG_PLAYER_OR_WEAPON;
+	return (get_material(rp) & MATERIAL_FLAG_PLAYER_OR_WEAPON) == MATERIAL_FLAG_PLAYER_OR_WEAPON;
 }
