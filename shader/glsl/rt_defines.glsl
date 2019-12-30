@@ -10,6 +10,8 @@
 #define PAYLOAD_BRDF 0
 #define PAYLOAD_SHADOW 1
 
+#define M_PI 3.14159265358979323846264338327950288f
+
 #define ALBEDO_MULT 1.3
 
 struct RayPayload {
@@ -21,9 +23,9 @@ struct RayPayload {
 	float max_transparent_distance;
 	mat4x3 modelmat;
 };
-
-struct RayPayloadShadow {
-	int missed;
+struct ShadowRayPayload
+{
+  float visFactor;  // Will be 1.0 for fully lit, 0.0 for fully shadowed
 };
 
 struct Ray {

@@ -417,7 +417,8 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
 		// skip stuff
 		if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
-			|| strstr(shader->name, "Shadow") || shader->isSky) {
+			|| strstr(shader->name, "Shadow") || shader->isSky ||
+			(shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->sort > SS_OPAQUE) {
 			continue;
 		}
 		if (shader->stages[0] == NULL || drawSurf->bAS == NULL) continue;

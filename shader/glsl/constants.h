@@ -72,6 +72,10 @@
 #define SBT_RCHIT_OPAQUE							0x00000002
 #define SBT_RAHIT_PARTICLE							0x00000003
 
+#define SBT_RMISS_SHADOW_RAY						0x00000004
+#define SBT_RCHIT_SHADOW_RAY						0x00000005
+#define SBT_RAHIT_SHADOW_RAY						0x00000006
+
 #define NUM_BOUNCES									(2)
 #define RTX_MAX_LIGHTS								(256)
 

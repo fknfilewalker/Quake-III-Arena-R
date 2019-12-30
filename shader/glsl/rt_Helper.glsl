@@ -54,8 +54,6 @@ vec4 alpha_blend_premultiplied(vec4 top, vec4 bottom)
     return vec4(top.rgb + bottom.rgb * (1 - top.a), 1 - (1 - top.a) * (1 - bottom.a)); 
 }
 
-
-#define M_PI 3.14159265358979323846264338327950288
 float
 blinn_phong_based_brdf(vec3 V, vec3 L, vec3 N, float phong_exp)
 {

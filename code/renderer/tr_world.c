@@ -826,10 +826,158 @@ void R_AddWorldSurfaces (void) {
 	R_RecursiveWorldNode( tr.world->nodes, 15, ( 1 << tr.refdef.num_dlights ) - 1 );
 }
 
-void R_AddWorldSurfaces2(void) {
-	for (int i = 0; i < tr.world->numsurfaces; i++) {
-		if (tr.world->surfaces[i].bAS != NULL) {
-			R_AddDrawSurf(tr.world->surfaces[i].data, tr.world->surfaces[i].shader, tr.world->surfaces[i].fogIndex, 0, tr.world->surfaces[i].bAS);
+static void R_RecursiveWorldNode2(mnode_t* node, int planeBits, int dlightBits) {
+
+	do {
+		int			newDlights[2];
+
+		// if the node wasn't marked as potentially visible, exit
+		if (node->visframe != tr.visCount) {
+			return;
+		}
+
+		// if the bounding volume is outside the frustum, nothing
+		// inside can be visible OPTIMIZE: don't do this all the way to leafs?
+
+		if (!r_nocull->integer) {
+			int		r;
+
+			if (planeBits & 1) {
+				r = BoxOnPlaneSide(node->mins, node->maxs, &tr.viewParms.frustum[0]);
+				if (r == 2) {
+					return;						// culled
+				}
+				if (r == 1) {
+					planeBits &= ~1;			// all descendants will also be in front
+				}
+			}
+
+			if (planeBits & 2) {
+				r = BoxOnPlaneSide(node->mins, node->maxs, &tr.viewParms.frustum[1]);
+				if (r == 2) {
+					return;						// culled
+				}
+				if (r == 1) {
+					planeBits &= ~2;			// all descendants will also be in front
+				}
+			}
+
+			if (planeBits & 4) {
+				r = BoxOnPlaneSide(node->mins, node->maxs, &tr.viewParms.frustum[2]);
+				if (r == 2) {
+					return;						// culled
+				}
+				if (r == 1) {
+					planeBits &= ~4;			// all descendants will also be in front
+				}
+			}
+
+			if (planeBits & 8) {
+				r = BoxOnPlaneSide(node->mins, node->maxs, &tr.viewParms.frustum[3]);
+				if (r == 2) {
+					return;						// culled
+				}
+				if (r == 1) {
+					planeBits &= ~8;			// all descendants will also be in front
+				}
+			}
+
+		}
+
+		if (node->contents != -1) {
+			break;
+		}
+
+		// node is just a decision point, so go down both sides
+		// since we don't care about sort orders, just go positive to negative
+
+		// determine which dlights are needed
+		newDlights[0] = 0;
+		newDlights[1] = 0;
+		if (dlightBits) {
+			int	i;
+
+			for (i = 0; i < tr.refdef.num_dlights; i++) {
+				dlight_t* dl;
+				float		dist;
+
+				if (dlightBits & (1 << i)) {
+					dl = &tr.refdef.dlights[i];
+					dist = DotProduct(dl->origin, node->plane->normal) - node->plane->dist;
+
+					if (dist > -dl->radius) {
+						newDlights[0] |= (1 << i);
+					}
+					if (dist < dl->radius) {
+						newDlights[1] |= (1 << i);
+					}
+				}
+			}
+		}
+
+		// recurse down the children, front side first
+		R_RecursiveWorldNode(node->children[0], planeBits, newDlights[0]);
+
+		// tail recurse
+		node = node->children[1];
+		dlightBits = newDlights[1];
+	} while (1);
+
+	{
+		// leaf node, so add mark surfaces
+		int			c;
+		msurface_t* surf, ** mark;
+
+		tr.pc.c_leafs++;
+
+		// add to z buffer bounds
+		if (node->mins[0] < tr.viewParms.visBounds[0][0]) {
+			tr.viewParms.visBounds[0][0] = node->mins[0];
+		}
+		if (node->mins[1] < tr.viewParms.visBounds[0][1]) {
+			tr.viewParms.visBounds[0][1] = node->mins[1];
+		}
+		if (node->mins[2] < tr.viewParms.visBounds[0][2]) {
+			tr.viewParms.visBounds[0][2] = node->mins[2];
+		}
+
+		if (node->maxs[0] > tr.viewParms.visBounds[1][0]) {
+			tr.viewParms.visBounds[1][0] = node->maxs[0];
+		}
+		if (node->maxs[1] > tr.viewParms.visBounds[1][1]) {
+			tr.viewParms.visBounds[1][1] = node->maxs[1];
+		}
+		if (node->maxs[2] > tr.viewParms.visBounds[1][2]) {
+			tr.viewParms.visBounds[1][2] = node->maxs[2];
+		}
+
+		// add the individual surfaces
+		mark = node->firstmarksurface;
+		c = node->nummarksurfaces;
+		while (c--) {
+			// the surface may have already been added if it
+			// spans multiple leafs
+			surf = *mark;
+			mark++;
 		}
 	}
+
+}
+
+void R_AddLights(void) {
+	if (tr.refdef.rdflags & RDF_NOWORLDMODEL) {
+		return;
+	}
+
+	// determine which leaves are in the PVS / areamask
+	R_MarkLeaves();
+
+	// clear out the visible min/max
+	ClearBounds(tr.viewParms.visBounds[0], tr.viewParms.visBounds[1]);
+
+	// perform frustum culling and add all the potentially visible surfaces
+	if (tr.refdef.num_dlights > 32) {
+		tr.refdef.num_dlights = 32;
+	}
+	R_RecursiveWorldNode2(tr.world->nodes, 15, (1 << tr.refdef.num_dlights) - 1);
 }

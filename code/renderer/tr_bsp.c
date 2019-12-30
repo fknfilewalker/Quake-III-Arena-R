@@ -1873,7 +1873,7 @@ void R_Recursive(mnode_t* node, uint32_t *offsetIDXstatic, uint32_t *offsetXYZst
 				int x = 2;
 			}
 			if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
-				|| strstr(shader->name, "Shadow") /*|| (shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT*/ || shader->isSky || shader->sort > SS_OPAQUE
+				|| strstr(shader->name, "Shadow") || (shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->isSky || shader->sort > SS_OPAQUE
 				|| *surf->data == SF_BAD || *surf->data == SF_SKIP
 				|| shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP
 				|| shader->stages[0] == NULL || !shader->stages[0]->active) {
@@ -1894,7 +1894,7 @@ void R_Recursive(mnode_t* node, uint32_t *offsetIDXstatic, uint32_t *offsetXYZst
 			 
 			if (!surf->added && !surf->skip) {
 				
-				if (strstr(tess.shader->name, "base_light") || strstr(tess.shader->name, "gothic_light") || strstr(tess.shader->name, "eye")) { // all lamp textures
+				if (strstr(tess.shader->name, "base_light") || strstr(tess.shader->name, "gothic_light") /*|| strstr(tess.shader->name, "eye")*/) { // all lamp textures
 					RB_AddLightToLightList();
 				}
 				else if (strstr(tess.shader->name, "flame")) { // all fire textures
