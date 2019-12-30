@@ -150,7 +150,7 @@ Triangle getTriangle(RayPayload rp){
 	//vec3 AC = vData[2].pos.xyz - vData[0].pos.xyz;
 	vec3 AB = hitTriangle.pos[1] - hitTriangle.pos[0];
 	vec3 AC = hitTriangle.pos[2] - hitTriangle.pos[0];
-	hitTriangle.normal = normalize(cross(AB, AC));
+	hitTriangle.normal = normalize(cross(AC, AB));
 
 	switch(iData.data[rp.instanceID].world){
 		case BAS_WORLD_STATIC:

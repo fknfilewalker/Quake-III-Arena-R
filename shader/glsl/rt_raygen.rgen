@@ -2,6 +2,7 @@
 #extension GL_NV_ray_tracing : require
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_nonuniform_qualifier : enable
+#pragma optionNV (unroll all)
 #include "rt_defines.glsl"
 #include "rt_helper.glsl"
 #include "rt_sky.glsl"
@@ -292,13 +293,10 @@ vec4 path_tracer(){
 		vec3 toLight = getLightDir(P, i);
 		vec3 L = normalize(toLight);
 		float distToLight =	length(toLight);
-		vec3 lightIntensity = vec3(0.1);
+		vec3 lightIntensity = vec3(0.25);
 
-	 	float shadowMult =  float(uboLights.lightList.numLights) * trace_shadow_ray(P, L, 0.01f, distToLight);
+	 	float shadowMult =  float(uboLights.lightList.numLights) *  trace_shadow_ray(P, L, 0.01f, distToLight);
 
-			if(dot(L, N) < 0) {
-	 		N = -N;
-			}
 		float LdotN = clamp(dot(N, L), 0.0, 1.0);
 
 		// Accumulate our Lambertian shading color
@@ -308,32 +306,71 @@ vec4 path_tracer(){
 	// Modulate based on the physically based Lambertian term (albedo/pi)
 	shadeColor *= primary_albedo.rgb / M_PI;
 	
+	uint seed = initRand(gl_LaunchIDNV.x, gl_LaunchIDNV.y, 16/* = 16*/);
 	// indirect
-	// if (true)
-	// {
-	// 	// Select a random direction for our diffuse interreflection ray.
-	// 	float3 bounceDir;
-	// 	if (gCosSampling)
-	// 		bounceDir = getCosHemisphereSample(randSeed, worldNorm.xyz);      // Use cosine sampling
-	// 	else
-	// 		bounceDir = getUniformHemisphereSample(randSeed, worldNorm.xyz);  // Use uniform random samples
+	if (true)
+	{
+		for (uint b = 0; b < 5; ++b)
+		{
+			// Select a random direction for our diffuse interreflection ray.
+			vec3 bounceDir;
+			
+			bool gCosSampling = true;
+			if (gCosSampling)
+				bounceDir = getCosHemisphereSample(seed, N);      // Use cosine sampling
+			else
+				bounceDir = getUniformHemisphereSample(seed, N);  // Use uniform random samples
 
-	// 	// Get NdotL for our selected ray direction
-	// 	float NdotL = saturate(dot(worldNorm.xyz, bounceDir));
+			// Get NdotL for our selected ray direction
+			float NdotL = clamp(dot(N, bounceDir), 0.0, 1.0);
 
-	// 	// Shoot our indirect global illumination ray
-	// 	float3 bounceColor = shootIndirectRay(worldPos.xyz, bounceDir, gMinT, randSeed);
+			// Shoot our indirect global illumination ray
+			Ray indirectRay = {
+				P, bounceDir, 0.01, 10000
+			};
 
-	// 	//bounceColor = (NdotL > 0.50f) ? float3(0, 0, 0) : bounceColor;
+			trace_ray(indirectRay, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
+			vec3 bounceColor;
+			bool miss = false;
+			if(!found_intersection(rp)){
+				bounceColor = sampleSky(ray.direction).xyz;
+				miss = true;
+			} else {
+				HitPoint hpIndirect = getHitPoint(rp);
+				Triangle tIndirect = getTriangle(rp);
+				//vec3 bounceColor = (global_texture(hpIndirect.tex0 & TEX0_IDX_MASK, hpIndirect.uv0) * color).xyz;
+				bounceColor = getTextureLod(screen_coord_cs, tIndirect, hpIndirect).xyz;
 
-	// 	// Probability of selecting this ray ( cos/pi for cosine sampling, 1/2pi for uniform sampling )
-	// 	float sampleProb = gCosSampling ? (NdotL / M_PI) : (1.0f / (2.0f * M_PI));
+				P = hpIndirect.pos.xyz;
+				N = hpIndirect.normal;
 
-	// 	// Accumulate the color.  For performance, terms could (and should) be cancelled here.
-	// 	//shadeColor += (NdotL * bounceColor * difMatlColor.rgb / M_PI) / sampleProb;
+				for(int i = 0; i < 1/*uboLights.lightList.numLights*/; i++){
+					vec3 toLight = getLightDir(P, int(b));
+					vec3 L = normalize(toLight);
+					float distToLight =	length(toLight);
+					vec3 lightIntensity = vec3(0.25);
 
-	// 	shadeColor += (NdotL * bounceColor * difMatlColor.rgb / M_PI) / sampleProb;
-	// }
+					float shadowMult =  trace_shadow_ray(P, L, 0.01f, distToLight);
+
+					float LdotN = clamp(dot(N, L), 0.0, 1.0);
+
+					// Accumulate our Lambertian shading color
+					shadeColor += shadowMult * LdotN * lightIntensity; 
+				}
+			}
+
+			//bounceColor = (NdotL > 0.50f) ? float3(0, 0, 0) : bounceColor;
+
+			// Probability of selecting this ray ( cos/pi for cosine sampling, 1/2pi for uniform sampling )
+			float sampleProb = gCosSampling ? (NdotL / M_PI) : (1.0f / (2.0f * M_PI));
+
+			// Accumulate the color.  For performance, terms could (and should) be cancelled here.
+			//shadeColor += (NdotL * bounceColor * difMatlColor.rgb / M_PI) / sampleProb;
+
+			shadeColor += (NdotL * bounceColor * primary_albedo.rgb / M_PI) / sampleProb;
+			if(miss) break;
+		}
+	}
 
 	color = vec4(shadeColor, 1);
 

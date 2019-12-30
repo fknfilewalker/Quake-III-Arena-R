@@ -1584,12 +1584,14 @@ R_GenerateDrawSurfs
 ====================
 */
 void R_GenerateDrawSurfs( void ) {
-	if (!(glConfig.driverType == VULKAN && r_vertexLight->value == 2)) R_AddWorldSurfaces();
-	else R_AddLights();	
-	//R_AddWorldSurfaces ();
+	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && tr.refdef.rdflags != RDF_NOWORLDMODEL) {
+		vk_d.lightList.numLights = 0;
+		R_AddLights();
+		//ri.Printf(PRINT_ALL, "numLights:%i\n", vk_d.lightList.numLights);
+	}
+	else R_AddWorldSurfaces();
 
 	R_AddPolygonSurfaces();
-
 	// set the projection matrix with the minimum zfar
 	// now that we have the world bounded
 	// this needs to be done before entities are

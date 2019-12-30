@@ -666,8 +666,38 @@ static void R_MarkLeaves (void) {
 		} while (parent);
 	}
 }
+
 /*
-static void R_MarkLeaves (void) {
+=============
+R_AddWorldSurfaces
+=============
+*/
+void R_AddWorldSurfaces (void) {
+	if ( !r_drawworld->integer ) {
+		return;
+	}
+
+	if ( tr.refdef.rdflags & RDF_NOWORLDMODEL ) {
+		return;
+	}
+
+	tr.currentEntityNum = ENTITYNUM_WORLD;
+	tr.shiftedEntityNum = tr.currentEntityNum << QSORT_ENTITYNUM_SHIFT;
+
+	// determine which leaves are in the PVS / areamask
+	R_MarkLeaves ();
+
+	// clear out the visible min/max
+	ClearBounds( tr.viewParms.visBounds[0], tr.viewParms.visBounds[1] );
+
+	// perform frustum culling and add all the potentially visible surfaces
+	if ( tr.refdef.num_dlights > 32 ) {
+		tr.refdef.num_dlights = 32 ;
+	}
+	R_RecursiveWorldNode( tr.world->nodes, 15, ( 1 << tr.refdef.num_dlights ) - 1 );
+}
+
+static void R_MarkLeaves2 (void) {
 	const byte	*vis;
 	mnode_t	*leaf, *parent;
 	int		i;
@@ -760,7 +790,7 @@ static void R_MarkLeaves (void) {
 		} while (parent);
 	}
 	int x = 2l;
-	ri.Printf(PRINT_ALL, "visChainCount:%i\n", count);
+	//ri.Printf(PRINT_ALL, "visChainCount:%i\n", count);
 
 	for (i = 0, leaf = tr.world->nodes; i < tr.world->numnodes; i++, leaf++) {
 		for (int j = 0; j < count; j++) {
@@ -793,39 +823,6 @@ static void R_MarkLeaves (void) {
 		}
 	}
 }
-*/
-
-
-/*
-=============
-R_AddWorldSurfaces
-=============
-*/
-void R_AddWorldSurfaces (void) {
-	if ( !r_drawworld->integer ) {
-		return;
-	}
-
-	if ( tr.refdef.rdflags & RDF_NOWORLDMODEL ) {
-		return;
-	}
-
-	tr.currentEntityNum = ENTITYNUM_WORLD;
-	tr.shiftedEntityNum = tr.currentEntityNum << QSORT_ENTITYNUM_SHIFT;
-
-	// determine which leaves are in the PVS / areamask
-	R_MarkLeaves ();
-
-	// clear out the visible min/max
-	ClearBounds( tr.viewParms.visBounds[0], tr.viewParms.visBounds[1] );
-
-	// perform frustum culling and add all the potentially visible surfaces
-	if ( tr.refdef.num_dlights > 32 ) {
-		tr.refdef.num_dlights = 32 ;
-	}
-	R_RecursiveWorldNode( tr.world->nodes, 15, ( 1 << tr.refdef.num_dlights ) - 1 );
-}
-
 static void R_RecursiveWorldNode2(mnode_t* node, int planeBits, int dlightBits) {
 
 	do {
@@ -891,32 +888,8 @@ static void R_RecursiveWorldNode2(mnode_t* node, int planeBits, int dlightBits) 
 		// node is just a decision point, so go down both sides
 		// since we don't care about sort orders, just go positive to negative
 
-		// determine which dlights are needed
-		newDlights[0] = 0;
-		newDlights[1] = 0;
-		if (dlightBits) {
-			int	i;
-
-			for (i = 0; i < tr.refdef.num_dlights; i++) {
-				dlight_t* dl;
-				float		dist;
-
-				if (dlightBits & (1 << i)) {
-					dl = &tr.refdef.dlights[i];
-					dist = DotProduct(dl->origin, node->plane->normal) - node->plane->dist;
-
-					if (dist > -dl->radius) {
-						newDlights[0] |= (1 << i);
-					}
-					if (dist < dl->radius) {
-						newDlights[1] |= (1 << i);
-					}
-				}
-			}
-		}
-
 		// recurse down the children, front side first
-		R_RecursiveWorldNode(node->children[0], planeBits, newDlights[0]);
+		R_RecursiveWorldNode2(node->children[0], planeBits, newDlights[0]);
 
 		// tail recurse
 		node = node->children[1];
@@ -958,6 +931,17 @@ static void R_RecursiveWorldNode2(mnode_t* node, int planeBits, int dlightBits) 
 			// the surface may have already been added if it
 			// spans multiple leafs
 			surf = *mark;
+			//R_AddWorldSurface(surf, dlightBits);
+			if (RB_IsLight(surf->shader)) {
+
+				tess.shader = surf->shader;
+				tess.numIndexes = 0;
+				tess.numVertexes = 0;
+				rb_surfaceTable[*surf->data](surf->data);
+				RB_AddLightToLightList();
+				tess.numIndexes = 0;
+				tess.numVertexes = 0;
+			}
 			mark++;
 		}
 	}
@@ -970,14 +954,10 @@ void R_AddLights(void) {
 	}
 
 	// determine which leaves are in the PVS / areamask
-	R_MarkLeaves();
+	R_MarkLeaves2();
 
 	// clear out the visible min/max
 	ClearBounds(tr.viewParms.visBounds[0], tr.viewParms.visBounds[1]);
 
-	// perform frustum culling and add all the potentially visible surfaces
-	if (tr.refdef.num_dlights > 32) {
-		tr.refdef.num_dlights = 32;
-	}
 	R_RecursiveWorldNode2(tr.world->nodes, 15, (1 << tr.refdef.num_dlights) - 1);
 }

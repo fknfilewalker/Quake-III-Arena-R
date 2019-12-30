@@ -1780,7 +1780,7 @@ qboolean R_GetEntityToken( char *buffer, int size ) {
 	}
 }
 
-static void RB_AddLightToLightList() {
+void RB_AddLightToLightList() {
 	vec4_t pos = { 0,0,0,0 };
 
 	for (int i = 0; i < tess.numVertexes; i++) {
@@ -1834,7 +1834,6 @@ qboolean RB_ASDynamic(shader_t* shader) {
 }
 
 
-
 void R_Recursive(mnode_t* node, uint32_t *offsetIDXstatic, uint32_t *offsetXYZstatic, uint32_t* offsetIDXdynamicData, uint32_t* offsetXYZdynamicData, uint32_t* offsetIDXdynamicAS, uint32_t* offsetXYZdynamicAS) {
 	do {
 		if (node->contents != -1) {
@@ -1873,7 +1872,8 @@ void R_Recursive(mnode_t* node, uint32_t *offsetIDXstatic, uint32_t *offsetXYZst
 				int x = 2;
 			}
 			if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
-				|| strstr(shader->name, "Shadow") || (shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->isSky || shader->sort > SS_OPAQUE
+				|| strstr(shader->name, "Shadow") || shader->isSky
+				|| (shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->sort > SS_OPAQUE
 				|| *surf->data == SF_BAD || *surf->data == SF_SKIP
 				|| shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP
 				|| shader->stages[0] == NULL || !shader->stages[0]->active) {
@@ -1891,15 +1891,10 @@ void R_Recursive(mnode_t* node, uint32_t *offsetIDXstatic, uint32_t *offsetXYZst
 				int x = 1;
 			}
 
-			 
 			if (!surf->added && !surf->skip) {
 				
-				if (strstr(tess.shader->name, "base_light") || strstr(tess.shader->name, "gothic_light") /*|| strstr(tess.shader->name, "eye")*/) { // all lamp textures
-					RB_AddLightToLightList();
-				}
-				else if (strstr(tess.shader->name, "flame")) { // all fire textures
-					RB_AddLightToLightList();
-				}
+				if(RB_IsLight(tess.shader)) RB_AddLightToLightList();
+	
 				//if(strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "bluemetalsupport2eye"))
 				//{ int x = 1; }
 				

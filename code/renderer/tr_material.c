@@ -1,5 +1,15 @@
 #include "tr_local.h"
 
+qboolean RB_IsLight(shader_t* shader) {
+	if (strstr(shader->name, "base_light") || strstr(shader->name, "gothic_light") /*|| strstr(tess.shader->name, "eye")*/) { // all lamp textures
+		return qtrue;
+	}
+	else if (strstr(shader->name, "flame")) {
+		return qtrue;
+	}
+	return qfalse;
+}
+
 static qboolean RB_NeedsColor() {
 	for (int i = 0; i < MAX_SHADER_STAGES; i++) {
 		if (tess.shader->stages[i] != NULL && tess.shader->stages[i]->active) {
@@ -23,12 +33,8 @@ qboolean RB_StageNeedsColor(int stage) {
 
 uint32_t RB_GetMaterial() {
 	uint32_t material = 0;
-	if (strstr(tess.shader->name, "base_light") || strstr(tess.shader->name, "gothic_light") /*|| strstr(tess.shader->name, "eye")*/) { // all lamp textures
-		material = MATERIAL_KIND_REGULAR;
-		material |= MATERIAL_FLAG_LIGHT;
-	}
-	else if (strstr(tess.shader->name, "flame")) { // all fire textures
-		material = MATERIAL_KIND_REGULAR;
+	material = MATERIAL_KIND_REGULAR;
+	if (RB_IsLight(tess.shader)) {
 		material |= MATERIAL_FLAG_LIGHT;
 	}
 
