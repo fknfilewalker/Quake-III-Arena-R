@@ -1381,6 +1381,7 @@ typedef struct {
 
 	// world static (world geometry that does not requiere updates)
 	vkbottomAS_t		bottomASWorldStatic;
+	vkbottomAS_t		bottomASWorldStaticTrans;
 	vkbuffer_t			basBufferStaticWorld;
 	// world dynamic data (world geometry that requieres texture/color or uv updates)
 	vkbottomAS_t		bottomASWorldDynamicData;
