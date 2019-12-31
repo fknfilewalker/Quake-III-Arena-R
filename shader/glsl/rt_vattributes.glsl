@@ -154,16 +154,16 @@ Triangle getTriangle(RayPayload rp){
 
 	switch(iData.data[rp.instanceID].world){
 		case BAS_WORLD_STATIC:
-			hitTriangle.tex0 = (vertices_world_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx0);
-			hitTriangle.tex1 = (vertices_world_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx1);
+			hitTriangle.tex0 = (vertices_world_static.v[index.x].texIdx0);
+			hitTriangle.tex1 = (vertices_world_static.v[index.x].texIdx1);
 			break;
 		case BAS_WORLD_DYNAMIC_DATA:
-			hitTriangle.tex0 = (vertices_dynamic_data.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx0);
-			hitTriangle.tex1 = (vertices_dynamic_data.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx1);
+			hitTriangle.tex0 = (vertices_dynamic_data.v[index.x].texIdx0);
+			hitTriangle.tex1 = (vertices_dynamic_data.v[index.x].texIdx1);
 			break;
 		case BAS_WORLD_DYNAMIC_AS:
-			hitTriangle.tex0 = (vertices_dynamic_as.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx0);
-			hitTriangle.tex1 = (vertices_dynamic_as.v[index.x + iData.data[rp.instanceID].offsetXYZ].texIdx1);
+			hitTriangle.tex0 = (vertices_dynamic_as.v[index.x].texIdx0);
+			hitTriangle.tex1 = (vertices_dynamic_as.v[index.x].texIdx1);
 			break;
 		case BAS_ENTITY_STATIC:
 			hitTriangle.tex0 = (iData.data[rp.instanceID].texIdx0);
@@ -280,6 +280,11 @@ bool
 is_glass(RayPayload rp)
 {
 	return (get_material(rp) & MATERIAL_KIND_MASK) == MATERIAL_KIND_GLASS;
+}
+bool
+is_see_through(RayPayload rp)
+{
+	return (get_material(rp) & MATERIAL_FLAG_SEE_THROUGH) == MATERIAL_FLAG_SEE_THROUGH;
 }
 
 bool

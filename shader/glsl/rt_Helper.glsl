@@ -41,19 +41,6 @@ clamp_color(vec3 color, float max_val)
     return color * (max_val / m);
 }
 
-vec4
-alpha_blend(vec4 top, vec4 bottom)
-{
-    // assume top is alpha-premultiplied, bottom is not; result is premultiplied
-    return vec4(top.rgb + bottom.rgb * (1 - top.a) * bottom.a, 1 - (1 - top.a) * (1 - bottom.a)); 
-}
-
-vec4 alpha_blend_premultiplied(vec4 top, vec4 bottom)
-{
-    // assume everything is alpha-premultiplied
-    return vec4(top.rgb + bottom.rgb * (1 - top.a), 1 - (1 - top.a) * (1 - bottom.a)); 
-}
-
 float
 blinn_phong_based_brdf(vec3 V, vec3 L, vec3 N, float phong_exp)
 {
@@ -69,6 +56,7 @@ float schlick_ross_fresnel(float F0, float roughness, float NdotV)
     // Shlick's approximation for Ross BRDF -- makes Fresnel converge to less than 1.0 when N.V is low
     return F0 + (1 - F0) * pow(1 - NdotV, 5 * exp(-2.69 * roughness)) / (1.0 + 22.7 * pow(roughness, 1.5));
 }
+
 
 vec3
 compute_barycentric(mat3 v, vec3 ray_origin, vec3 ray_direction)

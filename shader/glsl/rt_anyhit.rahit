@@ -8,7 +8,7 @@
 #include "rt_helper.glsl"
 #include "constants.h"
 
-hitAttributeNV vec2 attribs;
+hitAttributeNV vec2 hitAttribute;
 layout(location = 0) rayPayloadInNV RayPayload rp;
 
 void main()
@@ -64,8 +64,22 @@ void main()
   // }
   // else {
   //   rp.transparent = vec4(1,0,0,0);
-  // }
-  
-  // rp.max_transparent_distance = gl_HitTNV;
+  // }is_see_through
+
+  RayPayload rpb;
+  rpb.barycentric = hitAttribute;
+  rpb.instanceID = gl_InstanceID;
+	rpb.primitiveID = gl_PrimitiveID;
+	rpb.hit_distance = gl_RayTmaxNV;
+  rpb.modelmat = gl_ObjectToWorldNV;
+
+  if(is_see_through(rpb)) {
+    HitPoint hp = getHitPoint(rpb);
+   rp.transparent = global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0);
+   if(rp.transparent.w < 0.5) {
+     rp.transparent = vec4(0,1,0,0);
+   }
+  }
+  rp.max_transparent_distance = gl_HitTNV;
 	ignoreIntersectionNV();
 }
