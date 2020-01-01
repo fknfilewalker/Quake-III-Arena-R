@@ -129,7 +129,7 @@ STRUCT (
     UINT     (texIdx0)
     UINT     (texIdx1)
 	UINT    (blendfunc)
-	FLOAT   (opaque)
+	BOOL   (isPlayer)
 	UINT    (type)
 ,ASInstanceData)
 
@@ -137,6 +137,8 @@ STRUCT (
 STRUCT (
     VEC3    (pos)
     UINT    (material)
+
+    VEC4    (normal)
 
     UINT    (color0)
     UINT    (color1)

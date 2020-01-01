@@ -18,6 +18,21 @@ void RB_UploadIDX(vkbuffer_t* buffer, uint32_t offsetIDX, uint32_t offsetXYZ) {
 }
 
 void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ) {
+	//tess.normal
+	/*vec4_t* xyz = malloc(4 * input->numVertexes * sizeof(vec4_t));
+	uint32_t* indexes = malloc(4 * input->numVertexes * sizeof(uint32_t));
+
+	int count = 0;
+	for (i = 0; i < input->numVertexes; i++) {
+		Com_Memcpy(&xyz[count], &input->xyz[i], sizeof(vec4_t));
+		VectorMA(input->xyz[i], 2, input->normal[i], temp);
+		Com_Memcpy(&xyz[count + 1], &temp, sizeof(vec3_t));
+		xyz[count + i][3] = 0;
+		indexes[count] = count;
+		indexes[count + 1] = count + 1;
+		count += 2;
+	}*/
+
 	uint32_t material = RB_GetMaterial();
 	uint32_t tex0 = (RB_GetNextTexEncoded(0)) | (RB_GetNextTexEncoded(1) << TEX_SHIFT_BITS);
 	uint32_t tex1 = (RB_GetNextTexEncoded(2)) | (RB_GetNextTexEncoded(3) << TEX_SHIFT_BITS);
@@ -26,6 +41,10 @@ void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ) {
 		vData[j].pos[0] = tess.xyz[j][0];
 		vData[j].pos[1] = tess.xyz[j][1];
 		vData[j].pos[2] = tess.xyz[j][2];
+		vData[j].normal[0] = tess.normal[j][0];
+		vData[j].normal[1] = tess.normal[j][1];
+		vData[j].normal[2] = tess.normal[j][2];
+		vData[j].normal[3] = 0;
 		vData[j].material = material;
 		vData[j].texIdx0 = tex0;
 		vData[j].texIdx1 = tex1;
@@ -254,7 +273,6 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 	}*/
 
 	bAS->data.blendfunc = (uint32_t)(tess.shader->stages[0]->stateBits);
-	bAS->data.opaque = tess.shader->sort;
 
 	//// set material
 	//if (!RB_MaterialException(bAS)) {
@@ -343,10 +361,10 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldStatic, sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
 	// add static world trans
-	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldStaticTrans.data);
+	/*VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldStaticTrans.data);
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldStaticTrans.geometryInstance);
 	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldStaticTrans, sizeof(vkbottomAS_t));
-	vk_d.bottomASTraceListCount++;
+	vk_d.bottomASTraceListCount++;*/
 	// add world with dynamic data
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldDynamicData.data);
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldDynamicData.geometryInstance);
@@ -511,6 +529,11 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			}
 			else {
 				drawSurf->bAS->data.world = BAS_ENTITY_STATIC;
+
+				if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) {
+					drawSurf->bAS->data.isPlayer = qtrue;
+				}
+				else drawSurf->bAS->data.isPlayer = qfalse;
 
 				Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
 				RB_UpdateInstanceDataBuffer(drawSurf->bAS);

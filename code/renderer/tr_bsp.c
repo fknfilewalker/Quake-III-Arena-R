@@ -2176,7 +2176,7 @@ void R_BuildAccelerationStructure2() {
 		vk_d.bottomASWorldStatic.geometryInstance.instanceCustomIndex = 0;
 		vk_d.bottomASWorldStatic.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 		vk_d.bottomASWorldStatic.geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
-		vk_d.bottomASWorldStatic.geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+		//vk_d.bottomASWorldStatic.geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
 		vk_d.bottomASWorldStatic.geometryInstance.accelerationStructureHandle = vk_d.bottomASWorldStatic.handle;
 
 		float tM[12];
@@ -2223,7 +2223,7 @@ void R_BuildAccelerationStructure2() {
 		vk_d.bottomASWorldDynamicData.geometryInstance.instanceCustomIndex = 0;
 		vk_d.bottomASWorldDynamicData.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 		vk_d.bottomASWorldDynamicData.geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
-		vk_d.bottomASWorldDynamicData.geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+		//vk_d.bottomASWorldDynamicData.geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
 		vk_d.bottomASWorldDynamicData.geometryInstance.accelerationStructureHandle = vk_d.bottomASWorldDynamicData.handle;
 
 		float tM[12];
@@ -2271,7 +2271,7 @@ void R_BuildAccelerationStructure2() {
 			vk_d.bottomASWorldDynamicAS[i].geometryInstance.instanceCustomIndex = 0;
 			vk_d.bottomASWorldDynamicAS[i].geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 			vk_d.bottomASWorldDynamicAS[i].geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
-			vk_d.bottomASWorldDynamicAS[i].geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+			//vk_d.bottomASWorldDynamicAS[i].geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
 			vk_d.bottomASWorldDynamicAS[i].geometryInstance.accelerationStructureHandle = vk_d.bottomASWorldDynamicAS[i].handle;
 
 			float tM[12];

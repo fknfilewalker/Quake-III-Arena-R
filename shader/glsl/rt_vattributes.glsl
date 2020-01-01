@@ -146,11 +146,14 @@ Triangle getTriangle(RayPayload rp){
 	hitTriangle.uv3[1] = vData[1].uv3.xy;
 	hitTriangle.uv3[2] = vData[2].uv3.xy;
 	// NORMAL
-	//vec3 AB = vData[1].pos.xyz - vData[0].pos.xyz;
-	//vec3 AC = vData[2].pos.xyz - vData[0].pos.xyz;
-	vec3 AB = hitTriangle.pos[1] - hitTriangle.pos[0];
-	vec3 AC = hitTriangle.pos[2] - hitTriangle.pos[0];
-	hitTriangle.normal = normalize(cross(AC, AB));
+	// vec3 AB = hitTriangle.pos[1] - hitTriangle.pos[0];
+	// vec3 AC = hitTriangle.pos[2] - hitTriangle.pos[0];
+	// hitTriangle.normal = normalize(cross(AC, AB));
+	const vec3 barycentricCoords = getBarycentricCoordinates(rp.barycentric);
+	hitTriangle.normal = vData[0].normal.xyz * barycentricCoords.x +
+					vData[1].normal.xyz * barycentricCoords.y +
+            		vData[2].normal.xyz * barycentricCoords.z;
+	hitTriangle.normal = (rp.modelmat * vec4(hitTriangle.normal, 0)).xyz;
 
 	switch(iData.data[rp.instanceID].world){
 		case BAS_WORLD_STATIC:
@@ -290,5 +293,7 @@ is_see_through(RayPayload rp)
 bool
 is_player(RayPayload rp) // for shadows etc, so the third person model does not cast shadows on the first person weapon
 {
-	return (get_material(rp) & MATERIAL_FLAG_PLAYER_OR_WEAPON) == MATERIAL_FLAG_PLAYER_OR_WEAPON;
+	if(iData.data[rp.instanceID].world == BAS_ENTITY_STATIC) return iData.data[rp.instanceID].isPlayer;
+	else return false;
+	//return (get_material(rp) & MATERIAL_FLAG_PLAYER_OR_WEAPON) == MATERIAL_FLAG_PLAYER_OR_WEAPON;
 }
