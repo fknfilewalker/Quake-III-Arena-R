@@ -14,6 +14,7 @@ struct Triangle {
 	mat3x4 color3;
 	uint tex0;
 	uint tex1;
+	uint cluster;
 };
 struct HitPoint {
 	vec3 pos;
@@ -28,6 +29,11 @@ struct HitPoint {
 	vec4 color3;
 	uint tex0;
 	uint tex1;
+	uint cluster;
+};
+
+struct DirectionalLight {
+	vec3 pos;
 };
 
 struct TextureData {
@@ -181,6 +187,15 @@ Triangle getTriangle(RayPayload rp){
 			hitTriangle.tex1 = (iData.data[rp.instanceID].texIdx1);
 	}
 
+
+	switch(iData.data[rp.instanceID].world){
+		case BAS_ENTITY_STATIC:
+			hitTriangle.cluster = iData.data[rp.instanceID].cluster;
+			break;
+		default:
+			hitTriangle.cluster = vData[1].cluster;
+	}
+
 	return hitTriangle;
 }
 
@@ -221,8 +236,11 @@ HitPoint getHitPoint(RayPayload rp){
 	hitPoint.tex0 = triangle.tex0;
 	hitPoint.tex1 = triangle.tex1;
 
+	hitPoint.cluster = triangle.cluster;
 	return hitPoint;
 }
+
+
 
 // unpack texture idx, blend/add, and req color, data
 TextureData unpackTextureData(uint data){

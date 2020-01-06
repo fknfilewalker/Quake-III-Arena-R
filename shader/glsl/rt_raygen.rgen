@@ -3,12 +3,12 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_nonuniform_qualifier : enable
 #pragma optionNV (unroll all)
+#include "constants.h"
 #include "rt_defines.glsl"
 #include "rt_helper.glsl"
 #include "rt_sky.glsl"
 #include "rt_vattributes.glsl"
 #include "rt_texture.glsl"
-#include "constants.h"
 
 // Push Constants
 layout(push_constant) uniform PushConstant {
@@ -183,7 +183,9 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 
 vec3
 getRandomLight(int i){
-	int lightIDX = int( round( get_rng(i, int(ubo.frameIndex)) * uboLights.lightList.numLights ) );
+	int lightIDX = int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * uboLights.lightList.numLights ) );
+	//if(uboLights.lightList.lights[lightIDX].cluster > 500) return uboLights.lightList.lights[0].pos.xyz;
+	// tr.world->vis + cluster * tr.world->clusterBytes;
 	return uboLights.lightList.lights[lightIDX].pos.xyz;
 }
 vec3
@@ -191,6 +193,12 @@ getLight(int i){
 	return uboLights.lightList.lights[i].pos.xyz;
 }
 
+bool
+lightVisible(int i, uint hitCluster){
+	uint cluster = uboLights.lightList.lights[i].cluster;
+	if((imageLoad(vis_data, ivec2(cluster>>3, hitCluster)).r  & (1<<(cluster&7))) > 0 ) return true;
+	return false;
+}
 
 #define KD 0.05 // diffuse
 
@@ -256,13 +264,18 @@ vec4 path_tracer(){
 	vec3 P = hp.pos.xyz;
 	vec3 N = hp.normal;
 
+	uint hitCluster = hp.cluster;
+
 	vec3 shadeColor = vec3(0);
-	for(int i = 0; i < 6/*uboLights.lightList.numLights*/; i++){
-		vec3 posLight = getRandomLight(i);
+	for(int i = 0; i < uboLights.lightList.numLights; i++){
+		//if(hitCluster == 1333) break;
+		if(!lightVisible(i, /*ubo.currentCluster*/ hitCluster)) continue;
+		vec3 posLight = getLight(i);
 		vec3 toLight = posLight - P;
 		vec3 L = normalize(toLight);
 		float distToLight =	length(toLight);
 		vec3 lightIntensity = vec3(0.55);
+		if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
 
 	 	float shadowMult =  /*float(uboLights.lightList.numLights) */  trace_shadow_ray(P, L, 0.01f, distToLight);
 
@@ -274,6 +287,8 @@ vec4 path_tracer(){
 		// Accumulate our Lambertian shading color
 		shadeColor += shadowMult * LdotN * lightIntensity; 
 	}
+
+	
 
 	// Modulate based on the physically based Lambertian term (albedo/pi)
 	shadeColor *= primary_albedo.rgb / M_PI;

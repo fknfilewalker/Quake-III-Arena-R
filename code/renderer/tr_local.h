@@ -1262,6 +1262,7 @@ typedef struct {
 	vkimage_t					rngImage;
 
 	vkimage_t					resultImage[VK_MAX_SWAPCHAIN_SIZE];
+	vkimage_t					visData;
 	vkimage_t					envmap;
 	vkrtpipeline_t				pipeline;
 	vkdescriptor_t				descriptor[VK_MAX_SWAPCHAIN_SIZE];
@@ -1301,6 +1302,10 @@ typedef struct {
 	qboolean			clearStencil;
 } vkattachmentClearPipe_t;
 
+typedef struct {
+	vec3_t		mins, maxs;
+	int			idx;
+} cluster_t;
 
 #define RTX_WORLD_STATIC_XYZ_SIZE 64 * 1024
 #define RTX_WORLD_STATIC_IDX_SIZE 128 * 1024 
@@ -1367,6 +1372,11 @@ typedef struct {
     vkrenderState_t     state;
 
 	// <RTX>
+	cluster_t			*clusterList;
+	int					currentCluster;
+	int					numClusters;
+	int					clusterBytes;
+
 	// AS
 	qboolean			worldASInit;
 
@@ -1415,6 +1425,7 @@ typedef struct {
 		uint32_t numXYZ;
 		shader_t* shader;
 		msurface_t* surf;
+		int cluster;
 	} updateDataOffsetXYZ[3500];
 	uint32_t			updateDataOffsetXYZCount;
 
@@ -1424,6 +1435,7 @@ typedef struct {
 		uint32_t numXYZ;
 		shader_t* shader;
 		msurface_t* surf;
+		int cluster;
 	} updateASOffsetXYZ[3500];
 	uint32_t			updateASOffsetXYZCount;
 

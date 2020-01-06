@@ -65,6 +65,7 @@
 #define BINDING_OFFSET_GLOBAL_UBO					0x0000000e
 #define BINDING_OFFSET_UBO_LIGHTS					0x0000000f
 #define BINDING_OFFSET_BLUE_NOISE					0x00000010
+#define BINDING_OFFSET_VIS_DATA					    0x00000011
 
 // shader offset
 #define SBT_RGEN_PRIMARY_RAYS						0x00000000
@@ -130,7 +131,7 @@ STRUCT (
     UINT     (texIdx1)
 	UINT    (blendfunc)
 	BOOL   (isPlayer)
-	UINT    (type)
+	UINT    (cluster)
 ,ASInstanceData)
 
 // holds all vertex data
@@ -153,7 +154,7 @@ STRUCT (
 
     UINT     (texIdx0)
     UINT     (texIdx1)
-    UINT     (buff)
+    INT      (cluster)
     UINT     (buff2)
 ,VertexBuffer)
 
@@ -167,17 +168,28 @@ STRUCT (
     MAT4    (projMat)
 	BOOL    (hasPortal)
 	UINT    (frameIndex)
+    INT     (currentCluster)
+    INT		(numClusters)
+ 	INT		(clusterBytes)
 ,RTUbo)
 
 // holds a light
 STRUCT (
     VEC4    (pos)
+    VEC3    (buff)
+    INT     (cluster)
 ,Light)
 
 STRUCT (
     Light   lights[RTX_MAX_LIGHTS];
     UINT    (numLights)
 ,LightList_s)
+
+// STRUCT (
+//     INT		(numClusters)
+// 	INT		(clusterBytes)
+// 	BYTE    (vis)
+// ,Vis_s)
 
 #undef STRUCT
 #undef BOOL

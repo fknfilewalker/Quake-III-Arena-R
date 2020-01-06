@@ -17,7 +17,7 @@ void RB_UploadIDX(vkbuffer_t* buffer, uint32_t offsetIDX, uint32_t offsetXYZ) {
 	free(idxData);
 }
 
-void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ) {
+void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ, int cluster) {
 	//tess.normal
 	/*vec4_t* xyz = malloc(4 * input->numVertexes * sizeof(vec4_t));
 	uint32_t* indexes = malloc(4 * input->numVertexes * sizeof(uint32_t));
@@ -48,6 +48,7 @@ void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ) {
 		vData[j].material = material;
 		vData[j].texIdx0 = tex0;
 		vData[j].texIdx1 = tex1;
+		vData[j].cluster = cluster;
 	}
 	if (tess.shader->stages[0] != NULL && tess.shader->stages[0]->active) {
 		if (tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD){
@@ -160,7 +161,7 @@ void RB_CreateEntityBottomAS(vkbottomAS_t** bAS) {
 	// write idx
 	RB_UploadIDX(&vk_d.geometry.idx_entity_static, bASList->data.offsetIDX, 0);
 	// write xyz and other vertex attribs
-	RB_UploadXYZ(&vk_d.geometry.xyz_entity_static, bASList->data.offsetXYZ);
+	RB_UploadXYZ(&vk_d.geometry.xyz_entity_static, bASList->data.offsetXYZ, -1);
 
 	VkCommandBuffer commandBuffer = { 0 };
 	VK_BeginSingleTimeCommands(&commandBuffer);
@@ -389,7 +390,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			int x = 2;
 		}
 
-		RB_UploadXYZ(&vk_d.geometry.xyz_world_dynamic_data[vk.swapchain.currentImage], offset);
+		RB_UploadXYZ(&vk_d.geometry.xyz_world_dynamic_data[vk.swapchain.currentImage], offset, vk_d.updateDataOffsetXYZ[i].cluster);
 		tess.numVertexes = 0;
 		tess.numIndexes = 0;
 			
@@ -418,7 +419,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		}
 
 		RB_UploadIDX(&vk_d.geometry.idx_world_dynamic_as[vk.swapchain.currentImage], offsetIDX, offsetXYZ);
-		RB_UploadXYZ(&vk_d.geometry.xyz_world_dynamic_as[vk.swapchain.currentImage], offsetXYZ);
+		RB_UploadXYZ(&vk_d.geometry.xyz_world_dynamic_as[vk.swapchain.currentImage], offsetXYZ, vk_d.updateASOffsetXYZ[i].cluster);
 		tess.numVertexes = 0;
 		tess.numIndexes = 0;
 
@@ -433,7 +434,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	vk_d.bottomASTraceListCount++;
 
 	// lights
-	VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], 0, sizeof(LightList_s), (void*)&vk_d.lightList);
+	//VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], 0, sizeof(LightList_s), (void*)&vk_d.lightList);
 	//VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], RTX_MAX_LIGHTS * sizeof(vec4_t), 1 * sizeof(uint32_t), (void*)&vk_d.lightCount);
 
 	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
@@ -469,6 +470,8 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			tM[8] = backEnd.currentEntity->e.axis[0][2]; tM[9] = backEnd.currentEntity->e.axis[1][2]; tM[10] = backEnd.currentEntity->e.axis[2][2]; tM[11] = backEnd.currentEntity->e.origin[2];
 			dynamic = qtrue;
 
+			int cluster = R_GetClusterFromPos((vec3_t){ backEnd.currentEntity->e.origin[0], backEnd.currentEntity->e.origin[1], backEnd.currentEntity->e.origin[2] });
+
 			if (backEnd.currentEntity->e.reType & (RT_SPRITE | RT_BEAM | RT_LIGHTNING | RT_RAIL_CORE | RT_RAIL_RINGS)) {
 				tM[0] = 1; tM[1] = 0; tM[2] = 0; tM[3] = 0;
 				tM[4] = 0; tM[5] = 1; tM[6] = 0; tM[7] = 0;
@@ -483,7 +486,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				drawSurf->bAS->data.offsetIDX = vk_d.geometry.idx_entity_dynamic_offset;
 				drawSurf->bAS->data.offsetXYZ = vk_d.geometry.xyz_entity_dynamic_offset;
 				RB_UploadIDX(&vk_d.geometry.idx_entity_dynamic[vk.swapchain.currentImage], drawSurf->bAS->data.offsetIDX, 0);
-				RB_UploadXYZ(&vk_d.geometry.xyz_entity_dynamic[vk.swapchain.currentImage], drawSurf->bAS->data.offsetXYZ);
+				RB_UploadXYZ(&vk_d.geometry.xyz_entity_dynamic[vk.swapchain.currentImage], drawSurf->bAS->data.offsetXYZ, cluster);
 
 				vk_d.geometry.idx_entity_dynamic_offset += tess.numIndexes;
 				vk_d.geometry.xyz_entity_dynamic_offset += tess.numVertexes;
@@ -508,7 +511,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				newAS->data.offsetIDX = vk_d.geometry.idx_entity_dynamic_offset;
 				newAS->data.offsetXYZ = vk_d.geometry.xyz_entity_dynamic_offset;
 				RB_UploadIDX(&vk_d.geometry.idx_entity_dynamic[vk.swapchain.currentImage], newAS->data.offsetIDX, 0);
-				RB_UploadXYZ(&vk_d.geometry.xyz_entity_dynamic[vk.swapchain.currentImage], newAS->data.offsetXYZ);
+				RB_UploadXYZ(&vk_d.geometry.xyz_entity_dynamic[vk.swapchain.currentImage], newAS->data.offsetXYZ, cluster);
 
 				newAS->geometries.geometry.triangles.indexOffset = newAS->data.offsetIDX * sizeof(uint32_t);
 				newAS->geometries.geometry.triangles.vertexOffset = newAS->data.offsetXYZ * sizeof(VertexBuffer);
@@ -529,6 +532,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			}
 			else {
 				drawSurf->bAS->data.world = BAS_ENTITY_STATIC;
+				drawSurf->bAS->data.cluster = cluster;
 
 				if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) {
 					drawSurf->bAS->data.isPlayer = qtrue;
@@ -695,6 +699,10 @@ static void RB_TraceRays() {
 	RTUbo ubo = { 0 };
 	ubo.frameIndex = vk.swapchain.currentFrame;
 
+	ubo.currentCluster = vk_d.currentCluster;
+	ubo.clusterBytes = vk_d.clusterBytes;
+	ubo.numClusters = vk_d.numClusters;
+
 	float viewMatrix[16];
 	// viewMatrix (needs flip)
 	RB_BuildViewMatrix(&viewMatrix, &origin, &backEnd.viewParms. or .axis);
@@ -743,6 +751,15 @@ static void RB_TraceRays() {
 	VK_SetRayTracingPushConstant(&vk_d.accelerationStructures.pipeline, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, 40 * sizeof(float), 16 * sizeof(float), &vk_d.mvp[0]);
 
 	VK_TraceRays(&vk_d.accelerationStructures.pipeline.shaderBindingTableBuffer);
+}
+
+static void
+get_aabb_corner(vec3_t mins, vec3_t maxs, int corner_idx, float *corner)
+{
+	corner[0] = (corner_idx & 1) ? maxs[0] : mins[0];
+	corner[1] = (corner_idx & 2) ? maxs[1] : mins[1];
+	corner[2] = (corner_idx & 4) ? maxs[2] : mins[2];
+	corner[3] = 0;
 }
 
 void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
@@ -806,6 +823,69 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	// draw pt results to swap chain
 	VK_BeginRenderClear();
 	VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage]);
+
+	if (r_showcluster->integer) {
+		VK_Bind(tr.whiteImage);
+		tr_api.State(GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE);
+		vk_d.viewport.minDepth = 0;
+		vk_d.viewport.maxDepth = 0;
+		vk_d.state.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+		vk_d.state.polygonMode = VK_POLYGON_MODE_LINE;
+		vk_d.state.cullMode = VK_CULL_MODE_NONE;
+		vk_d.state.dsBlend.depthTestEnable = VK_FALSE;
+		tr_api.State(GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO | GLS_DEPTHTEST_DISABLE);
+
+		vec4_t* xyz = malloc(4 *8 * tr.world->numClusters * sizeof(vec4_t));
+		color4ub_t* colors = malloc(4 * 8 * tr.world->numClusters * sizeof(color4ub_t));
+		uint32_t* indexes = malloc(4 * 24 * tr.world->numClusters * sizeof(uint32_t));
+
+		int vertexCount = 0;
+		int idxCount = 0;
+		for (int i = 0; i < tr.world->numClusters; i++) {
+			vec4_t points[8];
+			color4ub_t color = { 0,255,0,0 };
+			if (i == 1333) color[0] = 255;
+			//if (i != 1333) continue;
+			uint32_t offset = vertexCount;
+			for (uint32_t idx = 0; idx < 8; idx++) {
+				get_aabb_corner(vk_d.clusterList[i].mins, vk_d.clusterList[i].maxs, idx, &points[idx]);
+				Com_Memcpy(&colors[vertexCount + idx], &color, sizeof(color4ub_t));
+			}
+			Com_Memcpy(&xyz[vertexCount], &points[0], 8 * sizeof(vec4_t));
+			vertexCount += 8;
+
+			indexes[idxCount] = offset + 0; idxCount++; indexes[idxCount] = offset + 1; idxCount++;
+			indexes[idxCount] = offset + 0; idxCount++; indexes[idxCount] = offset + 2; idxCount++;
+			indexes[idxCount] = offset + 0; idxCount++; indexes[idxCount] = offset + 4; idxCount++;
+
+			indexes[idxCount] = offset + 3; idxCount++; indexes[idxCount] = offset + 1; idxCount++;
+			indexes[idxCount] = offset + 3; idxCount++; indexes[idxCount] = offset + 2; idxCount++;
+			indexes[idxCount] = offset + 3; idxCount++; indexes[idxCount] = offset + 7; idxCount++;
+
+			indexes[idxCount] = offset + 5; idxCount++; indexes[idxCount] = offset + 1; idxCount++;
+			indexes[idxCount] = offset + 5; idxCount++; indexes[idxCount] = offset + 4; idxCount++;
+			indexes[idxCount] = offset + 5; idxCount++; indexes[idxCount] = offset + 7; idxCount++;
+
+			indexes[idxCount] = offset + 6; idxCount++; indexes[idxCount] = offset + 2; idxCount++;
+			indexes[idxCount] = offset + 6; idxCount++; indexes[idxCount] = offset + 4; idxCount++;
+			indexes[idxCount] = offset + 6; idxCount++; indexes[idxCount] = offset + 7; idxCount++;
+		}
+
+		VK_UploadBufferDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), vertexCount * sizeof(color4ub_t), (void*)&colors[0]);
+		VK_UploadBufferDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), vertexCount * sizeof(vec4_t), (void*)&xyz[0]);
+		tr_api.R_DrawElements(idxCount, indexes);
+
+		free(xyz);
+		free(colors);
+		free(indexes);
+
+		vk_d.viewport.minDepth = 0;
+		vk_d.viewport.maxDepth = 1;
+		vk_d.state.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+		vk_d.offset += vertexCount;
+		vk_d.offsetIdx += idxCount;
+	}
 	//VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultFramebuffer.image);
 }
 

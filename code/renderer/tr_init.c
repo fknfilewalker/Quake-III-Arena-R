@@ -323,7 +323,7 @@ static void InitVulkan(void)
 				VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[i], VK_MAX_BOTTOM_AS_INSTANCES * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 				// UBOs
 				VK_CreateUniformBuffer(&vk_d.uboBuffer[i], sizeof(RTUbo));
-				VK_CreateUniformBuffer(&vk_d.uboLightList[i], RTX_MAX_LIGHTS * sizeof(vec4_t) + sizeof(uint32_t));
+				VK_CreateUniformBuffer(&vk_d.uboLightList[i], sizeof(LightList_s));
 
 				// End Result Image
 				VK_CreateImage(&vk_d.accelerationStructures.resultImage[i], vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
@@ -1360,11 +1360,17 @@ void RE_Shutdown( qboolean destroyWindow ) {
 		R_DeleteTextures();
 
 		if (glConfig.driverType == VULKAN) {
+			if (vk_d.clusterList != NULL) {
+				free(vk_d.clusterList);
+				vk_d.clusterList = NULL;
+			}
+			vk_d.lightList.numLights = 0;
 			// <RTX>
 			vk_d.worldASInit = qfalse;
 			VK_DestroyRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
 			VK_DestroyAllAccelerationStructures();
 			VK_DestroyImage(&vk_d.accelerationStructures.envmap);
+			VK_DestroyImage(&vk_d.accelerationStructures.visData);
 
 			VK_DestroyBottomAccelerationStructure(&vk_d.bottomASWorldStatic);
 			VK_DestroyBottomAccelerationStructure(&vk_d.bottomASWorldDynamicData);

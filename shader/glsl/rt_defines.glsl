@@ -14,6 +14,9 @@
 
 #define ALBEDO_MULT 1.3
 
+#define RNG_C(bounce)                (2 + 0 + 7 * bounce)
+
+
 struct RayPayload {
 	vec2 barycentric;
 	uint instanceID;

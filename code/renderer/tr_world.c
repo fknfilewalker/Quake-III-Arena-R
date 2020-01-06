@@ -667,6 +667,16 @@ static void R_MarkLeaves (void) {
 	}
 }
 
+int R_GetClusterFromPos(vec3_t pos) {
+	// current viewcluster
+	vk_d.clusterBytes = tr.world->clusterBytes;
+	vk_d.numClusters = tr.world->numClusters;
+	mnode_t* leaf = R_PointInLeaf(pos);
+	return leaf->cluster;
+}
+
+
+
 /*
 =============
 R_AddWorldSurfaces
@@ -938,7 +948,7 @@ static void R_RecursiveWorldNode2(mnode_t* node, int planeBits, int dlightBits) 
 				tess.numIndexes = 0;
 				tess.numVertexes = 0;
 				rb_surfaceTable[*surf->data](surf->data);
-				RB_AddLightToLightList();
+				RB_AddLightToLightList(node->cluster);
 				tess.numIndexes = 0;
 				tess.numVertexes = 0;
 			}

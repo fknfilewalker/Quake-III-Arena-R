@@ -4,6 +4,8 @@
 layout(binding = 0, set = 1) uniform sampler2D texure_array[];
 // blue noise
 layout(binding = BINDING_OFFSET_BLUE_NOISE, set = 0) uniform sampler2DArray blue_noise;
+// vis data
+layout(binding = BINDING_OFFSET_VIS_DATA, set = 0, r8ui) uniform uimage2D vis_data;
 
 // texture getter
 vec4
