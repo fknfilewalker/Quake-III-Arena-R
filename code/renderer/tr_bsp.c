@@ -1780,13 +1780,14 @@ qboolean R_GetEntityToken( char *buffer, int size ) {
 	}
 }
 
-void RB_AddLightToLightList(int cluster) {
+void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint32_t offsetxyz) {
 	vec4_t pos = { 0,0,0,0 };
 	//if (RTX_MAX_LIGHTS == vk_d.lightList.numLights) return;
 	//for (int i = 0; i < tess.numVertexes; i++) {
 	//	//VectorAdd(pos, tess.xyz[i], pos);
 	//	if (tess.numVertexes <= 4) {
 	//		VectorCopy(tess.xyz[i], vk_d.lightList.lights[vk_d.lightList.numLights].pos);
+	//		vk_d.lightList.lights[vk_d.lightList.numLights].cluster = cluster;
 	//		vk_d.lightList.numLights++;
 	//	}
 	//}
@@ -1800,6 +1801,9 @@ void RB_AddLightToLightList(int cluster) {
 		}
 		VectorCopy(pos, vk_d.lightList.lights[vk_d.lightList.numLights].pos);
 		vk_d.lightList.lights[vk_d.lightList.numLights].cluster = cluster;
+		vk_d.lightList.lights[vk_d.lightList.numLights].type = type;
+		vk_d.lightList.lights[vk_d.lightList.numLights].offsetIDX = offsetidx;
+		vk_d.lightList.lights[vk_d.lightList.numLights].offsetXYZ = offsetxyz;
 		//(&vk_d.uboLightList[vk.swapchain.currentImage], vk_d.lightCount * sizeof(vec4_t), 1 * sizeof(vec4_t), (void*)&vk_d.lightList[vk_d.lightCount]);
 		vk_d.lightList.numLights++;
 		//VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], RTX_MAX_LIGHTS * sizeof(vec4_t), 1 * sizeof(uint32_t), (void*)&vk_d.lightCount);
@@ -1841,7 +1845,7 @@ qboolean RB_ASDynamic(shader_t* shader) {
 	return (shader->numDeforms > 0) || (backEnd.currentEntity->e.frame > 0 || backEnd.currentEntity->e.oldframe > 0);
 }
 
-static int R_FindClusterForPos(const vec3_t p) {
+ int R_FindClusterForPos(const vec3_t p) {
 	mnode_t* node;
 	float		d;
 	cplane_t* plane;
@@ -1941,7 +1945,7 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 				c = R_FindClusterForPos(pos);
 				if (c == -1) c = node->cluster;
 				
-				if(RB_IsLight(tess.shader)) RB_AddLightToLightList(c);
+				//if(RB_IsLight(tess.shader)) RB_AddLightToLightList(c, 0, 0, 0);
 				//if(strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "bluemetalsupport2eye"))
 				//{ int x = 1; }
 				
@@ -1963,6 +1967,10 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 					xyz_buffer = &vk_d.geometry.xyz_world_static;
 					idx_buffer_offset = &vk_d.geometry.idx_world_static_offset;
 					xyz_buffer_offset = &vk_d.geometry.xyz_world_static_offset;
+
+					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster, BAS_WORLD_STATIC,
+						 (*countIDX),
+						0);
 				}
 				else if (!RB_ASDynamic(tess.shader) && RB_ASDataDynamic(tess.shader)) {
 					countIDX = countIDXdynamicData;
@@ -1981,6 +1989,10 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].offsetXYZ = *xyz_buffer_offset;
 					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].cluster = c;
 					vk_d.updateDataOffsetXYZCount++;
+
+					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster, BAS_WORLD_DYNAMIC_DATA,
+						 (*countIDX),
+						0);
 				}
 				else if (RB_ASDynamic(tess.shader)) {
 					countIDX = countIDXdynamicAS;
@@ -1999,6 +2011,10 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].offsetXYZ = *xyz_buffer_offset;
 					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].cluster = c;
 					vk_d.updateASOffsetXYZCount++;
+
+					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster, BAS_WORLD_DYNAMIC_AS,
+						(*countIDX),
+						0);
 				}
 				else {
 					surf->skip = qtrue;
@@ -2088,7 +2104,7 @@ void R_RecursiveTrans(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXY
 
 			if (!surf->added && !surf->skip) {
 
-				if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster);
+				
 
 				//if(strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "bluemetalsupport2eye"))
 				//{ int x = 1; }
@@ -2111,6 +2127,10 @@ void R_RecursiveTrans(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXY
 					xyz_buffer = &vk_d.geometry.xyz_world_static;
 					idx_buffer_offset = &vk_d.geometry.idx_world_static_offset;
 					xyz_buffer_offset = &vk_d.geometry.xyz_world_static_offset;
+
+					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster, BAS_WORLD_STATIC, 
+						(*idx_buffer_offset) + (*countIDX),
+						(*xyz_buffer_offset));
 				}
 				else if (!RB_ASDynamic(tess.shader) && RB_ASDataDynamic(tess.shader)) {
 					countIDX = countIDXdynamicData;
@@ -2128,6 +2148,10 @@ void R_RecursiveTrans(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXY
 					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].offsetIDX = *idx_buffer_offset;
 					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].offsetXYZ = *xyz_buffer_offset;
 					vk_d.updateDataOffsetXYZCount++;
+
+					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster, BAS_WORLD_DYNAMIC_DATA, 
+																		(*idx_buffer_offset) + (*countIDX),
+																		(*xyz_buffer_offset));
 				}
 				else if (RB_ASDynamic(tess.shader)) {
 					countIDX = countIDXdynamicAS;
@@ -2145,6 +2169,10 @@ void R_RecursiveTrans(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXY
 					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].offsetIDX = *idx_buffer_offset;
 					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].offsetXYZ = *xyz_buffer_offset;
 					vk_d.updateASOffsetXYZCount++;
+
+					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster, BAS_WORLD_DYNAMIC_AS,
+						(*idx_buffer_offset) + (*countIDX),
+						(*xyz_buffer_offset));
 				}
 				else {
 					surf->skip = qtrue;
@@ -2418,6 +2446,30 @@ void R_BuildAccelerationStructure() {
 	//	tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
 	//	Com_Memcpy(&vk_d.bottomASWorldStaticTrans.geometryInstance.transform, &tM, sizeof(float[12]));
 	//}
+	// lights
+
+	// cluster rows
+	// first index number lights
+	byte* lightVisibility = calloc(s_worldData.numClusters * RTX_MAX_LIGHTS, sizeof(byte));
+	for (int cluster = 0; cluster < s_worldData.numClusters; cluster++) {
+		const byte* clusterVis = s_worldData.vis + cluster * s_worldData.clusterBytes;
+		uint32_t lightCount = 0;
+		for (uint32_t l = 0; l < vk_d.lightList.numLights; l++) {
+			//lightVisibility[cluster * RTX_MAX_LIGHTS] = 0;
+			
+			int lightCluster = vk_d.lightList.lights[l].cluster;
+			if ( (clusterVis[lightCluster >> 3] & (1 << (lightCluster & 7))) ) {
+				lightCount++;
+				lightVisibility[cluster * RTX_MAX_LIGHTS + lightCount] = l;
+			}
+		}
+		lightVisibility[cluster * RTX_MAX_LIGHTS] = lightCount;
+	}
+
+	VK_CreateImage(&vk_d.accelerationStructures.lightVisData, RTX_MAX_LIGHTS, s_worldData.numClusters, VK_FORMAT_R8_UINT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 1);
+	VK_UploadMipImageData(&vk_d.accelerationStructures.lightVisData, RTX_MAX_LIGHTS, s_worldData.numClusters, &lightVisibility[0], 1, 0);
+	VK_TransitionImage(&vk_d.accelerationStructures.lightVisData, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	free(lightVisibility);
 	// skybox
 	qboolean cmInit = qfalse;
 
@@ -2549,6 +2601,7 @@ void R_BuildAccelerationStructure() {
 		VK_AddUniformBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_AddSampler(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_BLUE_NOISE, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_AddStorageImage(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_VIS_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_AddStorageImage(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_LIGHT_VIS_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 
 		VK_SetAccelerationStructure(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.topAS[i].accelerationStructure);
 		VK_SetStorageImage(&vk_d.accelerationStructures.descriptor[i], 1, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultImage[i].view);
@@ -2570,6 +2623,7 @@ void R_BuildAccelerationStructure() {
 		VK_SetUniformBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.uboLightList[i].buffer);
 		VK_SetSampler(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_BLUE_NOISE, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.blueNoiseTex.sampler, vk_d.blueNoiseTex.view);
 		VK_SetStorageImage(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_VIS_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.visData.view);
+		VK_SetStorageImage(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_LIGHT_VIS_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.lightVisData.view);
 		VK_FinishDescriptor(&vk_d.accelerationStructures.descriptor[i]);
 	}
 

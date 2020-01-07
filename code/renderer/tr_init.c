@@ -1371,6 +1371,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			VK_DestroyAllAccelerationStructures();
 			VK_DestroyImage(&vk_d.accelerationStructures.envmap);
 			VK_DestroyImage(&vk_d.accelerationStructures.visData);
+			VK_DestroyImage(&vk_d.accelerationStructures.lightVisData);
 
 			VK_DestroyBottomAccelerationStructure(&vk_d.bottomASWorldStatic);
 			VK_DestroyBottomAccelerationStructure(&vk_d.bottomASWorldDynamicData);

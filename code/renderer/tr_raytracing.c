@@ -48,7 +48,8 @@ void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ, int cluster) {
 		vData[j].material = material;
 		vData[j].texIdx0 = tex0;
 		vData[j].texIdx1 = tex1;
-		vData[j].cluster = cluster;
+		int c = R_FindClusterForPos(tess.xyz[j]);
+		vData[j].cluster = cluster;//c != -1 ? c : cluster;
 	}
 	if (tess.shader->stages[0] != NULL && tess.shader->stages[0]->active) {
 		if (tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD){
@@ -470,7 +471,13 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			tM[8] = backEnd.currentEntity->e.axis[0][2]; tM[9] = backEnd.currentEntity->e.axis[1][2]; tM[10] = backEnd.currentEntity->e.axis[2][2]; tM[11] = backEnd.currentEntity->e.origin[2];
 			dynamic = qtrue;
 
-			int cluster = R_GetClusterFromPos((vec3_t){ backEnd.currentEntity->e.origin[0], backEnd.currentEntity->e.origin[1], backEnd.currentEntity->e.origin[2] });
+			int cluster = R_FindClusterForPos((vec3_t){ backEnd.currentEntity->e.origin[0], backEnd.currentEntity->e.origin[1], backEnd.currentEntity->e.origin[2] });
+			/*if (cluster == -1) {
+				rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
+				cluster = R_FindClusterForPos((vec3_t) { tess.xyz[0][0], tess.xyz[0][1], tess.xyz[0][2]});
+				tess.numVertexes = 0;
+				tess.numIndexes = 0;
+			}*/
 
 			if (backEnd.currentEntity->e.reType & (RT_SPRITE | RT_BEAM | RT_LIGHTNING | RT_RAIL_CORE | RT_RAIL_RINGS)) {
 				tM[0] = 1; tM[1] = 0; tM[2] = 0; tM[3] = 0;

@@ -34,6 +34,7 @@ struct HitPoint {
 
 struct DirectionalLight {
 	vec3 pos;
+	vec3 color;
 };
 
 struct TextureData {
@@ -241,7 +242,6 @@ HitPoint getHitPoint(RayPayload rp){
 }
 
 
-
 // unpack texture idx, blend/add, and req color, data
 TextureData unpackTextureData(uint data){
 	TextureData d;
@@ -254,6 +254,81 @@ TextureData unpackTextureData(uint data){
 	d.tex0Color = (data & TEX0_COLOR_MASK) != 0;
 	d.tex1Color = (data & TEX1_COLOR_MASK) != 0;
 	return d;
+}
+
+DirectionalLight getLight2(Light l){
+	uint customIndex = uint(l.offsetIDX);
+	uvec3 index;
+	if(l.type == BAS_WORLD_STATIC) index = (ivec3(indices_world_static.i[customIndex], indices_world_static.i[customIndex + 1], indices_world_static.i[customIndex + 2])) + uint(l.offsetXYZ);
+	else if(l.type == BAS_WORLD_DYNAMIC_DATA)  index = (ivec3(indices_dynamic_data.i[customIndex], indices_dynamic_data.i[customIndex + 1], indices_dynamic_data.i[customIndex + 2])) + uint(l.offsetXYZ);
+	else if(l.type == BAS_WORLD_DYNAMIC_AS)  index = (ivec3(indices_dynamic_as.i[customIndex], indices_dynamic_as.i[customIndex + 1], indices_dynamic_as.i[customIndex + 2])) + uint(l.offsetXYZ);
+
+	VertexBuffer vData[3];
+	TextureData d;
+	TextureData d2;
+	if(l.type == BAS_WORLD_STATIC){
+		vData[0] = vertices_world_static.v[index.x];
+		vData[1] = vertices_world_static.v[index.y];
+		vData[2] = vertices_world_static.v[index.z];
+		d = unpackTextureData(vertices_world_static.v[index.x].texIdx0);
+		d2 = unpackTextureData(vertices_world_static.v[index.x].texIdx1);
+	}else if(l.type == BAS_WORLD_DYNAMIC_DATA){
+		vData[0] = vertices_dynamic_data.v[index.x];
+		vData[1] = vertices_dynamic_data.v[index.y];
+		vData[2] = vertices_dynamic_data.v[index.z];
+		d = unpackTextureData(vertices_dynamic_data.v[index.x].texIdx0);
+		d2 = unpackTextureData(vertices_dynamic_data.v[index.x].texIdx1);
+	}else if(l.type == BAS_WORLD_DYNAMIC_AS){
+		vData[0] = vertices_dynamic_as.v[index.x];
+		vData[1] = vertices_dynamic_as.v[index.y];
+		vData[2] = vertices_dynamic_as.v[index.z];
+		d = unpackTextureData(vertices_dynamic_as.v[index.x].texIdx0);
+		d2 = unpackTextureData(vertices_dynamic_as.v[index.x].texIdx1);
+	}
+
+
+	DirectionalLight light;
+	// light.color = global_textureLod(d.tex0, vec2(0.5f, 0.5f), 2).xyz;
+	// if(d.tex1 != -1) light.color += global_textureLod(d.tex1, vec2(0.5f, 0.5f), 2).xyz;
+	// if(d2.tex0 != -1) light.color += global_textureLod(d2.tex0, vec2(0.5f, 0.5f), 2).xyz;
+	// if(d2.tex1 != -1) light.color += global_textureLod(d2.tex1, vec2(0.5f, 0.5f), 2).xyz;
+
+	vec4 color = vec4(0);
+	vec4 tex = global_textureLod(d.tex0, vec2(0.5f, 0.5f), 2);
+	color = vec4(tex.xyz, 1);
+	//if(d.tex0Color) color *= (hp.color0/255);
+
+	if(d.tex1 != -1){
+		tex = global_textureLod(d.tex1, vec2(0.5f, 0.5f), 2);
+		//if(d.tex1Color) tex *= (hp.color1/255);
+
+		if(d.tex1Blend) {
+			color = alpha_blend(tex, color);
+		}
+		else color += tex;
+	}
+
+	if(d2.tex0 != -1){
+		tex = global_textureLod(d2.tex0, vec2(0.5f, 0.5f), 2);
+		//if(d.tex0Color) tex *= (hp.color2/255);
+
+		if(d.tex0Blend) {
+			color = alpha_blend(tex, color);
+		}
+		else color += tex;
+	}
+
+	if(d2.tex1 != -1){
+		tex = global_textureLod(d2.tex1, vec2(0.5f, 0.5f), 2);
+		//if(d.tex1Color) tex *= (hp.color3/255);
+
+		if(d.tex1Blend) {
+			color = alpha_blend(tex, color);
+		}
+		else color += tex;
+	} 
+	light.color = color.xyz;
+	return light;
 }
 
 uint 

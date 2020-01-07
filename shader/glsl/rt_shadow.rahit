@@ -3,8 +3,8 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_nonuniform_qualifier : enable
 #include "rt_defines.glsl"
-#include "rt_vattributes.glsl"
 #include "rt_texture.glsl"
+#include "rt_vattributes.glsl"
 layout(location = PAYLOAD_SHADOW) rayPayloadInNV ShadowRayPayload rp;
 hitAttributeNV vec2 hitAttribute;
 

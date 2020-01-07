@@ -66,6 +66,7 @@
 #define BINDING_OFFSET_UBO_LIGHTS					0x0000000f
 #define BINDING_OFFSET_BLUE_NOISE					0x00000010
 #define BINDING_OFFSET_VIS_DATA					    0x00000011
+#define BINDING_OFFSET_LIGHT_VIS_DATA			    0x00000012
 
 // shader offset
 #define SBT_RGEN_PRIMARY_RAYS						0x00000000
@@ -78,7 +79,7 @@
 #define SBT_RAHIT_SHADOW_RAY						0x00000006
 
 #define NUM_BOUNCES									(2)
-#define RTX_MAX_LIGHTS								(256)
+#define RTX_MAX_LIGHTS								(512)
 
 // blue noise
 #define NUM_BLUE_NOISE_TEX							(32)
@@ -176,7 +177,9 @@ STRUCT (
 // holds a light
 STRUCT (
     VEC4    (pos)
-    VEC3    (buff)
+    UINT    (offsetIDX)
+    UINT    (offsetXYZ)
+    UINT    (type)
     INT     (cluster)
 ,Light)
 
