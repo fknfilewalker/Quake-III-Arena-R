@@ -33,6 +33,12 @@ void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ, int cluster) {
 		count += 2;
 	}*/
 
+	/*vec4_t pos = { 0,0,0,0 };
+	for (int i = 0; i < tess.numVertexes; i++) {
+		VectorAdd(pos, tess.xyz[i], pos);
+	}
+	VectorScale(pos, 1.0f / tess.numVertexes, pos);R_FindClusterForPos(tess.xyz[j]);*/
+
 	uint32_t material = RB_GetMaterial();
 	uint32_t tex0 = (RB_GetNextTexEncoded(0)) | (RB_GetNextTexEncoded(1) << TEX_SHIFT_BITS);
 	uint32_t tex1 = (RB_GetNextTexEncoded(2)) | (RB_GetNextTexEncoded(3) << TEX_SHIFT_BITS);
@@ -471,13 +477,9 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			tM[8] = backEnd.currentEntity->e.axis[0][2]; tM[9] = backEnd.currentEntity->e.axis[1][2]; tM[10] = backEnd.currentEntity->e.axis[2][2]; tM[11] = backEnd.currentEntity->e.origin[2];
 			dynamic = qtrue;
 
-			int cluster = R_FindClusterForPos((vec3_t){ backEnd.currentEntity->e.origin[0], backEnd.currentEntity->e.origin[1], backEnd.currentEntity->e.origin[2] });
-			/*if (cluster == -1) {
-				rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
-				cluster = R_FindClusterForPos((vec3_t) { tess.xyz[0][0], tess.xyz[0][1], tess.xyz[0][2]});
-				tess.numVertexes = 0;
-				tess.numIndexes = 0;
-			}*/
+			int cluster = -1; 
+			if(!drawSurf->bAS->isWorldSurface) cluster = R_FindClusterForPos((vec3_t) { backEnd.currentEntity->e.origin[0], backEnd.currentEntity->e.origin[1], backEnd.currentEntity->e.origin[2] });
+			else cluster = R_GetClusterFromSurface(drawSurf->surface);
 
 			if (backEnd.currentEntity->e.reType & (RT_SPRITE | RT_BEAM | RT_LIGHTNING | RT_RAIL_CORE | RT_RAIL_RINGS)) {
 				tM[0] = 1; tM[1] = 0; tM[2] = 0; tM[3] = 0;

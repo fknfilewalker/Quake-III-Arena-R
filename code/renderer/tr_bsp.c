@@ -2446,30 +2446,7 @@ void R_BuildAccelerationStructure() {
 	//	tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
 	//	Com_Memcpy(&vk_d.bottomASWorldStaticTrans.geometryInstance.transform, &tM, sizeof(float[12]));
 	//}
-	// lights
-
-	// cluster rows
-	// first index number lights
-	byte* lightVisibility = calloc(s_worldData.numClusters * RTX_MAX_LIGHTS, sizeof(byte));
-	for (int cluster = 0; cluster < s_worldData.numClusters; cluster++) {
-		const byte* clusterVis = s_worldData.vis + cluster * s_worldData.clusterBytes;
-		uint32_t lightCount = 0;
-		for (uint32_t l = 0; l < vk_d.lightList.numLights; l++) {
-			//lightVisibility[cluster * RTX_MAX_LIGHTS] = 0;
-			
-			int lightCluster = vk_d.lightList.lights[l].cluster;
-			if ( (clusterVis[lightCluster >> 3] & (1 << (lightCluster & 7))) ) {
-				lightCount++;
-				lightVisibility[cluster * RTX_MAX_LIGHTS + lightCount] = l;
-			}
-		}
-		lightVisibility[cluster * RTX_MAX_LIGHTS] = lightCount;
-	}
-
-	VK_CreateImage(&vk_d.accelerationStructures.lightVisData, RTX_MAX_LIGHTS, s_worldData.numClusters, VK_FORMAT_R8_UINT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 1);
-	VK_UploadMipImageData(&vk_d.accelerationStructures.lightVisData, RTX_MAX_LIGHTS, s_worldData.numClusters, &lightVisibility[0], 1, 0);
-	VK_TransitionImage(&vk_d.accelerationStructures.lightVisData, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-	free(lightVisibility);
+	
 	// skybox
 	qboolean cmInit = qfalse;
 
@@ -2576,6 +2553,32 @@ void R_BuildAccelerationStructure() {
 	VK_UploadMipImageData(&vk_d.accelerationStructures.visData, s_worldData.clusterBytes, s_worldData.numClusters, s_worldData.vis, 1, 0);
 	VK_TransitionImage(&vk_d.accelerationStructures.visData, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 	//VK_CreateSampler(&vk_d.accelerationStructures.visData, VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+
+	// lights
+
+	// cluster rows
+	// first index number lights
+	uint32_t* lightVisibility = calloc(s_worldData.numClusters * RTX_MAX_LIGHTS, sizeof(uint32_t));
+	for (int cluster = 0; cluster < s_worldData.numClusters; cluster++) {
+		const byte* clusterVis = s_worldData.vis + cluster * s_worldData.clusterBytes;
+		uint32_t lightCount = 0;
+		for (uint32_t l = 0; l < vk_d.lightList.numLights; l++) {
+			//lightVisibility[cluster * RTX_MAX_LIGHTS] = 0;
+
+			int lightCluster = vk_d.lightList.lights[l].cluster;
+			if (lightCluster == -1) ri.Error(ERR_FATAL, "PT: Light cluster -1!");
+			if ( (clusterVis[lightCluster >> 3] & (1 << (lightCluster & 7))) > 0) {
+				lightCount++;
+				lightVisibility[cluster * RTX_MAX_LIGHTS + lightCount] = l;
+			}
+		}
+		lightVisibility[cluster * RTX_MAX_LIGHTS] = lightCount;
+	}
+
+	VK_CreateImage(&vk_d.accelerationStructures.lightVisData, RTX_MAX_LIGHTS, s_worldData.numClusters, VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 1);
+	VK_UploadMipImageData(&vk_d.accelerationStructures.lightVisData, RTX_MAX_LIGHTS, s_worldData.numClusters, &lightVisibility[0], 4, 0);
+	VK_TransitionImage(&vk_d.accelerationStructures.lightVisData, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	free(lightVisibility);
 
 	// pipeline
 	vkshader_t s = { 0 };

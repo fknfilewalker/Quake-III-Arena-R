@@ -270,23 +270,26 @@ vec4 path_tracer(){
 
 	uint numLight = imageLoad(lightVis_data, ivec2(0, hitCluster)).r;
 
-	for(int i = 0; i < uboLights.lightList.numLights; i++){
-	//for(int i = 1; i < numLight+1; i++){
+	//for(int i = 0; i < uboLights.lightList.numLights; i++){
+	for(int i = 0; i < numLight; i++){
 	//	for(int i = 0; i < 2; i++){
 		//if(hitCluster == 1333) break;
 		//if(!lightVisible( imageLoad(lightVis_data, ivec2(hitCluster, i)).r;, /*ubo.currentCluster*/ hitCluster)) continue;
 		
 		//vec3 posLight = getLight(imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r);
-		//vec3 posLight = getLight(imageLoad(lightVis_data, ivec2( i, hitCluster)).r);
-		if(!lightVisible(i, /*ubo.currentCluster*/ hitCluster)) continue;
-		vec3 posLight = getLight(i);
+		
+		uint lightIndex = imageLoad(lightVis_data, ivec2( i + 1, hitCluster)).r; // first index is numLight so + 1
+		//uint lightIndex = imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
+		vec3 posLight = getLight(lightIndex);
+		//if(!lightVisible(i, /*ubo.currentCluster*/ hitCluster)) continue;
+		//vec3 posLight = getLight(i);
 		vec3 toLight = posLight - P;
 		vec3 L = normalize(toLight);
 		float distToLight =	length(toLight);
-		vec3 lightIntensity = /*vec3(0.25);*/ getLight2(uboLights.lightList.lights[i]).color;
+		vec3 lightIntensity = /*vec3(0.25);*/ getLight2(uboLights.lightList.lights[lightIndex]).color;
 		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
 
-	 	float shadowMult =  /*float(uboLights.lightList.numLights) */ /*numLight/2.0f */  trace_shadow_ray(P, L, 0.01f, distToLight);
+	 	float shadowMult =  /*float(uboLights.lightList.numLights) */ /*numLight/3.0f */  trace_shadow_ray(P, L, 0.01f, distToLight);
 
 		vec3 pPos = vec3(ubo.viewMat[3].xyz);
 

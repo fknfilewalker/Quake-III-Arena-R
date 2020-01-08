@@ -299,6 +299,7 @@ typedef struct {
 	ASInstanceData					data;
 	VkGeometryInstanceNV			geometryInstance;
 	VkDeviceSize					offset;			// offset in static or dynamic buffer
+	qboolean						isWorldSurface;	// just for entity bas which are from world surfaces
 } vkbottomAS_t;
 
 #define	MAX_IMAGE_ANIMATIONS	8

@@ -358,6 +358,7 @@ void R_AddBrushModelSurfaces ( trRefEntity_t *ent ) {
 			// create bas
 			rb_surfaceTable[*((surfaceType_t*)surf->data)]((surfaceType_t*)surf->data);
 			RB_CreateEntityBottomAS(&surf->bAS);
+			surf->bAS->isWorldSurface = qtrue;
 			surf->added = qtrue;
 
 			backEnd.refdef.floatTime = originalTime;
@@ -668,11 +669,23 @@ static void R_MarkLeaves (void) {
 }
 
 int R_GetClusterFromPos(vec3_t pos) {
-	// current viewcluster
 	vk_d.clusterBytes = tr.world->clusterBytes;
 	vk_d.numClusters = tr.world->numClusters;
 	mnode_t* leaf = R_PointInLeaf(pos);
 	return leaf->cluster;
+}
+int R_GetClusterFromSurface(surfaceType_t* surf) {
+	for (int i = 0; i < tr.world->numnodes; i++) {
+		mnode_t* node = &tr.world->nodes[i];
+		if (node->contents == -1) continue;
+
+		msurface_t**mark = node->firstmarksurface;
+		int c = node->nummarksurfaces;
+		for (int j = 0; j < c; j++) {
+			if (mark[j]->data == surf) return node->cluster;
+		}
+	}
+	return -1;
 }
 
 
