@@ -18,28 +18,8 @@ void RB_UploadIDX(vkbuffer_t* buffer, uint32_t offsetIDX, uint32_t offsetXYZ) {
 }
 
 void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ, int cluster) {
-	//tess.normal
-	/*vec4_t* xyz = malloc(4 * input->numVertexes * sizeof(vec4_t));
-	uint32_t* indexes = malloc(4 * input->numVertexes * sizeof(uint32_t));
-
-	int count = 0;
-	for (i = 0; i < input->numVertexes; i++) {
-		Com_Memcpy(&xyz[count], &input->xyz[i], sizeof(vec4_t));
-		VectorMA(input->xyz[i], 2, input->normal[i], temp);
-		Com_Memcpy(&xyz[count + 1], &temp, sizeof(vec3_t));
-		xyz[count + i][3] = 0;
-		indexes[count] = count;
-		indexes[count + 1] = count + 1;
-		count += 2;
-	}*/
-
-	/*vec4_t pos = { 0,0,0,0 };
-	for (int i = 0; i < tess.numVertexes; i++) {
-		VectorAdd(pos, tess.xyz[i], pos);
-	}
-	VectorScale(pos, 1.0f / tess.numVertexes, pos);R_FindClusterForPos(tess.xyz[j]);*/
-
 	uint32_t material = RB_GetMaterial();
+	// encode two tex idx and its needColor and blend flags into one 4 byte uint
 	uint32_t tex0 = (RB_GetNextTexEncoded(0)) | (RB_GetNextTexEncoded(1) << TEX_SHIFT_BITS);
 	uint32_t tex1 = (RB_GetNextTexEncoded(2)) | (RB_GetNextTexEncoded(3) << TEX_SHIFT_BITS);
 	VertexBuffer* vData = calloc(tess.numVertexes, sizeof(VertexBuffer));
@@ -54,16 +34,11 @@ void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ, int cluster) {
 		vData[j].material = material;
 		vData[j].texIdx0 = tex0;
 		vData[j].texIdx1 = tex1;
-		int c = R_FindClusterForPos(tess.xyz[j]);
+		//int c = R_FindClusterForPos(tess.xyz[j]);
 		vData[j].cluster = cluster;//c != -1 ? c : cluster;
 	}
+	// if there are multiple stages we need to upload them all
 	if (tess.shader->stages[0] != NULL && tess.shader->stages[0]->active) {
-		if (tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD){
-		int x = 2;
-		//tess.shader->stages[0]->bundle[0].tcGen = TCGEN_TEXTURE;
-		//tess.svars.texcoords[b][i][0] = tess.texCoords[j][0][0];
-		//tess.svars.texcoords[b][i][1] = tess.texCoords[j][0][1];
-}
 		ComputeTexCoords(tess.shader->stages[0]);
 		ComputeColors(tess.shader->stages[0]);
 		for (int j = 0; j < tess.numVertexes; j++) {
@@ -105,59 +80,24 @@ void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ, int cluster) {
 	free(vData);
 }
 
-uint32_t RB_GetNextTex(int stage) {
-	int indexAnim = 0;
-	if (tess.shader->stages[stage]->bundle[0].numImageAnimations > 1) {
-		indexAnim = (int)(tess.shaderTime * tess.shader->stages[stage]->bundle[0].imageAnimationSpeed * FUNCTABLE_SIZE);
-		indexAnim >>= FUNCTABLE_SIZE2;
-		if (indexAnim < 0) {
-			indexAnim = 0;	// may happen with shader time offsets
-		}
-		indexAnim %= tess.shader->stages[stage]->bundle[0].numImageAnimations;
-	}
-	return indexAnim;
-}
-
-uint32_t RB_GetNextTexEncoded(int stage) {
-	if (tess.shader->stages[stage] != NULL && tess.shader->stages[stage]->active) {
-		int indexAnim = RB_GetNextTex(stage);
-
-		qboolean blend = qfalse;
-		uint32_t stateBits = tess.shader->stages[stage]->stateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS);
-		if ((stateBits & GLS_SRCBLEND_BITS) > GLS_SRCBLEND_ONE && (stateBits & GLS_DSTBLEND_BITS) > GLS_DSTBLEND_ONE) blend = qtrue;
-		//if(stateBits == 101) blend = qfalse;
-		qboolean color = RB_StageNeedsColor(stage);
-
-		uint32_t nextidx = (uint32_t)indexAnim;
-		uint32_t idx = (uint32_t)tess.shader->stages[stage]->bundle[0].image[nextidx]->index;
-		tess.shader->stages[stage]->bundle[0].image[nextidx]->frameUsed = tr.frameCount;
-		return (idx) | (blend ? TEX0_BLEND_MASK : 0) | (color ? TEX0_COLOR_MASK : 0);
-	}
-	return TEX0_IDX_MASK;
-}
-
 void RB_CreateEntityBottomAS(vkbottomAS_t** bAS) {
 	// set offsets and 
 	uint32_t* idxOffset = &vk_d.geometry.idx_entity_static_offset;
 	uint32_t* xyzOffset = &vk_d.geometry.xyz_entity_static_offset;
 	// save bas in static or dynamic list
-	vkbottomAS_t* bASList;
-	{
-		bASList = &vk_d.bottomASList[vk_d.bottomASCount];
-	}
-	//define as geometry
+	vkbottomAS_t* bASList = &vk_d.bottomASList[vk_d.bottomASCount];
+	//define AS geometry
+	Com_Memset(&bASList->geometries, 0, sizeof(VkGeometryNV));
 	bASList->geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
 	bASList->geometries.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
 	bASList->geometries.geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
+	bASList->geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_entity_static.buffer;
+	bASList->geometries.geometry.triangles.vertexOffset = (*xyzOffset) * sizeof(VertexBuffer);
 	bASList->geometries.geometry.triangles.vertexCount = tess.numVertexes;
 	bASList->geometries.geometry.triangles.vertexStride = sizeof(VertexBuffer);
-	bASList->geometries.geometry.triangles.indexCount = tess.numIndexes;
-	bASList->geometries.geometry.triangles.vertexOffset = (*xyzOffset) * sizeof(VertexBuffer);
+	bASList->geometries.geometry.triangles.indexData = vk_d.geometry.idx_entity_static.buffer;
 	bASList->geometries.geometry.triangles.indexOffset = (*idxOffset) * sizeof(uint32_t);
-	{
-		bASList->geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_entity_static.buffer;
-		bASList->geometries.geometry.triangles.indexData = vk_d.geometry.idx_entity_static.buffer;
-	}
+	bASList->geometries.geometry.triangles.indexCount = tess.numIndexes;
 	bASList->geometries.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
 	bASList->geometries.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
 	bASList->geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
@@ -172,19 +112,14 @@ void RB_CreateEntityBottomAS(vkbottomAS_t** bAS) {
 
 	VkCommandBuffer commandBuffer = { 0 };
 	VK_BeginSingleTimeCommands(&commandBuffer);
-	{
-		VK_CreateBottomAS(commandBuffer, bASList, &vk_d.basBufferEntityStatic, &vk_d.basBufferEntityStaticOffset, RTX_BOTTOM_AS_FLAG);
-	}
+	VK_CreateBottomAS(commandBuffer, bASList, &vk_d.basBufferEntityStatic, &vk_d.basBufferEntityStaticOffset, RTX_BOTTOM_AS_FLAG);
 	VK_EndSingleTimeCommands(&commandBuffer);
 
 	vk_d.bottomASCount++;
-
-	if (bAS != NULL) (*bAS) = bASList;
-
 	(*idxOffset) += tess.numIndexes;
 	(*xyzOffset) += tess.numVertexes;
+	if (bAS != NULL) (*bAS) = bASList;
 }
-
 
 //
 //static qboolean RB_MaterialException(vkbottomAS_t* bAS) {
@@ -366,7 +301,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	// add static world
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldStatic.data);
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldStatic.geometryInstance);
-	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldStatic, sizeof(vkbottomAS_t));
+	Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldStatic, sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
 	// add static world trans
 	/*VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldStaticTrans.data);
@@ -376,7 +311,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	// add world with dynamic data
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldDynamicData.data);
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldDynamicData.geometryInstance);
-	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicData, sizeof(vkbottomAS_t));
+	Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicData, sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
 	// update world with dynamic data
 	for (int i = 0; i < vk_d.updateDataOffsetXYZCount; i++) {
@@ -437,7 +372,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		&vk_d.bottomASWorldDynamicAS[vk.swapchain.currentImage],
 		&vk_d.basBufferWorldDynamicAS, NULL, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
 	backEnd.refdef.floatTime = originalTime;
-	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicAS[vk.swapchain.currentImage], sizeof(vkbottomAS_t));
+	Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicAS[vk.swapchain.currentImage], sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
 
 	// lights
@@ -504,14 +439,14 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				RB_UpdateInstanceDataBuffer(drawSurf->bAS);
 				RB_UpdateInstanceBuffer(drawSurf->bAS);
 				// add bottom to trace as list
-				memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], drawSurf->bAS, sizeof(vkbottomAS_t));
+				Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], drawSurf->bAS, sizeof(vkbottomAS_t));
 				vk_d.bottomASTraceListCount++;
 			}
 			else if (RB_ASDynamic(tess.shader)) {
 				// ?leak only in debug build?
 				vkbottomAS_t *newAS = &vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]];
 				vk_d.bottomASDynamicCount[vk.swapchain.currentImage]++;
-				memcpy(newAS, drawSurf->bAS, sizeof(vkbottomAS_t));
+				Com_Memcpy(newAS, drawSurf->bAS, sizeof(vkbottomAS_t));
 				newAS->data.world = BAS_ENTITY_DYNAMIC;
 
 				rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
@@ -536,7 +471,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				RB_UpdateInstanceDataBuffer(newAS);
 				RB_UpdateInstanceBuffer(newAS);
 				// add bottom to trace as list
-				memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], newAS, sizeof(vkbottomAS_t));
+				Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], newAS, sizeof(vkbottomAS_t));
 				vk_d.bottomASTraceListCount++;
 			}
 			else {
@@ -552,7 +487,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				RB_UpdateInstanceDataBuffer(drawSurf->bAS);
 				RB_UpdateInstanceBuffer(drawSurf->bAS);
 				// add bottom to trace as list
-				memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], drawSurf->bAS, sizeof(vkbottomAS_t));
+				Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], drawSurf->bAS, sizeof(vkbottomAS_t));
 				vk_d.bottomASTraceListCount++;
 			}
 			continue;
@@ -690,7 +625,7 @@ static void RB_BuildProjMatrix(float* projMatrix, float* p, float zFar) {
 		p[8],  p[9],  P10,  p[11],
 		p[12], p[13], P14,  p[15]
 	};
-	memcpy(projMatrix, &result, sizeof(result));
+	Com_Memcpy(projMatrix, &result, sizeof(result));
 }
 
 static void RB_TraceRays() {
@@ -771,6 +706,71 @@ get_aabb_corner(vec3_t mins, vec3_t maxs, int corner_idx, float *corner)
 	corner[3] = 0;
 }
 
+static void drawCluster() {
+
+	VK_Bind(tr.whiteImage);
+	tr_api.State(GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE);
+	vk_d.viewport.minDepth = 0;
+	vk_d.viewport.maxDepth = 0;
+	vk_d.state.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+	vk_d.state.polygonMode = VK_POLYGON_MODE_LINE;
+	vk_d.state.cullMode = VK_CULL_MODE_NONE;
+	vk_d.state.dsBlend.depthTestEnable = VK_FALSE;
+	tr_api.State(GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO | GLS_DEPTHTEST_DISABLE);
+
+	vec4_t* xyz = malloc(4 * 8 * tr.world->numClusters * sizeof(vec4_t));
+	color4ub_t* colors = malloc(4 * 8 * tr.world->numClusters * sizeof(color4ub_t));
+	uint32_t* indexes = malloc(4 * 24 * tr.world->numClusters * sizeof(uint32_t));
+
+	int vertexCount = 0;
+	int idxCount = 0;
+	for (int i = 0; i < tr.world->numClusters; i++) {
+		vec4_t points[8];
+		color4ub_t color = { 0,255,0,0 };
+		if (i == 1333) color[0] = 255;
+		//if (i != 1333) continue;
+		uint32_t offset = vertexCount;
+		for (uint32_t idx = 0; idx < 8; idx++) {
+			get_aabb_corner(vk_d.clusterList[i].mins, vk_d.clusterList[i].maxs, idx, &points[idx]);
+			Com_Memcpy(&colors[vertexCount + idx], &color, sizeof(color4ub_t));
+		}
+		Com_Memcpy(&xyz[vertexCount], &points[0], 8 * sizeof(vec4_t));
+		vertexCount += 8;
+
+		indexes[idxCount] = offset + 0; idxCount++; indexes[idxCount] = offset + 1; idxCount++;
+		indexes[idxCount] = offset + 0; idxCount++; indexes[idxCount] = offset + 2; idxCount++;
+		indexes[idxCount] = offset + 0; idxCount++; indexes[idxCount] = offset + 4; idxCount++;
+
+		indexes[idxCount] = offset + 3; idxCount++; indexes[idxCount] = offset + 1; idxCount++;
+		indexes[idxCount] = offset + 3; idxCount++; indexes[idxCount] = offset + 2; idxCount++;
+		indexes[idxCount] = offset + 3; idxCount++; indexes[idxCount] = offset + 7; idxCount++;
+
+		indexes[idxCount] = offset + 5; idxCount++; indexes[idxCount] = offset + 1; idxCount++;
+		indexes[idxCount] = offset + 5; idxCount++; indexes[idxCount] = offset + 4; idxCount++;
+		indexes[idxCount] = offset + 5; idxCount++; indexes[idxCount] = offset + 7; idxCount++;
+
+		indexes[idxCount] = offset + 6; idxCount++; indexes[idxCount] = offset + 2; idxCount++;
+		indexes[idxCount] = offset + 6; idxCount++; indexes[idxCount] = offset + 4; idxCount++;
+		indexes[idxCount] = offset + 6; idxCount++; indexes[idxCount] = offset + 7; idxCount++;
+	}
+
+	VK_UploadBufferDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), vertexCount * sizeof(color4ub_t), (void*)&colors[0]);
+	VK_UploadBufferDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), vertexCount * sizeof(vec4_t), (void*)&xyz[0]);
+	tr_api.R_DrawElements(idxCount, indexes);
+
+	free(xyz);
+	free(colors);
+	free(indexes);
+
+	vk_d.viewport.minDepth = 0;
+	vk_d.viewport.maxDepth = 1;
+	vk_d.state.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+	vk_d.offset += vertexCount;
+	vk_d.offsetIdx += idxCount;
+	
+}
+
 void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	VkMemoryBarrier memoryBarrier = { 0 };
 	vkCmdEndRenderPass(vk.swapchain.CurrentCommandBuffer());
@@ -833,68 +833,8 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	VK_BeginRenderClear();
 	VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage]);
 
-	if (r_showcluster->integer) {
-		VK_Bind(tr.whiteImage);
-		tr_api.State(GLS_POLYMODE_LINE | GLS_DEPTHMASK_TRUE);
-		vk_d.viewport.minDepth = 0;
-		vk_d.viewport.maxDepth = 0;
-		vk_d.state.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-		vk_d.state.polygonMode = VK_POLYGON_MODE_LINE;
-		vk_d.state.cullMode = VK_CULL_MODE_NONE;
-		vk_d.state.dsBlend.depthTestEnable = VK_FALSE;
-		tr_api.State(GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO | GLS_DEPTHTEST_DISABLE);
-
-		vec4_t* xyz = malloc(4 *8 * tr.world->numClusters * sizeof(vec4_t));
-		color4ub_t* colors = malloc(4 * 8 * tr.world->numClusters * sizeof(color4ub_t));
-		uint32_t* indexes = malloc(4 * 24 * tr.world->numClusters * sizeof(uint32_t));
-
-		int vertexCount = 0;
-		int idxCount = 0;
-		for (int i = 0; i < tr.world->numClusters; i++) {
-			vec4_t points[8];
-			color4ub_t color = { 0,255,0,0 };
-			if (i == 1333) color[0] = 255;
-			//if (i != 1333) continue;
-			uint32_t offset = vertexCount;
-			for (uint32_t idx = 0; idx < 8; idx++) {
-				get_aabb_corner(vk_d.clusterList[i].mins, vk_d.clusterList[i].maxs, idx, &points[idx]);
-				Com_Memcpy(&colors[vertexCount + idx], &color, sizeof(color4ub_t));
-			}
-			Com_Memcpy(&xyz[vertexCount], &points[0], 8 * sizeof(vec4_t));
-			vertexCount += 8;
-
-			indexes[idxCount] = offset + 0; idxCount++; indexes[idxCount] = offset + 1; idxCount++;
-			indexes[idxCount] = offset + 0; idxCount++; indexes[idxCount] = offset + 2; idxCount++;
-			indexes[idxCount] = offset + 0; idxCount++; indexes[idxCount] = offset + 4; idxCount++;
-
-			indexes[idxCount] = offset + 3; idxCount++; indexes[idxCount] = offset + 1; idxCount++;
-			indexes[idxCount] = offset + 3; idxCount++; indexes[idxCount] = offset + 2; idxCount++;
-			indexes[idxCount] = offset + 3; idxCount++; indexes[idxCount] = offset + 7; idxCount++;
-
-			indexes[idxCount] = offset + 5; idxCount++; indexes[idxCount] = offset + 1; idxCount++;
-			indexes[idxCount] = offset + 5; idxCount++; indexes[idxCount] = offset + 4; idxCount++;
-			indexes[idxCount] = offset + 5; idxCount++; indexes[idxCount] = offset + 7; idxCount++;
-
-			indexes[idxCount] = offset + 6; idxCount++; indexes[idxCount] = offset + 2; idxCount++;
-			indexes[idxCount] = offset + 6; idxCount++; indexes[idxCount] = offset + 4; idxCount++;
-			indexes[idxCount] = offset + 6; idxCount++; indexes[idxCount] = offset + 7; idxCount++;
-		}
-
-		VK_UploadBufferDataOffset(&vk_d.colorbuffer, vk_d.offset * sizeof(color4ub_t), vertexCount * sizeof(color4ub_t), (void*)&colors[0]);
-		VK_UploadBufferDataOffset(&vk_d.vertexbuffer, vk_d.offset * sizeof(vec4_t), vertexCount * sizeof(vec4_t), (void*)&xyz[0]);
-		tr_api.R_DrawElements(idxCount, indexes);
-
-		free(xyz);
-		free(colors);
-		free(indexes);
-
-		vk_d.viewport.minDepth = 0;
-		vk_d.viewport.maxDepth = 1;
-		vk_d.state.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-
-		vk_d.offset += vertexCount;
-		vk_d.offsetIdx += idxCount;
-	}
+	if (r_showcluster->integer) drawCluster();
+	
 	//VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultFramebuffer.image);
 }
 

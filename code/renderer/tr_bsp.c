@@ -2225,13 +2225,10 @@ void R_CalcClusterAABB(mnode_t* node) {
 		vk_d.clusterList[node->cluster].maxs[0] = max(vk_d.clusterList[node->cluster].maxs[0], node->maxs[0]);
 		vk_d.clusterList[node->cluster].maxs[1] = max(vk_d.clusterList[node->cluster].maxs[1], node->maxs[1]);
 		vk_d.clusterList[node->cluster].maxs[2] = max(vk_d.clusterList[node->cluster].maxs[2], node->maxs[2]);
-	
-		
-		
 	}
 }
 
-void R_BuildAccelerationStructure() {
+void R_PreparePT() {
 	int i;
 	//tr.world->numClusters
 	
@@ -2711,7 +2708,11 @@ void RE_LoadWorldMap( const char *name ) {
 	R_LoadVisibility( &header->lumps[LUMP_VISIBILITY] );
 	R_LoadEntities( &header->lumps[LUMP_ENTITIES] );
 	R_LoadLightGrid( &header->lumps[LUMP_LIGHTGRID] );
-	if(glConfig.driverType == VULKAN && r_vertexLight->value == 2)R_BuildAccelerationStructure();
+
+	// RTX
+	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
+		R_PreparePT();
+	}
 
 
 	s_worldData.dataSize = (byte *)ri.Hunk_Alloc(0, h_low) - startMarker;

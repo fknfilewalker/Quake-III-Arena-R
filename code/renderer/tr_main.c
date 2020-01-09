@@ -1585,9 +1585,6 @@ R_GenerateDrawSurfs
 */
 void R_GenerateDrawSurfs( void ) {
 	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && tr.refdef.rdflags != RDF_NOWORLDMODEL) {
-		//vk_d.lightList.numLights = 0;
-		//R_AddLights();
-		//ri.Printf(PRINT_ALL, "numLights:%i\n", vk_d.lightList.numLights);
 		if (!r_lockpvs->integer) {
 			vk_d.currentCluster = R_GetClusterFromPos(tr.viewParms.pvsOrigin);
 			if (r_showcluster->integer) ri.Printf(PRINT_ALL, "cluster:%i\n", vk_d.currentCluster);
@@ -1682,14 +1679,13 @@ void R_RenderView (viewParms_t *parms) {
 
 	tr.viewCount++;
 
-	// set viewParms.world
 	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) r_nocull->integer = 1;
+	// set viewParms.world
 	R_RotateForViewer ();
 
 	R_SetupFrustum ();
 
 	R_GenerateDrawSurfs();
-	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) r_nocull->integer = 0;
 	//r_nocull->integer = 0;
 	//if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
 	//	if (vk_d.portalInView) {

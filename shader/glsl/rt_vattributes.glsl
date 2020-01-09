@@ -256,6 +256,8 @@ TextureData unpackTextureData(uint data){
 	return d;
 }
 
+
+
 DirectionalLight getLight2(Light l){
 	uint customIndex = uint(l.offsetIDX);
 	uvec3 index;
@@ -286,6 +288,14 @@ DirectionalLight getLight2(Light l){
 		d2 = unpackTextureData(vertices_dynamic_as.v[index.x].texIdx1);
 	}
 
+	vec2 uv0 = (vData[0].uv0 + vData[1].uv0 + vData[2].uv0) / 3.0f;
+	vec2 uv1 = (vData[0].uv1 + vData[1].uv1 + vData[2].uv1) / 3.0f;
+	vec2 uv2 = (vData[0].uv2 + vData[1].uv2 + vData[2].uv2) / 3.0f;
+
+	// vec4 color0 = (unpackColor(vData[0].color0) + unpackColor(vData[1].color0) + unpackColor(vData[2].color0)) / 3.0f;
+	// vec4 color1 = (unpackColor(vData[0].color1) + unpackColor(vData[1].color1) + unpackColor(vData[2].color1)) / 3.0f;
+	// vec4 color2 = (unpackColor(vData[0].color2) + unpackColor(vData[1].color2) + unpackColor(vData[2].color2)) / 3.0f;
+	// vec4 color3 = (unpackColor(vData[0].color3) + unpackColor(vData[1].color3) + unpackColor(vData[2].color3)) / 3.0f;
 
 	DirectionalLight light;
 	// light.color = global_textureLod(d.tex0, vec2(0.5f, 0.5f), 2).xyz;
@@ -294,13 +304,14 @@ DirectionalLight getLight2(Light l){
 	// if(d2.tex1 != -1) light.color += global_textureLod(d2.tex1, vec2(0.5f, 0.5f), 2).xyz;
 
 	vec4 color = vec4(0);
-	vec4 tex = global_textureLod(d.tex0, vec2(0.5f, 0.5f), 2);
+	vec4 tex = global_textureLod(d.tex0, uv0, 2);
 	color = vec4(tex.xyz, 1);
+	//if(d.tex0Color) color *= (color0/255);
 	//if(d.tex0Color) color *= (hp.color0/255);
 
 	if(d.tex1 != -1){
-		tex = global_textureLod(d.tex1, vec2(0.5f, 0.5f), 2);
-		//if(d.tex1Color) tex *= (hp.color1/255);
+		tex = global_textureLod(d.tex1, uv1, 2);
+		//if(d.tex1Color) tex *= (color1/255);
 
 		if(d.tex1Blend) {
 			color = alpha_blend(tex, color);
@@ -309,8 +320,8 @@ DirectionalLight getLight2(Light l){
 	}
 
 	if(d2.tex0 != -1){
-		tex = global_textureLod(d2.tex0, vec2(0.5f, 0.5f), 2);
-		//if(d.tex0Color) tex *= (hp.color2/255);
+		tex = global_textureLod(d2.tex0, uv2, 2);
+		//if(d.tex0Color) tex *= (color2/255);
 
 		if(d.tex0Blend) {
 			color = alpha_blend(tex, color);
@@ -320,7 +331,7 @@ DirectionalLight getLight2(Light l){
 
 	if(d2.tex1 != -1){
 		tex = global_textureLod(d2.tex1, vec2(0.5f, 0.5f), 2);
-		//if(d.tex1Color) tex *= (hp.color3/255);
+		//if(d.tex1Color) tex *= (color3/255);
 
 		if(d.tex1Blend) {
 			color = alpha_blend(tex, color);

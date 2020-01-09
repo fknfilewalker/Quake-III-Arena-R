@@ -143,7 +143,6 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 		}
 		else color += tex;
 	} else return color;
-
 	d = unpackTextureData(hp.tex1);
 	if(d.tex0 != -1){
 		tex_coord = hp.uv2;

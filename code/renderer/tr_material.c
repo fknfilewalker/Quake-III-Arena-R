@@ -28,7 +28,6 @@ qboolean RB_StageNeedsColor(int stage) {
 		}
 	}
 	return qfalse;
-	//tess.shader->stages[0] != NULL ? ((tess.shader->stages[0]->bundle[0].tcGen != TCGEN_BAD) && tess.shader->stages[0]->bundle[0].numTexMods > 0) : qfalse;
 }
 
 uint32_t RB_GetMaterial() {
@@ -45,4 +44,34 @@ uint32_t RB_GetMaterial() {
 		material |= MATERIAL_FLAG_PLAYER_OR_WEAPON;
 	}
 	return material;
+}
+
+uint32_t RB_GetNextTex(int stage) {
+	int indexAnim = 0;
+	if (tess.shader->stages[stage]->bundle[0].numImageAnimations > 1) {
+		indexAnim = (int)(tess.shaderTime * tess.shader->stages[stage]->bundle[0].imageAnimationSpeed * FUNCTABLE_SIZE);
+		indexAnim >>= FUNCTABLE_SIZE2;
+		if (indexAnim < 0) {
+			indexAnim = 0;	// may happen with shader time offsets
+		}
+		indexAnim %= tess.shader->stages[stage]->bundle[0].numImageAnimations;
+	}
+	return indexAnim;
+}
+
+uint32_t RB_GetNextTexEncoded(int stage) {
+	if (tess.shader->stages[stage] != NULL && tess.shader->stages[stage]->active) {
+		int indexAnim = RB_GetNextTex(stage);
+
+		qboolean blend = qfalse;
+		uint32_t stateBits = tess.shader->stages[stage]->stateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS);
+		if ((stateBits & GLS_SRCBLEND_BITS) > GLS_SRCBLEND_ONE && (stateBits & GLS_DSTBLEND_BITS) > GLS_DSTBLEND_ONE) blend = qtrue;
+		qboolean color = RB_StageNeedsColor(stage);
+
+		uint32_t nextidx = (uint32_t)indexAnim;
+		uint32_t idx = (uint32_t)tess.shader->stages[stage]->bundle[0].image[nextidx]->index;
+		tess.shader->stages[stage]->bundle[0].image[nextidx]->frameUsed = tr.frameCount;
+		return (idx) | (blend ? TEX0_BLEND_MASK : 0) | (color ? TEX0_COLOR_MASK : 0);
+	}
+	return TEX0_IDX_MASK;
 }
