@@ -1146,8 +1146,7 @@ int	totalMsec, countMsec;
 WinMain
 
 ==================
-*/
-int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+*/int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	char		cwd[MAX_OSPATH];
 	int			startTime, endTime;
 

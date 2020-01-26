@@ -1,10 +1,16 @@
 #include "tr_local.h"
 
 qboolean RB_IsLight(shader_t* shader) {
+	if (tess.numIndexes > 6) {
+		return qfalse;
+	}
+	if (strstr(shader->name, "wsupprt1_12") || strstr(shader->name, "scrolllight") || strstr(shader->name, "runway")) return qfalse;
+
 	if (strstr(shader->name, "base_light") || strstr(shader->name, "gothic_light") /*|| strstr(tess.shader->name, "eye")*/) { // all lamp textures
 		return qtrue;
 	}
-	else if (strstr(shader->name, "flame")) {
+	
+	if (strstr(shader->name, "flame")) {
 		return qtrue;
 	}
 	return qfalse;

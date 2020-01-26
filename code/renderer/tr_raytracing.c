@@ -8,6 +8,180 @@ glConfig.driverType == VULKAN && r_vertexLight->value == 2
 #define RTX_BOTTOM_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV)
 #define RTX_TOP_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV)
 
+int RB_TryMergeCluster(int cluster[3], int defaultC) {
+	if ((cluster[0] == -1 && cluster[1] == -1) || (cluster[1] == -1 && cluster[2] == -1) || (cluster[2] == -1 && cluster[0] == -1)) return -1;
+	//if ((cluster[0] == -1 && cluster[1] == -1) && cluster[2] == defaultC) return -1;
+	//if ((cluster[1] == -1 && cluster[2] == -1) && cluster[0] == defaultC) return -1;
+	//if ((cluster[2] == -1 && cluster[0] == -1) && cluster[1] == defaultC) return -1;
+	//if ((cluster[0] == -1 && cluster[1] == -1) || (cluster[1] == -1 && cluster[2] == -1) || (cluster[2] == -1 && cluster[0] == -1)) return -1;
+
+	if (cluster[0] != cluster[1] || cluster[1] != cluster[2] || cluster[0] != cluster[2]) {
+		vec3_t mins = { 99999, 99999, 99999 };
+		vec3_t maxs = { -99999, -99999, -99999 };
+		if (cluster[0] != -1) {
+			mins[0] = mins[0] < vk_d.clusterList[cluster[0]].mins[0] ? mins[0] : vk_d.clusterList[cluster[0]].mins[0];
+			mins[1] = mins[1] < vk_d.clusterList[cluster[0]].mins[1] ? mins[1] : vk_d.clusterList[cluster[0]].mins[1];
+			mins[2] = mins[2] < vk_d.clusterList[cluster[0]].mins[2] ? mins[2] : vk_d.clusterList[cluster[0]].mins[2];
+			maxs[0] = maxs[0] > vk_d.clusterList[cluster[0]].maxs[0] ? maxs[0] : vk_d.clusterList[cluster[0]].maxs[0];
+			maxs[1] = maxs[1] > vk_d.clusterList[cluster[0]].maxs[1] ? maxs[1] : vk_d.clusterList[cluster[0]].maxs[1];
+			maxs[2] = maxs[2] > vk_d.clusterList[cluster[0]].maxs[2] ? maxs[2] : vk_d.clusterList[cluster[0]].maxs[2];
+		}
+		if (cluster[1] != -1) {
+			mins[0] = mins[0] < vk_d.clusterList[cluster[1]].mins[0] ? mins[0] : vk_d.clusterList[cluster[1]].mins[0];
+			mins[1] = mins[1] < vk_d.clusterList[cluster[1]].mins[1] ? mins[1] : vk_d.clusterList[cluster[1]].mins[1];
+			mins[2] = mins[2] < vk_d.clusterList[cluster[1]].mins[2] ? mins[2] : vk_d.clusterList[cluster[1]].mins[2];
+			maxs[0] = maxs[0] > vk_d.clusterList[cluster[1]].maxs[0] ? maxs[0] : vk_d.clusterList[cluster[1]].maxs[0];
+			maxs[1] = maxs[1] > vk_d.clusterList[cluster[1]].maxs[1] ? maxs[1] : vk_d.clusterList[cluster[1]].maxs[1];
+			maxs[2] = maxs[2] > vk_d.clusterList[cluster[1]].maxs[2] ? maxs[2] : vk_d.clusterList[cluster[1]].maxs[2];
+		}
+		if (cluster[2] != -1) {
+			mins[0] = mins[0] < vk_d.clusterList[cluster[2]].mins[0] ? mins[0] : vk_d.clusterList[cluster[2]].mins[0];
+			mins[1] = mins[1] < vk_d.clusterList[cluster[2]].mins[1] ? mins[1] : vk_d.clusterList[cluster[2]].mins[1];
+			mins[2] = mins[2] < vk_d.clusterList[cluster[2]].mins[2] ? mins[2] : vk_d.clusterList[cluster[2]].mins[2];
+			maxs[0] = maxs[0] > vk_d.clusterList[cluster[2]].maxs[0] ? maxs[0] : vk_d.clusterList[cluster[2]].maxs[0];
+			maxs[1] = maxs[1] > vk_d.clusterList[cluster[2]].maxs[1] ? maxs[1] : vk_d.clusterList[cluster[2]].maxs[1];
+			maxs[2] = maxs[2] > vk_d.clusterList[cluster[2]].maxs[2] ? maxs[2] : vk_d.clusterList[cluster[2]].maxs[2];
+		}
+		{
+			mins[0] = mins[0] < vk_d.clusterList[defaultC].mins[0] ? mins[0] : vk_d.clusterList[defaultC].mins[0];
+			mins[1] = mins[1] < vk_d.clusterList[defaultC].mins[1] ? mins[1] : vk_d.clusterList[defaultC].mins[1];
+			mins[2] = mins[2] < vk_d.clusterList[defaultC].mins[2] ? mins[2] : vk_d.clusterList[defaultC].mins[2];
+			maxs[0] = maxs[0] > vk_d.clusterList[defaultC].maxs[0] ? maxs[0] : vk_d.clusterList[defaultC].maxs[0];
+			maxs[1] = maxs[1] > vk_d.clusterList[defaultC].maxs[1] ? maxs[1] : vk_d.clusterList[defaultC].maxs[1];
+			maxs[2] = maxs[2] > vk_d.clusterList[defaultC].maxs[2] ? maxs[2] : vk_d.clusterList[defaultC].maxs[2];
+		}
+
+
+		byte* vis = calloc(1, sizeof(byte) * vk_d.clusterBytes);
+		for (int i = 0; i < vk_d.numFixedCluster; i++) {
+			if ((vk_d.clusterList[i].mins[0] >= mins[0] && vk_d.clusterList[i].mins[1] >= mins[1] && vk_d.clusterList[i].mins[2] >= mins[2]) &&
+				(vk_d.clusterList[i].maxs[0] <= maxs[0] && vk_d.clusterList[i].maxs[1] <= maxs[1] && vk_d.clusterList[i].maxs[2] <= maxs[2])) {
+
+				byte* allVis = (vk_d.vis + i * vk_d.clusterBytes);
+				for (int b = 0; b < vk_d.clusterBytes; b++) {
+
+					vis[b] = vis[b] | allVis[b];
+				}
+				//const byte* clusterVis = vk_d.vis + cluster * s_worldData.clusterBytes;
+				int x = 2;
+			}
+
+		}
+
+		byte* allVis = (vk_d.vis + vk_d.numClusters * vk_d.clusterBytes);
+		for (int b = 0; b < vk_d.clusterBytes; b++) {
+			allVis[b] = vis[b];
+		}
+
+		free(vis);
+		int c = vk_d.numClusters;
+		vk_d.numClusters++;
+		return c;
+
+		//else c = 0;
+	}
+	return -1;
+}
+int RB_GetCluster() {
+	vec3_t mins = { 99999, 99999, 99999 };
+	vec3_t maxs = { -99999, -99999, -99999 };
+
+	for (int i = 0; i < (tess.numVertexes); i++) {
+		int cluster = R_FindClusterForPos3(tess.xyz[i]);
+		if(cluster == -1) cluster = R_FindClusterForPos(tess.xyz[i]);
+		if (cluster == -1) cluster = R_FindClusterForPos2(tess.xyz[i]);
+
+		if (cluster != -1) {
+			mins[0] = mins[0] < vk_d.clusterList[cluster].mins[0] ? mins[0] : vk_d.clusterList[cluster].mins[0];
+			mins[1] = mins[1] < vk_d.clusterList[cluster].mins[1] ? mins[1] : vk_d.clusterList[cluster].mins[1];
+			mins[2] = mins[2] < vk_d.clusterList[cluster].mins[2] ? mins[2] : vk_d.clusterList[cluster].mins[2];
+			maxs[0] = maxs[0] > vk_d.clusterList[cluster].maxs[0] ? maxs[0] : vk_d.clusterList[cluster].maxs[0];
+			maxs[1] = maxs[1] > vk_d.clusterList[cluster].maxs[1] ? maxs[1] : vk_d.clusterList[cluster].maxs[1];
+			maxs[2] = maxs[2] > vk_d.clusterList[cluster].maxs[2] ? maxs[2] : vk_d.clusterList[cluster].maxs[2];
+		}
+	}
+
+	byte* vis = calloc(1, sizeof(byte) * vk_d.clusterBytes);
+	for (int i = 0; i < vk_d.numFixedCluster; i++) {
+		if ((vk_d.clusterList[i].mins[0] >= mins[0] && vk_d.clusterList[i].mins[1] >= mins[1] && vk_d.clusterList[i].mins[2] >= mins[2]) &&
+			(vk_d.clusterList[i].maxs[0] <= maxs[0] && vk_d.clusterList[i].maxs[1] <= maxs[1] && vk_d.clusterList[i].maxs[2] <= maxs[2])) {
+
+			byte* allVis = (vk_d.vis + i * vk_d.clusterBytes);
+			for (int b = 0; b < vk_d.clusterBytes; b++) {
+
+				vis[b] = vis[b] | allVis[b];
+			}
+			//const byte* clusterVis = vk_d.vis + cluster * s_worldData.clusterBytes;
+			int x = 2;
+		}
+
+	}
+
+	byte* allVis = (vk_d.vis + vk_d.numClusters * vk_d.clusterBytes);
+	for (int b = 0; b < vk_d.clusterBytes; b++) {
+		allVis[b] = vis[b];
+	}
+
+	free(vis);
+	int c = vk_d.numClusters;
+	vk_d.numClusters++;
+	return c;
+}
+
+void RB_UploadCluster(vkbuffer_t* buffer, uint32_t offsetIDX, int defaultC) {
+	uint32_t* clusterData = calloc(tess.numIndexes/3, sizeof(uint32_t));
+	for (int i = 0; i < (tess.numIndexes / 3); i++) {
+		vec4_t pos = { 0,0,0,0 };
+		for (int j = 0; j < 3; j++) {
+			VectorAdd(pos, tess.xyz[tess.indexes[(i * 3) + j]], pos);
+		}
+		VectorScale(pos, 1.0f / 3.0f, pos);
+		int c = -1;//R_FindClusterForPos(pos);
+
+		int cluster[3];
+		cluster[0] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 0]]);
+		cluster[1] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 1]]);
+		cluster[2] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 2]]);
+
+		if(cluster[0] == -1) cluster[0] = R_FindClusterForPos(tess.xyz[tess.indexes[(i * 3) + 0]]);
+		if (cluster[1] == -1) cluster[1] = R_FindClusterForPos(tess.xyz[tess.indexes[(i * 3) + 1]]);
+		if (cluster[2] == -1) cluster[2] = R_FindClusterForPos(tess.xyz[tess.indexes[(i * 3) + 2]]);
+
+		if (cluster[0] == -1) cluster[0] = R_FindClusterForPos2(tess.xyz[tess.indexes[(i * 3) + 0]]);
+		if (cluster[1] == -1) cluster[1] = R_FindClusterForPos2(tess.xyz[tess.indexes[(i * 3) + 1]]);
+		if (cluster[2] == -1) cluster[2] = R_FindClusterForPos2(tess.xyz[tess.indexes[(i * 3) + 2]]);
+
+		c = RB_TryMergeCluster(cluster, defaultC);
+
+		/*if (c == -1) {
+			cluster[0] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 0]]);
+			cluster[1] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 1]]);
+			cluster[2] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 2]]);
+
+			if (cluster[0] == -1) cluster[0] = R_FindClusterForPos(tess.xyz[tess.indexes[(i * 3) + 0]]);
+			if (cluster[1] == -1) cluster[1] = R_FindClusterForPos(tess.xyz[tess.indexes[(i * 3) + 1]]);
+			if (cluster[2] == -1) cluster[2] = R_FindClusterForPos(tess.xyz[tess.indexes[(i * 3) + 2]]);
+
+			if (cluster[0] == -1) cluster[0] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 0]]);
+			if (cluster[1] == -1) cluster[1] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 1]]);
+			if (cluster[2] == -1) cluster[2] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 2]]);
+			c = RB_TryMergeCluster(cluster, defaultC);
+		}*/
+		
+		//if (c == -1 && (clister0 == -1 && clister1 == -1)) c = clister2;
+		//if (c == -1 && (clister1 == -1 && clister2 == -1)) c = clister0;
+		//if (c == -1 && (clister2 == -1 && clister0 == -1)) c = clister1;
+		if (c == -1) c = R_FindClusterForPos(pos);
+		if (c == -1) c = R_FindClusterForPos2(pos);
+		if (c == -1) c = R_FindClusterForPos3(pos);
+		if (c == -1) c = defaultC;
+		clusterData[i] = c;
+
+	}
+	VK_UploadBufferDataOffset(buffer, offsetIDX * sizeof(uint32_t), (tess.numIndexes/3) * sizeof(uint32_t), (void*)clusterData);
+	free(clusterData);
+}
+
 void RB_UploadIDX(vkbuffer_t* buffer, uint32_t offsetIDX, uint32_t offsetXYZ) {
 	uint32_t* idxData = calloc(tess.numIndexes, sizeof(uint32_t));
 	for (int j = 0; j < tess.numIndexes; j++) {
@@ -23,6 +197,8 @@ void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ, int cluster) {
 	uint32_t tex0 = (RB_GetNextTexEncoded(0)) | (RB_GetNextTexEncoded(1) << TEX_SHIFT_BITS);
 	uint32_t tex1 = (RB_GetNextTexEncoded(2)) | (RB_GetNextTexEncoded(3) << TEX_SHIFT_BITS);
 	VertexBuffer* vData = calloc(tess.numVertexes, sizeof(VertexBuffer));
+
+
 	for (int j = 0; j < tess.numVertexes; j++) {
 		vData[j].pos[0] = tess.xyz[j][0];
 		vData[j].pos[1] = tess.xyz[j][1];
@@ -35,7 +211,7 @@ void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ, int cluster) {
 		vData[j].texIdx0 = tex0;
 		vData[j].texIdx1 = tex1;
 		//int c = R_FindClusterForPos(tess.xyz[j]);
-		vData[j].cluster = cluster;//c != -1 ? c : cluster;
+		vData[j].cluster = cluster;// c != -1 ? c : cluster;
 	}
 	// if there are multiple stages we need to upload them all
 	if (tess.shader->stages[0] != NULL && tess.shader->stages[0]->active) {
@@ -380,6 +556,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	//VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], RTX_MAX_LIGHTS * sizeof(vec4_t), 1 * sizeof(uint32_t), (void*)&vk_d.lightCount);
 
 	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
+
 		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
 		// skip stuff
 		if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
@@ -413,8 +590,17 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			dynamic = qtrue;
 
 			int cluster = -1; 
-			if(!drawSurf->bAS->isWorldSurface) cluster = R_FindClusterForPos((vec3_t) { backEnd.currentEntity->e.origin[0], backEnd.currentEntity->e.origin[1], backEnd.currentEntity->e.origin[2] });
-			else cluster = R_GetClusterFromSurface(drawSurf->surface);
+			if (!drawSurf->bAS->isWorldSurface) {
+				//if(cluster == -1)cluster = R_FindClusterForPos((vec3_t) { backEnd.currentEntity->e.origin[0], backEnd.currentEntity->e.origin[1], backEnd.currentEntity->e.origin[2] });
+				//if (cluster == -1)cluster = R_FindClusterForPos2((vec3_t) { backEnd.currentEntity->e.origin[0], backEnd.currentEntity->e.origin[1], backEnd.currentEntity->e.origin[2] });
+				if (cluster == -1)cluster = R_FindClusterForPos3((vec3_t) { backEnd.currentEntity->e.origin[0], backEnd.currentEntity->e.origin[1], backEnd.currentEntity->e.origin[2] });
+				if (cluster == -1) {
+					int x = 2;
+				}
+			}
+			else {
+				cluster = drawSurf->bAS->c;//R_GetClusterFromSurface(drawSurf->surface);
+			}
 
 			if (backEnd.currentEntity->e.reType & (RT_SPRITE | RT_BEAM | RT_LIGHTNING | RT_RAIL_CORE | RT_RAIL_RINGS)) {
 				tM[0] = 1; tM[1] = 0; tM[2] = 0; tM[3] = 0;
@@ -641,11 +827,13 @@ static void RB_TraceRays() {
 	vec3_t	origin;	// player position
 	VectorCopy(backEnd.viewParms. or .origin, origin);
 	RTUbo ubo = { 0 };
-	ubo.frameIndex = vk.swapchain.currentFrame;
+	ubo.frameIndex = tr.frameCount % NUM_BLUE_NOISE_TEX;//vk.swapchain.currentFrame;
 
 	ubo.currentCluster = vk_d.currentCluster;
 	ubo.clusterBytes = vk_d.clusterBytes;
 	ubo.numClusters = vk_d.numClusters;
+
+	ubo.cullLights = pt_cullLights->integer;
 
 	float viewMatrix[16];
 	// viewMatrix (needs flip)

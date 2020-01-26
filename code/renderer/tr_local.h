@@ -300,6 +300,7 @@ typedef struct {
 	VkGeometryInstanceNV			geometryInstance;
 	VkDeviceSize					offset;			// offset in static or dynamic buffer
 	qboolean						isWorldSurface;	// just for entity bas which are from world surfaces
+	int c;
 } vkbottomAS_t;
 
 #define	MAX_IMAGE_ANIMATIONS	8
@@ -1219,13 +1220,17 @@ typedef struct {
 typedef struct {
 	uint32_t		idx_world_static_offset;
 	uint32_t		xyz_world_static_offset;
+	uint32_t		cluster_world_static_offset;
 	vkbuffer_t		idx_world_static;
 	vkbuffer_t		xyz_world_static;
+	vkbuffer_t		cluster_world_static;
 
 	uint32_t		idx_world_dynamic_data_offset;
 	uint32_t		xyz_world_dynamic_data_offset;
+	uint32_t		cluster_world_dynamic_data_offset;
 	vkbuffer_t		idx_world_dynamic_data[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t		xyz_world_dynamic_data[VK_MAX_SWAPCHAIN_SIZE];
+	vkbuffer_t		cluster_world_dynamic_data;
 
 	uint32_t		idx_world_dynamic_as_offset[VK_MAX_SWAPCHAIN_SIZE];
 	uint32_t		xyz_world_dynamic_as_offset[VK_MAX_SWAPCHAIN_SIZE];
@@ -1376,8 +1381,12 @@ typedef struct {
 	// <RTX>
 	cluster_t			*clusterList;
 	int					currentCluster;
+	int					numFixedCluster;
 	int					numClusters;
 	int					clusterBytes;
+
+	int					numMaxClusters;
+	const byte			*vis;
 
 	// AS
 	qboolean			worldASInit;
@@ -1603,6 +1612,9 @@ extern	cvar_t	*r_debugSort;
 
 extern	cvar_t	*r_printShaders;
 extern	cvar_t	*r_saveFontData;
+
+// PT
+extern	cvar_t	*pt_cullLights;
 
 //====================================================================
 

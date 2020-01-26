@@ -68,6 +68,9 @@
 #define BINDING_OFFSET_VIS_DATA					    0x00000011
 #define BINDING_OFFSET_LIGHT_VIS_DATA			    0x00000012
 
+#define BINDING_OFFSET_CLUSTER_WORLD_STATIC         0x00000013
+#define BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_DATA   0x00000014
+
 // shader offset
 #define SBT_RGEN_PRIMARY_RAYS						0x00000000
 #define SBT_RMISS_PATH_TRACER						0x00000001
@@ -82,7 +85,7 @@
 #define RTX_MAX_LIGHTS								(512)
 
 // blue noise
-#define NUM_BLUE_NOISE_TEX							(32)
+#define NUM_BLUE_NOISE_TEX							(64)
 #define BLUE_NOISE_RES								(256)
 
 #define UINT_MAX                                    0xffffffff
@@ -172,6 +175,8 @@ STRUCT (
     INT     (currentCluster)
     INT		(numClusters)
  	INT		(clusterBytes)
+    // settings
+    BOOL    (cullLights)
 ,RTUbo)
 
 // holds a light

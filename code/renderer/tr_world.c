@@ -361,6 +361,32 @@ void R_AddBrushModelSurfaces ( trRefEntity_t *ent ) {
 			surf->bAS->isWorldSurface = qtrue;
 			surf->added = qtrue;
 
+			surf->bAS->c = RB_GetCluster();
+			
+			//{
+
+			//	uint32_t* lightVisibility = calloc(vk_d.numClusters * RTX_MAX_LIGHTS, sizeof(uint32_t));
+			//	for (int cluster = 0; cluster < vk_d.numClusters; cluster++) {
+			//		const byte* clusterVis = vk_d.vis + cluster * vk_d.clusterBytes;
+			//		uint32_t lightCount = 0;
+			//		for (uint32_t l = 0; l < vk_d.lightList.numLights; l++) {
+			//			//lightVisibility[cluster * RTX_MAX_LIGHTS] = 0;
+
+			//			int lightCluster = vk_d.lightList.lights[l].cluster;
+			//			if (lightCluster == -1) ri.Error(ERR_FATAL, "PT: Light cluster -1!");
+			//			if ((clusterVis[lightCluster >> 3] & (1 << (lightCluster & 7))) > 0) {
+			//				lightCount++;
+			//				lightVisibility[cluster * RTX_MAX_LIGHTS + lightCount] = l;
+			//			}
+			//		}
+			//		lightVisibility[cluster * RTX_MAX_LIGHTS] = lightCount;
+			//		if (lightCount > RTX_MAX_LIGHTS) ri.Error(ERR_FATAL, "PT: To many lights!");
+			//	}
+			//	VK_UploadMipImageData(&vk_d.accelerationStructures.lightVisData, RTX_MAX_LIGHTS, vk_d.numClusters, &lightVisibility[0], 4, 0);
+			//	VK_TransitionImage(&vk_d.accelerationStructures.lightVisData, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+			//	free(lightVisibility);
+			//}
+
 			backEnd.refdef.floatTime = originalTime;
 			tess.numVertexes = 0;
 			tess.numIndexes = 0;

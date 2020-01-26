@@ -15,6 +15,8 @@
 #define ALBEDO_MULT 1.3
 
 #define RNG_C(bounce)                (2 + 0 + 7 * bounce)
+#define RNG_LP_X(bounce)             (3 + 0 + 7 * bounce)
+#define RNG_LP_Y(bounce)             (4 + 0 + 7 * bounce)
 
 
 struct RayPayload {
@@ -28,7 +30,7 @@ struct RayPayload {
 };
 struct ShadowRayPayload
 {
-  float visFactor;  // Will be 1.0 for fully lit, 0.0 for fully shadowed
+  	float visFactor;  // Will be 1.0 for fully lit, 0.0 for fully shadowed
 };
 
 struct Ray {

@@ -84,7 +84,7 @@ vec4 alpha_blend_premultiplied(vec4 top, vec4 bottom)
 // }
 
 uint
-get_rng_seed(int frame_num)
+get_rng_seed(uint frame_num)
 {
 	ivec2 ipos = ivec2(gl_LaunchIDNV);
 	uint rng_seed = 0;
@@ -96,7 +96,7 @@ get_rng_seed(int frame_num)
 	return rng_seed;
 }
 float
-get_rng(uint idx, int frame_num)
+get_rng(uint idx, uint frame_num)
 {
 	uint rng_seed = get_rng_seed(frame_num);
 	uvec3 p = uvec3(rng_seed, rng_seed >> 10, rng_seed >> 20);

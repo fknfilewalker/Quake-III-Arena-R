@@ -151,6 +151,9 @@ int		max_polys;
 cvar_t	*r_maxpolyverts;
 int		max_polyverts;
 
+// PT
+cvar_t* pt_cullLights;
+
 void ( APIENTRY * qglMultiTexCoord2fARB )( GLenum texture, GLfloat s, GLfloat t );
 void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
 void ( APIENTRY * qglClientActiveTextureARB )( GLenum texture );
@@ -275,6 +278,8 @@ static void InitVulkan(void)
 				vk_d.geometry.idx_world_dynamic_as_offset[i] = 0;
 				vk_d.geometry.xyz_world_dynamic_as_offset[i] = 0;
 			}
+			vk_d.geometry.cluster_world_static_offset = 0;
+			vk_d.geometry.cluster_world_dynamic_data_offset = 0;
 			// entity offsets
 			vk_d.geometry.idx_entity_static_offset = 0;
 			vk_d.geometry.xyz_entity_static_offset = 0;
@@ -286,11 +291,15 @@ static void InitVulkan(void)
 			VK_CreateRayTracingASBuffer(&vk_d.basBufferStaticWorld, 40 * VK_AS_MEMORY_ALLIGNMENT_SIZE * sizeof(byte));
 			VK_CreateAttributeBuffer(&vk_d.geometry.idx_world_static, RTX_WORLD_STATIC_IDX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 			VK_CreateAttributeBuffer(&vk_d.geometry.xyz_world_static, RTX_WORLD_STATIC_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			VK_CreateAttributeBuffer(&vk_d.geometry.cluster_world_static, RTX_WORLD_STATIC_IDX_SIZE/3 * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+
 			// dynamic data
 			for (int i = 0; i < vk.swapchain.imageCount; i++) {
 				VK_CreateAttributeBuffer(&vk_d.geometry.idx_world_dynamic_data[i], RTX_WORLD_DYNAMIC_DATA_IDX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 				VK_CreateAttributeBuffer(&vk_d.geometry.xyz_world_dynamic_data[i], RTX_WORLD_DYNAMIC_DATA_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 			}
+			VK_CreateAttributeBuffer(&vk_d.geometry.cluster_world_dynamic_data, RTX_WORLD_DYNAMIC_DATA_IDX_SIZE / 3 * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+
 			VK_CreateRayTracingASBuffer(&vk_d.basBufferWorldDynamicData, 10 * VK_AS_MEMORY_ALLIGNMENT_SIZE * sizeof(byte));
 			// dynamic AS
 			vk_d.basBufferEntityDynamicOffset = 0;
@@ -1222,6 +1231,9 @@ void R_Register( void )
 	r_maxpolys = ri.Cvar_Get( "r_maxpolys", va("%d", MAX_POLYS), 0);
 	r_maxpolyverts = ri.Cvar_Get( "r_maxpolyverts", va("%d", MAX_POLYVERTS), 0);
 
+	// RTX
+	pt_cullLights = ri.Cvar_Get("pt_cullLights", "1", 0);
+
 	// make sure all the commands added here are also
 	// removed in R_Shutdown
 	ri.Cmd_AddCommand( "imagelist", R_ImageList_f );
@@ -1364,6 +1376,10 @@ void RE_Shutdown( qboolean destroyWindow ) {
 				free(vk_d.clusterList);
 				vk_d.clusterList = NULL;
 			}
+			if (vk_d.vis != NULL) {
+				free(vk_d.vis);
+				vk_d.vis = NULL;
+			}
 			vk_d.lightList.numLights = 0;
 			// <RTX>
 			vk_d.worldASInit = qfalse;
@@ -1385,6 +1401,9 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			}
 	
 			vk_d.bottomASTraceListCount = 0;
+
+			vk_d.geometry.cluster_world_static_offset = 0;
+			vk_d.geometry.cluster_world_dynamic_data_offset = 0;
 
 			vk_d.geometry.idx_world_static_offset = 0;
 			vk_d.geometry.xyz_world_static_offset = 0;
@@ -1445,6 +1464,9 @@ void RE_Shutdown( qboolean destroyWindow ) {
 				VK_DestroyBuffer(&vk_d.geometry.idx_entity_dynamic[i]);
 			}
 
+			// cluster buffer
+			VK_DestroyBuffer(&vk_d.geometry.cluster_world_static);
+			VK_DestroyBuffer(&vk_d.geometry.cluster_world_dynamic_data);
 			
 			// as buffer
 			VK_DestroyBuffer(&vk_d.basBufferStaticWorld);

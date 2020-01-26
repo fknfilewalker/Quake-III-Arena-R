@@ -182,7 +182,7 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 
 vec3
 getRandomLight(int i){
-	int lightIDX = int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * uboLights.lightList.numLights ) );
+	int lightIDX = int( round( get_rng(RNG_C(i), ubo.frameIndex) * uboLights.lightList.numLights ) );
 	//if(uboLights.lightList.lights[lightIDX].cluster > 500) return uboLights.lightList.lights[0].pos.xyz;
 	// tr.world->vis + cluster * tr.world->clusterBytes;
 	return uboLights.lightList.lights[lightIDX].pos.xyz;
@@ -267,25 +267,31 @@ vec4 path_tracer(){
 
 	vec3 shadeColor = vec3(0);
 
-	uint numLight = imageLoad(lightVis_data, ivec2(0, hitCluster)).r;
+	uint numLight;
+	if(ubo.cullLights) numLight = imageLoad(lightVis_data, ivec2(0, hitCluster)).r;
+	else numLight = uboLights.lightList.numLights; 
 
-	//for(int i = 0; i < uboLights.lightList.numLights; i++){
 	for(int i = 0; i < numLight; i++){
+		uint lightIndex;
+		if(ubo.cullLights) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, hitCluster)).r; // first index is numLight so + 1
+		else lightIndex = i;
+
 	//	for(int i = 0; i < 2; i++){
 		//if(hitCluster == 1333) break;
 		//if(!lightVisible( imageLoad(lightVis_data, ivec2(hitCluster, i)).r;, /*ubo.currentCluster*/ hitCluster)) continue;
 		
 		//vec3 posLight = getLight(imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r);
 		
-		uint lightIndex = imageLoad(lightVis_data, ivec2( i + 1, hitCluster)).r; // first index is numLight so + 1
+		DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex));
 		//uint lightIndex = imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
-		vec3 posLight = getLight(lightIndex);
+		//vec3 posLight = getLight(lightIndex);
+		vec3 posLight = light.pos;
 		//if(!lightVisible(i, /*ubo.currentCluster*/ hitCluster)) continue;
 		//vec3 posLight = getLight(i);
 		vec3 toLight = posLight - P;
 		vec3 L = normalize(toLight);
 		float distToLight =	length(toLight);
-		vec3 lightIntensity = /*vec3(0.25);*/ getLight2(uboLights.lightList.lights[lightIndex]).color;
+		vec3 lightIntensity = /*vec3(0.25);*/ light.color * min(light.mag / distToLight, 1);
 		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
 
 	 	float shadowMult =  /*float(uboLights.lightList.numLights) */ /*numLight/3.0f */  trace_shadow_ray(P, L, 0.01f, distToLight);
@@ -299,16 +305,15 @@ vec4 path_tracer(){
 		shadeColor += shadowMult * LdotN * lightIntensity; 
 	}
 
-	
-
 	// Modulate based on the physically based Lambertian term (albedo/pi)
 	shadeColor *= primary_albedo.rgb / M_PI;
 	
 	// uint seed = initRand(gl_LaunchIDNV.x, gl_LaunchIDNV.y, 16/* = 16*/);
 	// // indirect
+	// uint bounces = 1 ;
 	// if (true)
 	// {
-	// 	for (uint b = 0; b < 5; ++b)
+	// 	for (uint b = 0; b < bounces; ++b)
 	// 	{
 	// 		// Select a random direction for our diffuse interreflection ray.
 	// 		vec3 bounceDir;
@@ -342,20 +347,24 @@ vec4 path_tracer(){
 	// 			P = hpIndirect.pos.xyz;
 	// 			N = hpIndirect.normal;
 
-	// 			for(int i = 0; i < 1/*uboLights.lightList.numLights*/; i++){
-	// 				vec3 posLight = getRandomLight(i);
-	// 				vec3 toLight = posLight - P;
-	// 				vec3 L = normalize(toLight);
-	// 				float distToLight =	length(toLight);
-	// 				vec3 lightIntensity = vec3(0.25);
+	// 			// uint numLight = imageLoad(lightVis_data, ivec2(0, hpIndirect.cluster)).r;
+	// 			// for(int i = 0; i < 1/*uboLights.lightList.numLights*/; i++){
+	// 			// 	uint lightIndex = imageLoad(lightVis_data, ivec2( int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r; // first index is numLight so + 1
+	// 			// 	DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex));
 
-	// 				float shadowMult =  trace_shadow_ray(P, L, 0.01f, distToLight);
+	// 			// 	vec3 posLight = light.pos;//getRandomLight(i);
+	// 			// 	vec3 toLight = posLight - P;
+	// 			// 	vec3 L = normalize(toLight);
+	// 			// 	float distToLight =	length(toLight);
+	// 			// 	vec3 lightIntensity = vec3(0.25);
 
-	// 				float LdotN = clamp(dot(N, L), 0.0, 1.0);
+	// 			// 	float shadowMult =  trace_shadow_ray(P, L, 0.01f, distToLight);
 
-	// 				// Accumulate our Lambertian shading color
-	// 				shadeColor += shadowMult * LdotN * lightIntensity; 
-	// 			}
+	// 			// 	float LdotN = clamp(dot(N, L), 0.0, 1.0);
+
+	// 			// 	// Accumulate our Lambertian shading color
+	// 			// 	shadeColor += shadowMult * LdotN * lightIntensity; 
+	// 			// }
 	// 		}
 
 	// 		//bounceColor = (NdotL > 0.50f) ? float3(0, 0, 0) : bounceColor;

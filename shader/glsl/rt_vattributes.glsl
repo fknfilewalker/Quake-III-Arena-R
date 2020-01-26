@@ -35,6 +35,7 @@ struct HitPoint {
 struct DirectionalLight {
 	vec3 pos;
 	vec3 color;
+	float mag;
 };
 
 struct TextureData {
@@ -51,6 +52,7 @@ layout(binding = BINDING_OFFSET_INSTANCE_DATA, set = 0) buffer Instance { ASInst
 // Buffer with indices and vertices
 layout(binding = BINDING_OFFSET_IDX_WORLD_STATIC, set = 0) buffer Indices_World_static { uint i[]; } indices_world_static;
 layout(binding = BINDING_OFFSET_XYZ_WORLD_STATIC, set = 0) buffer Vertices_World_static { VertexBuffer v[]; } vertices_world_static;
+
 layout(binding = BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA, set = 0) buffer Indices_dynamic_data { uint i[]; } indices_dynamic_data;
 layout(binding = BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA, set = 0) buffer Vertices_dynamic_data { VertexBuffer v[]; } vertices_dynamic_data;
 layout(binding = BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS, set = 0) buffer Indices_dynamic_as { uint i[]; } indices_dynamic_as;
@@ -59,6 +61,9 @@ layout(binding = BINDING_OFFSET_IDX_ENTITY_STATIC, set = 0) buffer Indices_entit
 layout(binding = BINDING_OFFSET_XYZ_ENTITY_STATIC, set = 0) buffer Vertices_entity_static { VertexBuffer v[]; } vertices_entity_static;
 layout(binding = BINDING_OFFSET_IDX_ENTITY_DYNAMIC, set = 0) buffer Indices_entity_dynamic { uint i[]; } indices_entity_dynamic;
 layout(binding = BINDING_OFFSET_XYZ_ENTITY_DYNAMIC, set = 0) buffer Vertices_entity_dynamic { VertexBuffer v[]; } vertices_entity_dynamic;
+
+layout(binding = BINDING_OFFSET_CLUSTER_WORLD_STATIC, set = 0) buffer Cluster_World_static { uint c[]; } cluster_world_static;
+layout(binding = BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_DATA, set = 0) buffer Cluster_World_dynamic_data { uint c[]; } cluster_world_dynamic_data;
 
 vec3 getBarycentricCoordinates(vec2 hitAttribute) { return vec3(1.0f - hitAttribute.x - hitAttribute.y, hitAttribute.x, hitAttribute.y); }
 
@@ -188,10 +193,21 @@ Triangle getTriangle(RayPayload rp){
 			hitTriangle.tex1 = (iData.data[rp.instanceID].texIdx1);
 	}
 
-
+	uint idx_c;
 	switch(iData.data[rp.instanceID].world){
+		case BAS_WORLD_STATIC:
+			idx_c = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID);
+			hitTriangle.cluster = cluster_world_static.c[idx_c];
+			break;
+		case BAS_WORLD_DYNAMIC_DATA:
+			idx_c = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID);
+			hitTriangle.cluster = cluster_world_dynamic_data.c[idx_c];
+			break;
 		case BAS_ENTITY_STATIC:
 			hitTriangle.cluster = iData.data[rp.instanceID].cluster;
+			break;
+		case BAS_ENTITY_DYNAMIC:
+			hitTriangle.cluster = vData[1].cluster;
 			break;
 		default:
 			hitTriangle.cluster = vData[1].cluster;
@@ -258,7 +274,17 @@ TextureData unpackTextureData(uint data){
 
 
 
-DirectionalLight getLight2(Light l){
+vec3
+sample_triangle(vec2 xi)
+{
+    float sqrt_xi = sqrt(xi.x);
+    return vec3(
+        1.0 - sqrt_xi,
+        sqrt_xi * (1.0 - xi.y),
+        sqrt_xi * xi.y);
+}
+
+DirectionalLight getLight2(Light l, ivec2 rng){
 	uint customIndex = uint(l.offsetIDX);
 	uvec3 index;
 	if(l.type == BAS_WORLD_STATIC) index = (ivec3(indices_world_static.i[customIndex], indices_world_static.i[customIndex + 1], indices_world_static.i[customIndex + 2])) + uint(l.offsetXYZ);
@@ -297,7 +323,21 @@ DirectionalLight getLight2(Light l){
 	// vec4 color2 = (unpackColor(vData[0].color2) + unpackColor(vData[1].color2) + unpackColor(vData[2].color2)) / 3.0f;
 	// vec4 color3 = (unpackColor(vData[0].color3) + unpackColor(vData[1].color3) + unpackColor(vData[2].color3)) / 3.0f;
 
+	float rng_x = get_rng(RNG_LP_X(rng.x), rng.y);
+	float rng_y = get_rng(RNG_LP_Y(rng.x), rng.y);
+	//int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * uboLights.lightList.numLights ) )
+
+	vec3 dir_x = vData[0].pos.xyz - vData[1].pos.xyz;
+	vec3 dir_y = vData[2].pos.xyz - vData[1].pos.xyz;
+
 	DirectionalLight light;
+	light.pos = l.pos.xyz;
+	light.mag = length(cross(dir_x, dir_y));
+	//light.pos = (vData[0].pos.xyz + vData[1].pos.xyz + vData[2].pos.xyz) / 3;
+	light.pos = vData[1].pos.xyz + (rng_x * dir_x + rng_y * dir_y);
+	//light.pos = l.pos.xyz * sample_triangle(vec2(rng_x, rng_y)); 
+
+
 	// light.color = global_textureLod(d.tex0, vec2(0.5f, 0.5f), 2).xyz;
 	// if(d.tex1 != -1) light.color += global_textureLod(d.tex1, vec2(0.5f, 0.5f), 2).xyz;
 	// if(d2.tex0 != -1) light.color += global_textureLod(d2.tex0, vec2(0.5f, 0.5f), 2).xyz;
