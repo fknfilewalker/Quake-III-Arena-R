@@ -8,6 +8,22 @@ glConfig.driverType == VULKAN && r_vertexLight->value == 2
 #define RTX_BOTTOM_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV)
 #define RTX_TOP_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV)
 
+qboolean RB_ClusterVisIdent(byte* aVis, byte* bVis) {
+	if(!memcmp(aVis, bVis, vk_d.clusterBytes * sizeof(byte))) return qtrue;
+	/*for (int b = 0; b < vk_d.clusterBytes; b++) {
+		if (aVis[b] != bVis[b]) return qfalse;
+	}*/
+	return qfalse;
+}
+
+int RB_CheckClusterExist(byte* cVis) {
+	for (int i = vk_d.numFixedCluster; i < vk_d.numClusters; i++) {
+		byte* allVis = (vk_d.vis + i * vk_d.clusterBytes);
+		if (RB_ClusterVisIdent(allVis, cVis)) return i;
+	}
+	return -1;
+}
+
 int RB_TryMergeCluster(int cluster[3], int defaultC) {
 	if ((cluster[0] == -1 && cluster[1] == -1) || (cluster[1] == -1 && cluster[2] == -1) || (cluster[2] == -1 && cluster[0] == -1)) return -1;
 	//if ((cluster[0] == -1 && cluster[1] == -1) && cluster[2] == defaultC) return -1;
@@ -42,7 +58,7 @@ int RB_TryMergeCluster(int cluster[3], int defaultC) {
 			maxs[1] = maxs[1] > vk_d.clusterList[cluster[2]].maxs[1] ? maxs[1] : vk_d.clusterList[cluster[2]].maxs[1];
 			maxs[2] = maxs[2] > vk_d.clusterList[cluster[2]].maxs[2] ? maxs[2] : vk_d.clusterList[cluster[2]].maxs[2];
 		}
-		{
+		if (defaultC != -1) {
 			mins[0] = mins[0] < vk_d.clusterList[defaultC].mins[0] ? mins[0] : vk_d.clusterList[defaultC].mins[0];
 			mins[1] = mins[1] < vk_d.clusterList[defaultC].mins[1] ? mins[1] : vk_d.clusterList[defaultC].mins[1];
 			mins[2] = mins[2] < vk_d.clusterList[defaultC].mins[2] ? mins[2] : vk_d.clusterList[defaultC].mins[2];
@@ -65,17 +81,19 @@ int RB_TryMergeCluster(int cluster[3], int defaultC) {
 				//const byte* clusterVis = vk_d.vis + cluster * s_worldData.clusterBytes;
 				int x = 2;
 			}
-
 		}
 
-		byte* allVis = (vk_d.vis + vk_d.numClusters * vk_d.clusterBytes);
-		for (int b = 0; b < vk_d.clusterBytes; b++) {
-			allVis[b] = vis[b];
+		int c = RB_CheckClusterExist(vis);
+		if (c == -1) {
+			byte* allVis = (vk_d.vis + vk_d.numClusters * vk_d.clusterBytes);
+			for (int b = 0; b < vk_d.clusterBytes; b++) {
+				allVis[b] = vis[b];
+			}
+			c = vk_d.numClusters;
+			vk_d.numClusters++;
 		}
-
 		free(vis);
-		int c = vk_d.numClusters;
-		vk_d.numClusters++;
+		
 		return c;
 
 		//else c = 0;
@@ -391,7 +409,7 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 		tess.shader->stages[0]->bundle[0].image[indexAnim]->frameUsed = tr.frameCount;
 	}*/
 
-	bAS->data.blendfunc = (uint32_t)(tess.shader->stages[0]->stateBits);
+	//bAS->data.blendfunc = (uint32_t)(tess.shader->stages[0]->stateBits);
 
 	//// set material
 	//if (!RB_MaterialException(bAS)) {
@@ -600,6 +618,9 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			}
 			else {
 				cluster = drawSurf->bAS->c;//R_GetClusterFromSurface(drawSurf->surface);
+			}
+			if (backEnd.currentEntity->e.origin[0] == 0 && backEnd.currentEntity->e.origin[1] == 0 && backEnd.currentEntity->e.origin[2] == 0) {
+				int x=2;
 			}
 
 			if (backEnd.currentEntity->e.reType & (RT_SPRITE | RT_BEAM | RT_LIGHTNING | RT_RAIL_CORE | RT_RAIL_RINGS)) {

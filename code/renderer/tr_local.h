@@ -683,6 +683,7 @@ typedef struct msurface_s {
 	vkbottomAS_t*		bAS;			// bottom Acceleration Structure
 	qboolean			added;
 	qboolean			skip;
+	qboolean			notBrush;
 
 	surfaceType_t		*data;			// any of srf*_t
 } msurface_t;
@@ -1239,8 +1240,10 @@ typedef struct {
 
 	uint32_t		idx_entity_static_offset;
 	uint32_t		xyz_entity_static_offset;
+	uint32_t		cluster_entity_static_offset;
 	vkbuffer_t		idx_entity_static;
 	vkbuffer_t		xyz_entity_static;
+	vkbuffer_t		cluster_entity_static;
 
 	uint32_t		idx_entity_dynamic_offset;
 	uint32_t		xyz_entity_dynamic_offset;

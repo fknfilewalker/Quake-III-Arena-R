@@ -275,6 +275,9 @@ vec4 path_tracer(){
 		uint lightIndex;
 		if(ubo.cullLights) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, hitCluster)).r; // first index is numLight so + 1
 		else lightIndex = i;
+		// random
+		// lightIndex = imageLoad(lightVis_data, ivec2( int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
+
 
 	//	for(int i = 0; i < 2; i++){
 		//if(hitCluster == 1333) break;
@@ -291,7 +294,9 @@ vec4 path_tracer(){
 		vec3 toLight = posLight - P;
 		vec3 L = normalize(toLight);
 		float distToLight =	length(toLight);
-		vec3 lightIntensity = /*vec3(0.25);*/ light.color * min(light.mag / distToLight, 1);
+		float lightStrength =  min(light.mag / distToLight, 1);
+		if(lightStrength < 0.1f) continue;
+		vec3 lightIntensity = /*vec3(0.25);*/ light.color * lightStrength;
 		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
 
 	 	float shadowMult =  /*float(uboLights.lightList.numLights) */ /*numLight/3.0f */  trace_shadow_ray(P, L, 0.01f, distToLight);

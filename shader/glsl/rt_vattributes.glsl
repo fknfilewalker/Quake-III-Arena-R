@@ -64,6 +64,7 @@ layout(binding = BINDING_OFFSET_XYZ_ENTITY_DYNAMIC, set = 0) buffer Vertices_ent
 
 layout(binding = BINDING_OFFSET_CLUSTER_WORLD_STATIC, set = 0) buffer Cluster_World_static { uint c[]; } cluster_world_static;
 layout(binding = BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_DATA, set = 0) buffer Cluster_World_dynamic_data { uint c[]; } cluster_world_dynamic_data;
+layout(binding = BINDING_OFFSET_CLUSTER_ENTITY_STATIC, set = 0) buffer Cluster_Entity_static { uint c[]; } cluster_entity_static;
 
 vec3 getBarycentricCoordinates(vec2 hitAttribute) { return vec3(1.0f - hitAttribute.x - hitAttribute.y, hitAttribute.x, hitAttribute.y); }
 
@@ -204,7 +205,11 @@ Triangle getTriangle(RayPayload rp){
 			hitTriangle.cluster = cluster_world_dynamic_data.c[idx_c];
 			break;
 		case BAS_ENTITY_STATIC:
-			hitTriangle.cluster = iData.data[rp.instanceID].cluster;
+			if(iData.data[rp.instanceID].isBrushModel){
+				idx_c = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID);
+				hitTriangle.cluster = cluster_entity_static.c[idx_c];
+			}
+			else hitTriangle.cluster = iData.data[rp.instanceID].cluster;
 			break;
 		case BAS_ENTITY_DYNAMIC:
 			hitTriangle.cluster = vData[1].cluster;

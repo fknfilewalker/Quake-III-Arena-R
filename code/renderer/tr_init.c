@@ -280,6 +280,7 @@ static void InitVulkan(void)
 			}
 			vk_d.geometry.cluster_world_static_offset = 0;
 			vk_d.geometry.cluster_world_dynamic_data_offset = 0;
+			vk_d.geometry.cluster_entity_static_offset = 0;
 			// entity offsets
 			vk_d.geometry.idx_entity_static_offset = 0;
 			vk_d.geometry.xyz_entity_static_offset = 0;
@@ -308,9 +309,11 @@ static void InitVulkan(void)
 				VK_CreateAttributeBuffer(&vk_d.geometry.xyz_world_dynamic_as[i], RTX_WORLD_DYNAMIC_AS_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 				VK_CreateRayTracingASBuffer(&vk_d.basBufferWorldDynamicAS[i], 10 * VK_AS_MEMORY_ALLIGNMENT_SIZE * sizeof(byte));
 			}
-			// entitys
+			// entity
 			VK_CreateAttributeBuffer(&vk_d.geometry.idx_entity_static, RTX_ENTITY_STATIC_INDEX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 			VK_CreateAttributeBuffer(&vk_d.geometry.xyz_entity_static, RTX_ENTITY_STATIC_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			VK_CreateAttributeBuffer(&vk_d.geometry.cluster_entity_static, RTX_ENTITY_STATIC_INDEX_SIZE / 3 * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+
 			VK_CreateRayTracingASBuffer(&vk_d.basBufferEntityStatic, VK_MAX_BOTTOM_AS * VK_AS_MEMORY_ALLIGNMENT_SIZE * sizeof(byte));
 			vk_d.basBufferEntityStaticOffset = 0;
 			vk_d.basBufferEntityDynamicOffset = 0;
@@ -1404,6 +1407,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 
 			vk_d.geometry.cluster_world_static_offset = 0;
 			vk_d.geometry.cluster_world_dynamic_data_offset = 0;
+			vk_d.geometry.cluster_entity_static_offset = 0;
 
 			vk_d.geometry.idx_world_static_offset = 0;
 			vk_d.geometry.xyz_world_static_offset = 0;
@@ -1467,6 +1471,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			// cluster buffer
 			VK_DestroyBuffer(&vk_d.geometry.cluster_world_static);
 			VK_DestroyBuffer(&vk_d.geometry.cluster_world_dynamic_data);
+			VK_DestroyBuffer(&vk_d.geometry.cluster_entity_static);
 			
 			// as buffer
 			VK_DestroyBuffer(&vk_d.basBufferStaticWorld);

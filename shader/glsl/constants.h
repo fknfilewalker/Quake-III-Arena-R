@@ -70,6 +70,7 @@
 
 #define BINDING_OFFSET_CLUSTER_WORLD_STATIC         0x00000013
 #define BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_DATA   0x00000014
+#define BINDING_OFFSET_CLUSTER_ENTITY_STATIC        0x00000015
 
 // shader offset
 #define SBT_RGEN_PRIMARY_RAYS						0x00000000
@@ -131,10 +132,10 @@ STRUCT (
     UINT    (world)
 	UINT    (offsetIDX)
 	UINT    (offsetXYZ)
-    UINT     (texIdx0)
-    UINT     (texIdx1)
-	UINT    (blendfunc)
-	BOOL   (isPlayer)
+    UINT    (texIdx0)
+    UINT    (texIdx1)
+	BOOL    (isBrushModel)
+	BOOL    (isPlayer)
 	UINT    (cluster)
 ,ASInstanceData)
 

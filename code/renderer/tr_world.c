@@ -345,53 +345,71 @@ void R_AddBrushModelSurfaces ( trRefEntity_t *ent ) {
 	for ( i = 0 ; i < bmodel->numSurfaces ; i++ ) {
 		msurface_t* surf = (bmodel->firstSurface + i);
 		// create bas for world entity if not yet done
-		if (surf->bAS == NULL && !surf->added && !surf->skip
-			&& glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
-			vk_d.scratchBufferOffset = 0;
-			tess.numVertexes = 0;
-			tess.numIndexes = 0;
-			float originalTime = backEnd.refdef.floatTime;
-			RB_BeginSurface(surf->shader, 0);
-			backEnd.refdef.floatTime = originalTime;
-			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+		if (surf->bAS == NULL) continue;
+		//if (surf->bAS == NULL && !surf->added && !surf->skip
+		//	&& glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
+		//	vk_d.scratchBufferOffset = 0;
+		//	tess.numVertexes = 0;
+		//	tess.numIndexes = 0;
+		//	float originalTime = backEnd.refdef.floatTime;
+		//	RB_BeginSurface(surf->shader, 0);
+		//	backEnd.refdef.floatTime = originalTime;
+		//	tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
 
-			// create bas
-			rb_surfaceTable[*((surfaceType_t*)surf->data)]((surfaceType_t*)surf->data);
-			RB_CreateEntityBottomAS(&surf->bAS);
-			surf->bAS->isWorldSurface = qtrue;
-			surf->added = qtrue;
+		//	// create bas
+		//	rb_surfaceTable[*((surfaceType_t*)surf->data)]((surfaceType_t*)surf->data);
+		//	RB_CreateEntityBottomAS(&surf->bAS);
+		//	surf->bAS->isWorldSurface = qtrue;
+		//	surf->added = qtrue;
 
-			surf->bAS->c = RB_GetCluster();
-			
-			//{
+		//	vec4_t pos = { 0,0,0,0 };
+		//	for (int j = 0; j < tess.numVertexes; j++) {
+		//		VectorAdd(pos, tess.xyz[j], pos);
+		//		surf->bAS->c = R_FindClusterForPos3(tess.xyz[j]);
+		//		//if (surf->bAS->c == -1) R_FindClusterForPos(tess.xyz[j]);
+		//		//if (surf->bAS->c == -1) R_FindClusterForPos3(tess.xyz[j]);
 
-			//	uint32_t* lightVisibility = calloc(vk_d.numClusters * RTX_MAX_LIGHTS, sizeof(uint32_t));
-			//	for (int cluster = 0; cluster < vk_d.numClusters; cluster++) {
-			//		const byte* clusterVis = vk_d.vis + cluster * vk_d.clusterBytes;
-			//		uint32_t lightCount = 0;
-			//		for (uint32_t l = 0; l < vk_d.lightList.numLights; l++) {
-			//			//lightVisibility[cluster * RTX_MAX_LIGHTS] = 0;
+		//		if (surf->bAS->c != -1) break;
+		//	}
+		//	/*VectorScale(pos, 1.0f / tess.numVertexes, pos);
+		//	if (surf->bAS->c == -1) surf->bAS->c = R_FindClusterForPos(pos);
+		//	if (surf->bAS->c == -1) R_FindClusterForPos2(pos);
+		//	if (surf->bAS->c == -1) R_FindClusterForPos3(pos);
+		//	if (surf->bAS->c == -1) {
+		//		int x = 2;
+		//	}*/
+		//	//surf->bAS->c = R_GetClusterFromSurface(surf->data);
+		//	//surf->bAS->c = RB_GetCluster();
+		//	
+		//	//{
 
-			//			int lightCluster = vk_d.lightList.lights[l].cluster;
-			//			if (lightCluster == -1) ri.Error(ERR_FATAL, "PT: Light cluster -1!");
-			//			if ((clusterVis[lightCluster >> 3] & (1 << (lightCluster & 7))) > 0) {
-			//				lightCount++;
-			//				lightVisibility[cluster * RTX_MAX_LIGHTS + lightCount] = l;
-			//			}
-			//		}
-			//		lightVisibility[cluster * RTX_MAX_LIGHTS] = lightCount;
-			//		if (lightCount > RTX_MAX_LIGHTS) ri.Error(ERR_FATAL, "PT: To many lights!");
-			//	}
-			//	VK_UploadMipImageData(&vk_d.accelerationStructures.lightVisData, RTX_MAX_LIGHTS, vk_d.numClusters, &lightVisibility[0], 4, 0);
-			//	VK_TransitionImage(&vk_d.accelerationStructures.lightVisData, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-			//	free(lightVisibility);
-			//}
+		//	//	uint32_t* lightVisibility = calloc(vk_d.numClusters * RTX_MAX_LIGHTS, sizeof(uint32_t));
+		//	//	for (int cluster = 0; cluster < vk_d.numClusters; cluster++) {
+		//	//		const byte* clusterVis = vk_d.vis + cluster * vk_d.clusterBytes;
+		//	//		uint32_t lightCount = 0;
+		//	//		for (uint32_t l = 0; l < vk_d.lightList.numLights; l++) {
+		//	//			//lightVisibility[cluster * RTX_MAX_LIGHTS] = 0;
 
-			backEnd.refdef.floatTime = originalTime;
-			tess.numVertexes = 0;
-			tess.numIndexes = 0;
-			vk_d.scratchBufferOffset = 0;
-		}
+		//	//			int lightCluster = vk_d.lightList.lights[l].cluster;
+		//	//			if (lightCluster == -1) ri.Error(ERR_FATAL, "PT: Light cluster -1!");
+		//	//			if ((clusterVis[lightCluster >> 3] & (1 << (lightCluster & 7))) > 0) {
+		//	//				lightCount++;
+		//	//				lightVisibility[cluster * RTX_MAX_LIGHTS + lightCount] = l;
+		//	//			}
+		//	//		}
+		//	//		lightVisibility[cluster * RTX_MAX_LIGHTS] = lightCount;
+		//	//		if (lightCount > RTX_MAX_LIGHTS) ri.Error(ERR_FATAL, "PT: To many lights!");
+		//	//	}
+		//	//	VK_UploadMipImageData(&vk_d.accelerationStructures.lightVisData, RTX_MAX_LIGHTS, vk_d.numClusters, &lightVisibility[0], 4, 0);
+		//	//	VK_TransitionImage(&vk_d.accelerationStructures.lightVisData, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+		//	//	free(lightVisibility);
+		//	//}
+
+		//	backEnd.refdef.floatTime = originalTime;
+		//	tess.numVertexes = 0;
+		//	tess.numIndexes = 0;
+		//	vk_d.scratchBufferOffset = 0;
+		//}
 		R_AddWorldSurface(surf, tr.currentEntity->needDlights );
 	}
 }
@@ -730,17 +748,4 @@ int R_GetClusterFromPos(vec3_t pos) {
 	vk_d.numClusters = tr.world->numClusters;
 	mnode_t* leaf = R_PointInLeaf(pos);
 	return leaf->cluster;
-}
-int R_GetClusterFromSurface(surfaceType_t* surf) {
-	for (int i = 0; i < tr.world->numnodes; i++) {
-		mnode_t* node = &tr.world->nodes[i];
-		if (node->contents == -1) continue;
-
-		msurface_t** mark = node->firstmarksurface;
-		int c = node->nummarksurfaces;
-		for (int j = 0; j < c; j++) {
-			if (mark[j]->data == surf) return node->cluster;
-		}
-	}
-	return -1;
 }

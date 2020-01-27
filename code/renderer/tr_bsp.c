@@ -1929,6 +1929,7 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 			tess.numVertexes = 0;
 			tess.numIndexes = 0;
 			surf = mark[j];
+			surf->notBrush = qtrue;
 
 			shader_t* shader = tr.shaders[surf->shader->index];
 
@@ -2272,6 +2273,20 @@ void R_RecursiveTrans(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXY
 	}
 }
 
+int R_GetClusterFromSurface(surfaceType_t* surf) {
+	for (int i = 0; i < s_worldData.numnodes; i++) {
+		mnode_t* node = &s_worldData.nodes[i];
+		if (node->contents == -1) continue;
+
+		msurface_t** mark = node->firstmarksurface;
+		int c = node->nummarksurfaces;
+		for (int j = 0; j < c; j++) {
+			if (mark[j]->data == surf) return node->cluster;
+		}
+	}
+	return -1;
+}
+
 void R_CalcClusterAABB(mnode_t* node) {
 	do {
 		if (node->contents != -1) {
@@ -2303,7 +2318,7 @@ void R_PreparePT() {
 
 	vk_d.numFixedCluster = s_worldData.numClusters;
 	vk_d.numClusters = s_worldData.numClusters;
-	vk_d.numMaxClusters = s_worldData.numClusters * 10;
+	vk_d.numMaxClusters = s_worldData.numClusters * 3;
 	vk_d.clusterBytes = s_worldData.clusterBytes;
 	vk_d.vis = calloc(vk_d.numMaxClusters, sizeof(byte) * s_worldData.clusterBytes);
 	memcpy(vk_d.vis, s_worldData.vis, s_worldData.numClusters * sizeof(byte) * s_worldData.clusterBytes);
@@ -2583,6 +2598,7 @@ void R_PreparePT() {
 			continue;
 		}
 		if (tess.shader->stages[0] == NULL) continue;
+		//s_worldData.surfaces[i]
 		/*if (!s_worldData.surfaces[i].added && !s_worldData.surfaces[i].skip && !RTX_DYNAMIC_DATA) {*/
 		/*if (!s_worldData.surfaces[i].added && !s_worldData.surfaces[i].skip){ 
 			vk_d.scratchBufferOffset = 0;
@@ -2594,6 +2610,85 @@ void R_PreparePT() {
 			tess.numVertexes = 0;
 			tess.numIndexes = 0;
 		}*/
+
+		// add brush models
+		if (s_worldData.surfaces[i].bAS == NULL && !s_worldData.surfaces[i].notBrush && !s_worldData.surfaces[i].added && !s_worldData.surfaces[i].skip) {
+			vk_d.scratchBufferOffset = 0;
+			tess.numVertexes = 0;
+			tess.numIndexes = 0;
+			float originalTime = backEnd.refdef.floatTime;
+			RB_BeginSurface(s_worldData.surfaces[i].shader, 0);
+			backEnd.refdef.floatTime = originalTime;
+			tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
+
+			// create bas
+			rb_surfaceTable[*((surfaceType_t*)s_worldData.surfaces[i].data)]((surfaceType_t*)s_worldData.surfaces[i].data);
+			RB_CreateEntityBottomAS(&s_worldData.surfaces[i].bAS);
+			s_worldData.surfaces[i].bAS->isWorldSurface = qtrue;
+			s_worldData.surfaces[i].bAS->data.isBrushModel = qtrue;
+			s_worldData.surfaces[i].added = qtrue;
+
+			int clu[3] = { -1, -1, -1 };
+			vec4_t pos = { 0,0,0,0 };
+			for (int j = 0; j < tess.numVertexes; j++) {
+				VectorAdd(pos, tess.xyz[j], pos);
+
+				////if (clu[0] == -1) {
+				//	if (clu[0] == -1) clu[0] = R_FindClusterForPos3(tess.xyz[j]);
+				//	if (clu[0] == -1) clu[0] = R_FindClusterForPos(tess.xyz[j]);
+				//	if (clu[0] == -1) clu[0] = R_FindClusterForPos2(tess.xyz[j]);
+				////}
+				////else if (clu[1] == -1) {
+				//	if (clu[1] == -1) clu[1] = R_FindClusterForPos3(tess.xyz[j]);
+				//	if (clu[0] == clu[1]) clu[1] = -1;
+				//	if (clu[1] == -1) clu[1] = R_FindClusterForPos(tess.xyz[j]);
+				//	if (clu[0] == clu[1]) clu[1] = -1;
+				//	if (clu[1] == -1) clu[1] = R_FindClusterForPos2(tess.xyz[j]);
+				//	if (clu[0] == clu[1]) clu[1] = -1;
+				////}
+				////else if (clu[2] == -1) {
+				//	if (clu[2] == -1) clu[2] = R_FindClusterForPos3(tess.xyz[j]);
+				//	if (clu[0] == clu[2] || clu[1] == clu[2]) clu[2] = -1;
+				//	if (clu[2] == -1) clu[2] = R_FindClusterForPos(tess.xyz[j]);
+				//	if (clu[0] == clu[2] || clu[1] == clu[2]) clu[2] = -1;
+				//	if (clu[2] == -1) clu[2] = R_FindClusterForPos2(tess.xyz[j]);
+				//	if (clu[0] == clu[2] || clu[1] == clu[2]) clu[2] = -1;
+				////}
+				//
+				//if (clu[0] != -1 && clu[1] != -1 && clu[2] != -1) break;
+				s_worldData.surfaces[i].bAS->c = R_FindClusterForPos3(tess.xyz[j]);
+				/*if (surf->bAS->c == -1) R_FindClusterForPos(tess.xyz[j]);
+				if (surf->bAS->c == -1) R_FindClusterForPos3(tess.xyz[j]);*/
+
+				if (s_worldData.surfaces[i].bAS->c != -1) break;
+			}
+
+			/*int wc = -1;
+			for (int i = 0; i < s_worldData.numnodes; i++) {
+				mnode_t* node = &s_worldData.nodes[i];
+				if (node->contents == -1) continue;
+
+				msurface_t** mark = node->firstmarksurface;
+				int c = node->nummarksurfaces;
+				for (int j = 0; j < c; j++) {
+					if (mark[j]->data == s_worldData.surfaces[i].data)
+					{
+						wc = node->cluster;
+						break;
+					}
+				}
+			}
+			
+			s_worldData.surfaces[i].bAS->c = RB_TryMergeCluster(clu, wc);*/
+
+			RB_UploadCluster(&vk_d.geometry.cluster_entity_static, s_worldData.surfaces[i].bAS->data.offsetIDX, R_GetClusterFromSurface(s_worldData.surfaces[i].data));
+			//vk_d.geometry.cluster_world_static_offset += (tess.numIndexes / 3);
+
+			backEnd.refdef.floatTime = originalTime;
+			tess.numVertexes = 0;
+			tess.numIndexes = 0;
+			vk_d.scratchBufferOffset = 0;
+		}
 	}
 
 	vk_d.scratchBufferOffset = 0;
@@ -2676,6 +2771,7 @@ void R_PreparePT() {
 
 		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_CLUSTER_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
 		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_CLUSTER_ENTITY_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
 
 		VK_AddSampler(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_ENVMAP, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_AddUniformBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_GLOBAL_UBO, VK_SHADER_STAGE_RAYGEN_BIT_NV);
@@ -2700,6 +2796,7 @@ void R_PreparePT() {
 
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_CLUSTER_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.cluster_world_static.buffer);
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.cluster_world_dynamic_data.buffer);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_CLUSTER_ENTITY_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.cluster_entity_static.buffer);
 
 
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_INSTANCE_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.instanceDataBuffer[i].buffer);
