@@ -2081,6 +2081,8 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(clusterIDX, BAS_WORLD_DYNAMIC_AS,
 						(*countIDX),
 						0);
+					RB_UploadCluster(&vk_d.geometry.cluster_world_dynamic_as, vk_d.geometry.cluster_world_dynamic_as_offset, node->cluster);
+					vk_d.geometry.cluster_world_dynamic_as_offset += (tess.numIndexes / 3);
 				}
 				else {
 					surf->skip = qtrue;
@@ -2771,6 +2773,7 @@ void R_PreparePT() {
 
 		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_CLUSTER_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
 		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
 		VK_AddStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_CLUSTER_ENTITY_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
 
 		VK_AddSampler(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_ENVMAP, VK_SHADER_STAGE_RAYGEN_BIT_NV);
@@ -2796,6 +2799,7 @@ void R_PreparePT() {
 
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_CLUSTER_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.cluster_world_static.buffer);
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.cluster_world_dynamic_data.buffer);
+		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.cluster_world_dynamic_as.buffer);
 		VK_SetStorageBuffer(&vk_d.accelerationStructures.descriptor[i], BINDING_OFFSET_CLUSTER_ENTITY_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.cluster_entity_static.buffer);
 
 

@@ -180,6 +180,46 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 	return color;
 }
 
+vec4 getTextureLod(vec2 screen_coord_cs, HitPoint hp, uint lod){
+
+	TextureData d = unpackTextureData(hp.tex0);
+	vec4 color;
+	vec4 tex = global_textureLod(d.tex0, hp.uv0, lod);
+	color = vec4(tex.xyz, 1);
+	if(d.tex0Color) color *= (hp.color0/255);
+
+	if(d.tex1 != -1){
+		tex = global_textureLod(d.tex1, hp.uv1, lod);
+		if(d.tex1Color) tex *= (hp.color1/255);
+
+		if(d.tex1Blend) {
+			color = alpha_blend(tex, color);
+		}
+		else color += tex;
+	} else return color;
+	d = unpackTextureData(hp.tex1);
+	if(d.tex0 != -1){
+		tex = global_textureLod(d.tex0, hp.uv2, lod);
+		if(d.tex0Color) tex *= (hp.color2/255);
+
+		if(d.tex0Blend) {
+			color = alpha_blend(tex, color);
+		}
+		else color += tex;
+	} else return color;
+
+	if(d.tex1 != -1){
+		tex = global_textureLod(d.tex1, hp.uv3, lod);
+		if(d.tex1Color) tex *= (hp.color3/255);
+
+		if(d.tex1Blend) {
+			color = alpha_blend(tex, color);
+		}
+		else color += tex;
+	} 
+	return color;
+}
+
 vec3
 getRandomLight(int i){
 	int lightIDX = int( round( get_rng(RNG_C(i), ubo.frameIndex) * uboLights.lightList.numLights ) );
@@ -349,38 +389,43 @@ vec4 path_tracer(){
 	// 			//vec3 bounceColor = (global_texture(hpIndirect.tex0 & TEX0_IDX_MASK, hpIndirect.uv0) * color).xyz;
 	// 			bounceColor = getTextureLod(screen_coord_cs, tIndirect, hpIndirect).xyz;
 
+	// 			// Probability of selecting this ray ( cos/pi for cosine sampling, 1/2pi for uniform sampling )
+	// 			float sampleProb = gCosSampling ? (NdotL / M_PI) : (1.0f / (2.0f * M_PI));
+
 	// 			P = hpIndirect.pos.xyz;
 	// 			N = hpIndirect.normal;
 
-	// 			// uint numLight = imageLoad(lightVis_data, ivec2(0, hpIndirect.cluster)).r;
-	// 			// for(int i = 0; i < 1/*uboLights.lightList.numLights*/; i++){
-	// 			// 	uint lightIndex = imageLoad(lightVis_data, ivec2( int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r; // first index is numLight so + 1
-	// 			// 	DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex));
+	// 			uint numLight = imageLoad(lightVis_data, ivec2(0, hpIndirect.cluster)).r;
+	// 			for(int i = 0; i < 1/*uboLights.lightList.numLights*/; i++){
+	// 				uint lightIndex = imageLoad(lightVis_data, ivec2( int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
 
-	// 			// 	vec3 posLight = light.pos;//getRandomLight(i);
-	// 			// 	vec3 toLight = posLight - P;
-	// 			// 	vec3 L = normalize(toLight);
-	// 			// 	float distToLight =	length(toLight);
-	// 			// 	vec3 lightIntensity = vec3(0.25);
+	// 				//uint lightIndex = imageLoad(lightVis_data, ivec2( int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r; // first index is numLight so + 1
+	// 				DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex));
 
-	// 			// 	float shadowMult =  trace_shadow_ray(P, L, 0.01f, distToLight);
+	// 				vec3 posLight = light.pos;//getRandomLight(i);
+	// 				vec3 toLight = posLight - P;
+	// 				vec3 L = normalize(toLight);
+	// 				float distToLight =	length(toLight);
+	// 				vec3 lightIntensity = vec3(0.25);
 
-	// 			// 	float LdotN = clamp(dot(N, L), 0.0, 1.0);
+	// 				float shadowMult =  trace_shadow_ray(P, L, 0.01f, distToLight);
 
-	// 			// 	// Accumulate our Lambertian shading color
-	// 			// 	shadeColor += shadowMult * LdotN * lightIntensity; 
-	// 			// }
+	// 				float LdotN = clamp(dot(N, L), 0.0, 1.0);
+
+	// 				// Accumulate our Lambertian shading color
+	// 				shadeColor += shadowMult * LdotN * lightIntensity; 
+	// 				//* blinn_phong_based_brdf(-direction, L, N, 20.0)
+	// 				shadeColor += (NdotL * bounceColor * primary_albedo.rgb / M_PI) / sampleProb;
+	// 			}
 	// 		}
 
 	// 		//bounceColor = (NdotL > 0.50f) ? float3(0, 0, 0) : bounceColor;
 
-	// 		// Probability of selecting this ray ( cos/pi for cosine sampling, 1/2pi for uniform sampling )
-	// 		float sampleProb = gCosSampling ? (NdotL / M_PI) : (1.0f / (2.0f * M_PI));
 
 	// 		// Accumulate the color.  For performance, terms could (and should) be cancelled here.
 	// 		//shadeColor += (NdotL * bounceColor * difMatlColor.rgb / M_PI) / sampleProb;
 
-	// 		shadeColor += (NdotL * bounceColor * primary_albedo.rgb / M_PI) / sampleProb;
+	// 		//shadeColor += (NdotL * bounceColor * primary_albedo.rgb / M_PI) / sampleProb;
 	// 		if(miss) break;
 	// 	}
 	// }

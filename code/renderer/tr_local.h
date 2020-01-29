@@ -1235,8 +1235,10 @@ typedef struct {
 
 	uint32_t		idx_world_dynamic_as_offset[VK_MAX_SWAPCHAIN_SIZE];
 	uint32_t		xyz_world_dynamic_as_offset[VK_MAX_SWAPCHAIN_SIZE];
+	uint32_t		cluster_world_dynamic_as_offset;
 	vkbuffer_t		idx_world_dynamic_as[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t		xyz_world_dynamic_as[VK_MAX_SWAPCHAIN_SIZE];
+	vkbuffer_t		cluster_world_dynamic_as;
 
 	uint32_t		idx_entity_static_offset;
 	uint32_t		xyz_entity_static_offset;
