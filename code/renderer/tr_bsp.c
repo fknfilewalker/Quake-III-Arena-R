@@ -1953,10 +1953,16 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 				|| *surf->data == SF_BAD || *surf->data == SF_SKIP
 				|| shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP
 				|| shader->stages[0] == NULL || !shader->stages[0]->active) {
-				surf->skip = qtrue;
-				continue;
+
+
+				if (!strstr(shader->name, "glass") && !strstr(shader->name, "flame")) {
+					surf->skip = qtrue;
+					continue;
+				}
 			}
-			if ((shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->sort > SS_OPAQUE) continue;
+			if ((shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->sort > SS_OPAQUE) {
+				if (!strstr(shader->name, "glass") && !strstr(shader->name, "flame"))continue;
+			}
 			//grate1_3
 			tess.shader = shader;
 
@@ -1964,9 +1970,9 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 			rb_surfaceTable[*surf->data](surf->data);
 			if (tess.numIndexes == 0) continue;
 
-			if (strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "chrome_metal")) {
-				int x = 1;
-			}
+			//if (strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "chrome_metal")) {
+			//	int x = 1;
+			//}
 
 			if (!surf->added && !surf->skip) {
 				if (node->cluster != 1003) {
@@ -2556,7 +2562,7 @@ void R_PreparePT() {
 		vk_d.bottomASWorldStatic.geometryInstance.instanceCustomIndex = 0;
 		vk_d.bottomASWorldStatic.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 		vk_d.bottomASWorldStatic.geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
-		//vk_d.bottomASWorldStatic.geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+		vk_d.bottomASWorldStatic.geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
 		vk_d.bottomASWorldStatic.geometryInstance.accelerationStructureHandle = vk_d.bottomASWorldStatic.handle;
 
 		float tM[12];
@@ -2604,7 +2610,7 @@ void R_PreparePT() {
 		vk_d.bottomASWorldDynamicData.geometryInstance.instanceCustomIndex = 0;
 		vk_d.bottomASWorldDynamicData.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 		vk_d.bottomASWorldDynamicData.geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
-		//vk_d.bottomASWorldDynamicData.geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+		vk_d.bottomASWorldDynamicData.geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
 		vk_d.bottomASWorldDynamicData.geometryInstance.accelerationStructureHandle = vk_d.bottomASWorldDynamicData.handle;
 
 		float tM[12];
@@ -2653,7 +2659,7 @@ void R_PreparePT() {
 			vk_d.bottomASWorldDynamicAS[i].geometryInstance.instanceCustomIndex = 0;
 			vk_d.bottomASWorldDynamicAS[i].geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 			vk_d.bottomASWorldDynamicAS[i].geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
-			//vk_d.bottomASWorldDynamicAS[i].geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+			vk_d.bottomASWorldDynamicAS[i].geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
 			vk_d.bottomASWorldDynamicAS[i].geometryInstance.accelerationStructureHandle = vk_d.bottomASWorldDynamicAS[i].handle;
 
 			float tM[12];

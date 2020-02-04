@@ -1,7 +1,8 @@
 #include "tr_local.h"
 
-qboolean RB_IsLight(shader_t* shader) {
-	if (tess.numIndexes > 6) {
+qboolean RB_IsLight(shader_t
+	* shader) {
+	if (tess.numIndexes > 30) {
 		return qfalse;
 	}
 	if (strstr(shader->name, "wsupprt1_12") || strstr(shader->name, "scrolllight") || strstr(shader->name, "runway")) return qfalse;
@@ -42,6 +43,8 @@ uint32_t RB_GetMaterial() {
 	if (RB_IsLight(tess.shader)) {
 		material |= MATERIAL_FLAG_LIGHT;
 	}
+
+	if (strstr(tess.shader->name, "glass")) material = MATERIAL_KIND_GLASS;
 
 	if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) material |= MATERIAL_FLAG_MIRROR;
 	if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) material |= MATERIAL_FLAG_SEE_THROUGH;
