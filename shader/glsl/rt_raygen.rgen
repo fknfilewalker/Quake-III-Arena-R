@@ -261,7 +261,7 @@ lightVisible(int i, uint hitCluster){
 vec3 Shade(vec3 pos, vec3 norm, vec3 difColor, uint lightIdx, uint numLights){
 	float sampleProb = 1.0f / float(numLights);
 
-	DirectionalLight light = getLight2(uboLights.lightList.lights[lightIdx], ivec2(lightIdx, ubo.frameIndex));
+	DirectionalLight light = getLight2(uboLights.lightList.lights[lightIdx], ivec2(lightIdx, ubo.frameIndex), ubo.randSampleLight);
 	vec3 lightPos = light.pos;
 	float distToLight = length(lightPos - pos);
 	vec3 lightIntensity = light.color * vec3(0.4);//(light.mag * light.color) / distToLight;
@@ -387,7 +387,7 @@ vec4 path_tracer(){
 		
 		//vec3 posLight = getLight(imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r);
 		
-		DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex));
+		DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex), ubo.randSampleLight);
 		//uint lightIndex = imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
 		//vec3 posLight = getLight(lightIndex);
 		vec3 posLight = light.pos;

@@ -292,7 +292,7 @@ sample_triangle(vec2 xi)
         sqrt_xi * xi.y);
 }
 
-DirectionalLight getLight2(Light l, ivec2 rng){
+DirectionalLight getLight2(Light l, ivec2 rng, bool random){
 	uint customIndex = uint(l.offsetIDX);
 	uvec3 index;
 	if(l.type == BAS_WORLD_STATIC) index = (ivec3(indices_world_static.i[customIndex], indices_world_static.i[customIndex + 1], indices_world_static.i[customIndex + 2])) + uint(l.offsetXYZ);
@@ -339,11 +339,11 @@ DirectionalLight getLight2(Light l, ivec2 rng){
 	vec3 dir_y = vData[2].pos.xyz - vData[1].pos.xyz;
 
 	DirectionalLight light;
-	light.pos = l.pos.xyz;
 	light.normal = cross(dir_x, dir_y);
 	light.mag = length(light.normal);
+	if(random) light.pos = vData[1].pos.xyz + (rng_x * dir_x + rng_y * dir_y);
+	else light.pos = l.pos.xyz;
 	//light.pos = (vData[0].pos.xyz + vData[1].pos.xyz + vData[2].pos.xyz) / 3;
-	light.pos = vData[1].pos.xyz + (rng_x * dir_x + rng_y * dir_y);
 	//light.pos = l.pos.xyz * sample_triangle(vec2(rng_x, rng_y)); 
 
 

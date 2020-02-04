@@ -202,6 +202,7 @@ STRUCT (
     UINT    (numRandomIL)
     UINT    (numBounces)
     BOOL    (randSample)
+    BOOL    (randSampleLight)
 ,GlobalUbo)
 
 // holds a light

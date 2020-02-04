@@ -877,6 +877,7 @@ static void RB_TraceRays() {
 	ubo->numRandomIL = pt_numRandomIL->integer;
 	ubo->numBounces = pt_numBounces->integer;
 	ubo->randSample = pt_randSample->integer;
+	ubo->randSampleLight = pt_randSampleLight->integer;
 
 	float viewMatrix[16];
 	// viewMatrix (needs flip)

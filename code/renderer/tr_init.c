@@ -158,6 +158,7 @@ cvar_t* pt_numRandomDL;
 cvar_t* pt_numRandomIL;
 cvar_t* pt_numBounces;
 cvar_t* pt_randSample;
+cvar_t* pt_randSampleLight;
 
 void ( APIENTRY * qglMultiTexCoord2fARB )( GLenum texture, GLfloat s, GLfloat t );
 void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
@@ -1276,6 +1277,7 @@ void R_Register( void )
 	pt_numRandomIL = ri.Cvar_Get("pt_numRandomIL", "1", 0);
 	pt_numBounces = ri.Cvar_Get("pt_numBounces", "1", 0);
 	pt_randSample = ri.Cvar_Get("pt_randomPixelOffset", "1", 0);
+	pt_randSampleLight = ri.Cvar_Get("pt_randomLightOffset", "1", 0);
 
 	// make sure all the commands added here are also
 	// removed in R_Shutdown
