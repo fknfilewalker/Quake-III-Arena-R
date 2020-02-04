@@ -103,6 +103,9 @@ get_rng(uint idx, uint frame_num)
 	p.z = (p.z + idx);
 	p &= uvec3(BLUE_NOISE_RES - 1, BLUE_NOISE_RES - 1, NUM_BLUE_NOISE_TEX - 1);
 
-	return min(texelFetch(blue_noise, ivec3(p), 0).r, 0.9999999999999);
+	uvec3 p2 = p+ivec3(4); 
+	p2 &= uvec3(BLUE_NOISE_RES - 1, BLUE_NOISE_RES - 1, NUM_BLUE_NOISE_TEX - 1);
+
+	return min((texelFetch(blue_noise, ivec3(p), 0).r + texelFetch(blue_noise, ivec3(p2), 0).r) /2 , 0.9999999999999);
 	//return fract(vec2(get_rng_uint(idx)) / vec2(0xffffffffu));
 }

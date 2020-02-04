@@ -1,0 +1,225 @@
+#version 460
+#extension GL_NV_ray_tracing : require
+#extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : enable
+#pragma optionNV (unroll all)
+#include "constants.h"
+#include "rt_defines.glsl"
+#include "rt_helper.glsl"
+#include "rt_sky.glsl"
+#include "rt_texture.glsl"
+#include "rt_vattributes.glsl"
+#include "gbuffer.glsl"
+
+
+// Bindings
+layout(binding = BINDING_OFFSET_AS, set = 0) uniform accelerationStructureNV topLevelAS;
+layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
+{
+	GlobalUbo ubo;
+};
+
+layout(location = PAYLOAD_BRDF) rayPayloadNV RayPayload rp;
+
+Ray
+get_primary_ray(vec2 pos_cs)
+{
+	vec4 v_near = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs, -1.0, 1.0);
+	vec4 v_far  = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs,  0.0, 1.0);
+	v_near /= v_near.w;
+	v_far  /= v_far.w;
+
+	Ray ray;
+	ray.origin = v_near.xyz;
+	ray.direction = normalize(v_far.xyz - v_near.xyz);
+	ray.t_min = 0.01;
+	ray.t_max = 10000.0;
+	return ray;
+}
+
+void trace_ray(Ray ray, uint cullMask)
+{
+	const uint rayFlags = gl_RayFlagsCullFrontFacingTrianglesNV;//gl_RayFlagsOpaqueNV;// | gl_RayFlagsCullBackFacingTrianglesNV;
+	//const uint rayFlags = gl_RayFlagsOpaqueNV | gl_RayFlagsCullBackFacingTrianglesNV;
+	//const uint cullMask = RAY_FIRST_PERSON_VISIBLE;
+	rp.transparent = vec4(0);
+	rp.max_transparent_distance = 0;
+
+	traceNV( topLevelAS, rayFlags, cullMask,
+			SBT_RCHIT_OPAQUE /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_PATH_TRACER /*missIndex*/,
+			ray.origin, ray.t_min, ray.direction, ray.t_max, PAYLOAD_BRDF);
+}
+
+
+vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
+	vec2 tex_coord = hp.uv0;
+	Ray ray_x = get_primary_ray(screen_coord_cs + vec2(2.0 / float(gl_LaunchSizeNV.x), 0));
+	Ray ray_y = get_primary_ray(screen_coord_cs - vec2(0, 2.0 / float(gl_LaunchSizeNV.y)));
+
+	vec3 bary_x = compute_barycentric(triangle.pos, ray_x.origin, ray_x.direction);
+	vec3 bary_y = compute_barycentric(triangle.pos, ray_y.origin, ray_y.direction);
+
+	vec3 pos_ws_x= triangle.pos * bary_x;
+	vec3 pos_ws_y= triangle.pos * bary_y;
+
+	vec2 tex_coord_x = triangle.uv0 * bary_x;
+	vec2 tex_coord_y = triangle.uv0 * bary_y;
+	tex_coord_x -= tex_coord;
+	tex_coord_y -= tex_coord;
+	tex_coord_x *= 0.5;
+	tex_coord_y *= 0.5;
+
+	TextureData d = unpackTextureData(hp.tex0);
+	vec4 color;
+	vec4 tex = global_textureGrad(d.tex0, hp.uv0, tex_coord_x, tex_coord_y);
+	color = vec4(tex.xyz, 1);
+	if(d.tex0Color) color *= (hp.color0/255);
+
+	if(d.tex1 != -1){
+		tex_coord = hp.uv1;
+		tex_coord_x = triangle.uv1 * bary_x;
+		tex_coord_y = triangle.uv1 * bary_y;
+		tex_coord_x -= tex_coord;
+		tex_coord_y -= tex_coord;
+		tex_coord_x *= 0.5;
+		tex_coord_y *= 0.5;
+		tex = global_textureGrad(d.tex1, hp.uv1, tex_coord_x, tex_coord_y);
+		if(d.tex1Color) tex *= (hp.color1/255);
+
+		if(d.tex1Blend) {
+			color = alpha_blend(tex, color);
+		}
+		else color += tex;
+	} else return color;
+	d = unpackTextureData(hp.tex1);
+	if(d.tex0 != -1){
+		tex_coord = hp.uv2;
+		tex_coord_x = triangle.uv2 * bary_x;
+		tex_coord_y = triangle.uv2 * bary_y;
+		tex_coord_x -= tex_coord;
+		tex_coord_y -= tex_coord;
+		tex_coord_x *= 0.5;
+		tex_coord_y *= 0.5;
+		tex = global_textureGrad(d.tex0, hp.uv2, tex_coord_x, tex_coord_y);
+		if(d.tex0Color) tex *= (hp.color2/255);
+
+		if(d.tex0Blend) {
+			color = alpha_blend(tex, color);
+		}
+		else color += tex;
+	} else return color;
+
+	if(d.tex1 != -1){
+		tex_coord = hp.uv3;
+		tex_coord_x = triangle.uv3 * bary_x;
+		tex_coord_y = triangle.uv3 * bary_y;
+		tex_coord_x -= tex_coord;
+		tex_coord_y -= tex_coord;
+		tex_coord_x *= 0.5;
+		tex_coord_y *= 0.5;
+		tex = global_textureGrad(d.tex1, hp.uv3, tex_coord_x, tex_coord_y);
+		if(d.tex1Color) tex *= (hp.color3/255);
+
+		if(d.tex1Blend) {
+			color = alpha_blend(tex, color);
+		}
+		else color += tex;
+	} 
+	return color;
+}
+
+void primary_rays(){
+	vec2 pixelOffset = vec2(0.5);
+	if(ubo.randSample){
+		pixelOffset = vec2(get_rng(RNG_C(100), ubo.frameIndex), get_rng(RNG_C(100), ubo.frameIndex));
+	}
+
+	const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + pixelOffset;
+	const vec2 inUV0 = pixelCenter/vec2(gl_LaunchSizeNV.xy);
+	const vec2 screen_coord_cs  = inUV0 * 2.0 - 1.0;
+
+	// init ray
+	Ray ray = get_primary_ray(screen_coord_cs);
+	//ray.origin = position.xyz;
+	//vec4 target = ubo.inverseProj * vec4(screen_coord_cs, -1, 1) ;
+	//ray.direction = (ubo.inverseView*vec4(normalize(target.xyz), 0)).xyz;
+	//ray.t_min = 0.01;
+	//ray.t_max = 10000.0;
+
+	// calc ray length
+	trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE);
+	ray.t_max = rp.hit_distance + 0.001;
+
+	trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
+	
+	vec3 primary_albedo;
+	vec3 normal;
+	vec3 pos;
+	int cluster;
+	int material;
+	float depth;
+
+	vec3 posPrev;
+	if(!found_intersection(rp)){
+		primary_albedo = sampleSky(ray.direction).xyz;
+		normal = vec3(0);
+		pos = vec3(0);
+		material = 0;
+		depth = 10000;
+		posPrev = vec3(0);
+	} else {
+		HitPoint hp = getHitPoint(rp);
+		Triangle triangle = getTriangle(rp);
+		primary_albedo = getTextureLod(screen_coord_cs, triangle, hp).xyz;
+		normal = hp.normal;
+		pos = hp.pos;
+		cluster = int(hp.cluster);
+		material = 1;
+		depth = rp.hit_distance;
+
+		//rp.instanceID = 0;
+		//rp.primitiveID = 0;
+		//uint i = rp.instanceID;
+		//posPrev = getHitPointPrev(rp).pos;
+		//iData.data[rp.instanceID].prevInstanceIDX = rp.instanceID;
+	}
+
+	
+	//vec4 temp;
+	//temp = imageLoad(posGBufferPrev, ivec2(gl_LaunchIDNV.xy));
+	//posPrev = getHitPointPrev(rp);//temp.xyz;
+
+	vec3 velocity;
+	vec2 screenPos;
+	float distanceCurr;
+	vec2 screenPosPrev;
+	float distancePrev;
+	//projection_view_to_screen((ubo.viewMat * vec4(pos,1)).xyz, screenPos, distanceCurr, false);
+	//projection_view_to_screen((uboPrev.viewMat * vec4(posPrev,1)).xyz, screenPosPrev, distancePrev, true);
+
+	// vec4 ndc = ubo.projMat * ubo.viewMat * vec4(pos,1);
+	// ndc /= ndc.w;
+	// ndc *= 0.5 + 0.5;
+	//vec4 ndcPrev = uboPrev.projMat * uboPrev.viewMat * vec4(posPrev,1);
+	// ndcPrev /= ndcPrev.w;
+	// ndcPrev *= 0.5 + 0.5;
+	//velocity.xy = abs(screenPosPrev - screenPos) * 20;
+	//velocity.z = abs(distancePrev - distanceCurr);
+
+	
+
+	imageStore(materialGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(rp.instanceID, rp.primitiveID,0,0));
+
+	imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(primary_albedo.xyz,cluster));
+	imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(normal.xyz,1));
+	imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(pos.xyz, distanceCurr));
+	//imageStore(motionGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(velocity.xyz,0));
+	
+
+}
+
+void main() 
+{
+	primary_rays();
+}
+

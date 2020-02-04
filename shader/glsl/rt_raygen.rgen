@@ -25,7 +25,7 @@ layout(binding = 1, set = 0, rgba8) uniform image2D image;
 
 layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 {
-	RTUbo ubo;
+	GlobalUbo ubo;
 };
 
 layout(binding = BINDING_OFFSET_UBO_LIGHTS, set = 0) uniform LightList 
@@ -37,6 +37,24 @@ layout(binding = BINDING_OFFSET_UBO_LIGHTS, set = 0) uniform LightList
 layout(location = PAYLOAD_BRDF) rayPayloadNV RayPayload rp;
 layout(location = PAYLOAD_SHADOW) rayPayloadNV ShadowRayPayload rp_shadow;
 
+Ray
+get_primary_ray2(vec2 pos_cs)
+{
+	float xx = get_rng(RNG_C(100), ubo.frameIndex)-1;
+	float yy = get_rng(RNG_C(100), ubo.frameIndex)-1;
+
+	vec4 v_near = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs + vec2(xx, yy), -1.0, 1.0);
+	vec4 v_far  = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs,  0.0, 1.0);
+	v_near /= v_near.w;
+	v_far  /= v_far.w;
+
+	Ray ray;
+	ray.origin = v_near.xyz;
+	ray.direction = normalize(v_far.xyz - v_near.xyz);
+	ray.t_min = 0.01;
+	ray.t_max = 10000.0;
+	return ray;
+}
 
 Ray
 get_primary_ray(vec2 pos_cs)
@@ -180,7 +198,7 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 	return color;
 }
 
-vec4 getTextureLod(vec2 screen_coord_cs, HitPoint hp, uint lod){
+vec4 getTextureLod2(HitPoint hp, uint lod){
 
 	TextureData d = unpackTextureData(hp.tex0);
 	vec4 color;
@@ -240,10 +258,54 @@ lightVisible(int i, uint hitCluster){
 }
 
 #define KD 0.05 // diffuse
+vec3 Shade(vec3 pos, vec3 norm, vec3 difColor, uint lightIdx, uint numLights){
+	float sampleProb = 1.0f / float(numLights);
 
-#define ALBEDO_MULT 1.3
+	DirectionalLight light = getLight2(uboLights.lightList.lights[lightIdx], ivec2(lightIdx, ubo.frameIndex));
+	vec3 lightPos = light.pos;
+	float distToLight = length(lightPos - pos);
+	vec3 lightIntensity = light.color * vec3(0.4);//(light.mag * light.color) / distToLight;
+	vec3 dirToLight = normalize(lightPos  - pos);
+
+	float NdotL = clamp(dot(norm, dirToLight), 0.0, 1.0);
+	float isLit = trace_shadow_ray(pos, dirToLight, 0.01f, distToLight);
+	vec3 rayColor = isLit * lightIntensity;
+
+	return (NdotL * rayColor * (difColor / M_PI)) / sampleProb;
+}
+
+// vec3 CalcBounce(vec3 P, vec3 N, uint currentBounds, uint maxBounds){
+// 	if(currentBounds >= maxBounds) return vec3(0);
+// 	vec3 bounceDir = getCosHemisphereSample2(vec2(get_rng(RNG_BOUNCE_X(currentBounds), int(ubo.frameIndex)), get_rng(RNG_BOUNCE_Y(0), int(ubo.frameIndex))), N);
+	
+// 	Ray indirectRay;
+// 	indirectRay.origin = P;
+// 	indirectRay.direction = normalize(bounceDir);
+// 	indirectRay.t_min = 0.01;
+// 	indirectRay.t_max = 10000.0;
+// 	trace_ray(indirectRay, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
+
+// 	vec3 indirectColor = vec3(1);
+// 	if(found_intersection(rp)){
+// 		HitPoint hpIndirect = getHitPoint(rp);
+// 		vec3 difColor = (getTextureLod2(hpIndirect, 0).xyz);
+// 		indirectColor = Shade(hpIndirect.pos, hpIndirect.normal, difColor, 
+// 		int( round( get_rng(RNG_C(currentBounds + 2), int(ubo.frameIndex)) * (uboLights.lightList.numLights-1))),uboLights.lightList.numLights);
+
+// 		if(currentBounds < maxBounds) indirectColor += difColor * CalcBounce(hpIndirect.pos, hpIndirect.normal, currentBounds+1, maxBounds);
+// 	}
+// 	return indirectColor;
+// }
+
+#define AMBIENT_K 3
 vec4 path_tracer(){
-	const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + vec2(0.5);
+	vec2 pixelOffset = vec2(0.5);
+
+	if(ubo.randSample){
+		pixelOffset = vec2(get_rng(RNG_C(100), ubo.frameIndex), get_rng(RNG_C(100), ubo.frameIndex));
+	}
+
+	const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + pixelOffset;
 	const vec2 inUV0 = pixelCenter/vec2(gl_LaunchSizeNV.xy);
 	const vec2 screen_coord_cs  = inUV0 * 2.0 - 1.0;
 
@@ -305,131 +367,248 @@ vec4 path_tracer(){
 
 	uint hitCluster = hp.cluster;
 
-	vec3 shadeColor = vec3(0);
+	vec3 shadeColor = AMBIENT_K * primary_albedo;//vec3(0);
 
-	uint numLight;
-	if(ubo.cullLights) numLight = imageLoad(lightVis_data, ivec2(0, hitCluster)).r;
-	else numLight = uboLights.lightList.numLights; 
+	uint numLights;
+	if(ubo.cullLights) numLights = imageLoad(lightVis_data, ivec2(0, hitCluster)).r;
+	else numLights = uboLights.lightList.numLights; 
 
-	for(int i = 0; i < numLight; i++){
-		uint lightIndex;
-		if(ubo.cullLights) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, hitCluster)).r; // first index is numLight so + 1
-		else lightIndex = i;
-		// random
-		// lightIndex = imageLoad(lightVis_data, ivec2( int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
+	uint numLightsDL;
+	uint numLightsIL;
+	if(ubo.numRandomDL == 0) numLightsDL = numLights;
+	else numLightsDL = min(ubo.numRandomDL, numLights);
 
+	if(ubo.numRandomIL == 0) numLightsIL = numLights;
+	else numLightsIL = min(ubo.numRandomIL, numLights);
 
-	//	for(int i = 0; i < 2; i++){
-		//if(hitCluster == 1333) break;
-		//if(!lightVisible( imageLoad(lightVis_data, ivec2(hitCluster, i)).r;, /*ubo.currentCluster*/ hitCluster)) continue;
-		
-		//vec3 posLight = getLight(imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r);
-		
-		DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex));
-		//uint lightIndex = imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
-		//vec3 posLight = getLight(lightIndex);
-		vec3 posLight = light.pos;
-		//if(!lightVisible(i, /*ubo.currentCluster*/ hitCluster)) continue;
-		//vec3 posLight = getLight(i);
-		vec3 toLight = posLight - P;
-		vec3 L = normalize(toLight);
-		float distToLight =	length(toLight);
-		float lightStrength =  min(light.mag / distToLight, 1);
-		if(lightStrength < 0.1f) continue;
-		vec3 lightIntensity = /*vec3(0.25);*/ light.color * lightStrength;
-		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
+	uint nL = uboLights.lightList.numLights;//imageLoad(lightVis_data, ivec2(0, hitCluster)).r;
 
-	 	float shadowMult =  /*float(uboLights.lightList.numLights) */ /*numLight/3.0f */  trace_shadow_ray(P, L, 0.01f, distToLight);
+	uint rand =int( get_rng(RNG_C(0), int(ubo.frameIndex)) * (nL)) ;
 
-		vec3 pPos = vec3(ubo.viewMat[3].xyz);
-
-		//if(dot(N, L) < 0) N = -N;
-		float LdotN = clamp(dot(N, L), 0.0, 1.0);
-
-		// Accumulate our Lambertian shading color
-		shadeColor += shadowMult * LdotN * lightIntensity; 
+	for(int i = 0; i < nL; i++){
+		shadeColor += Shade(P, N, primary_albedo, i, nL);
 	}
-
-	// Modulate based on the physically based Lambertian term (albedo/pi)
-	shadeColor *= primary_albedo.rgb / M_PI;
+	shadeColor /= nL;
+	//int( round( get_rng(RNG_C(0), int(ubo.frameIndex)) * (uboLights.lightList.numLights-1))),uboLights.lightList.numLights);
 	
-	// uint seed = initRand(gl_LaunchIDNV.x, gl_LaunchIDNV.y, 16/* = 16*/);
-	// // indirect
-	// uint bounces = 1 ;
-	// if (true)
-	// {
-	// 	for (uint b = 0; b < bounces; ++b)
-	// 	{
-	// 		// Select a random direction for our diffuse interreflection ray.
-	// 		vec3 bounceDir;
-			
-	// 		bool gCosSampling = true;
-	// 		if (gCosSampling)
-	// 			bounceDir = getCosHemisphereSample(seed, N);      // Use cosine sampling
-	// 		else
-	// 			bounceDir = getUniformHemisphereSample(seed, N);  // Use uniform random samples
 
-	// 		// Get NdotL for our selected ray direction
-	// 		float NdotL = clamp(dot(N, bounceDir), 0.0, 1.0);
+	// // vec3 bounceDir = getCosHemisphereSample2(vec2(get_rng(RNG_BOUNCE_X(0), int(ubo.frameIndex)), get_rng(RNG_BOUNCE_Y(0), int(ubo.frameIndex))), N);
+	
+	// Ray indirectRay;
+	// indirectRay.origin = P;
+	// indirectRay.direction = normalize(bounceDir);
+	// indirectRay.t_min = 0.01;
+	// indirectRay.t_max = 10000.0;
+	// trace_ray(indirectRay, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
 
-	// 		// Shoot our indirect global illumination ray
-	// 		Ray indirectRay = {
-	// 			P, bounceDir, 0.01, 10000
-	// 		};
+	// // for (uint b = 0; b < bounces; ++b) {
 
-	// 		trace_ray(indirectRay, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
-	// 		vec3 bounceColor;
-	// 		bool miss = false;
-	// 		if(!found_intersection(rp)){
-	// 			bounceColor = sampleSky(ray.direction).xyz;
-	// 			miss = true;
-	// 		} else {
-	// 			HitPoint hpIndirect = getHitPoint(rp);
-	// 			Triangle tIndirect = getTriangle(rp);
-	// 			//vec3 bounceColor = (global_texture(hpIndirect.tex0 & TEX0_IDX_MASK, hpIndirect.uv0) * color).xyz;
-	// 			bounceColor = getTextureLod(screen_coord_cs, tIndirect, hpIndirect).xyz;
+	// // }
 
-	// 			// Probability of selecting this ray ( cos/pi for cosine sampling, 1/2pi for uniform sampling )
-	// 			float sampleProb = gCosSampling ? (NdotL / M_PI) : (1.0f / (2.0f * M_PI));
+	// vec3 indirectColor = vec3(1);
+	// if(ubo.numBounces >= 1) {
+	// 	if(found_intersection(rp)){
+	// 		HitPoint hpIndirect = getHitPoint(rp);
+	// 		indirectColor = Shade(hpIndirect.pos, hpIndirect.normal, (getTextureLod2(hpIndirect, 0).xyz), 
+	// 		int( round( get_rng(RNG_C(1), int(ubo.frameIndex)) * (uboLights.lightList.numLights-1))),uboLights.lightList.numLights);
 
-	// 			P = hpIndirect.pos.xyz;
-	// 			N = hpIndirect.normal;
+	// 		// next
+	// 		if(ubo.numBounces >= 2) {
+	// 			bounceDir = getCosHemisphereSample2(vec2(get_rng(RNG_BOUNCE_X(1), int(ubo.frameIndex)), get_rng(RNG_BOUNCE_Y(1), int(ubo.frameIndex))), hpIndirect.normal);
+	// 			indirectRay.origin = hpIndirect.pos;
+	// 			indirectRay.direction = normalize(bounceDir);
+	// 			indirectRay.t_min = 0.01;
+	// 			indirectRay.t_max = 10000.0;
+	// 			trace_ray(indirectRay, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
+	// 			if(found_intersection(rp)){
+	// 				HitPoint hpIndirect2 = getHitPoint(rp);
+	// 				vec3 indirectColor2 = Shade(hpIndirect2.pos, hpIndirect2.normal, (getTextureLod2(hpIndirect2, 0).xyz), 
+	// 				int( round( get_rng(RNG_C(1), int(ubo.frameIndex)) * (uboLights.lightList.numLights-1))),uboLights.lightList.numLights);
+	// 				indirectColor += getTextureLod2(hpIndirect2, 0).xyz * indirectColor2;
 
-	// 			uint numLight = imageLoad(lightVis_data, ivec2(0, hpIndirect.cluster)).r;
-	// 			for(int i = 0; i < 1/*uboLights.lightList.numLights*/; i++){
-	// 				uint lightIndex = imageLoad(lightVis_data, ivec2( int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
-
-	// 				//uint lightIndex = imageLoad(lightVis_data, ivec2( int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r; // first index is numLight so + 1
-	// 				DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex));
-
-	// 				vec3 posLight = light.pos;//getRandomLight(i);
-	// 				vec3 toLight = posLight - P;
-	// 				vec3 L = normalize(toLight);
-	// 				float distToLight =	length(toLight);
-	// 				vec3 lightIntensity = vec3(0.25);
-
-	// 				float shadowMult =  trace_shadow_ray(P, L, 0.01f, distToLight);
-
-	// 				float LdotN = clamp(dot(N, L), 0.0, 1.0);
-
-	// 				// Accumulate our Lambertian shading color
-	// 				shadeColor += shadowMult * LdotN * lightIntensity; 
-	// 				//* blinn_phong_based_brdf(-direction, L, N, 20.0)
-	// 				shadeColor += (NdotL * bounceColor * primary_albedo.rgb / M_PI) / sampleProb;
+	// 				// next
+	// 				if(ubo.numBounces >= 3) {
+	// 					bounceDir = getCosHemisphereSample2(vec2(get_rng(RNG_BOUNCE_X(1), int(ubo.frameIndex)), get_rng(RNG_BOUNCE_Y(1), int(ubo.frameIndex))), hpIndirect2.normal);
+	// 					indirectRay.origin = hpIndirect2.pos;
+	// 					indirectRay.direction = normalize(bounceDir);
+	// 					indirectRay.t_min = 0.01;
+	// 					indirectRay.t_max = 10000.0;
+	// 					trace_ray(indirectRay, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
+	// 					if(found_intersection(rp)){
+	// 						HitPoint hpIndirect3 = getHitPoint(rp);
+	// 						vec3 indirectColor3 = Shade(hpIndirect3.pos, hpIndirect3.normal, (getTextureLod2(hpIndirect3, 0).xyz), 
+	// 						int( round( get_rng(RNG_C(1), int(ubo.frameIndex)) * (uboLights.lightList.numLights-1))),uboLights.lightList.numLights);
+	// 						indirectColor += getTextureLod2(hpIndirect3, 0).xyz * indirectColor3;
+	// 					}
+	// 				}
 	// 			}
 	// 		}
 
-	// 		//bounceColor = (NdotL > 0.50f) ? float3(0, 0, 0) : bounceColor;
-
-
-	// 		// Accumulate the color.  For performance, terms could (and should) be cancelled here.
-	// 		//shadeColor += (NdotL * bounceColor * difMatlColor.rgb / M_PI) / sampleProb;
-
-	// 		//shadeColor += (NdotL * bounceColor * primary_albedo.rgb / M_PI) / sampleProb;
-	// 		if(miss) break;
 	// 	}
 	// }
+	// shadeColor += primary_albedo * indirectColor;
 
+
+	// if(ubo.showIntermediateResults == 0 || ubo.showIntermediateResults == 1) {
+	// 	for(int i = 0; i < numLightsDL; i++){
+	// 		uint lightIndex;
+	// 		if(ubo.numRandomDL != 0){
+	// 			if(ubo.cullLights) lightIndex = imageLoad(lightVis_data, ivec2( int( roundEven( float(get_rng(RNG_C(i), int(ubo.frameIndex)) * (numLights-1)) ) )+1, hitCluster)).r;
+	// 			else lightIndex = int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * (numLights-1)));
+	// 		}
+	// 		else{
+	// 			if(ubo.cullLights) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, hitCluster)).r; // first index is numLight so + 1
+	// 			else lightIndex = i;
+	// 		}
+	// 		// random
+	// 		// lightIndex = imageLoad(lightVis_data, ivec2( int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
+
+
+	// 	//	for(int i = 0; i < 2; i++){
+	// 		//if(hitCluster == 1333) break;
+	// 		//if(!lightVisible( imageLoad(lightVis_data, ivec2(hitCluster, i)).r;, /*ubo.currentCluster*/ hitCluster)) continue;
+			
+	// 		//vec3 posLight = getLight(imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r);
+			
+	// 		DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex));
+	// 		//uint lightIndex = imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
+	// 		//vec3 posLight = getLight(lightIndex);
+	// 		vec3 posLight = light.pos;
+	// 		//if(!lightVisible(i, /*ubo.currentCluster*/ hitCluster)) continue;
+	// 		//vec3 posLight = getLight(i);
+	// 		vec3 toLight = posLight - P;
+	// 		vec3 L = normalize(toLight);
+	// 		float distToLight =	length(toLight);
+	// 		float lightStrength =  min(light.mag / distToLight, 1);
+	// 		if(lightStrength < 0.1f) continue;
+	// 		vec3 lightIntensity = /*vec3(0.25);*/ light.color * lightStrength;
+			
+	// 		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
+	// 		//float shadowMult =  /*float(uboLights.lightList.numLights) */ (numLights/numLightsDL) * trace_shadow_ray(P, L, 0.01f, distToLight);
+
+	// 		float pdf = (numLights/numLightsDL);
+	// 		vec3 rayColor = pdf * lightIntensity * trace_shadow_ray(P, L, 0.01f, distToLight);
+	// 		//vec3 pPos = vec3(ubo.viewMat[3].xyz);
+
+	// 		//if(dot(N, L) < 0) N = -N;
+	// 		float NdotL = clamp(dot(N, L), 0.0, 1.0);
+
+	// 		// Accumulate our Lambertian shading color
+	// 		shadeColor += rayColor * NdotL; 
+	// 	}
+
+	// 	// Modulate based on the physically based Lambertian term (albedo/pi)
+	// 	shadeColor *= primary_albedo.rgb / M_PI;
+	// }
+	
+	// if(ubo.showIntermediateResults == 0 || ubo.showIntermediateResults == 2) {
+	// 	uint seed = initRand(gl_LaunchIDNV.x, gl_LaunchIDNV.y, ubo.frameIndex/* = 16*/);
+	// 	// indirect
+	// 	uint bounces = ubo.numBounces;
+	// 	if (true)
+	// 	{
+	// 		vec3 indirectShade = vec3(1);
+	// 		for (uint b = 0; b < bounces; ++b)
+	// 		{
+	// 			// Select a random direction for our diffuse interreflection ray.
+	// 			vec3 bounceDir;
+				
+	// 			bool gCosSampling = true;
+	// 			if (gCosSampling)
+	// 				//bounceDir = getCosHemisphereSample(seed, N);      // Use cosine sampling
+	// 				bounceDir = getCosHemisphereSample2(vec2(get_rng(RNG_BOUNCE_X(b), int(ubo.frameIndex)), get_rng(RNG_BOUNCE_Y(b), int(ubo.frameIndex))), N);
+	// 			else
+	// 				bounceDir = getUniformHemisphereSample(seed, N);  // Use uniform random samples
+
+	// 			// Get NdotL for our selected ray direction
+	// 			float NdotL = clamp(dot(N, bounceDir), 0.0, 1.0);
+
+	// 			//if(NdotL < 0) return vec4(vec3(0,1,0), false);
+
+	// 			// Shoot our indirect global illumination ray
+	// 			Ray indirectRay;
+	// 			indirectRay.origin = P;
+	// 			indirectRay.direction = normalize(bounceDir);
+	// 			indirectRay.t_min = 0.01;
+	// 			indirectRay.t_max = 10000.0;
+	// 			trace_ray(indirectRay, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
+
+	// 			vec3 bounceColor;
+	// 			bool miss = false;
+	// 			if(!found_intersection(rp)){
+	// 				indirectShade *= 0;//sampleSky(ray.direction).xyz;
+	// 				//indirectShade = vec3(0,1,0);
+	// 				//indirectShade *= (/*shadowMult */ LdotN * lightIntensity *blinn_phong_based_brdf(-bounceDir, nee, N, 20.0))  / sampleProb;
+	// 				miss = true;
+
+	// 				//indirectShade *=  (is_light(rp) ? 0.1 : 0) + ((/*shadowMult */ NdotL /* lightIntensity */ * bounceColor / M_PI /*blinn_phong_based_brdf(-bounceDir, nee, N, 20.0)*/)  / sampleProb);
+	// 			} else {
+	// 				HitPoint hpIndirect = getHitPoint(rp);
+	// 				Triangle tIndirect = getTriangle(rp);
+	// 				//vec3 bounceColor = (global_texture(hpIndirect.tex0 & TEX0_IDX_MASK, hpIndirect.uv0) * color).xyz;
+	// 				//bounceColor = getTextureLod(screen_coord_cs, tIndirect, hpIndirect).xyz;
+	// 				bounceColor = getTextureLod2(hpIndirect, 0).xyz;
+
+	// 				//return vec4(bounceColor.xyz, false);
+
+	// 				// Probability of selecting this ray ( cos/pi for cosine sampling, 1/2pi for uniform sampling )
+	// 				float sampleProb = gCosSampling ? (NdotL / M_PI) : (1.0f / (2.0f * M_PI));
+
+	// 				P = hpIndirect.pos.xyz;
+	// 				N = hpIndirect.normal;
+
+	// 				uint numLight = imageLoad(lightVis_data, ivec2(0, hpIndirect.cluster)).r;
+
+
+	// 				// for(int i = 0; i < numLightsIL; i++){
+	// 				// 	uint lightIndex = imageLoad(lightVis_data, ivec2( int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
+
+	// 				// 	float lightPDF = (numLights/numLightsIL);
+
+	// 				// 	//uint lightIndex = imageLoad(lightVis_data, ivec2( int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r; // first index is numLight so + 1
+	// 				// 	DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex));
+
+	// 				// 	vec3 posLight = light.pos;//getRandomLight(i);
+	// 				// 	vec3 toLight = posLight - P;
+	// 				// 	vec3 L = normalize(toLight);
+	// 				// 	float distToLight =	length(toLight);
+	// 				// 	float lightStrength =  min(light.mag / distToLight, 1);
+	// 				// 	//if(lightStrength < 0.1f) continue;
+	// 				// 	vec3 lightIntensity = /*vec3(0.25);*/ light.color * lightStrength;
+
+	// 				// 	vec3 light_energy = light.color * 500.0f;
+	// 				// 	float cos_l = max(0.0, -dot(light.normal, -L));
+	// 				// 	cos_l *= cos_l;
+	// 				// 	float geom = (max(0.0, dot(N, L)) * cos_l)
+	// 				// 			/ max(0.01, distToLight * distToLight);
+	// 				// 	vec3 nee = (light_energy * geom) / lightPDF;
+
+	// 				// 	float shadowMult =  trace_shadow_ray(P, L, 0.01f, distToLight);
+
+	// 				// 	float LdotN = clamp(dot(N, L), 0.0, 1.0);
+
+	// 				// 	// Accumulate our Lambertian shading color
+	// 				// 	indirectShade *=  (is_light(rp) ? 0.1 : 0) + ((/*shadowMult */ LdotN /* lightIntensity */ * bounceColor / M_PI /*blinn_phong_based_brdf(-bounceDir, nee, N, 20.0)*/)  / sampleProb);
+	// 				// 	//* blinn_phong_based_brdf(-bounceDir, L, N, 20.0)
+	// 				// 	//shadeColor += (NdotL * bounceColor * primary_albedo.rgb / M_PI) / sampleProb;
+	// 				// }
+	// 				//indirectShade *=  ((/*shadowMult */ NdotL /* lightIntensity */ * bounceColor / M_PI /*blinn_phong_based_brdf(-bounceDir, nee, N, 20.0)*/)  / sampleProb);
+	// 				indirectShade = primary_albedo.rgb * bounceColor;
+	// 				//if(numLightsIL == 0) indirectShade *= (/*shadowMult */ 1 *blinn_phong_based_brdf(-bounceDir, vec3(0), N, 20.0))  / sampleProb;
+	// 			}
+
+	// 			//bounceColor = (NdotL > 0.50f) ? float3(0, 0, 0) : bounceColor;
+
+
+	// 			// Accumulate the color.  For performance, terms could (and should) be cancelled here.
+	// 			//shadeColor += (NdotL * bounceColor * difMatlColor.rgb / M_PI) / sampleProb;
+
+	// 			//shadeColor += (NdotL * bounceColor * primary_albedo.rgb / M_PI) / sampleProb;
+	// 			if(miss) break;
+	// 		}
+	// 		shadeColor += indirectShade;
+	// 	}
+	// }
 	color = vec4(shadeColor, 1);
 
 	//color = vec4(primary_albedo.rgb, 1);

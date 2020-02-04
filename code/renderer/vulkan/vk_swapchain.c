@@ -305,6 +305,7 @@ static void VK_CreateSyncObjects()
 {
 	vk.swapchain.imageAvailableSemaphores = malloc(vk.swapchain.imageCount * sizeof(VkSemaphore));
 	vk.swapchain.renderFinishedSemaphores = malloc(vk.swapchain.imageCount * sizeof(VkSemaphore));
+	vk.swapchain.traceFinishedSemaphores = malloc(vk.swapchain.imageCount * sizeof(VkSemaphore));
 	vk.swapchain.inFlightFences = malloc(vk.swapchain.imageCount * sizeof(VkFence));
 
 	VkSemaphoreCreateInfo semaphoreInfo = { 0 };
@@ -317,6 +318,7 @@ static void VK_CreateSyncObjects()
 	for (size_t i = 0; i < vk.swapchain.imageCount; i++) {
 		VK_CHECK(vkCreateSemaphore(vk.device, &semaphoreInfo, NULL, &vk.swapchain.imageAvailableSemaphores[i]), "failed to create Semaphore!");
 		VK_CHECK(vkCreateSemaphore(vk.device, &semaphoreInfo, NULL, &vk.swapchain.renderFinishedSemaphores[i]), "failed to create Semaphore!");
+		VK_CHECK(vkCreateSemaphore(vk.device, &semaphoreInfo, NULL, &vk.swapchain.traceFinishedSemaphores[i]), "failed to create Semaphore!");
 		VK_CHECK(vkCreateFence(vk.device, &fenceInfo, NULL, &vk.swapchain.inFlightFences[i]), "failed to create Fence!");
 	}
 
@@ -345,7 +347,7 @@ void VK_BeginFrame()
 	if (vk.swapchain.frameStarted) return;
 	vk.swapchain.frameStarted = qtrue;
 
-    // wait for command buffer submission for last imageclock_t start = clock();
+    // wait for command buffer submission for last image clock_t start = clock();
     
 	// save current image as last and acquire next
 	vk.swapchain.lastImage = vk.swapchain.currentImage;
@@ -355,6 +357,11 @@ void VK_BeginFrame()
     //           vkGetFenceStatus(vk.device, vk.swapchain.inFlightFences[1]) == VK_SUCCESS,
     //           vkGetFenceStatus(vk.device, vk.swapchain.inFlightFences[2]) == VK_SUCCESS);
     clock_t start = clock();
+
+	vkDeviceWaitIdle(vk.device);
+	vkDeviceWaitIdle(vk.device);
+	//int prevIndex = (vk.swapchain.currentImage + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount;
+	//vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[prevIndex], VK_TRUE, UINT64_MAX);
     vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentImage], VK_TRUE, UINT64_MAX);
     vkResetFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentImage]);
     clock_t end = clock();
@@ -392,19 +399,21 @@ void VK_EndFrame()
 	VK_CHECK(vkEndCommandBuffer(vk.swapchain.commandBuffers[vk.swapchain.currentImage]), "failed to end commandbuffer!");
 	//vkResetFences(this->device, 1, &inFlightFences[currentFrame]);
 
-	VkSemaphore waitSemaphores[] = { vk.swapchain.imageAvailableSemaphores[vk.swapchain.currentFrame] };
+	//int last = (vk.swapchain.currentFrame + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount;
+	//int next = (vk.swapchain.currentFrame + 1) % vk.swapchain.imageCount;
+	VkSemaphore waitSemaphores[] = { vk.swapchain.imageAvailableSemaphores[vk.swapchain.currentFrame]};
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	VkSemaphore signalSemaphores[] = { vk.swapchain.renderFinishedSemaphores[vk.swapchain.currentFrame] };
-
+	//(vk.swapchain.currentFrame + 1) % vk.swapchain.imageCount
 	VkSubmitInfo submitInfo = { 0 };
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
+	submitInfo.waitSemaphoreCount = sizeof(waitSemaphores) / sizeof(VkSemaphore);
+	submitInfo.pWaitSemaphores = &waitSemaphores[0];
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &vk.swapchain.commandBuffers[vk.swapchain.currentImage];
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores;
+	submitInfo.signalSemaphoreCount = sizeof(signalSemaphores) / sizeof(VkSemaphore);
+	submitInfo.pSignalSemaphores = &signalSemaphores[0];
 
 	VK_CHECK(vkQueueSubmit(vk.graphicsQueue, 1, &submitInfo, vk.swapchain.inFlightFences[vk.swapchain.currentImage]), "failed to submit draw command buffer!");
 	//VK_CHECK(vkQueueWaitIdle(vk.graphicsQueue), "failed to wait for Queue execution!");
@@ -432,7 +441,6 @@ SwapChain Helper Function
 
 ==============================================================================
 */
-
 static VkFramebuffer VK_CurrentFramebuffer()
 {
 	return vk.swapchain.framebuffers[vk.swapchain.currentImage];

@@ -17,7 +17,7 @@ void main()
     rpb.instanceID = gl_InstanceID;
     rpb.primitiveID = gl_PrimitiveID;
     rpb.hit_distance = gl_RayTmaxNV;
-    rpb.modelmat = gl_ObjectToWorldNV;
+    //rpb.modelmat = gl_ObjectToWorldNV;
 
     if(is_see_through(rpb)) {
         HitPoint hp = getHitPoint(rpb);

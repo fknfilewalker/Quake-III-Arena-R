@@ -61,8 +61,16 @@
 #define BINDING_OFFSET_IDX_ENTITY_DYNAMIC	        0x0000000b
 #define BINDING_OFFSET_INSTANCE_DATA				0x0000000c
 
+#define BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA_PREV  0x00000042
+#define BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA_PREV  0x00000043
+#define BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS_PREV    0x00000044
+#define BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS_PREV    0x00000045
+#define BINDING_OFFSET_XYZ_ENTITY_DYNAMIC_PREV      0x00000048
+#define BINDING_OFFSET_IDX_ENTITY_DYNAMIC_PREV      0x00000049
+#define BINDING_OFFSET_INSTANCE_DATA_PREV		    0x0000004a
+
+
 #define BINDING_OFFSET_ENVMAP						0x0000000d
-#define BINDING_OFFSET_GLOBAL_UBO					0x0000000e
 #define BINDING_OFFSET_UBO_LIGHTS					0x0000000f
 #define BINDING_OFFSET_BLUE_NOISE					0x00000010
 #define BINDING_OFFSET_VIS_DATA					    0x00000011
@@ -73,8 +81,33 @@
 #define BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_AS     0x00000015
 #define BINDING_OFFSET_CLUSTER_ENTITY_STATIC        0x00000016
 
+#define BINDING_OFFSET_GLOBAL_UBO					0x00000017
+#define BINDING_OFFSET_GLOBAL_UBO_PREV			    0x00000018
+#define BINDING_OFFSET_RANDOM_SEED                  0x00000019
+// g buffer
+#define BINDING_OFFSET_RESULT_OUTPUT                0x00000001
+#define BINDING_OFFSET_GBUFFER_POS                  0x00000020
+#define BINDING_OFFSET_GBUFFER_ALBEDO               0x00000021
+#define BINDING_OFFSET_GBUFFER_NORMAL               0x00000022
+#define BINDING_OFFSET_GBUFFER_MOTION               0x00000025
+#define BINDING_OFFSET_GBUFFER_MATERIAL             0x00000023
+#define BINDING_OFFSET_GBUFFER_DEPTH                0x00000024
+
+#define BINDING_OFFSET_RESULT_OUTPUT_PREV           0x00000030
+#define BINDING_OFFSET_GBUFFER_POS_PREV             0x00000031
+#define BINDING_OFFSET_GBUFFER_ALBEDO_PREV          0x00000032
+#define BINDING_OFFSET_GBUFFER_NORMAL_PREV          0x00000033
+#define BINDING_OFFSET_GBUFFER_MATERIAL_PREV        0x00000034
+#define BINDING_OFFSET_GBUFFER_DEPTH_PREV           0x00000035
+
+
+
 // shader offset
 #define SBT_RGEN_PRIMARY_RAYS						0x00000000
+#define SBT_RMISS_PRIMARY_RAYS						0x00000001
+#define SBT_RCHIT_PRIMARY_RAYS						0x00000002
+#define SBT_RAHIT_PRIMARY_RAYS						0x00000003
+
 #define SBT_RMISS_PATH_TRACER						0x00000001
 #define SBT_RCHIT_OPAQUE							0x00000002
 #define SBT_RAHIT_PARTICLE							0x00000003
@@ -114,6 +147,7 @@
     #define VEC3(n) vec3 n;
     #define VEC4(n) vec4 n;
     #define MAT4(n) mat4 n;
+    #define MAT4X3(n) mat4x3 n;
     #define UVEC2(n) uvec2 n;
 #else
     #define STRUCT(content, name) typedef struct { content } name;
@@ -125,11 +159,13 @@
     #define VEC3(n) float n[3];
     #define VEC4(n) float n[4];
     #define MAT4(n) float n[16];
+    #define MAT4X3(n) float n[12];
     #define UVEC2(n) unsigned int[2] n;
 #endif
 
 // holds material/offset/etc data for each AS Instance
 STRUCT (
+    MAT4    (modelmat)
     UINT    (world)
 	UINT    (offsetIDX)
 	UINT    (offsetXYZ)
@@ -138,6 +174,10 @@ STRUCT (
 	BOOL    (isBrushModel)
 	BOOL    (isPlayer)
 	UINT    (cluster)
+    UINT    (currentInstanceIDX)
+    UINT    (prevInstanceIDX)
+    UINT    (buff0)
+    UINT    (buff1)
 ,ASInstanceData)
 
 // holds all vertex data
@@ -172,14 +212,21 @@ STRUCT (
     MAT4    (inverseProjMatPortal)
     MAT4    (viewMat)
     MAT4    (projMat)
+    MAT4    (viewMatPrev)
+    MAT4    (projMatPrev)
 	BOOL    (hasPortal)
 	UINT    (frameIndex)
     INT     (currentCluster)
     INT		(numClusters)
  	INT		(clusterBytes)
     // settings
+    UINT    (showIntermediateResults)
     BOOL    (cullLights)
-,RTUbo)
+    UINT    (numRandomDL)
+    UINT    (numRandomIL)
+    UINT    (numBounces)
+    BOOL    (randSample)
+,GlobalUbo)
 
 // holds a light
 STRUCT (

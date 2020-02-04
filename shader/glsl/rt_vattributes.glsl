@@ -36,6 +36,7 @@ struct DirectionalLight {
 	vec3 pos;
 	vec3 color;
 	float mag;
+	vec3 normal;
 };
 
 struct TextureData {
@@ -67,6 +68,7 @@ layout(binding = BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_DATA, set = 0) buffer Clus
 layout(binding = BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_AS, set = 0) buffer Cluster_World_dynamic_as { uint c[]; } cluster_world_dynamic_as;
 layout(binding = BINDING_OFFSET_CLUSTER_ENTITY_STATIC, set = 0) buffer Cluster_Entity_static { uint c[]; } cluster_entity_static;
 
+
 vec3 getBarycentricCoordinates(vec2 hitAttribute) { return vec3(1.0f - hitAttribute.x - hitAttribute.y, hitAttribute.x, hitAttribute.y); }
 
 vec4 unpackColor(uint color) {
@@ -78,18 +80,8 @@ vec4 unpackColor(uint color) {
 	);
 }
 
-Triangle getTriangle(RayPayload rp){
-// if(iData.data[rp.instanceID].world) {
-// 		ivec3 index = ivec3(indices_entity_static.i[iData.data[rp.instanceID].offsetIDX + 3 * rp.primitiveID], indices_entity_static.i[iData.data[rp.instanceID].offsetIDX + 3 * rp.primitiveID + 1], indices_entity_static.i[iData.data[rp.instanceID].offsetIDX + 3 * rp.primitiveID + 2]);
-
-// 		const vec3 barycentricCoords = vec3(1.0f - rp.barycentric.x - rp.barycentric.y, rp.barycentric.x, rp.barycentric.y);
-// 		vec2 uv = 		vertices_entity_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].uv.xy * barycentricCoords.x +
-//                   	vertices_entity_static.v[index.y + iData.data[rp.instanceID].offsetXYZ].uv.xy * barycentricCoords.y +
-//                   	vertices_entity_static.v[index.z + iData.data[rp.instanceID].offsetXYZ].uv.xy * barycentricCoords.z;
-// 		color = global_textureGrad(int(vertices_entity_static.v[index.x + iData.data[rp.instanceID].offsetXYZ].pos.w), uv, tex_coord_x, tex_coord_y);
-// 	}
-
-  	uint customIndex = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID * 3);
+ivec3 getVertexData(RayPayload rp, out VertexBuffer vData[3]){
+	uint customIndex = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID * 3);
 	ivec3 index;
 	if(iData.data[rp.instanceID].world == BAS_WORLD_STATIC) index = (ivec3(indices_world_static.i[customIndex], indices_world_static.i[customIndex + 1], indices_world_static.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
 	else if(iData.data[rp.instanceID].world == BAS_WORLD_DYNAMIC_DATA)  index = (ivec3(indices_dynamic_data.i[customIndex], indices_dynamic_data.i[customIndex + 1], indices_dynamic_data.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
@@ -97,7 +89,6 @@ Triangle getTriangle(RayPayload rp){
 	else if(iData.data[rp.instanceID].world == BAS_ENTITY_STATIC)  index = (ivec3(indices_entity_static.i[customIndex], indices_entity_static.i[customIndex + 1], indices_entity_static.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
 	else if(iData.data[rp.instanceID].world == BAS_ENTITY_DYNAMIC)  index = (ivec3(indices_entity_dynamic.i[customIndex], indices_entity_dynamic.i[customIndex + 1], indices_entity_dynamic.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
 
-	VertexBuffer vData[3];
 	if(iData.data[rp.instanceID].world == BAS_WORLD_STATIC){
 		vData[0] = vertices_world_static.v[index.x];
 		vData[1] = vertices_world_static.v[index.y];
@@ -119,13 +110,20 @@ Triangle getTriangle(RayPayload rp){
 		vData[1] = vertices_entity_dynamic.v[index.y];
 		vData[2] = vertices_entity_dynamic.v[index.z];
 	}
+	return index;
+}
+
+Triangle getTriangle(RayPayload rp){
+
+	VertexBuffer vData[3];
+	ivec3 index = getVertexData(rp, vData);
 
 	Triangle hitTriangle;
 	// POS
 	// Some Entitiys are in Object Space
-	hitTriangle.pos[0] = (rp.modelmat * vec4(vData[0].pos.xyz, 1)).xyz;
-	hitTriangle.pos[1] = (rp.modelmat * vec4(vData[1].pos.xyz, 1)).xyz;
-	hitTriangle.pos[2] = (rp.modelmat * vec4(vData[2].pos.xyz, 1)).xyz;
+	hitTriangle.pos[0] = (vec4(vData[0].pos.xyz, 1) * iData.data[rp.instanceID].modelmat).xyz;
+	hitTriangle.pos[1] = (vec4(vData[1].pos.xyz, 1) * iData.data[rp.instanceID].modelmat).xyz;
+	hitTriangle.pos[2] = (vec4(vData[2].pos.xyz, 1) * iData.data[rp.instanceID].modelmat).xyz;
 	// Color
 	hitTriangle.color0[0] = unpackColor(vData[0].color0);
 	hitTriangle.color0[1] = unpackColor(vData[1].color0);
@@ -165,9 +163,9 @@ Triangle getTriangle(RayPayload rp){
 	// hitTriangle.normal = normalize(cross(AC, AB));
 	const vec3 barycentricCoords = getBarycentricCoordinates(rp.barycentric);
 	hitTriangle.normal = vData[0].normal.xyz * barycentricCoords.x +
-					vData[1].normal.xyz * barycentricCoords.y +
-            		vData[2].normal.xyz * barycentricCoords.z;
-	hitTriangle.normal = (rp.modelmat * vec4(hitTriangle.normal, 0)).xyz;
+						vData[1].normal.xyz * barycentricCoords.y +
+           				vData[2].normal.xyz * barycentricCoords.z;
+	hitTriangle.normal = (vec4(hitTriangle.normal, 0) * iData.data[rp.instanceID].modelmat).xyz;
 
 	switch(iData.data[rp.instanceID].world){
 		case BAS_WORLD_STATIC:
@@ -342,7 +340,8 @@ DirectionalLight getLight2(Light l, ivec2 rng){
 
 	DirectionalLight light;
 	light.pos = l.pos.xyz;
-	light.mag = length(cross(dir_x, dir_y));
+	light.normal = cross(dir_x, dir_y);
+	light.mag = length(light.normal);
 	//light.pos = (vData[0].pos.xyz + vData[1].pos.xyz + vData[2].pos.xyz) / 3;
 	light.pos = vData[1].pos.xyz + (rng_x * dir_x + rng_y * dir_y);
 	//light.pos = l.pos.xyz * sample_triangle(vec2(rng_x, rng_y)); 

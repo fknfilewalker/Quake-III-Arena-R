@@ -79,7 +79,7 @@ void VK_FinishComputePipeline(vkcpipeline_t* pipeline) {
 }
 
 void VK_BindCompute1DescriptorSet(vkcpipeline_t* pipeline, vkdescriptor_t* descriptor) {
-	VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+	VkCommandBuffer commandBuffer = vk.swapchain.CurrentCommandBuffer();
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->layout, 0, 1,
 		&descriptor->set, 0, NULL);
 }
@@ -96,12 +96,12 @@ void VK_SetComputePushConstant(vkcpipeline_t* pipeline, VkShaderStageFlags stage
 	vkCmdPushConstants(commandBuffer, pipeline->layout, stage, offset, size, data);
 }
 void VK_BindComputePipeline(vkcpipeline_t* pipeline) {
-	VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+	VkCommandBuffer commandBuffer = vk.swapchain.CurrentCommandBuffer();
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->handle);
 }
 
 void VK_Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) {
-	VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+	VkCommandBuffer commandBuffer = vk.swapchain.CurrentCommandBuffer();
 	vkCmdDispatch(commandBuffer, groupCountX, groupCountY, groupCountZ);
 }
 

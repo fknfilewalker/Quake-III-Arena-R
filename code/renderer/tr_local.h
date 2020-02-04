@@ -301,6 +301,8 @@ typedef struct {
 	VkDeviceSize					offset;			// offset in static or dynamic buffer
 	qboolean						isWorldSurface;	// just for entity bas which are from world surfaces
 	int c;
+	qboolean hasOldIdx[10];
+	int oldIdx[10];
 } vkbottomAS_t;
 
 #define	MAX_IMAGE_ANIMATIONS	8
@@ -1050,6 +1052,8 @@ typedef struct {
     VkShaderModule *modules;
     VkShaderStageFlagBits *flags;
     VkPipelineShaderStageCreateInfo *shaderStageCreateInfos;
+	size_t shaderGroupSize;
+	VkRayTracingShaderGroupCreateInfoNV* shaderGroupCreateInfos;
 } vkshader_t;
 
 typedef struct {
@@ -1126,6 +1130,7 @@ typedef struct {
 	VkCommandBuffer				*commandBuffers;
 	VkSemaphore					*imageAvailableSemaphores;
 	VkSemaphore					*renderFinishedSemaphores;
+	VkSemaphore					*traceFinishedSemaphores;
 	VkFence						*inFlightFences;
 
 	uint32_t					imageCount;
@@ -1341,6 +1346,13 @@ typedef struct {
 #define RTX_DYNAMIC_DATA (UV_CHANGES || ANIMATE_TEXTURE)
 
 typedef struct {
+	vkimage_t			position;
+	vkimage_t			albedo;
+	vkimage_t			normals;
+	vkimage_t			material;
+} vkgbuffer;
+
+typedef struct {
     size_t              size; // images
     vkimage_t           images[MAX_DRAWIMAGES];
 
@@ -1402,6 +1414,14 @@ typedef struct {
 	viewParms_t			mirrorViewParms;
 	
 	vkaccelerationStructures_t accelerationStructures;
+	vkdescriptor_t		rtxDescriptor[VK_MAX_SWAPCHAIN_SIZE];
+	vkdescriptor_t		computeDescriptor[VK_MAX_SWAPCHAIN_SIZE];
+
+	vkgbuffer			gBuffer[VK_MAX_SWAPCHAIN_SIZE];
+	vkrtpipeline_t		primaryRaysPipeline;
+	vkrtpipeline_t		directIlluminationPipeline;
+	vkrtpipeline_t		indirectIlluminationPipeline;
+
 	// holds buffers and offsets for geometry
 	vkgeometry_t		geometry;			
 
@@ -1466,6 +1486,7 @@ typedef struct {
 	vkbuffer_t			scratchBuffer;	// only required for build, not needed after build
 	VkDeviceSize		scratchBufferOffset;
 
+	GlobalUbo			uboGlobal[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t			uboBuffer[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t			uboLightList[VK_MAX_SWAPCHAIN_SIZE];
 	LightList_s			lightList;
@@ -1619,7 +1640,12 @@ extern	cvar_t	*r_printShaders;
 extern	cvar_t	*r_saveFontData;
 
 // PT
+extern  cvar_t  *pt_showIntermediateResults;
 extern	cvar_t	*pt_cullLights;
+extern	cvar_t  *pt_numRandomDL;
+extern	cvar_t	*pt_numRandomIL;
+extern	cvar_t  *pt_numBounces;
+extern	cvar_t	*pt_randSample;
 
 //====================================================================
 

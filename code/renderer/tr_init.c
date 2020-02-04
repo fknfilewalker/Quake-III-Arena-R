@@ -152,7 +152,12 @@ cvar_t	*r_maxpolyverts;
 int		max_polyverts;
 
 // PT
+cvar_t* pt_showIntermediateResults;
 cvar_t* pt_cullLights;
+cvar_t* pt_numRandomDL;
+cvar_t* pt_numRandomIL;
+cvar_t* pt_numBounces;
+cvar_t* pt_randSample;
 
 void ( APIENTRY * qglMultiTexCoord2fARB )( GLenum texture, GLfloat s, GLfloat t );
 void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
@@ -264,6 +269,25 @@ static void InitVulkan(void)
 
 		// <RTX>
 		if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
+			for (int i = 0; i < vk.swapchain.imageCount; i++) {
+				VK_CreateImage(&vk_d.gBuffer[i].position, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+				VK_CreateSampler(&vk_d.gBuffer[i].position, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+				VK_TransitionImage(&vk_d.gBuffer[i].position, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+				VK_CreateImage(&vk_d.gBuffer[i].albedo, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+				VK_CreateSampler(&vk_d.gBuffer[i].albedo, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+				VK_TransitionImage(&vk_d.gBuffer[i].albedo, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+				VK_CreateImage(&vk_d.gBuffer[i].normals, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+				VK_CreateSampler(&vk_d.gBuffer[i].normals, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+				VK_TransitionImage(&vk_d.gBuffer[i].normals, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+				VK_CreateImage(&vk_d.gBuffer[i].material, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R32G32B32A32_UINT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+				VK_CreateSampler(&vk_d.gBuffer[i].material, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+				VK_TransitionImage(&vk_d.gBuffer[i].material, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+			}
+
+
 			vk_d.bottomASList = calloc(VK_MAX_BOTTOM_AS, sizeof(vkbottomAS_t));
 			vk_d.bottomASCount = 0;
 			vk_d.bottomASTraceList = calloc(VK_MAX_BOTTOM_AS_INSTANCES, sizeof(vkbottomAS_t));
@@ -290,7 +314,7 @@ static void InitVulkan(void)
 
 			// world buffers
 			// static
-			VK_CreateRayTracingASBuffer(&vk_d.basBufferStaticWorld, 40 * VK_AS_MEMORY_ALLIGNMENT_SIZE * sizeof(byte));
+			VK_CreateRayTracingASBuffer(&vk_d.basBufferStaticWorld, 50 * VK_AS_MEMORY_ALLIGNMENT_SIZE * sizeof(byte));
 			VK_CreateAttributeBuffer(&vk_d.geometry.idx_world_static, RTX_WORLD_STATIC_IDX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 			VK_CreateAttributeBuffer(&vk_d.geometry.xyz_world_static, RTX_WORLD_STATIC_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 			VK_CreateAttributeBuffer(&vk_d.geometry.cluster_world_static, RTX_WORLD_STATIC_IDX_SIZE/3 * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -337,7 +361,7 @@ static void InitVulkan(void)
 				VK_CreateRayTracingBuffer(&vk_d.instanceBuffer[i], VK_MAX_BOTTOM_AS_INSTANCES * sizeof(VkGeometryInstanceNV));
 				VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[i], VK_MAX_BOTTOM_AS_INSTANCES * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 				// UBOs
-				VK_CreateUniformBuffer(&vk_d.uboBuffer[i], sizeof(RTUbo));
+				VK_CreateUniformBuffer(&vk_d.uboBuffer[i], sizeof(GlobalUbo));
 				VK_CreateUniformBuffer(&vk_d.uboLightList[i], sizeof(LightList_s));
 
 				// End Result Image
@@ -353,19 +377,26 @@ static void InitVulkan(void)
 			// Scratch buffer for AS build
 			VK_CreateRayTracingScratchBuffer(&vk_d.scratchBuffer, VK_MAX_DYNAMIC_BOTTOM_AS_INSTANCES * VK_AS_MEMORY_ALLIGNMENT_SIZE * sizeof(byte));
 			vk_d.scratchBufferOffset = 0;
+			/*
 			// new
-			/*VK_CreateImage(&vk_d.accelerationStructures.rngImage, vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+			VK_CreateImage(&vk_d.accelerationStructures.rngImage, vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
 			VK_CreateSampler(&vk_d.accelerationStructures.rngImage, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 			
-			vkdescriptor_t rngDesc = {0};
-			VK_AddStorageImage(&rngDesc, 0, VK_SHADER_STAGE_COMPUTE_BIT);
-			VK_SetStorageImage(&rngDesc, 0, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.accelerationStructures.rngImage.view);
-			VK_FinishDescriptor(&rngDesc);
-
+			for (int i = 0; i < vk.swapchain.imageCount; i++) {
+				VK_CreateImage(&vk_d.randomSeedTex[i], vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+				VK_CreateSampler(&vk_d.randomSeedTex[i], VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+				VK_TransitionImage(&vk_d.randomSeedTex[i], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+				
+				VK_AddUniformBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_GLOBAL_UBO, VK_SHADER_STAGE_COMPUTE_BIT);
+				VK_SetUniformBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_GLOBAL_UBO, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.uboBuffer[i].buffer);
+				VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_RANDOM_SEED, VK_SHADER_STAGE_COMPUTE_BIT);
+				VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_RANDOM_SEED, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.randomSeedTex[i].view);
+				VK_FinishDescriptor(&vk_d.computeDescriptor[i]);
+			}
 			vkshader_t rngShader = { 0 };
 			VK_RngCompShader(&rngShader);
 			VK_SetComputeShader(&vk_d.accelerationStructures.rngPipeline, &rngShader);
-			VK_SetComputeDescriptorSet(&vk_d.accelerationStructures.rngPipeline, &rngDesc);
+			VK_SetComputeDescriptorSet(&vk_d.accelerationStructures.rngPipeline, &vk_d.computeDescriptor[0]);
 			VK_FinishComputePipeline(&vk_d.accelerationStructures.rngPipeline);*/
 		
 		
@@ -379,9 +410,10 @@ static void InitVulkan(void)
 			byte* pic;
 			VK_CreateImageArray(&vk_d.blueNoiseTex, BLUE_NOISE_RES, BLUE_NOISE_RES, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1, NUM_BLUE_NOISE_TEX);
 			for (int i = 0; i < NUM_BLUE_NOISE_TEX; i++) {
-				uint8_t img[BLUE_NOISE_RES * BLUE_NOISE_RES];
+				uint8_t img[2* BLUE_NOISE_RES * BLUE_NOISE_RES];
 				char buf[1024];
 				snprintf(buf, sizeof buf, "blue_noise/LDR_RGBA_%04d.tga", i);
+				//snprintf(buf, sizeof buf, "blue_noise_textures/256_256/HDR_RGBA_%04d.png", i);
 				R_LoadImage(buf, &pic, &width, &height);
 
 				for (int j = 0; j < BLUE_NOISE_RES * BLUE_NOISE_RES; j++) {
@@ -1238,7 +1270,12 @@ void R_Register( void )
 	r_maxpolyverts = ri.Cvar_Get( "r_maxpolyverts", va("%d", MAX_POLYVERTS), 0);
 
 	// RTX
+	pt_showIntermediateResults = ri.Cvar_Get("pt_showIntermediateResults", "1", 0);
 	pt_cullLights = ri.Cvar_Get("pt_cullLights", "1", 0);
+	pt_numRandomDL = ri.Cvar_Get("pt_numRandomDL", "0", 0);
+	pt_numRandomIL = ri.Cvar_Get("pt_numRandomIL", "1", 0);
+	pt_numBounces = ri.Cvar_Get("pt_numBounces", "1", 0);
+	pt_randSample = ri.Cvar_Get("pt_randomPixelOffset", "1", 0);
 
 	// make sure all the commands added here are also
 	// removed in R_Shutdown
@@ -1403,6 +1440,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 					VK_DestroyBottomAccelerationStructure(&vk_d.bottomASDynamicList[i][j]);
 				}
 				VK_DestroyDescriptor(&vk_d.accelerationStructures.descriptor[i]);
+				VK_DestroyDescriptor(&vk_d.rtxDescriptor[i]);
 				vk_d.bottomASDynamicCount[i] = 0;
 			}
 	
@@ -1500,6 +1538,14 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			}
 			VK_DestroyBuffer(&vk_d.scratchBuffer);
 			VK_DestroyImage(&vk_d.blueNoiseTex);
+
+			// g buffer 
+			for (int i = 0; i < vk.swapchain.imageCount; i++) {
+				VK_DestroyImage(&vk_d.gBuffer[i].position);
+				VK_DestroyImage(&vk_d.gBuffer[i].albedo);
+				VK_DestroyImage(&vk_d.gBuffer[i].normals);
+				VK_DestroyImage(&vk_d.gBuffer[i].material);
+			}
 
 			// lists
 			if(vk_d.bottomASList == NULL) free(vk_d.bottomASList);

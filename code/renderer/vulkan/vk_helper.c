@@ -353,3 +353,10 @@ void VK_GetAccelerationStructureMemoryRequirements(VkAccelerationStructureNV as,
 	memreq->sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
 	vkGetAccelerationStructureMemoryRequirementsNV(vk.device, &memoryRequirementsInfoScratch, memreq);
 }
+
+/*
+*
+*/
+int VK_CalcPrevImage(int currentImage) {
+	return (currentImage - 1) % vk.swapchain.imageCount;
+}

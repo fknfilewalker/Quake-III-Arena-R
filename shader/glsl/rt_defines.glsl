@@ -14,9 +14,11 @@
 
 #define ALBEDO_MULT 1.3
 
-#define RNG_C(bounce)                (2 + 0 + 7 * bounce)
+#define RNG_C(bounce)                (1 + 0 + 7 * bounce)
 #define RNG_LP_X(bounce)             (3 + 0 + 7 * bounce)
 #define RNG_LP_Y(bounce)             (4 + 0 + 7 * bounce)
+#define RNG_BOUNCE_X(bounce)         (5 + 0 + 7 * bounce)
+#define RNG_BOUNCE_Y(bounce)         (6 + 0 + 7 * bounce)
 
 
 struct RayPayload {
@@ -26,7 +28,7 @@ struct RayPayload {
 	float hit_distance;
 	vec4 transparent;
 	float max_transparent_distance;
-	mat4x3 modelmat;
+	//mat4x3 modelmat;
 };
 struct ShadowRayPayload
 {
