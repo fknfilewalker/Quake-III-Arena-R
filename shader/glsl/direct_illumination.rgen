@@ -1,0 +1,139 @@
+#version 460
+#extension GL_NV_ray_tracing : require
+#extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : enable
+#pragma optionNV (unroll all)
+#include "constants.h"
+#include "rt_defines.glsl"
+#include "rt_helper.glsl"
+#include "rt_sky.glsl"
+#include "rt_texture.glsl"
+#include "rt_vattributes.glsl"
+#include "gbuffer.glsl"
+
+layout(binding = BINDING_OFFSET_RESULT_OUTPUT, set = 0, rgba8) uniform image2D image;
+// Bindings
+layout(binding = BINDING_OFFSET_AS, set = 0) uniform accelerationStructureNV topLevelAS;
+layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
+{
+	GlobalUbo ubo;
+};
+
+layout(binding = BINDING_OFFSET_UBO_LIGHTS, set = 0) uniform LightList 
+{
+	LightList_s lightList;
+} uboLights;
+
+layout(location = PAYLOAD_BRDF) rayPayloadNV RayPayload rp;
+layout(location = PAYLOAD_SHADOW) rayPayloadNV ShadowRayPayload rp_shadow;
+
+
+void trace_ray(Ray ray, uint cullMask)
+{
+	const uint rayFlags = gl_RayFlagsCullFrontFacingTrianglesNV;//gl_RayFlagsOpaqueNV;// | gl_RayFlagsCullBackFacingTrianglesNV;
+	//const uint rayFlags = gl_RayFlagsOpaqueNV | gl_RayFlagsCullBackFacingTrianglesNV;
+	//const uint cullMask = RAY_FIRST_PERSON_VISIBLE;
+	rp.transparent = vec4(0);
+	rp.max_transparent_distance = 0;
+
+	traceNV( topLevelAS, rayFlags, cullMask,
+			SBT_RCHIT_OPAQUE /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_PATH_TRACER /*missIndex*/,
+			ray.origin, ray.t_min, ray.direction, ray.t_max, PAYLOAD_BRDF);
+}
+float trace_shadow_ray(vec3 pos, vec3 dir, float t_min, float t_max)
+{
+	const uint rayFlags = gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsSkipClosestHitShaderNV;
+	uint cullMask = RAY_MIRROR_OPAQUE_VISIBLE;
+	if(is_player(rp)) {
+		cullMask = RAY_FIRST_PERSON_OPAQUE_VISIBLE;
+	}
+	
+	Ray ray;
+	ray.origin = pos;
+	ray.direction = dir;
+	ray.t_min = t_min;
+	ray.t_max = t_max - t_min;
+
+	rp_shadow.visFactor = 0.0f;
+
+	traceNV( topLevelAS, rayFlags, cullMask,
+			SBT_RCHIT_SHADOW_RAY /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_SHADOW_RAY /*missIndex*/,
+			ray.origin, ray.t_min, ray.direction, ray.t_max, PAYLOAD_SHADOW);
+
+	return rp_shadow.visFactor;
+}
+
+vec3 Shade(vec3 pos, vec3 norm, vec3 difColor, uint lightIdx, uint numLights){
+	float sampleProb = 1.0f / float(numLights);
+
+	DirectionalLight light = getLight2(uboLights.lightList.lights[lightIdx], ivec2(lightIdx, ubo.frameIndex));
+	vec3 lightPos = light.pos;
+	float distToLight = length(lightPos - pos);
+	vec3 lightIntensity = light.color * vec3(0.1);//(light.mag * light.color) / distToLight;
+	vec3 dirToLight = normalize(lightPos  - pos);
+
+	float NdotL = clamp(dot(norm, dirToLight), 0.0, 1.0);
+	float isLit = trace_shadow_ray(pos, dirToLight, 0.01f, distToLight);
+	vec3 rayColor = isLit * lightIntensity;
+
+	return (NdotL * rayColor * (difColor / M_PI)) / sampleProb;
+}
+
+void directIllumination(){
+	vec3 primary_albedo;
+	vec3 normal;
+	vec3 pos;
+	uint cluster;
+	int material;
+	float depth;
+	vec3 motion;
+
+	vec4 temp;
+	temp = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
+	primary_albedo = temp.xyz;
+	cluster = uint(temp.w);
+	temp = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy));
+	normal = temp.xyz;
+	temp = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy));
+	pos = temp.xyz;
+	depth = temp.w;
+
+
+	vec3 shadeColor = primary_albedo;//vec3(0);
+
+
+//#define RANDOM
+#ifdef RANDOM
+	uint numLights = uboLights.lightList.numLights;
+	uint rand = int( get_rng(RNG_C(0), int(ubo.frameIndex)) * (numLights-1)) ;//uint(float(get_rng2(RNG_C(0), seed)) * (numLights-1) );
+	shadeColor = Shade(pos, normal, primary_albedo, rand, numLights);
+#else 
+	uint numLights = uint(imageLoad(lightVis_data, ivec2(0, cluster)).r);//uboLights.lightList.numLights;;
+	for(int i = 0; i < numLights; i++){
+		//shadeColor += Shade(pos, normal, primary_albedo, uint(imageLoad(lightVis_data, ivec2(i+1, cluster)).r), numLights);
+		shadeColor += Shade(pos, normal, primary_albedo, uint(imageLoad(lightVis_data, ivec2(i+1, cluster)).r), numLights);
+	}
+	shadeColor /= numLights;
+#endif
+
+	//float a = luminance(shadeColor) - luminance(imageLoad(imagePrev, ivec2(gl_LaunchIDNV.xy)).xyz);
+	//vec3 b = imageLoad(imagePrev, ivec2(gl_LaunchIDNV.xy)).xyz;
+	//imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4( vec3(old) ,1));
+	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4( shadeColor ,1));
+	//float rand2 = texelFetch(blue_noise, ivec3(gl_LaunchIDNV.xy, 0),0).r;
+	//imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(motion,1) );
+	// if(a > 0) imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(1,0,0 ,1));
+	// else if(a == 0) imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(0,0,0 ,1));
+	// else imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(0,1,0,1));
+
+	
+	//imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(ndc.xyz,1));
+	//imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(ndcPrev.xyz,1));
+	//imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(velocity.xyz * 100,1));
+}
+
+void main() 
+{
+	directIllumination();
+}
+

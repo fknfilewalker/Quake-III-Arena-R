@@ -159,14 +159,12 @@ void primary_rays(){
 	int material;
 	float depth;
 
-	vec3 posPrev;
 	if(!found_intersection(rp)){
 		primary_albedo = sampleSky(ray.direction).xyz;
 		normal = vec3(0);
 		pos = vec3(0);
 		material = 0;
 		depth = 10000;
-		posPrev = vec3(0);
 	} else {
 		HitPoint hp = getHitPoint(rp);
 		Triangle triangle = getTriangle(rp);
@@ -176,12 +174,6 @@ void primary_rays(){
 		cluster = int(hp.cluster);
 		material = 1;
 		depth = rp.hit_distance;
-
-		//rp.instanceID = 0;
-		//rp.primitiveID = 0;
-		//uint i = rp.instanceID;
-		//posPrev = getHitPointPrev(rp).pos;
-		//iData.data[rp.instanceID].prevInstanceIDX = rp.instanceID;
 	}
 
 	
@@ -208,7 +200,7 @@ void primary_rays(){
 
 	
 
-	imageStore(materialGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(rp.instanceID, rp.primitiveID,0,0));
+	//imageStore(materialGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(rp.instanceID, rp.primitiveID,0,0));
 
 	imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(primary_albedo.xyz,cluster));
 	imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(normal.xyz,1));

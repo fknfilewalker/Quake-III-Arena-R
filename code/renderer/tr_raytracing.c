@@ -963,29 +963,6 @@ static void RB_TraceRays() {
 	//VK_SetAccelerationStructure(&vk_d.accelerationStructures.descriptor[vk.swapchain.currentImage], BINDING_OFFSET_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.topAS[vk.swapchain.currentImage].accelerationStructure);
 	//VK_UpdateDescriptorSet(&vk_d.accelerationStructures.descriptor[vk.swapchain.currentImage]);
 	
-	/*VkImageMemoryBarrier barrier = { 0 };
-	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = 1;
-
-	barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-	barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-	barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT | VK_ACCESS_MEMORY_READ_BIT;
-	barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-	int prevIndex = (vk.swapchain.currentImage + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount;
-	barrier.image = vk_d.gBuffer[vk.swapchain.currentImage].position.handle;
-	vkCmdPipelineBarrier(vk.swapchain.CurrentCommandBuffer(),
-		VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV,
-		VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV,
-		0, 0, NULL, 0, NULL,
-		1, &barrier);*/
-
-	//BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[(vk.swapchain.currentImage + 1) % vk.swapchain.imageCount].position.handle);
-	
-	//
 
 	/*VK_BindComputePipeline(&vk_d.accelerationStructures.rngPipeline);
 	VK_BindCompute1DescriptorSet(&vk_d.accelerationStructures.rngPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage]);

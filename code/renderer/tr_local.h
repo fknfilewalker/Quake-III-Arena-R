@@ -1130,7 +1130,6 @@ typedef struct {
 	VkCommandBuffer				*commandBuffers;
 	VkSemaphore					*imageAvailableSemaphores;
 	VkSemaphore					*renderFinishedSemaphores;
-	VkSemaphore					*traceFinishedSemaphores;
 	VkFence						*inFlightFences;
 
 	uint32_t					imageCount;

@@ -5,29 +5,10 @@
 
 #include "constants.h"
 
-layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
-{
-	GlobalUbo ubo;
-};
-
-layout(binding = BINDING_OFFSET_RANDOM_SEED, set = 0, r32ui) uniform uimage2D image;
-
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 void
 main()
 {
-	ivec2 ipos = ivec2(gl_GlobalInvocationID);
-	int frame_num = int(ubo.frameIndex);
 
-	
-	uint rng_seed = 0;
-
-	uint frame_offset = frame_num / NUM_BLUE_NOISE_TEX;
-
-	rng_seed |= (uint(ipos.x + frame_offset) % BLUE_NOISE_RES) <<  0u;
-	rng_seed |= (uint(ipos.y + (frame_offset << 4)) % BLUE_NOISE_RES) << 10u;
-	rng_seed |= uint(frame_num) << 20;
-
-	imageStore(image, ipos, uvec4(rng_seed));
 }

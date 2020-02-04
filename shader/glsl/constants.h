@@ -83,13 +83,11 @@
 
 #define BINDING_OFFSET_GLOBAL_UBO					0x00000017
 #define BINDING_OFFSET_GLOBAL_UBO_PREV			    0x00000018
-#define BINDING_OFFSET_RANDOM_SEED                  0x00000019
 // g buffer
 #define BINDING_OFFSET_RESULT_OUTPUT                0x00000001
 #define BINDING_OFFSET_GBUFFER_POS                  0x00000020
 #define BINDING_OFFSET_GBUFFER_ALBEDO               0x00000021
 #define BINDING_OFFSET_GBUFFER_NORMAL               0x00000022
-#define BINDING_OFFSET_GBUFFER_MOTION               0x00000025
 #define BINDING_OFFSET_GBUFFER_MATERIAL             0x00000023
 #define BINDING_OFFSET_GBUFFER_DEPTH                0x00000024
 
@@ -174,10 +172,6 @@ STRUCT (
 	BOOL    (isBrushModel)
 	BOOL    (isPlayer)
 	UINT    (cluster)
-    UINT    (currentInstanceIDX)
-    UINT    (prevInstanceIDX)
-    UINT    (buff0)
-    UINT    (buff1)
 ,ASInstanceData)
 
 // holds all vertex data

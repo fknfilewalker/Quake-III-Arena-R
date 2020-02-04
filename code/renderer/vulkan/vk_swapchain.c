@@ -305,7 +305,6 @@ static void VK_CreateSyncObjects()
 {
 	vk.swapchain.imageAvailableSemaphores = malloc(vk.swapchain.imageCount * sizeof(VkSemaphore));
 	vk.swapchain.renderFinishedSemaphores = malloc(vk.swapchain.imageCount * sizeof(VkSemaphore));
-	vk.swapchain.traceFinishedSemaphores = malloc(vk.swapchain.imageCount * sizeof(VkSemaphore));
 	vk.swapchain.inFlightFences = malloc(vk.swapchain.imageCount * sizeof(VkFence));
 
 	VkSemaphoreCreateInfo semaphoreInfo = { 0 };
@@ -318,7 +317,6 @@ static void VK_CreateSyncObjects()
 	for (size_t i = 0; i < vk.swapchain.imageCount; i++) {
 		VK_CHECK(vkCreateSemaphore(vk.device, &semaphoreInfo, NULL, &vk.swapchain.imageAvailableSemaphores[i]), "failed to create Semaphore!");
 		VK_CHECK(vkCreateSemaphore(vk.device, &semaphoreInfo, NULL, &vk.swapchain.renderFinishedSemaphores[i]), "failed to create Semaphore!");
-		VK_CHECK(vkCreateSemaphore(vk.device, &semaphoreInfo, NULL, &vk.swapchain.traceFinishedSemaphores[i]), "failed to create Semaphore!");
 		VK_CHECK(vkCreateFence(vk.device, &fenceInfo, NULL, &vk.swapchain.inFlightFences[i]), "failed to create Fence!");
 	}
 
@@ -358,8 +356,8 @@ void VK_BeginFrame()
     //           vkGetFenceStatus(vk.device, vk.swapchain.inFlightFences[2]) == VK_SUCCESS);
     clock_t start = clock();
 
-	vkDeviceWaitIdle(vk.device);
-	vkDeviceWaitIdle(vk.device);
+	//vkDeviceWaitIdle(vk.device);
+	//vkDeviceWaitIdle(vk.device);
 	//int prevIndex = (vk.swapchain.currentImage + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount;
 	//vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[prevIndex], VK_TRUE, UINT64_MAX);
     vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentImage], VK_TRUE, UINT64_MAX);
