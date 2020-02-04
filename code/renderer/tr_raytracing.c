@@ -192,7 +192,9 @@ void RB_UploadCluster(vkbuffer_t* buffer, uint32_t offsetIDX, int defaultC) {
 		if (c == -1) c = R_FindClusterForPos(pos);
 		if (c == -1) c = R_FindClusterForPos2(pos);
 		if (c == -1) c = R_FindClusterForPos3(pos);
-		if (c == -1) c = defaultC;
+		if (c == -1) {
+			c = defaultC;
+		}
 		clusterData[i] = c;
 
 	}
