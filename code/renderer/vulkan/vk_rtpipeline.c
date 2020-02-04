@@ -152,7 +152,7 @@ void VK_SetRayTracingPushConstant(vkrtpipeline_t *pipeline, VkShaderStageFlags s
     vkCmdPushConstants(commandBuffer, pipeline->layout, stage, offset, size, data);
 }
 
-void VK_TraceRays(vkbuffer_t *buffer) {
+void VK_TraceRays(vkrtpipeline_t* pipeline) {
 	VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
 
 	VkDeviceSize bindingOffsetRayGenShader = vk.rayTracingProperties.shaderGroupHandleSize * 0;
@@ -162,9 +162,9 @@ void VK_TraceRays(vkbuffer_t *buffer) {
 
 	// hitShaderBindingOffset + hitShaderBindingStride × ( instanceShaderBindingTableRecordOffset + geometryIndex × sbtRecordStride + sbtRecordOffset )
 	vkCmdTraceRaysNV(commandBuffer,
-		buffer->buffer, bindingOffsetRayGenShader,
-		buffer->buffer, 0, bindingStride,
-		buffer->buffer, 0, bindingStride,
+		pipeline->shaderBindingTableBuffer.buffer, bindingOffsetRayGenShader,
+		pipeline->shaderBindingTableBuffer.buffer, 0, bindingStride,
+		pipeline->shaderBindingTableBuffer.buffer, 0, bindingStride,
 		VK_NULL_HANDLE, 0, 0,
 		vk.swapchain.extent.width, vk.swapchain.extent.height, 1);
 }

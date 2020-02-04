@@ -849,49 +849,6 @@ static void RB_BuildProjMatrix(float* projMatrix, float* p, float zFar) {
 	};
 	Com_Memcpy(projMatrix, &result, sizeof(result));
 }
-//
-//#define BUFFER_BARRIER(cmd_buf, ...) \
-//	do { \
-//		VkBufferMemoryBarrier buf_mem_barrier = { \
-//			.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, \
-//			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, \
-//			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, \
-//			__VA_ARGS__ \
-//		}; \
-//		vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, \
-//				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 1, &buf_mem_barrier, \
-//				0, NULL); \
-//	} while(0)
-//#define IMAGE_BARRIER(cmd_buf, ...) \
-//	do { \
-//		VkImageMemoryBarrier img_mem_barrier = { \
-//			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, \
-//			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, \
-//			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, \
-//			__VA_ARGS__ \
-//		}; \
-//		vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, \
-//				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0, NULL, \
-//				1, &img_mem_barrier); \
-//	} while(0)
-//#define BARRIER_COMPUTE(cmd_buf, img) \
-//	do { \
-//		VkImageSubresourceRange subresource_range = { \
-//			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT, \
-//			.baseMipLevel   = 0, \
-//			.levelCount     = 1, \
-//			.baseArrayLayer = 0, \
-//			.layerCount     = 1 \
-//		}; \
-//		IMAGE_BARRIER(cmd_buf, \
-//				.image            = img, \
-//				.subresourceRange = subresource_range, \
-//				.srcAccessMask    = VK_ACCESS_SHADER_WRITE_BIT, \
-//				.dstAccessMask    = VK_ACCESS_SHADER_READ_BIT, \
-//				.oldLayout        = VK_IMAGE_LAYOUT_GENERAL, \
-//				.newLayout        = VK_IMAGE_LAYOUT_GENERAL, \
-//		); \
-//	} while(0)
 
 static void RB_TraceRays() {
 	static float	s_flipMatrix[16] = {
@@ -968,18 +925,19 @@ static void RB_TraceRays() {
 	VK_BindCompute1DescriptorSet(&vk_d.accelerationStructures.rngPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage]);
 	VK_Dispatch(vk.swapchain.extent.width, vk.swapchain.extent.height, 1);*/
 
+	VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
+	VK_Bind2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+	VK_TraceRays(&vk_d.accelerationStructures.pipeline);
 
-	// primary rays
-	VK_BindRayTracingPipeline(&vk_d.primaryRaysPipeline);
-	VK_Bind2RayTracingDescriptorSets(&vk_d.primaryRaysPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-	VK_TraceRays(&vk_d.primaryRaysPipeline.shaderBindingTableBuffer);
-	
-	// primary rays
-	VK_BindRayTracingPipeline(&vk_d.directIlluminationPipeline);
-	VK_Bind2RayTracingDescriptorSets(&vk_d.directIlluminationPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-	VK_TraceRays(&vk_d.directIlluminationPipeline.shaderBindingTableBuffer);
-	
-
+	//// primary rays
+	//VK_BindRayTracingPipeline(&vk_d.primaryRaysPipeline);
+	//VK_Bind2RayTracingDescriptorSets(&vk_d.primaryRaysPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+	//VK_TraceRays(&vk_d.primaryRaysPipeline);
+	//
+	//// direct Ill
+	//VK_BindRayTracingPipeline(&vk_d.directIlluminationPipeline);
+	//VK_Bind2RayTracingDescriptorSets(&vk_d.directIlluminationPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+	//VK_TraceRays(&vk_d.directIlluminationPipeline);
 }
 
 static void

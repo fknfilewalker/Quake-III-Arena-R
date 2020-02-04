@@ -2934,6 +2934,7 @@ void R_PreparePT() {
 	free(lightVisibility);
 
 	R_CreatePrimaryRaysPipeline();
+	R_CreatePipeline();
 	vk_d.worldASInit = qtrue;
 }
 

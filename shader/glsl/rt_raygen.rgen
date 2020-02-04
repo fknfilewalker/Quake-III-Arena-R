@@ -381,12 +381,14 @@ vec4 path_tracer(){
 	if(ubo.numRandomIL == 0) numLightsIL = numLights;
 	else numLightsIL = min(ubo.numRandomIL, numLights);
 
-	uint nL = uboLights.lightList.numLights;//imageLoad(lightVis_data, ivec2(0, hitCluster)).r;
+	uint nL = imageLoad(lightVis_data, ivec2(0, hitCluster)).r;
 
 	uint rand =int( get_rng(RNG_C(0), int(ubo.frameIndex)) * (nL)) ;
 
 	for(int i = 0; i < nL; i++){
-		shadeColor += Shade(P, N, primary_albedo, i, nL);
+		//uint isx = imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(0), int(ubo.frameIndex)) * (uboLights.lightList.numLights-1)))+1, hitCluster)).r;
+		uint isx = imageLoad(lightVis_data, ivec2(i+1, hitCluster)).r;
+		shadeColor += Shade(P, N, primary_albedo, isx, nL);
 	}
 	shadeColor /= nL;
 	//int( round( get_rng(RNG_C(0), int(ubo.frameIndex)) * (uboLights.lightList.numLights-1))),uboLights.lightList.numLights);
