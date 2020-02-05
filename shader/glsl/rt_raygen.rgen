@@ -20,7 +20,7 @@ layout(push_constant) uniform PushConstant {
 
 // Bindings
 layout(binding = BINDING_OFFSET_AS, set = 0) uniform accelerationStructureNV topLevelAS;
-layout(binding = 1, set = 0, rgba8) uniform image2D image;
+layout(binding = BINDING_OFFSET_RESULT_OUTPUT, set = 0, rgba8) uniform image2D image;
 
 
 layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
@@ -330,10 +330,11 @@ vec4 path_tracer(){
 	HitPoint hp = getHitPoint(rp);
 	Triangle triangle = getTriangle(rp);
 
-	 vec4 color = vec4(0,0,0,0);
+	 vec4 mirrorColor = vec4(0,0,0,0);
+	 bool mirror = false;
 	if(is_mirror(rp)){
-		color = global_texture((hp.tex0 & TEX1_IDX_MASK) >> TEX_SHIFT_BITS, hp.uv0);
-		color = 1 - vec4(color/1);
+		mirrorColor = global_texture((hp.tex0 & TEX1_IDX_MASK) >> TEX_SHIFT_BITS, hp.uv0);
+		mirrorColor = 1 - vec4(mirrorColor/1);
 		// 1 - vec4(src/1)
 		ray.origin = ray.origin + ray.direction * rp.hit_distance;
 		ray.direction = reflect(ray.direction, hp.normal);
@@ -342,10 +343,11 @@ vec4 path_tracer(){
 		if(!found_intersection(rp)){
 			return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction));
 		}
-		HitPoint hp2 = getHitPoint(rp);
-		Triangle triangle2 = getTriangle(rp);
-		//color += global_texture(hp2.tex0 & TEX0_IDX_MASK, hp2.uv0);
-		return global_texture(hp2.tex0 & TEX0_IDX_MASK, hp2.uv0) * color;
+		mirror = true;
+		hp = getHitPoint(rp);
+		triangle = getTriangle(rp);
+		// //color += global_texture(hp2.tex0 & TEX0_IDX_MASK, hp2.uv0);
+		// return global_texture(hp2.tex0 & TEX0_IDX_MASK, hp2.uv0) * color;
 	} 
 
 	vec4 contrib = vec4(0,0,0,0);
@@ -360,7 +362,11 @@ vec4 path_tracer(){
 	 	primary_albedo += vec3(1,0,0);
 		return vec4(primary_albedo,1);
 	}else {
-		primary_albedo = getTextureLod(screen_coord_cs, triangle, hp).xyz;
+		if(!mirror) primary_albedo = getTextureLod(screen_coord_cs, triangle, hp).xyz;
+		else {
+			primary_albedo = getTextureLod2(hp,0).xyz;
+			primary_albedo *= mirrorColor.xyz;
+		}
 	}
 
 	bool isPlayer = is_player(rp);
@@ -662,7 +668,7 @@ vec4 path_tracer(){
 	// 		shadeColor += indirectShade;
 	// 	}
 	// }
-	color = vec4(shadeColor, 1);
+	vec4 color = vec4(shadeColor, 1);
 
 	//color = vec4(primary_albedo.rgb, 1);
 	//color = alpha_blend( rp.transparent, vec4(primary_albedo.rgb,1) );

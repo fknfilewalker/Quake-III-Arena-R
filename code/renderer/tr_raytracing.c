@@ -876,8 +876,8 @@ static void RB_TraceRays() {
 	ubo->numRandomDL = pt_numRandomDL->integer;
 	ubo->numRandomIL = pt_numRandomIL->integer;
 	ubo->numBounces = pt_numBounces->integer;
-	ubo->randSample = pt_randSample->integer;
-	ubo->randSampleLight = pt_randSampleLight->integer;
+	ubo->randSample = pt_randomPixelOffset->integer;
+	ubo->randSampleLight = pt_randomLightOffset->integer;
 
 	float viewMatrix[16];
 	// viewMatrix (needs flip)
@@ -890,10 +890,6 @@ static void RB_TraceRays() {
 	RB_BuildProjMatrix(&ubo->projMat, backEnd.viewParms.projectionMatrix, backEnd.viewParms.zFar);
 	// inverse proj matrix
 	myGLInvertMatrix(&ubo->projMat, &ubo->inverseProjMat);
-	
-	//GlobalUbo* uboPrev = &vk_d.uboGlobal[(vk.swapchain.currentImage + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount];
-	//Com_Memcpy(&ubo->viewMatPrev[0], &vk_d.uboGlobal[vk.swapchain.lastImage].viewMat[0], sizeof(float) * 16);
-	
 	
 	// view portal
 	vec3_t	originPortal;	// portal position
@@ -915,10 +911,7 @@ static void RB_TraceRays() {
 	ubo->hasPortal = vk_d.portalInView;
 	// mvp
 	myGlMultMatrix(&ubo->viewMat[0], ubo->projMat, vk_d.mvp);
-
-	//Com_Memcpy(&ubo->projMatPrev[0], &uboPrev->projMat[0], sizeof(float) * 16);
 	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 0, sizeof(GlobalUbo), (void*)ubo);
-
 
 	//VK_SetAccelerationStructure(&vk_d.accelerationStructures.descriptor[vk.swapchain.currentImage], BINDING_OFFSET_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.topAS[vk.swapchain.currentImage].accelerationStructure);
 	//VK_UpdateDescriptorSet(&vk_d.accelerationStructures.descriptor[vk.swapchain.currentImage]);
@@ -929,7 +922,7 @@ static void RB_TraceRays() {
 	VK_Dispatch(vk.swapchain.extent.width, vk.swapchain.extent.height, 1);*/
 
 	VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
-	VK_Bind2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.accelerationStructures.descriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+	VK_Bind2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 	VK_TraceRays(&vk_d.accelerationStructures.pipeline);
 
 	//// primary rays

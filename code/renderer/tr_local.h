@@ -1281,7 +1281,6 @@ typedef struct {
 	vkimage_t					lightVisData;
 	vkimage_t					envmap;
 	vkrtpipeline_t				pipeline;
-	vkdescriptor_t				descriptor[VK_MAX_SWAPCHAIN_SIZE];
 } vkaccelerationStructures_t;
 
 typedef struct {
@@ -1644,8 +1643,8 @@ extern	cvar_t	*pt_cullLights;
 extern	cvar_t  *pt_numRandomDL;
 extern	cvar_t	*pt_numRandomIL;
 extern	cvar_t  *pt_numBounces;
-extern	cvar_t	*pt_randSample;
-extern	cvar_t  *pt_randSampleLight;
+extern	cvar_t	*pt_randomPixelOffset;
+extern	cvar_t  *pt_randomLightOffset;
 
 //====================================================================
 

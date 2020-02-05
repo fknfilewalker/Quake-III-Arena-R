@@ -157,8 +157,8 @@ cvar_t* pt_cullLights;
 cvar_t* pt_numRandomDL;
 cvar_t* pt_numRandomIL;
 cvar_t* pt_numBounces;
-cvar_t* pt_randSample;
-cvar_t* pt_randSampleLight;
+cvar_t* pt_randomPixelOffset;
+cvar_t* pt_randomLightOffset;
 
 void ( APIENTRY * qglMultiTexCoord2fARB )( GLenum texture, GLfloat s, GLfloat t );
 void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
@@ -1276,8 +1276,8 @@ void R_Register( void )
 	pt_numRandomDL = ri.Cvar_Get("pt_numRandomDL", "0", 0);
 	pt_numRandomIL = ri.Cvar_Get("pt_numRandomIL", "1", 0);
 	pt_numBounces = ri.Cvar_Get("pt_numBounces", "1", 0);
-	pt_randSample = ri.Cvar_Get("pt_randomPixelOffset", "1", 0);
-	pt_randSampleLight = ri.Cvar_Get("pt_randomLightOffset", "1", 0);
+	pt_randomPixelOffset = ri.Cvar_Get("pt_randomPixelOffset", "1", 0);
+	pt_randomLightOffset = ri.Cvar_Get("pt_randomLightOffset", "1", 0);
 
 	// make sure all the commands added here are also
 	// removed in R_Shutdown
@@ -1429,6 +1429,8 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			// <RTX>
 			vk_d.worldASInit = qfalse;
 			VK_DestroyRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
+			VK_DestroyRayTracingPipeline(&vk_d.primaryRaysPipeline);
+			VK_DestroyRayTracingPipeline(&vk_d.directIlluminationPipeline);
 			VK_DestroyAllAccelerationStructures();
 			VK_DestroyImage(&vk_d.accelerationStructures.envmap);
 			VK_DestroyImage(&vk_d.accelerationStructures.visData);
@@ -1441,7 +1443,6 @@ void RE_Shutdown( qboolean destroyWindow ) {
 				for (int j = 0; j < vk_d.bottomASDynamicCount[i]; j++) {
 					VK_DestroyBottomAccelerationStructure(&vk_d.bottomASDynamicList[i][j]);
 				}
-				VK_DestroyDescriptor(&vk_d.accelerationStructures.descriptor[i]);
 				VK_DestroyDescriptor(&vk_d.rtxDescriptor[i]);
 				vk_d.bottomASDynamicCount[i] = 0;
 			}
