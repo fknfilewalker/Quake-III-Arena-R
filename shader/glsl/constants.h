@@ -34,6 +34,7 @@
 #define MATERIAL_KIND_INVISIBLE						0x00000008
 #define MATERIAL_KIND_TRANSPARENT					0x00000009
 #define MATERIAL_KIND_SCREEN						0x0000000a
+#define MATERIAL_KIND_SKY       				    0x0000000b
 
 #define MATERIAL_FLAG_MASK          				0x0000fff0
 #define MATERIAL_FLAG_LIGHT 						0x00000010
@@ -80,9 +81,19 @@
 #define BINDING_OFFSET_GBUFFER_POS                  0x00000021
 #define BINDING_OFFSET_GBUFFER_ALBEDO               0x00000022
 #define BINDING_OFFSET_GBUFFER_NORMAL               0x00000023
-#define BINDING_OFFSET_GBUFFER_MATERIAL             0x00000024
+#define BINDING_OFFSET_GBUFFER_OBJECT               0x00000024
 #define BINDING_OFFSET_GBUFFER_DEPTH                0x00000025
+#define BINDING_OFFSET_GBUFFER_MOTION               0x00000026
 
+// prev frame
+#define BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA_PREV  0x00000040
+#define BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA_PREV  0x00000041
+#define BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS_PREV    0x00000042
+#define BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS_PREV    0x00000043
+#define BINDING_OFFSET_XYZ_ENTITY_DYNAMIC_PREV      0x00000044
+#define BINDING_OFFSET_IDX_ENTITY_DYNAMIC_PREV      0x00000045
+#define BINDING_OFFSET_INSTANCE_DATA_PREV		    0x00000046
+#define BINDING_OFFSET_GLOBAL_UBO_PREV			    0x00000050
 
 // shader offset
 #define SBT_RGEN_PRIMARY_RAYS						0x00000000
@@ -156,6 +167,10 @@ STRUCT (
 	BOOL    (isBrushModel)
 	BOOL    (isPlayer)
 	UINT    (cluster)
+    UINT    (currentInstance)
+    UINT    (prevInstance)
+    UINT    (buff0)
+    UINT    (buff1)
 ,ASInstanceData)
 
 // holds all vertex data
@@ -190,6 +205,7 @@ STRUCT (
     MAT4    (inverseProjMatPortal)
     MAT4    (viewMat)
     MAT4    (projMat)
+    VEC4    (camPos)
 	BOOL    (hasPortal)
 	UINT    (frameIndex)
     INT     (currentCluster)

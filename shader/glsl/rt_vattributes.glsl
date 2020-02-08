@@ -68,6 +68,14 @@ layout(binding = BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_DATA, set = 0) buffer Clus
 layout(binding = BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_AS, set = 0) buffer Cluster_World_dynamic_as { uint c[]; } cluster_world_dynamic_as;
 layout(binding = BINDING_OFFSET_CLUSTER_ENTITY_STATIC, set = 0) buffer Cluster_Entity_static { uint c[]; } cluster_entity_static;
 
+//prev
+layout(binding = BINDING_OFFSET_INSTANCE_DATA_PREV, set = 0) buffer InstancePrev { ASInstanceData data[]; } iDataPrev;
+layout(binding = BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA_PREV, set = 0) buffer Indices_dynamic_data_prev { uint i[]; } indices_dynamic_data_prev;
+layout(binding = BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA_PREV, set = 0) buffer Vertices_dynamic_data_prev { VertexBuffer v[]; } vertices_dynamic_data_prev;
+layout(binding = BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS_PREV, set = 0) buffer Indices_dynamic_as_prev { uint i[]; } indices_dynamic_as_prev;
+layout(binding = BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS_PREV, set = 0) buffer Vertices_dynamic_as_prev { VertexBuffer v[]; } vertices_dynamic_as_prev;
+layout(binding = BINDING_OFFSET_IDX_ENTITY_DYNAMIC_PREV, set = 0) buffer Indices_entity_dynamic_prev { uint i[]; } indices_entity_dynamic_prev;
+layout(binding = BINDING_OFFSET_XYZ_ENTITY_DYNAMIC_PREV, set = 0) buffer Vertices_entity_dynamic_prev { VertexBuffer v[]; } vertices_entity_dynamic_prev;
 
 vec3 getBarycentricCoordinates(vec2 hitAttribute) { return vec3(1.0f - hitAttribute.x - hitAttribute.y, hitAttribute.x, hitAttribute.y); }
 
@@ -262,6 +270,68 @@ HitPoint getHitPoint(RayPayload rp){
 	hitPoint.tex1 = triangle.tex1;
 
 	hitPoint.cluster = triangle.cluster;
+	return hitPoint;
+}
+
+ivec3 getVertexDataPrev(RayPayload rp, out VertexBuffer vData[3]){
+	uint customIndex = uint(iDataPrev.data[rp.instanceID].offsetIDX) + (rp.primitiveID * 3);
+	ivec3 index;
+	if(iDataPrev.data[rp.instanceID].world == BAS_WORLD_STATIC) index = (ivec3(indices_world_static.i[customIndex], indices_world_static.i[customIndex + 1], indices_world_static.i[customIndex + 2])) + int(iDataPrev.data[rp.instanceID].offsetXYZ);
+	else if(iDataPrev.data[rp.instanceID].world == BAS_WORLD_DYNAMIC_DATA)  index = (ivec3(indices_dynamic_data_prev.i[customIndex], indices_dynamic_data_prev.i[customIndex + 1], indices_dynamic_data_prev.i[customIndex + 2])) + int(iDataPrev.data[rp.instanceID].offsetXYZ);
+	else if(iDataPrev.data[rp.instanceID].world == BAS_WORLD_DYNAMIC_AS)  index = (ivec3(indices_dynamic_as_prev.i[customIndex], indices_dynamic_as_prev.i[customIndex + 1], indices_dynamic_as_prev.i[customIndex + 2])) + int(iDataPrev.data[rp.instanceID].offsetXYZ);
+	else if(iDataPrev.data[rp.instanceID].world == BAS_ENTITY_STATIC)  index = (ivec3(indices_entity_static.i[customIndex], indices_entity_static.i[customIndex + 1], indices_entity_static.i[customIndex + 2])) + int(iDataPrev.data[rp.instanceID].offsetXYZ);
+	else if(iDataPrev.data[rp.instanceID].world == BAS_ENTITY_DYNAMIC)  index = (ivec3(indices_entity_dynamic_prev.i[customIndex], indices_entity_dynamic_prev.i[customIndex + 1], indices_entity_dynamic_prev.i[customIndex + 2])) + int(iDataPrev.data[rp.instanceID].offsetXYZ);
+
+	if(iDataPrev.data[rp.instanceID].world == BAS_WORLD_STATIC){
+		vData[0] = vertices_world_static.v[index.x];
+		vData[1] = vertices_world_static.v[index.y];
+		vData[2] = vertices_world_static.v[index.z];
+	}else if(iDataPrev.data[rp.instanceID].world == BAS_WORLD_DYNAMIC_DATA){
+		vData[0] = vertices_dynamic_data_prev.v[index.x];
+		vData[1] = vertices_dynamic_data_prev.v[index.y];
+		vData[2] = vertices_dynamic_data_prev.v[index.z];
+	}else if(iDataPrev.data[rp.instanceID].world == BAS_WORLD_DYNAMIC_AS){
+		vData[0] = vertices_dynamic_as_prev.v[index.x];
+		vData[1] = vertices_dynamic_as_prev.v[index.y];
+		vData[2] = vertices_dynamic_as_prev.v[index.z];
+	}else if(iDataPrev.data[rp.instanceID].world == BAS_ENTITY_STATIC){
+		vData[0] = vertices_entity_static.v[index.x];
+		vData[1] = vertices_entity_static.v[index.y];
+		vData[2] = vertices_entity_static.v[index.z];
+	}else if(iDataPrev.data[rp.instanceID].world == BAS_ENTITY_DYNAMIC){
+		vData[0] = vertices_entity_dynamic_prev.v[index.x];
+		vData[1] = vertices_entity_dynamic_prev.v[index.y];
+		vData[2] = vertices_entity_dynamic_prev.v[index.z];
+	}
+	return index;
+}
+
+Triangle getTrianglePrev(RayPayload rp){
+	if(iData.data[rp.instanceID].world == BAS_ENTITY_STATIC) rp.instanceID = iData.data[rp.instanceID].prevInstance;
+
+	VertexBuffer vData[3];
+	ivec3 index = getVertexDataPrev(rp, vData);
+
+	Triangle hitTriangle;
+	// POS
+	// Some Entitiys are in Object Space
+	hitTriangle.pos[0] = (vec4(vData[0].pos.xyz, 1) * iDataPrev.data[rp.instanceID].modelmat).xyz;
+	hitTriangle.pos[1] = (vec4(vData[1].pos.xyz, 1) * iDataPrev.data[rp.instanceID].modelmat).xyz;
+	hitTriangle.pos[2] = (vec4(vData[2].pos.xyz, 1) * iDataPrev.data[rp.instanceID].modelmat).xyz;
+
+	return hitTriangle;
+}
+
+HitPoint getHitPointPrev(RayPayload rp){
+
+
+	const vec3 barycentricCoords = getBarycentricCoordinates(rp.barycentric);
+	Triangle triangle = getTrianglePrev(rp);
+
+	HitPoint hitPoint;
+	hitPoint.pos = triangle.pos[0] * barycentricCoords.x +
+					triangle.pos[1] * barycentricCoords.y +
+            		triangle.pos[2] * barycentricCoords.z;
 	return hitPoint;
 }
 

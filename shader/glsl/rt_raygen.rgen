@@ -10,13 +10,6 @@
 #include "rt_texture.glsl"
 #include "rt_vattributes.glsl"
 
-// Push Constants
-layout(push_constant) uniform PushConstant {
-    //layout(offset = 0) mat4 inverseView;
-    //layout(offset = 64) mat4 inverseProj;
-    layout(offset = 0) vec4 position;
-	layout(offset = 16) vec4 positionPortal;
-};
 
 // Bindings
 layout(binding = BINDING_OFFSET_AS, set = 0) uniform accelerationStructureNV topLevelAS;
@@ -407,11 +400,10 @@ vec4 path_tracer(){
 		float distToLight =	length(toLight);
 		float lightStrength =  min(light.mag / distToLight, 1);
 		if(lightStrength < 0.1f) continue;
-		vec3 lightIntensity = /*vec3(0.25);*/ light.color * lightStrength;
+		vec3 lightIntensity = vec3(0.25);// light.color * lightStrength;
 		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
 
 	 	float shadowMult =  /*float(uboLights.lightList.numLights) */ /*numLight/3.0f */  trace_shadow_ray(P, L, 0.01f, distToLight);
-
 		vec3 pPos = vec3(ubo.viewMat[3].xyz);
 
 		//if(dot(N, L) < 0) N = -N;

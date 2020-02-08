@@ -40,11 +40,11 @@ void trace_ray(Ray ray, uint cullMask)
 			SBT_RCHIT_OPAQUE /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_PATH_TRACER /*missIndex*/,
 			ray.origin, ray.t_min, ray.direction, ray.t_max, PAYLOAD_BRDF);
 }
-float trace_shadow_ray(vec3 pos, vec3 dir, float t_min, float t_max)
+float trace_shadow_ray(vec3 pos, vec3 dir, float t_min, float t_max, bool is_player)
 {
 	const uint rayFlags = gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsSkipClosestHitShaderNV;
 	uint cullMask = RAY_MIRROR_OPAQUE_VISIBLE;
-	if(is_player(rp)) {
+	if(is_player) {
 		cullMask = RAY_FIRST_PERSON_OPAQUE_VISIBLE;
 	}
 	
@@ -73,36 +73,107 @@ vec3 Shade(vec3 pos, vec3 norm, vec3 difColor, uint lightIdx, uint numLights){
 	vec3 dirToLight = normalize(lightPos  - pos);
 
 	float NdotL = clamp(dot(norm, dirToLight), 0.0, 1.0);
-	float isLit = trace_shadow_ray(pos, dirToLight, 0.01f, distToLight);
+	float isLit = trace_shadow_ray(pos, dirToLight, 0.01f, distToLight, false);
 	vec3 rayColor = isLit * lightIntensity;
 
 	return (NdotL * rayColor * (difColor / M_PI)) / sampleProb;
 }
 
-void directIllumination(){
-	vec3 primary_albedo;
+vec4 getTextureLod2(HitPoint hp, uint lod){
+
+	TextureData d = unpackTextureData(hp.tex0);
+	vec4 color;
+	vec4 tex = global_textureLod(d.tex0, hp.uv0, lod);
+	color = vec4(tex.xyz, 1);
+	if(d.tex0Color) color *= (hp.color0/255);
+
+	if(d.tex1 != -1){
+		tex = global_textureLod(d.tex1, hp.uv1, lod);
+		if(d.tex1Color) tex *= (hp.color1/255);
+
+		if(d.tex1Blend) {
+			color = alpha_blend(tex, color);
+		}
+		else color += tex;
+	} else return color;
+	d = unpackTextureData(hp.tex1);
+	if(d.tex0 != -1){
+		tex = global_textureLod(d.tex0, hp.uv2, lod);
+		if(d.tex0Color) tex *= (hp.color2/255);
+
+		if(d.tex0Blend) {
+			color = alpha_blend(tex, color);
+		}
+		else color += tex;
+	} else return color;
+
+	if(d.tex1 != -1){
+		tex = global_textureLod(d.tex1, hp.uv3, lod);
+		if(d.tex1Color) tex *= (hp.color3/255);
+
+		if(d.tex1Blend) {
+			color = alpha_blend(tex, color);
+		}
+		else color += tex;
+	} 
+	return color;
+}
+
+vec3 directIllumination(){
+	vec4 primary_albedo;
 	vec3 normal;
 	vec3 pos;
-	int cluster;
-	int material;
+	uint cluster;
+	uint material;
 	float depth;
 	vec3 motion;
 
 	vec4 temp;
-	temp = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
-	primary_albedo = temp.xyz;
-	cluster = int(temp.w);
-	temp = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy));
-	normal = temp.xyz;
+	uvec4 utemp;
+	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
+	//primary_albedo = temp.xyz;
+	//cluster = int(temp.w);
+	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	temp = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy));
-	pos = temp.xyz;
-	depth = temp.w;
+	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
+	//depth = temp.w;
+	utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
+	material = utemp.x;
+	cluster = utemp.y;
 
 
 	vec3 P = pos;
 	vec3 N = normal;
-	vec3 shadeColor = primary_albedo;//vec3(0);
+	vec3 shadeColor = primary_albedo.xyz;//vec3(0);
 
+	if (material == MATERIAL_KIND_SKY) return shadeColor;
+	if ((material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT) return vec3(1,0,0);
+	if ((material & MATERIAL_KIND_GLASS) == MATERIAL_KIND_GLASS) return vec3(0,0,1);
+
+	vec4 mirrorColor = vec4(0,0,0,0);
+	bool mirror = false;
+	if((material & MATERIAL_FLAG_MIRROR) == MATERIAL_FLAG_MIRROR){
+		mirrorColor = primary_albedo;
+		mirrorColor = 1 - vec4(mirrorColor/1);
+		// 1 - vec4(src/1)
+		Ray ray;
+		ray.origin = P;
+		ray.direction = reflect(P - ubo.camPos.xyz, N);
+		ray.t_min = 0.01;
+		ray.t_max = 10000.0;
+		trace_ray(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
+		if(!found_intersection(rp)){
+			return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction)).xyz;
+		}
+		mirror = true;
+		HitPoint hp = getHitPoint(rp);
+		Triangle triangle = getTriangle(rp);
+		P = hp.pos;
+		N = hp.normal;
+		primary_albedo = getTextureLod2( hp,0);
+		// //color += global_texture(hp2.tex0 & TEX0_IDX_MASK, hp2.uv0);
+		// return global_texture(hp2.tex0 & TEX0_IDX_MASK, hp2.uv0) * color;
+	} 
 
 	uint numLight;
 	if(ubo.cullLights) numLight = imageLoad(lightVis_data, ivec2(0, cluster)).r;
@@ -112,6 +183,7 @@ void directIllumination(){
 		uint lightIndex;
 		if(ubo.cullLights) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
 		else lightIndex = i;
+		
 		// random
 		// lightIndex = imageLoad(lightVis_data, ivec2( int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
 
@@ -133,12 +205,10 @@ void directIllumination(){
 		float distToLight =	length(toLight);
 		float lightStrength =  min(light.mag / distToLight, 1);
 		if(lightStrength < 0.1f) continue;
-		vec3 lightIntensity = /*vec3(0.25);*/ light.color * lightStrength;
+		vec3 lightIntensity = vec3(0.35); //light.color;// * lightStrength;
 		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
+	 	float shadowMult =  /*float(uboLights.lightList.numLights) */ /*numLight/3.0f */  trace_shadow_ray(P, L, 0.01f, distToLight, (material & MATERIAL_FLAG_PLAYER_OR_WEAPON) == MATERIAL_FLAG_PLAYER_OR_WEAPON);
 
-	 	float shadowMult =  /*float(uboLights.lightList.numLights) */ /*numLight/3.0f */  trace_shadow_ray(P, L, 0.01f, distToLight);
-
-		vec3 pPos = vec3(ubo.viewMat[3].xyz);
 
 		//if(dot(N, L) < 0) N = -N;
 		float LdotN = clamp(dot(N, L), 0.0, 1.0);
@@ -150,6 +220,7 @@ void directIllumination(){
 	// Modulate based on the physically based Lambertian term (albedo/pi)
 	shadeColor *= primary_albedo.rgb / M_PI;
 
+	return shadeColor;
 // //#define RANDOM
 // #ifdef RANDOM
 // 	uint numLights = uboLights.lightList.numLights;
@@ -167,7 +238,6 @@ void directIllumination(){
 	//float a = luminance(shadeColor) - luminance(imageLoad(imagePrev, ivec2(gl_LaunchIDNV.xy)).xyz);
 	//vec3 b = imageLoad(imagePrev, ivec2(gl_LaunchIDNV.xy)).xyz;
 	//imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4( vec3(old) ,1));
-	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4( shadeColor ,1));
 	//float rand2 = texelFetch(blue_noise, ivec3(gl_LaunchIDNV.xy, 0),0).r;
 	//imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(motion,1) );
 	// if(a > 0) imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(1,0,0 ,1));
@@ -182,6 +252,7 @@ void directIllumination(){
 
 void main() 
 {
-	directIllumination();
+	vec3 color = directIllumination();
+	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));
 }
 

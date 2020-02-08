@@ -18,8 +18,28 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 {
 	GlobalUbo ubo;
 };
+layout(binding = BINDING_OFFSET_GLOBAL_UBO_PREV, set = 0) uniform global_ubo_prev
+{
+	GlobalUbo uboPrev;
+};
 
 layout(location = PAYLOAD_BRDF) rayPayloadNV RayPayload rp;
+
+bool projection_view_to_screen(vec3 view_pos, out vec2 screen_pos, out float distance, bool previous)
+{
+	vec4 clip_pos;
+	if(previous)
+		clip_pos = uboPrev.projMat * vec4(view_pos, 1);
+	else
+		clip_pos = ubo.projMat * vec4(view_pos, 1);
+
+	vec3 normalized = clip_pos.xyz / clip_pos.w;
+	screen_pos.xy = normalized.xy * 0.5 + vec2(0.5);
+	distance = length(view_pos);
+
+	return screen_pos.y > 0 && screen_pos.y < 1 && screen_pos.x > 0 && screen_pos.x < 1 && view_pos.z > 0;
+
+}
 
 Ray
 get_primary_ray(vec2 pos_cs)
@@ -70,10 +90,13 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 	tex_coord_y *= 0.5;
 
 	TextureData d = unpackTextureData(hp.tex0);
-	vec4 color;
-	vec4 tex = global_textureGrad(d.tex0, hp.uv0, tex_coord_x, tex_coord_y);
-	color = vec4(tex.xyz, 1);
-	if(d.tex0Color) color *= (hp.color0/255);
+	vec4 color = vec4(0);
+	vec4 tex;
+	if(d.tex0 != -1){
+		tex = global_textureGrad(d.tex0, hp.uv0, tex_coord_x, tex_coord_y);
+		color = vec4(tex.xyz, 1);
+		if(d.tex0Color) color *= (hp.color0/255);
+	} else return color;
 
 	if(d.tex1 != -1){
 		tex_coord = hp.uv1;
@@ -152,62 +175,50 @@ void primary_rays(){
 
 	trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
 	
-	vec3 primary_albedo;
+	vec4 primary_albedo;
 	vec3 normal;
 	vec3 pos;
-	int cluster;
-	int material;
+	uint cluster;
+	uint material;
 	float depth;
 
 	if(!found_intersection(rp)){
-		primary_albedo = sampleSky(ray.direction).xyz;
+		primary_albedo = sampleSky(ray.direction);
 		normal = vec3(0);
 		pos = vec3(0);
-		material = 0;
+		material = MATERIAL_KIND_SKY;
 		depth = 10000;
 	} else {
 		HitPoint hp = getHitPoint(rp);
 		Triangle triangle = getTriangle(rp);
-		primary_albedo = getTextureLod(screen_coord_cs, triangle, hp).xyz;
+		primary_albedo = getTextureLod(screen_coord_cs, triangle, hp);
+		
 		normal = hp.normal;
 		pos = hp.pos;
 		cluster = int(hp.cluster);
-		material = 1;
+		material = get_material(rp);
+		if(is_player(rp)) material |= MATERIAL_FLAG_PLAYER_OR_WEAPON;
 		depth = rp.hit_distance;
+
+		if(is_light(rp)) primary_albedo += vec4(1,0,0,0);
 	}
 
-	
-	//vec4 temp;
-	//temp = imageLoad(posGBufferPrev, ivec2(gl_LaunchIDNV.xy));
-	//posPrev = getHitPointPrev(rp);//temp.xyz;
-
+	//vec3 posPrev = getHitPointPrev(rp).pos;//temp.xyz;
 	vec3 velocity;
 	vec2 screenPos;
 	float distanceCurr;
 	vec2 screenPosPrev;
 	float distancePrev;
-	//projection_view_to_screen((ubo.viewMat * vec4(pos,1)).xyz, screenPos, distanceCurr, false);
-	//projection_view_to_screen((uboPrev.viewMat * vec4(posPrev,1)).xyz, screenPosPrev, distancePrev, true);
+	projection_view_to_screen((ubo.viewMat * vec4(pos,1)).xyz, screenPos, distanceCurr, false);
+	// projection_view_to_screen((uboPrev.viewMat * vec4(posPrev,1)).xyz, screenPosPrev, distancePrev, true);
+	// velocity.xy = abs(screenPosPrev - screenPos) * 20;
+	// velocity.z = abs(distancePrev - distanceCurr);
 
-	// vec4 ndc = ubo.projMat * ubo.viewMat * vec4(pos,1);
-	// ndc /= ndc.w;
-	// ndc *= 0.5 + 0.5;
-	//vec4 ndcPrev = uboPrev.projMat * uboPrev.viewMat * vec4(posPrev,1);
-	// ndcPrev /= ndcPrev.w;
-	// ndcPrev *= 0.5 + 0.5;
-	//velocity.xy = abs(screenPosPrev - screenPos) * 20;
-	//velocity.z = abs(distancePrev - distanceCurr);
-
-	
-
-	//imageStore(materialGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(rp.instanceID, rp.primitiveID,0,0));
-
-	imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(primary_albedo.xyz,cluster));
+	imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(primary_albedo));
 	imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(normal.xyz,1));
 	imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(pos.xyz, distanceCurr));
-	//imageStore(motionGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(velocity.xyz,0));
-	
-
+	imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(material, cluster, 0,0));
+	//imageStore(motionGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(velocity.xy, 0,1));
 }
 
 void main() 

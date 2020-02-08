@@ -490,6 +490,48 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 1, &buf_mem_barrier, \
 				0, NULL); \
 	} while(0)
+#define IMAGE_BARRIER(cmd_buf, ...) \
+	do { \
+		VkImageMemoryBarrier img_mem_barrier = { \
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, \
+			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, \
+			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, \
+			__VA_ARGS__ \
+		}; \
+		vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, \
+				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0, NULL, \
+				1, &img_mem_barrier); \
+	} while(0)
+#define BARRIER_COMPUTE(cmd_buf, img) \
+	do { \
+		VkImageSubresourceRange subresource_range = { \
+			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT, \
+			.baseMipLevel   = 0, \
+			.levelCount     = 1, \
+			.baseArrayLayer = 0, \
+			.layerCount     = 1 \
+		}; \
+		IMAGE_BARRIER(cmd_buf, \
+				.image            = img, \
+				.subresourceRange = subresource_range, \
+				.srcAccessMask    = VK_ACCESS_SHADER_WRITE_BIT, \
+				.dstAccessMask    = VK_ACCESS_SHADER_READ_BIT, \
+				.oldLayout        = VK_IMAGE_LAYOUT_GENERAL, \
+				.newLayout        = VK_IMAGE_LAYOUT_GENERAL, \
+		); \
+	} while(0)
+
+static uint32_t RB_FindPrevInstance(drawSurf_t* drawSurfs, int numDrawSurfs, vec3_t prevOrigin) {
+	for (int i = 0; i < vk_d.prevEntityCount; i++)
+	{
+		//if (!memcmp(vk_d.entityOriginsPrev[i].origin, prevOrigin, sizeof(vec3_t))) return vk_d.entityOriginsPrev[i].instance;
+
+		if (Distance(vk_d.entityOriginsPrev[i].origin, prevOrigin) < 3) {
+			return vk_d.entityOriginsPrev[i].instance;
+		}
+	}
+	return 0;
+}
 
 static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	shader_t*		shader;
@@ -643,6 +685,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			}
 			//continue;
 			if (RB_ASDataDynamic(tess.shader) && !RB_ASDynamic(tess.shader)) {
+				//continue;
 				drawSurf->bAS->data.world = BAS_ENTITY_DYNAMIC;
 
 				rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
@@ -664,6 +707,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				vk_d.bottomASTraceListCount++;
 			}
 			else if (RB_ASDynamic(tess.shader)) {
+				//continue;
 				// ?leak only in debug build?
 				vkbottomAS_t *newAS = &vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]];
 				vk_d.bottomASDynamicCount[vk.swapchain.currentImage]++;
@@ -705,6 +749,11 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				}
 				else drawSurf->bAS->data.isPlayer = qfalse;
 
+				/*Com_Memcpy(&vk_d.entityOriginsCurrent[vk_d.currentEntityCount].origin, &backEnd.currentEntity->e.origin, sizeof(float[3]));
+				vk_d.entityOriginsCurrent[vk_d.currentEntityCount].instance = vk_d.bottomASTraceListCount;
+				vk_d.currentEntityCount++;
+				drawSurf->bAS->data.prevInstance = RB_FindPrevInstance(drawSurfs, numDrawSurfs, backEnd.currentEntity->e.origin);*/
+				//drawSurf->bAS->data.currentInstance = vk_d.bottomASTraceListCount;
 				Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));	
 				Com_Memcpy(&drawSurf->bAS->data.modelmat, &tM, sizeof(float[12]));
 				RB_UpdateInstanceDataBuffer(drawSurf->bAS);
@@ -806,6 +855,10 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	}
 	backEnd.refdef.floatTime = originalTime;
 
+	/*Com_Memcpy(&vk_d.entityOriginsPrev, &vk_d.entityOriginsCurrent, sizeof(vk_d.entityOriginsCurrent));
+	vk_d.prevEntityCount = vk_d.currentEntityCount;
+	vk_d.currentEntityCount = 0;*/
+
 	VK_DestroyTopAccelerationStructure(&vk_d.topAS[vk.swapchain.currentImage]);
 	VK_MakeTopAS(vk.swapchain.CurrentCommandBuffer(), &vk_d.topAS[vk.swapchain.currentImage], &vk_d.topASBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceList, vk_d.bottomASTraceListCount, vk_d.instanceBuffer[vk.swapchain.currentImage], RTX_TOP_AS_FLAG);
 	//VK_UpdateTopAS(vk.swapchain.CurrentCommandBuffer(), &vk_d.topAS[vk.swapchain.currentImage], &vk_d.topAS[vk.swapchain.currentImage], &vk_d.topASBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceList, vk_d.bottomASTraceListCount, vk_d.instanceBuffer[vk.swapchain.currentImage], VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
@@ -866,6 +919,7 @@ static void RB_TraceRays() {
 	VectorCopy(backEnd.viewParms. or .origin, origin);
 	GlobalUbo *ubo = &vk_d.uboGlobal[vk.swapchain.currentImage];
 	ubo->frameIndex = tr.frameCount;//vk.swapchain.currentFrame;
+	VectorCopy(origin, ubo->camPos);
 
 	ubo->currentCluster = vk_d.currentCluster;
 	ubo->clusterBytes = vk_d.clusterBytes;
@@ -913,27 +967,59 @@ static void RB_TraceRays() {
 	myGlMultMatrix(&ubo->viewMat[0], ubo->projMat, vk_d.mvp);
 	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 0, sizeof(GlobalUbo), (void*)ubo);
 
-	//VK_SetAccelerationStructure(&vk_d.accelerationStructures.descriptor[vk.swapchain.currentImage], BINDING_OFFSET_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.topAS[vk.swapchain.currentImage].accelerationStructure);
-	//VK_UpdateDescriptorSet(&vk_d.accelerationStructures.descriptor[vk.swapchain.currentImage]);
+	VK_SetAccelerationStructure(&vk_d.rtxDescriptor[vk.swapchain.currentImage], BINDING_OFFSET_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.topAS[vk.swapchain.currentImage].accelerationStructure);
+	VK_UpdateDescriptorSet(&vk_d.rtxDescriptor[vk.swapchain.currentImage]);
 	
 
 	/*VK_BindComputePipeline(&vk_d.accelerationStructures.rngPipeline);
 	VK_BindCompute1DescriptorSet(&vk_d.accelerationStructures.rngPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage]);
 	VK_Dispatch(vk.swapchain.extent.width, vk.swapchain.extent.height, 1);*/
 
-	VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
-	VK_Bind2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-	VK_TraceRays(&vk_d.accelerationStructures.pipeline);
+	//VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
+	//VK_Bind2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+	//VK_TraceRays(&vk_d.accelerationStructures.pipeline);
 
-	//// primary rays
-	//VK_BindRayTracingPipeline(&vk_d.primaryRaysPipeline);
-	//VK_Bind2RayTracingDescriptorSets(&vk_d.primaryRaysPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-	//VK_TraceRays(&vk_d.primaryRaysPipeline);
-	//
-	//// direct Ill
-	//VK_BindRayTracingPipeline(&vk_d.directIlluminationPipeline);
-	//VK_Bind2RayTracingDescriptorSets(&vk_d.directIlluminationPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-	//VK_TraceRays(&vk_d.directIlluminationPipeline);
+	/*VkImageMemoryBarrier barrier = { 0 };
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+	barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+	barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT | VK_ACCESS_MEMORY_READ_BIT;
+	barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+	int prevIndex = (vk.swapchain.currentImage + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount;
+	barrier.image = vk_d.gBuffer[vk.swapchain.currentImage].position.handle;
+	vkCmdPipelineBarrier(vk.swapchain.CurrentCommandBuffer(),
+		VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV,
+		VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV,
+		0, 0, NULL, 0, NULL,
+		1, &barrier);*/
+
+	// primary rays
+	VK_BindRayTracingPipeline(&vk_d.primaryRaysPipeline);
+	VK_Bind2RayTracingDescriptorSets(&vk_d.primaryRaysPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+	VK_TraceRays(&vk_d.primaryRaysPipeline);
+	
+	/*VkMemoryBarrier barrier;
+	barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+	barrier.pNext = NULL;
+	barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	vkCmdPipelineBarrier(vk.swapchain.CurrentCommandBuffer(),
+		VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV,
+		VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV,
+		0, 
+		1, &barrier,
+		0, NULL,
+		0, NULL); */
+
+	// direct Ill
+	VK_BindRayTracingPipeline(&vk_d.directIlluminationPipeline);
+	VK_Bind2RayTracingDescriptorSets(&vk_d.directIlluminationPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+	VK_TraceRays(&vk_d.directIlluminationPipeline);
 }
 
 static void
@@ -1074,15 +1160,16 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 	// create descriptor
 	vkimage_t* drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];// &vk_d.gBuffer[vk.swapchain.currentImage].albedo;
-	{
-		if (drawImage->descriptor_set.set == NULL) {
-			VK_AddSampler(&drawImage->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
-			drawImage->descriptor_set.data[0].descImageInfo->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-			VK_SetSampler(&drawImage->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, drawImage->sampler, drawImage->view);
-			VK_FinishDescriptor(&drawImage->descriptor_set);
-		}
-		
-	}
+	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].motion;
+	//{
+	//	if (drawImage->descriptor_set.set == NULL) {
+	//		VK_AddSampler(&drawImage->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
+	//		drawImage->descriptor_set.data[0].descImageInfo->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+	//		VK_SetSampler(&drawImage->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, drawImage->sampler, drawImage->view);
+	//		VK_FinishDescriptor(&drawImage->descriptor_set);
+	//	}
+	//	
+	//}
 	VK_DrawFullscreenRect(drawImage);
 
 	if (r_showcluster->integer) drawCluster();

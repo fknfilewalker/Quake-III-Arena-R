@@ -1347,7 +1347,8 @@ typedef struct {
 	vkimage_t			position;
 	vkimage_t			albedo;
 	vkimage_t			normals;
-	vkimage_t			material;
+	vkimage_t			objectInfo;
+	vkimage_t			motion;
 } vkgbuffer;
 
 typedef struct {
@@ -1422,6 +1423,14 @@ typedef struct {
 
 	// holds buffers and offsets for geometry
 	vkgeometry_t		geometry;			
+
+	struct {
+		vec3_t origin;
+		int instance;
+	}entityOriginsCurrent[100], entityOriginsPrev[100];
+
+	int					currentEntityCount;
+	int					prevEntityCount;
 
 	// world static (world geometry that does not requiere updates)
 	vkbottomAS_t		bottomASWorldStatic;

@@ -12,7 +12,7 @@ qboolean RB_IsLight(shader_t
 	}
 	
 	if (strstr(shader->name, "flame")) {
-		return qtrue;
+		return qfalse;
 	}
 	return qfalse;
 }

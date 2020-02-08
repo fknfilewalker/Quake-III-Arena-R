@@ -2114,12 +2114,29 @@ static void PathTracingsCollapse(void) {
 					stages[i].active = qfalse;
 					//stages[i] = stages[i + 1];
 				}
+				if (strstr(shader.name, "models/powerups/health/red")) {
+				int x = 2;
+				}
 			}
 			if (found) stages[i] = stages[i + 1];
 		}
 		if (found == qfalse)break;
 	}
 
+	if (strstr(shader.name, "models/powerups/health/red")) {
+		int x = 2;
+		//memcpy(&stages[0], &stages[1], sizeof(shaderStage_t));
+		memset(&stages[7], 0, sizeof(shaderStage_t));
+	}
+	/*for (int k = 0; k < MAX_SHADER_STAGES; k++) {
+		for (int i = 0; i < MAX_SHADER_STAGES; i++) {
+			if (i == k) continue;
+			if (stages[k].active == qfalse && stages[i].active == qtrue) {
+				memcpy(&stages[k], &stages[i], sizeof(shaderStage_t));
+				memset(&stages[i], 0, sizeof(shaderStage_t));
+			}
+		}
+	}*/
 	/*if(strstr(shader.name, "bluemetalsupport")) {
 		for (int i = 0; i < MAX_SHADER_STAGES; i++) {
 			if (stages[i].active > qtrue) stages[i].active = qfalse;
