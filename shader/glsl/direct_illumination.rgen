@@ -113,7 +113,8 @@ vec3 directIllumination(){
 
 	if(isMirror(material)){
 	vec4 reflectAlbedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
-		primary_albedo = vec4(reflectAlbedo.xyz, 1);
+		//primary_albedo = vec4(reflectAlbedo.xyz, 1);
+		return reflectAlbedo.xyz;
 	}
 	if (isGlass(material)){
 		vec4 reflectAlbedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
