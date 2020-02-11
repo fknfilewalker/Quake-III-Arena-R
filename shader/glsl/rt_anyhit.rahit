@@ -2,11 +2,9 @@
 #extension GL_NV_ray_tracing : require
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_GOOGLE_include_directive : require
-#include "rt_defines.glsl"
+#include "defines.glsl"
 #include "rt_texture.glsl"
 #include "rt_vattributes.glsl"
-#include "rt_helper.glsl"
-#include "constants.h"
 
 hitAttributeNV vec2 hitAttribute;
 layout(location = 0) rayPayloadInNV RayPayload rp;

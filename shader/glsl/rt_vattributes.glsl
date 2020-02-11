@@ -1,52 +1,5 @@
 #include "constants.h"
 
-// out data
-struct Triangle {
-	mat3 pos;
-	mat3x2 uv0;
-	mat3x2 uv1;
-	mat3x2 uv2;
-	mat3x2 uv3;
-	vec3 normal;
-	mat3x4 color0;
-	mat3x4 color1;
-	mat3x4 color2;
-	mat3x4 color3;
-	uint tex0;
-	uint tex1;
-	uint cluster;
-};
-struct HitPoint {
-	vec3 pos;
-	vec3 normal;
-	vec2 uv0;
-	vec2 uv1;
-	vec2 uv2;
-	vec2 uv3;
-	vec4 color0;
-	vec4 color1;
-	vec4 color2;
-	vec4 color3;
-	uint tex0;
-	uint tex1;
-	uint cluster;
-};
-
-struct DirectionalLight {
-	vec3 pos;
-	vec3 color;
-	float mag;
-	vec3 normal;
-};
-
-struct TextureData {
-	int tex0;
-	int tex1;
-	bool tex0Blend;
-	bool tex1Blend;
-	bool tex0Color;
-	bool tex1Color;
-};
 
 // buffer with instance data
 layout(binding = BINDING_OFFSET_INSTANCE_DATA, set = 0) buffer Instance { ASInstanceData data[]; } iData;
@@ -540,48 +493,4 @@ isPlayer(uint material) {
 bool
 isSky(uint material) {
 	return (material == MATERIAL_KIND_SKY);
-}
-
-
-vec4 getTextureLod2(HitPoint hp, uint lod){
-
-	TextureData d = unpackTextureData(hp.tex0);
-	vec4 color = vec4(0);
-	vec4 tex;
-	if(d.tex0 != -1){
-		tex = global_textureLod(d.tex0, hp.uv0, lod);
-		color = vec4(tex.xyz, 1);
-		if(d.tex0Color) color *= (hp.color0/255);
-	} else return color;
-
-	if(d.tex1 != -1){
-		tex = global_textureLod(d.tex1, hp.uv1, lod);
-		if(d.tex1Color) tex *= (hp.color1/255);
-
-		if(d.tex1Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} else return color;
-	d = unpackTextureData(hp.tex1);
-	if(d.tex0 != -1){
-		tex = global_textureLod(d.tex0, hp.uv2, lod);
-		if(d.tex0Color) tex *= (hp.color2/255);
-
-		if(d.tex0Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} else return color;
-
-	if(d.tex1 != -1){
-		tex = global_textureLod(d.tex1, hp.uv3, lod);
-		if(d.tex1Color) tex *= (hp.color3/255);
-
-		if(d.tex1Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} 
-	return color;
 }

@@ -3,10 +3,6 @@ layout(location = PAYLOAD_SHADOW) rayPayloadNV ShadowRayPayload rp_shadow;
 
 layout(binding = BINDING_OFFSET_AS, set = 0) uniform accelerationStructureNV topLevelAS;
 
-struct Ray {
-	vec3 origin, direction;
-	float t_min, t_max;
-};
 
 Ray
 get_primary_ray(vec2 pos_cs)
