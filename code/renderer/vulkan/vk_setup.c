@@ -52,6 +52,7 @@ static void VK_PickPhysicalDevice();
 static void VK_CreateLogicalDevice();
 static void VK_CreateCommandPool();
 static void VK_SetupDebugCallback();
+static void VK_SetupQueryPool();
 
 // Helper
 static qboolean VK_IsDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface);
@@ -72,6 +73,8 @@ void VK_Setup(void* p1, void* p2) {
     
     // Create Swapchain
 	VK_SetupSwapchain();
+
+	VK_SetupQueryPool();
 }
 
 void VK_Destroy() {
@@ -292,6 +295,19 @@ static void VK_CreateCommandPool() {
 
 	VK_CHECK(vkCreateCommandPool(vk.device, &poolInfo, NULL, &vk.commandPool), "failed to create command pool!");
 }
+
+static void VK_SetupQueryPool() {
+	VkQueryPoolCreateInfo createInfo = {
+		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+		NULL,
+		NULL,
+		VK_QUERY_TYPE_TIMESTAMP,
+		3,
+		NULL
+	};
+	VK_CHECK(vkCreateQueryPool(vk.device, &createInfo, NULL, &vk.queryPool), "failed to create queryPool!");
+}
+
 
 /*
 ==============================================================================

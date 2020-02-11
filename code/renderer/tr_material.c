@@ -44,7 +44,9 @@ uint32_t RB_GetMaterial() {
 		material |= MATERIAL_FLAG_LIGHT;
 	}
 
-	if (strstr(tess.shader->name, "glass")) material = MATERIAL_KIND_GLASS;
+	if (strstr(tess.shader->name, "glass")) {
+		material = MATERIAL_KIND_GLASS;
+	}
 
 	if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) material |= MATERIAL_FLAG_MIRROR;
 	if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) material |= MATERIAL_FLAG_SEE_THROUGH;

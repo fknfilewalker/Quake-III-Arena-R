@@ -355,8 +355,44 @@ void VK_GetAccelerationStructureMemoryRequirements(VkAccelerationStructureNV as,
 }
 
 /*
-*
+* PERFORMANCE
 */
-int VK_CalcPrevImage(int currentImage) {
-	return (currentImage - 1) % vk.swapchain.imageCount;
-}
+typedef enum {
+	PROFILER_START,
+	PROFILER_STOP,
+} VKPTProfilerAction;
+
+//VkResult
+//vkpt_profiler_query(VkCommandBuffer cmd_buf, int idx, VKPTProfilerAction action)
+//{
+//	idx = idx * 2 + action + qvk.current_frame_index * NUM_PROFILER_QUERIES_PER_FRAME;
+//
+//	vkCmdWriteTimestamp(cmd_buf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+//		vk.queryPool, vk.currenti);
+//
+//	set_current_gpu(cmd_buf, ALL_GPUS);
+//
+//	profiler_queries_used[idx] = qtrue;
+//
+//	return VK_SUCCESS;
+//}
+//static inline void begin_perf_marker(VkCommandBuffer command_buffer, int index, const char* name)
+//{
+//	VK_CHECK(vkpt_profiler_query(command_buffer, index, PROFILER_START), "failed to start profiler!");
+//
+//	const VkDebugUtilsLabelEXT label = {
+//		.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+//		.pLabelName = name
+//	};
+//
+//	//if (qvkCmdBeginDebugUtilsLabelEXT != NULL)
+//	//	qvkCmdBeginDebugUtilsLabelEXT(command_buffer, &label);
+//}
+//
+//static inline void end_perf_marker(VkCommandBuffer command_buffer, int index)
+//{
+//	//if (qvkCmdEndDebugUtilsLabelEXT != NULL)
+//	//	qvkCmdEndDebugUtilsLabelEXT(command_buffer);
+//
+//	VK_CHECK(vkpt_profiler_query(command_buffer, index, PROFILER_STOP), "failed to stop profiler!");
+//}

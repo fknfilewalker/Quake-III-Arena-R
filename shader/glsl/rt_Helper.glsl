@@ -1,18 +1,5 @@
 
 
-void initPayload(out RayPayload rp){
-	// rp.color = vec4(0,0,0,0);
-	// rp.normal = vec4(0,0,0,0);
-	// rp.blendFunc = 0;
-	// rp.transparent = 0;
-	// rp.distance = 0;
-	// rp.depth = 0;
-	// rp.cullMask = FIRST_PERSON_VISIBLE;
-}
-void initRay(){
-
-}
-
 float
 luminance(in vec3 color)
 {
@@ -60,6 +47,11 @@ float schlick_ross_fresnel(float F0, float roughness, float NdotV)
 
     // Shlick's approximation for Ross BRDF -- makes Fresnel converge to less than 1.0 when N.V is low
     return F0 + (1 - F0) * pow(1 - NdotV, 5 * exp(-2.69 * roughness)) / (1.0 + 22.7 * pow(roughness, 1.5));
+}
+float fresnel(float F0, float NdotV)
+{
+    if(F0 < 0) return 0;
+    return F0 + (1 - F0) * pow(1 - NdotV, 5);
 }
 
 
@@ -146,6 +138,16 @@ vec3 getCosHemisphereSample2(vec2 rand, vec3 hitNorm)
 	// Get our cosine-weighted hemisphere lobe sample direction
 	return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * sqrt(max(0.0,1.0f - randVal.x));
 }
+
+vec3
+sample_sphere(vec2 uv)
+{
+    float y = 2.0 * uv.x - 1;
+    float theta = 2.0 * M_PI * uv.y;
+    float r = sqrt(1.0 - y * y);
+    return vec3(cos(theta) * r, y, sin(theta) * r);
+}
+
 
 // Get a uniform weighted random vector centered around a specified normal direction.
 vec3 getUniformHemisphereSample(inout uint randSeed, vec3 hitNorm)

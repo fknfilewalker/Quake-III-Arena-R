@@ -19,6 +19,7 @@
 #define RNG_LP_Y(bounce)             (4 + 0 + 7 * bounce)
 #define RNG_BOUNCE_X(bounce)         (5 + 0 + 7 * bounce)
 #define RNG_BOUNCE_Y(bounce)         (6 + 0 + 7 * bounce)
+#define RNG_FRESNEL(bounce)        (7 + 0 + 7 * bounce)
 
 
 struct RayPayload {
@@ -34,12 +35,6 @@ struct ShadowRayPayload
 {
   	float visFactor;  // Will be 1.0 for fully lit, 0.0 for fully shadowed
 };
-
-struct Ray {
-	vec3 origin, direction;
-	float t_min, t_max;
-};
-
 
 
 // blendBits

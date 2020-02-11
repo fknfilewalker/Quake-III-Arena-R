@@ -159,7 +159,11 @@ PFN_vkCmdSetDepthBias                           vkCmdSetDepthBias;
 PFN_vkCmdSetBlendConstants                      vkCmdSetBlendConstants;
 PFN_vkCmdCopyImage								vkCmdCopyImage;
 PFN_vkCmdDispatch								vkCmdDispatch;
+PFN_vkCmdWriteTimestamp							vkCmdWriteTimestamp;
+PFN_vkCmdBeginDebugUtilsLabelEXT				vkCmdBeginDebugUtilsLabelEXT;
+PFN_vkCmdEndDebugUtilsLabelEXT					vkCmdEndDebugUtilsLabelEXT;
 
+PFN_vkCreateQueryPool							vkCreateQueryPool;
 PFN_vkCreatePipelineCache                       vkCreatePipelineCache;
 PFN_vkCreatePipelineLayout                      vkCreatePipelineLayout;
 PFN_vkCreateGraphicsPipelines                   vkCreateGraphicsPipelines;

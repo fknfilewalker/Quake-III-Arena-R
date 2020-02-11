@@ -1170,6 +1170,7 @@ typedef struct {
 	VkDevice					device;
 	VkQueue						graphicsQueue;
 	VkQueue						presentQueue;
+	VkQueryPool					queryPool;
 	VkCommandPool				commandPool;
 
 	vkswapchain_t				swapchain;
@@ -1347,6 +1348,7 @@ typedef struct {
 	vkimage_t			position;
 	vkimage_t			albedo;
 	vkimage_t			normals;
+	vkimage_t			reflection;
 	vkimage_t			objectInfo;
 	vkimage_t			motion;
 } vkgbuffer;
@@ -1418,6 +1420,7 @@ typedef struct {
 
 	vkgbuffer			gBuffer[VK_MAX_SWAPCHAIN_SIZE];
 	vkrtpipeline_t		primaryRaysPipeline;
+	vkrtpipeline_t		reflectRaysPipeline;
 	vkrtpipeline_t		directIlluminationPipeline;
 	vkrtpipeline_t		indirectIlluminationPipeline;
 

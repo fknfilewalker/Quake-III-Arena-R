@@ -13,55 +13,17 @@
 
 layout(binding = BINDING_OFFSET_RESULT_OUTPUT, set = 0, rgba8) uniform image2D image;
 // Bindings
-layout(binding = BINDING_OFFSET_AS, set = 0) uniform accelerationStructureNV topLevelAS;
 layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 {
 	GlobalUbo ubo;
 };
+#include "traceRay.glsl"
 
 layout(binding = BINDING_OFFSET_UBO_LIGHTS, set = 0) uniform LightList 
 {
 	LightList_s lightList;
 } uboLights;
 
-layout(location = PAYLOAD_BRDF) rayPayloadNV RayPayload rp;
-layout(location = PAYLOAD_SHADOW) rayPayloadNV ShadowRayPayload rp_shadow;
-
-
-void trace_ray(Ray ray, uint cullMask)
-{
-	const uint rayFlags = gl_RayFlagsCullFrontFacingTrianglesNV;//gl_RayFlagsOpaqueNV;// | gl_RayFlagsCullBackFacingTrianglesNV;
-	//const uint rayFlags = gl_RayFlagsOpaqueNV | gl_RayFlagsCullBackFacingTrianglesNV;
-	//const uint cullMask = RAY_FIRST_PERSON_VISIBLE;
-	rp.transparent = vec4(0);
-	rp.max_transparent_distance = 0;
-
-	traceNV( topLevelAS, rayFlags, cullMask,
-			SBT_RCHIT_OPAQUE /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_PATH_TRACER /*missIndex*/,
-			ray.origin, ray.t_min, ray.direction, ray.t_max, PAYLOAD_BRDF);
-}
-float trace_shadow_ray(vec3 pos, vec3 dir, float t_min, float t_max, bool is_player)
-{
-	const uint rayFlags = gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsSkipClosestHitShaderNV;
-	uint cullMask = RAY_MIRROR_OPAQUE_VISIBLE;
-	if(is_player) {
-		cullMask = RAY_FIRST_PERSON_OPAQUE_VISIBLE;
-	}
-	
-	Ray ray;
-	ray.origin = pos;
-	ray.direction = dir;
-	ray.t_min = t_min;
-	ray.t_max = t_max - t_min;
-
-	rp_shadow.visFactor = 0.0f;
-
-	traceNV( topLevelAS, rayFlags, cullMask,
-			SBT_RCHIT_SHADOW_RAY /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_SHADOW_RAY /*missIndex*/,
-			ray.origin, ray.t_min, ray.direction, ray.t_max, PAYLOAD_SHADOW);
-
-	return rp_shadow.visFactor;
-}
 
 vec3 Shade(vec3 pos, vec3 norm, vec3 difColor, uint lightIdx, uint numLights){
 	float sampleProb = 1.0f / float(numLights);
@@ -79,45 +41,48 @@ vec3 Shade(vec3 pos, vec3 norm, vec3 difColor, uint lightIdx, uint numLights){
 	return (NdotL * rayColor * (difColor / M_PI)) / sampleProb;
 }
 
-vec4 getTextureLod2(HitPoint hp, uint lod){
+// vec4 getTextureLod2(HitPoint hp, uint lod){
 
-	TextureData d = unpackTextureData(hp.tex0);
-	vec4 color;
-	vec4 tex = global_textureLod(d.tex0, hp.uv0, lod);
-	color = vec4(tex.xyz, 1);
-	if(d.tex0Color) color *= (hp.color0/255);
+// 	TextureData d = unpackTextureData(hp.tex0);
+// 	vec4 color = vec4(0);
+// 	vec4 tex;
+// 	if(d.tex0 != -1){
+// 		tex = global_textureLod(d.tex0, hp.uv0, lod);
+// 		color = vec4(tex.xyz, 1);
+// 		if(d.tex0Color) color *= (hp.color0/255);
+// 	} else return color;
 
-	if(d.tex1 != -1){
-		tex = global_textureLod(d.tex1, hp.uv1, lod);
-		if(d.tex1Color) tex *= (hp.color1/255);
+// 	if(d.tex1 != -1){
+// 		tex = global_textureLod(d.tex1, hp.uv1, lod);
+// 		if(d.tex1Color) tex *= (hp.color1/255);
 
-		if(d.tex1Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} else return color;
-	d = unpackTextureData(hp.tex1);
-	if(d.tex0 != -1){
-		tex = global_textureLod(d.tex0, hp.uv2, lod);
-		if(d.tex0Color) tex *= (hp.color2/255);
+// 		if(d.tex1Blend) {
+// 			color = alpha_blend(tex, color);
+// 		}
+// 		else color += tex;
+// 	} else return color;
+// 	d = unpackTextureData(hp.tex1);
+// 	if(d.tex0 != -1){
+// 		tex = global_textureLod(d.tex0, hp.uv2, lod);
+// 		if(d.tex0Color) tex *= (hp.color2/255);
 
-		if(d.tex0Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} else return color;
+// 		if(d.tex0Blend) {
+// 			color = alpha_blend(tex, color);
+// 		}
+// 		else color += tex;
+// 	} else return color;
 
-	if(d.tex1 != -1){
-		tex = global_textureLod(d.tex1, hp.uv3, lod);
-		if(d.tex1Color) tex *= (hp.color3/255);
+// 	if(d.tex1 != -1){
+// 		tex = global_textureLod(d.tex1, hp.uv3, lod);
+// 		if(d.tex1Color) tex *= (hp.color3/255);
 
-		if(d.tex1Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} 
-	return color;
-}
+// 		if(d.tex1Blend) {
+// 			color = alpha_blend(tex, color);
+// 		}
+// 		else color += tex;
+// 	} 
+// 	return color;
+// }
 
 vec3 directIllumination(){
 	vec4 primary_albedo;
@@ -131,12 +96,8 @@ vec3 directIllumination(){
 	vec4 temp;
 	uvec4 utemp;
 	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
-	//primary_albedo = temp.xyz;
-	//cluster = int(temp.w);
 	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
-	temp = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy));
 	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
-	//depth = temp.w;
 	utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
 	material = utemp.x;
 	cluster = utemp.y;
@@ -146,34 +107,18 @@ vec3 directIllumination(){
 	vec3 N = normal;
 	vec3 shadeColor = primary_albedo.xyz;//vec3(0);
 
-	if (material == MATERIAL_KIND_SKY) return shadeColor;
-	if ((material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT) return vec3(1,0,0);
-	if ((material & MATERIAL_KIND_GLASS) == MATERIAL_KIND_GLASS) return vec3(0,0,1);
+	if (isSky(material)) return shadeColor;
+	if (isLight(material)) return vec3(1,0,0);
+	//if (isGlass(material)) return vec3(0,0,1);
 
-	vec4 mirrorColor = vec4(0,0,0,0);
-	bool mirror = false;
-	if((material & MATERIAL_FLAG_MIRROR) == MATERIAL_FLAG_MIRROR){
-		mirrorColor = primary_albedo;
-		mirrorColor = 1 - vec4(mirrorColor/1);
-		// 1 - vec4(src/1)
-		Ray ray;
-		ray.origin = P;
-		ray.direction = reflect(P - ubo.camPos.xyz, N);
-		ray.t_min = 0.01;
-		ray.t_max = 10000.0;
-		trace_ray(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
-		if(!found_intersection(rp)){
-			return alpha_blend_premultiplied(rp.transparent, sampleSky(ray.direction)).xyz;
-		}
-		mirror = true;
-		HitPoint hp = getHitPoint(rp);
-		Triangle triangle = getTriangle(rp);
-		P = hp.pos;
-		N = hp.normal;
-		primary_albedo = getTextureLod2( hp,0);
-		// //color += global_texture(hp2.tex0 & TEX0_IDX_MASK, hp2.uv0);
-		// return global_texture(hp2.tex0 & TEX0_IDX_MASK, hp2.uv0) * color;
-	} 
+	if(isMirror(material)){
+	vec4 reflectAlbedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
+		primary_albedo = vec4(reflectAlbedo.xyz, 1);
+	}
+	if (isGlass(material)){
+		vec4 reflectAlbedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
+		primary_albedo = vec4(reflectAlbedo.xyz, 1);
+	}
 
 	uint numLight;
 	if(ubo.cullLights) numLight = imageLoad(lightVis_data, ivec2(0, cluster)).r;
@@ -184,41 +129,118 @@ vec3 directIllumination(){
 		if(ubo.cullLights) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
 		else lightIndex = i;
 		
-		// random
-		// lightIndex = imageLoad(lightVis_data, ivec2( int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
-
-
-	//	for(int i = 0; i < 2; i++){
-		//if(hitCluster == 1333) break;
-		//if(!lightVisible( imageLoad(lightVis_data, ivec2(hitCluster, i)).r;, /*ubo.currentCluster*/ hitCluster)) continue;
-		
-		//vec3 posLight = getLight(imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r);
-		
+	
 		DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex), ubo.randSampleLight);
-		//uint lightIndex = imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
-		//vec3 posLight = getLight(lightIndex);
 		vec3 posLight = light.pos;
-		//if(!lightVisible(i, /*ubo.currentCluster*/ hitCluster)) continue;
-		//vec3 posLight = getLight(i);
 		vec3 toLight = posLight - P;
 		vec3 L = normalize(toLight);
 		float distToLight =	length(toLight);
 		float lightStrength =  min(light.mag / distToLight, 1);
 		if(lightStrength < 0.1f) continue;
-		vec3 lightIntensity = vec3(0.35); //light.color;// * lightStrength;
+		vec3 lightIntensity = vec3(0.35) * lightStrength; //light.color * lightStrength;
 		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
-	 	float shadowMult =  /*float(uboLights.lightList.numLights) */ /*numLight/3.0f */  trace_shadow_ray(P, L, 0.01f, distToLight, (material & MATERIAL_FLAG_PLAYER_OR_WEAPON) == MATERIAL_FLAG_PLAYER_OR_WEAPON);
+	 	float shadowMult = trace_shadow_ray(P, L, 0.01f, distToLight, isPlayer(material));
 
-
-		//if(dot(N, L) < 0) N = -N;
 		float LdotN = clamp(dot(N, L), 0.0, 1.0);
-
-		// Accumulate our Lambertian shading color
 		shadeColor += shadowMult * LdotN * lightIntensity; 
 	}
 
-	// Modulate based on the physically based Lambertian term (albedo/pi)
 	shadeColor *= primary_albedo.rgb / M_PI;
+
+	// //if(primary_albedo.w == 1) return primary_albedo.xyz;
+	// //shadeColor += vec3(0.25);
+
+	// vec2 rng3 = vec2(get_rng(RNG_BOUNCE_X(110), ubo.frameIndex), get_rng(RNG_BOUNCE_Y(120), ubo.frameIndex));
+	// vec3 dir_sphere = sample_sphere(rng3);
+
+	// vec3 direction = normalize(P - ubo.camPos.xyz);
+	// float rng_frensel = get_rng(RNG_FRESNEL(30), ubo.frameIndex);
+	// //float n1, n2, ndotr = dot(dir_sphere, N);  
+	// float n1, n2, ndotr = dot(direction, N);  
+	// if( ndotr > 0.0f ) {
+	// 	n1 = 1.0; 
+	// 	n2 = 1.5;
+	// 	N = -N;
+	// } else {
+	// 	n1 = 1.5;
+	// 	n2 = 1.0; 
+	// }
+	// //float r0 = (n1-n2)/(n1+n2); r0 *= r0;
+	// //float fresnel = r0 + (1.-r0) * pow(1.0-abs(ndotr),5.);
+	// //vec3 ref; 
+	// // if( hash1(seed) < fresnel ) {
+	// // 	ref = reflect( rd, n );
+	// // } else {
+	// // 	ref = refract( rd, n, n2/n1 );
+	// // }
+	// /* perfect importance sampling for the artistically driven KIT BRDF */
+
+
+	// float F = pow(1.0 - max(0.0, -dot(direction, N)), 5.0);
+	// F = mix(0.5, 1.0, F);
+
+	// //direction = normalize(direction);
+	// vec3 dirReflection = reflect(direction, N);
+	// vec3 dirRefraction = refract( direction, N, n2/n1 );
+	// dirRefraction = refract( dirRefraction, N, n1/n2 );
+
+
+
+	// // if(rng_frensel < F) {
+	// // 	vec3 dir  = reflect(direction, N);
+	// // 	//direction = normalize(dir_sphere + dir * 2.0);
+	// // 	direction = normalize(dir * 2.0);
+	// // 	if(-dot(direction, N) < 0.0)
+	// // 		//direction = refract( dir_sphere, N, n2/n1 );
+	// // 		direction = refract( dir, N, n2/n1 );
+	// // 		direction = refract( direction, N, n1/n2 );
+	// // 		//direction = reflect(direction, N);
+	// // } else {
+	// // 	direction = refract( direction, N, n2/n1 );
+	// // 	direction = refract( direction, N, n1/n2 );
+	// // 	//direction = normalize(dir_sphere + normal);
+	// // }
+	// // else {
+	// // 	direction = normalize(dir_sphere + normal);
+	// // 	//direction = refract( dir_sphere, n, n2/n1 );
+		
+	// // }
+
+	// Ray ray;
+	// ray.origin = P;
+	// ray.direction = dirReflection;
+	// ray.t_min = 0.01;
+	// ray.t_max = 10000.0;
+	// trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
+
+	// vec4 albedoReflection;
+	// if(!found_intersection(rp)){
+	// 	albedoReflection = sampleSky(ray.direction);
+	// } else {
+	// 	HitPoint hp = getHitPoint(rp);
+	// 	Triangle triangle = getTriangle(rp);
+	// 	albedoReflection = getTextureLod2(hp,0);
+
+	// }
+
+	// ray.direction = dirRefraction;
+	// trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
+	// vec4 albedoRefaction;
+	// if(!found_intersection(rp)){
+	// 	albedoRefaction = sampleSky(ray.direction);
+	// } else {
+	// 	HitPoint hp = getHitPoint(rp);
+	// 	Triangle triangle = getTriangle(rp);
+	// 	albedoRefaction = getTextureLod2(hp,0);
+	// }
+
+	// float r0 = (n1-n2)/(n1+n2); r0 *= r0;
+	// float fresnel = r0 + (1.-r0) * pow(1.0-abs(ndotr),5.);
+	// float ratio = 0.2;
+	// vec4 albedo = ratio * albedoReflection + (1 - ratio) * albedoRefaction;
+
+	// shadeColor = alpha_blend(primary_albedo, albedo).xyz;
+	// //shadeColor += albedo.xyz;
 
 	return shadeColor;
 // //#define RANDOM

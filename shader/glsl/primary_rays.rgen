@@ -11,9 +11,7 @@
 #include "rt_vattributes.glsl"
 #include "gbuffer.glsl"
 
-
 // Bindings
-layout(binding = BINDING_OFFSET_AS, set = 0) uniform accelerationStructureNV topLevelAS;
 layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 {
 	GlobalUbo ubo;
@@ -22,54 +20,19 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO_PREV, set = 0) uniform global_ubo_pre
 {
 	GlobalUbo uboPrev;
 };
+#include "traceRay.glsl"
 
-layout(location = PAYLOAD_BRDF) rayPayloadNV RayPayload rp;
 
 bool projection_view_to_screen(vec3 view_pos, out vec2 screen_pos, out float distance, bool previous)
 {
 	vec4 clip_pos;
-	if(previous)
-		clip_pos = uboPrev.projMat * vec4(view_pos, 1);
-	else
-		clip_pos = ubo.projMat * vec4(view_pos, 1);
-
+	if(previous) clip_pos = uboPrev.projMat * vec4(view_pos, 1);
+	else clip_pos = ubo.projMat * vec4(view_pos, 1);
 	vec3 normalized = clip_pos.xyz / clip_pos.w;
 	screen_pos.xy = normalized.xy * 0.5 + vec2(0.5);
 	distance = length(view_pos);
-
 	return screen_pos.y > 0 && screen_pos.y < 1 && screen_pos.x > 0 && screen_pos.x < 1 && view_pos.z > 0;
-
 }
-
-Ray
-get_primary_ray(vec2 pos_cs)
-{
-	vec4 v_near = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs, -1.0, 1.0);
-	vec4 v_far  = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs,  0.0, 1.0);
-	v_near /= v_near.w;
-	v_far  /= v_far.w;
-
-	Ray ray;
-	ray.origin = v_near.xyz;
-	ray.direction = normalize(v_far.xyz - v_near.xyz);
-	ray.t_min = 0.01;
-	ray.t_max = 10000.0;
-	return ray;
-}
-
-void trace_ray(Ray ray, uint cullMask)
-{
-	const uint rayFlags = gl_RayFlagsCullFrontFacingTrianglesNV;//gl_RayFlagsOpaqueNV;// | gl_RayFlagsCullBackFacingTrianglesNV;
-	//const uint rayFlags = gl_RayFlagsOpaqueNV | gl_RayFlagsCullBackFacingTrianglesNV;
-	//const uint cullMask = RAY_FIRST_PERSON_VISIBLE;
-	rp.transparent = vec4(0);
-	rp.max_transparent_distance = 0;
-
-	traceNV( topLevelAS, rayFlags, cullMask,
-			SBT_RCHIT_OPAQUE /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_PATH_TRACER /*missIndex*/,
-			ray.origin, ray.t_min, ray.direction, ray.t_max, PAYLOAD_BRDF);
-}
-
 
 vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 	vec2 tex_coord = hp.uv0;
@@ -94,7 +57,10 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 	vec4 tex;
 	if(d.tex0 != -1){
 		tex = global_textureGrad(d.tex0, hp.uv0, tex_coord_x, tex_coord_y);
-		color = vec4(tex.xyz, 1);
+		// if we have more tex to blend set alpha to 1
+		if(d.tex1 != -1) color = vec4(tex.xyz, 1);
+		else color = tex;
+
 		if(d.tex0Color) color *= (hp.color0/255);
 	} else return color;
 
@@ -151,7 +117,7 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 	return color;
 }
 
-void primary_rays(){
+void primaryRays(){
 	vec2 pixelOffset = vec2(0.5);
 	if(ubo.randSample){
 		pixelOffset = vec2(get_rng(RNG_C(100), ubo.frameIndex), get_rng(RNG_C(100), ubo.frameIndex));
@@ -223,6 +189,6 @@ void primary_rays(){
 
 void main() 
 {
-	primary_rays();
+	primaryRays();
 }
 

@@ -9,26 +9,20 @@
 #include "rt_sky.glsl"
 #include "rt_texture.glsl"
 #include "rt_vattributes.glsl"
-
-
 // Bindings
-layout(binding = BINDING_OFFSET_AS, set = 0) uniform accelerationStructureNV topLevelAS;
 layout(binding = BINDING_OFFSET_RESULT_OUTPUT, set = 0, rgba8) uniform image2D image;
-
 
 layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 {
 	GlobalUbo ubo;
 };
+#include "traceRay.glsl"
 
 layout(binding = BINDING_OFFSET_UBO_LIGHTS, set = 0) uniform LightList 
 {
 	LightList_s lightList;
 } uboLights;
 
-// Specific
-layout(location = PAYLOAD_BRDF) rayPayloadNV RayPayload rp;
-layout(location = PAYLOAD_SHADOW) rayPayloadNV ShadowRayPayload rp_shadow;
 
 Ray
 get_primary_ray2(vec2 pos_cs)
@@ -47,59 +41,6 @@ get_primary_ray2(vec2 pos_cs)
 	ray.t_min = 0.01;
 	ray.t_max = 10000.0;
 	return ray;
-}
-
-Ray
-get_primary_ray(vec2 pos_cs)
-{
-	vec4 v_near = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs, -1.0, 1.0);
-	vec4 v_far  = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs,  0.0, 1.0);
-	v_near /= v_near.w;
-	v_far  /= v_far.w;
-
-	Ray ray;
-	ray.origin = v_near.xyz;
-	ray.direction = normalize(v_far.xyz - v_near.xyz);
-	ray.t_min = 0.01;
-	ray.t_max = 10000.0;
-	return ray;
-}
-
-void trace_ray(Ray ray, uint cullMask)
-{
-	const uint rayFlags = gl_RayFlagsCullFrontFacingTrianglesNV;//gl_RayFlagsOpaqueNV;// | gl_RayFlagsCullBackFacingTrianglesNV;
-	//const uint rayFlags = gl_RayFlagsOpaqueNV | gl_RayFlagsCullBackFacingTrianglesNV;
-	//const uint cullMask = RAY_FIRST_PERSON_VISIBLE;
-	rp.transparent = vec4(0);
-	rp.max_transparent_distance = 0;
-
-	traceNV( topLevelAS, rayFlags, cullMask,
-			SBT_RCHIT_OPAQUE /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_PATH_TRACER /*missIndex*/,
-			ray.origin, ray.t_min, ray.direction, ray.t_max, PAYLOAD_BRDF);
-}
-
-
-float trace_shadow_ray(vec3 pos, vec3 dir, float t_min, float t_max)
-{
-	const uint rayFlags = gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsSkipClosestHitShaderNV;
-	uint cullMask = RAY_MIRROR_OPAQUE_VISIBLE;
-	if(is_player(rp)) {
-		cullMask = RAY_FIRST_PERSON_OPAQUE_VISIBLE;
-	}
-	
-	Ray ray;
-	ray.origin = pos;
-	ray.direction = dir;
-	ray.t_min = t_min;
-	ray.t_max = t_max - t_min;
-
-	rp_shadow.visFactor = 0.0f;
-
-	traceNV( topLevelAS, rayFlags, cullMask,
-			SBT_RCHIT_SHADOW_RAY /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_SHADOW_RAY /*missIndex*/,
-			ray.origin, ray.t_min, ray.direction, ray.t_max, PAYLOAD_SHADOW);
-
-	return rp_shadow.visFactor;
 }
 
 // void trace_shadow_ray(Ray ray, uint cullMask)
@@ -191,45 +132,45 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 	return color;
 }
 
-vec4 getTextureLod2(HitPoint hp, uint lod){
+// vec4 getTextureLod2(HitPoint hp, uint lod){
 
-	TextureData d = unpackTextureData(hp.tex0);
-	vec4 color;
-	vec4 tex = global_textureLod(d.tex0, hp.uv0, lod);
-	color = vec4(tex.xyz, 1);
-	if(d.tex0Color) color *= (hp.color0/255);
+// 	TextureData d = unpackTextureData(hp.tex0);
+// 	vec4 color;
+// 	vec4 tex = global_textureLod(d.tex0, hp.uv0, lod);
+// 	color = vec4(tex.xyz, 1);
+// 	if(d.tex0Color) color *= (hp.color0/255);
 
-	if(d.tex1 != -1){
-		tex = global_textureLod(d.tex1, hp.uv1, lod);
-		if(d.tex1Color) tex *= (hp.color1/255);
+// 	if(d.tex1 != -1){
+// 		tex = global_textureLod(d.tex1, hp.uv1, lod);
+// 		if(d.tex1Color) tex *= (hp.color1/255);
 
-		if(d.tex1Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} else return color;
-	d = unpackTextureData(hp.tex1);
-	if(d.tex0 != -1){
-		tex = global_textureLod(d.tex0, hp.uv2, lod);
-		if(d.tex0Color) tex *= (hp.color2/255);
+// 		if(d.tex1Blend) {
+// 			color = alpha_blend(tex, color);
+// 		}
+// 		else color += tex;
+// 	} else return color;
+// 	d = unpackTextureData(hp.tex1);
+// 	if(d.tex0 != -1){
+// 		tex = global_textureLod(d.tex0, hp.uv2, lod);
+// 		if(d.tex0Color) tex *= (hp.color2/255);
 
-		if(d.tex0Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} else return color;
+// 		if(d.tex0Blend) {
+// 			color = alpha_blend(tex, color);
+// 		}
+// 		else color += tex;
+// 	} else return color;
 
-	if(d.tex1 != -1){
-		tex = global_textureLod(d.tex1, hp.uv3, lod);
-		if(d.tex1Color) tex *= (hp.color3/255);
+// 	if(d.tex1 != -1){
+// 		tex = global_textureLod(d.tex1, hp.uv3, lod);
+// 		if(d.tex1Color) tex *= (hp.color3/255);
 
-		if(d.tex1Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} 
-	return color;
-}
+// 		if(d.tex1Blend) {
+// 			color = alpha_blend(tex, color);
+// 		}
+// 		else color += tex;
+// 	} 
+// 	return color;
+// }
 
 vec3
 getRandomLight(int i){
@@ -261,7 +202,7 @@ vec3 Shade(vec3 pos, vec3 norm, vec3 difColor, uint lightIdx, uint numLights){
 	vec3 dirToLight = normalize(lightPos  - pos);
 
 	float NdotL = clamp(dot(norm, dirToLight), 0.0, 1.0);
-	float isLit = trace_shadow_ray(pos, dirToLight, 0.01f, distToLight);
+	float isLit = trace_shadow_ray(pos, dirToLight, 0.01f, distToLight, false);
 	vec3 rayColor = isLit * lightIntensity;
 
 	return (NdotL * rayColor * (difColor / M_PI)) / sampleProb;
@@ -403,7 +344,7 @@ vec4 path_tracer(){
 		vec3 lightIntensity = vec3(0.25);// light.color * lightStrength;
 		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
 
-	 	float shadowMult =  /*float(uboLights.lightList.numLights) */ /*numLight/3.0f */  trace_shadow_ray(P, L, 0.01f, distToLight);
+	 	float shadowMult =  /*float(uboLights.lightList.numLights) */ /*numLight/3.0f */  trace_shadow_ray(P, L, 0.01f, distToLight, isPlayer);
 		vec3 pPos = vec3(ubo.viewMat[3].xyz);
 
 		//if(dot(N, L) < 0) N = -N;

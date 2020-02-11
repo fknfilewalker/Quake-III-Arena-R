@@ -1002,6 +1002,11 @@ static void RB_TraceRays() {
 	VK_BindRayTracingPipeline(&vk_d.primaryRaysPipeline);
 	VK_Bind2RayTracingDescriptorSets(&vk_d.primaryRaysPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 	VK_TraceRays(&vk_d.primaryRaysPipeline);
+
+	// reflections
+	VK_BindRayTracingPipeline(&vk_d.reflectRaysPipeline);
+	VK_Bind2RayTracingDescriptorSets(&vk_d.reflectRaysPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+	VK_TraceRays(&vk_d.reflectRaysPipeline);
 	
 	/*VkMemoryBarrier barrier;
 	barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -1160,16 +1165,16 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 	// create descriptor
 	vkimage_t* drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];// &vk_d.gBuffer[vk.swapchain.currentImage].albedo;
-	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].motion;
-	//{
-	//	if (drawImage->descriptor_set.set == NULL) {
-	//		VK_AddSampler(&drawImage->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
-	//		drawImage->descriptor_set.data[0].descImageInfo->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	//		VK_SetSampler(&drawImage->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, drawImage->sampler, drawImage->view);
-	//		VK_FinishDescriptor(&drawImage->descriptor_set);
-	//	}
-	//	
-	//}
+	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].reflection;
+	{
+		if (drawImage->descriptor_set.set == NULL) {
+			VK_AddSampler(&drawImage->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
+			drawImage->descriptor_set.data[0].descImageInfo->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+			VK_SetSampler(&drawImage->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, drawImage->sampler, drawImage->view);
+			VK_FinishDescriptor(&drawImage->descriptor_set);
+		}
+		
+	}
 	VK_DrawFullscreenRect(drawImage);
 
 	if (r_showcluster->integer) drawCluster();

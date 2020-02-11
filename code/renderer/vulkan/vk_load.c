@@ -128,7 +128,11 @@ qboolean VK_LoadDeviceFunctions(void)
     vkCmdSetBlendConstants = VK_DEVICE_LEVEL_FUNCTION("vkCmdSetBlendConstants");
 	vkCmdCopyImage = VK_DEVICE_LEVEL_FUNCTION("vkCmdCopyImage");
 	vkCmdDispatch = VK_DEVICE_LEVEL_FUNCTION("vkCmdDispatch");
+	vkCmdWriteTimestamp = VK_DEVICE_LEVEL_FUNCTION("vkCmdWriteTimestamp");
+	vkCmdBeginDebugUtilsLabelEXT = VK_DEVICE_LEVEL_FUNCTION("vkCmdBeginDebugUtilsLabelEXT");
+	vkCmdEndDebugUtilsLabelEXT = VK_DEVICE_LEVEL_FUNCTION("vkCmdEndDebugUtilsLabelEXT");
 
+	vkCreateQueryPool = VK_DEVICE_LEVEL_FUNCTION("vkCreateQueryPool");
     vkCreatePipelineCache = VK_DEVICE_LEVEL_FUNCTION("vkCreatePipelineCache");
     vkCreatePipelineLayout = VK_DEVICE_LEVEL_FUNCTION("vkCreatePipelineLayout");
     vkCreateGraphicsPipelines = VK_DEVICE_LEVEL_FUNCTION("vkCreateGraphicsPipelines");

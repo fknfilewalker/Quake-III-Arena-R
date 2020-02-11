@@ -2396,6 +2396,8 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_ALBEDO, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].albedo.view);
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_NORMAL, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_NORMAL, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].normals.view);
+		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_REFLECTION, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_REFLECTION, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].reflection.view);
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_POS, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_POS, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].position.view);
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_OBJECT, VK_SHADER_STAGE_RAYGEN_BIT_NV);
@@ -2437,6 +2439,12 @@ void R_CreatePrimaryRaysPipeline() {
 	//VK_AddRayTracingPushConstant(&vk_d.primaryRaysPipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0, 40 * sizeof(float));
 	//VK_AddRayTracingPushConstant(&vk_d.primaryRaysPipeline, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, 40 * sizeof(float), 16 * sizeof(float));
 	VK_FinishRayTracingPipeline(&vk_d.primaryRaysPipeline);
+
+	vkshader_t reflectRaysShader = { 0 };
+	VK_RTX_ReflectRaysShader(&reflectRaysShader);
+	VK_Set2RayTracingDescriptorSets(&vk_d.reflectRaysPipeline, &vk_d.rtxDescriptor[0], &vk_d.imageDescriptor);
+	VK_SetRayTracingShader(&vk_d.reflectRaysPipeline, &reflectRaysShader);
+	VK_FinishRayTracingPipeline(&vk_d.reflectRaysPipeline);
 
 	vkshader_t directIlluminationShader = { 0 };
 	VK_RTX_DirectIlluminationShader(&directIlluminationShader);
