@@ -113,7 +113,7 @@ vec3 directIllumination(){
 
 	if(isMirror(material)){
 	vec4 reflectAlbedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
-		//primary_albedo = vec4(reflectAlbedo.xyz, 1);
+		primary_albedo = vec4(reflectAlbedo.xyz, 1);
 		return reflectAlbedo.xyz;
 	}
 	if (isGlass(material)){
@@ -138,7 +138,7 @@ vec3 directIllumination(){
 		float distToLight =	length(toLight);
 		float lightStrength =  min(light.mag / distToLight, 1);
 		if(lightStrength < 0.1f) continue;
-		vec3 lightIntensity = vec3(0.35) * lightStrength; //light.color * lightStrength;
+		vec3 lightIntensity = vec3(0.75) * lightStrength; //light.color * lightStrength;
 		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
 	 	float shadowMult = trace_shadow_ray(P, L, 0.01f, distToLight, isPlayer(material));
 
