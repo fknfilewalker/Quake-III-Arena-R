@@ -425,7 +425,7 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 	//	case CONTENTS_FOG: bAS->data.material |= MATERIAL_KIND_FOG; break;
 	//	default: bAS->data.material |= MATERIAL_KIND_INVALID; break;
 	//	}
-
+	//CONTENTS_TRANSLUCENT
 	//	if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.material |= MATERIAL_FLAG_MIRROR;
 	//	//else if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") == NULL) bAS->data.material |= MATERIAL_FLAG_PORTAL;
 	//	////if (tess.shader->sort <= SS_OPAQUE) bAS->data.material |= MATERIAL_FLAG_OPAQUE;

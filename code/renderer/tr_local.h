@@ -1348,6 +1348,7 @@ typedef struct {
 	vkimage_t			position;
 	vkimage_t			albedo;
 	vkimage_t			normals;
+	vkimage_t			viewDir;
 	vkimage_t			reflection;
 	vkimage_t			objectInfo;
 	vkimage_t			motion;

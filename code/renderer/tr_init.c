@@ -283,6 +283,10 @@ static void InitVulkan(void)
 				VK_CreateSampler(&vk_d.gBuffer[i].normals, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 				VK_TransitionImage(&vk_d.gBuffer[i].normals, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
+				VK_CreateImage(&vk_d.gBuffer[i].viewDir, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+				VK_CreateSampler(&vk_d.gBuffer[i].viewDir, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+				VK_TransitionImage(&vk_d.gBuffer[i].viewDir, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
 				VK_CreateImage(&vk_d.gBuffer[i].reflection, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
 				VK_CreateSampler(&vk_d.gBuffer[i].reflection, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 				VK_TransitionImage(&vk_d.gBuffer[i].reflection, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
@@ -1556,6 +1560,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 				VK_DestroyImage(&vk_d.gBuffer[i].position);
 				VK_DestroyImage(&vk_d.gBuffer[i].albedo);
 				VK_DestroyImage(&vk_d.gBuffer[i].normals);
+				VK_DestroyImage(&vk_d.gBuffer[i].viewDir);
 				VK_DestroyImage(&vk_d.gBuffer[i].reflection);
 				VK_DestroyImage(&vk_d.gBuffer[i].objectInfo);
 				VK_DestroyImage(&vk_d.gBuffer[i].motion);

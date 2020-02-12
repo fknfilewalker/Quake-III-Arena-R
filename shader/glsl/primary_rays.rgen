@@ -183,7 +183,8 @@ void primaryRays(){
 	imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(primary_albedo));
 	imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(normal.xyz,1));
 	imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(pos.xyz, distanceCurr));
-	imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(material, cluster, 0,0));
+	imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(material, cluster, rp.instanceID,0));
+	imageStore(viewGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(ray.direction.xyz, 0));
 	//imageStore(motionGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(velocity.xy, 0,1));
 }
 

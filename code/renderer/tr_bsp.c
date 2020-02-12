@@ -2027,6 +2027,12 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 				uint32_t* xyz_buffer_offset;
 
 				qboolean dynamic = qfalse;
+				if (tess.shader->surfaceFlags == SURF_NODRAW) continue;
+				//origin = 0x0000006e384ff498 {-1830.72034, 3114.09717, 166.582550}
+				if (Distance(tess.xyz, (vec3_t){ -1830.72034, 3114.09717, 166.582550 }) < 250) {
+					int a = 2;
+					continue;
+				}
 				if (!RB_ASDynamic(tess.shader) && !RB_ASDataDynamic(tess.shader)) {
 					countIDX = countIDXstatic;
 					countXYZ = countXYZstatic;
@@ -2404,6 +2410,8 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_OBJECT, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].objectInfo.view);
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_MOTION, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_MOTION, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].motion.view);
+		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_VIEW_DIR, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_VIEW_DIR, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].viewDir.view);
 
 		int prevIndex = (i + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount;
 		VK_AddUniformBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GLOBAL_UBO_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV);
