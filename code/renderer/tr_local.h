@@ -1344,6 +1344,49 @@ typedef struct {
 #define RTX_DYNAMIC_AS_DATA (RTX_DYNAMIC_AS || UV_CHANGES || ANIMATE_TEXTURE)
 #define RTX_DYNAMIC_DATA (UV_CHANGES || ANIMATE_TEXTURE)
 
+#define BUFFER_BARRIER(cmd_buf, ...) \
+	do { \
+		VkBufferMemoryBarrier buf_mem_barrier = { \
+			.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, \
+			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, \
+			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, \
+			__VA_ARGS__ \
+		}; \
+		vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, \
+				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 1, &buf_mem_barrier, \
+				0, NULL); \
+	} while(0)
+#define IMAGE_BARRIER(cmd_buf, ...) \
+	do { \
+		VkImageMemoryBarrier img_mem_barrier = { \
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, \
+			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, \
+			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, \
+			__VA_ARGS__ \
+		}; \
+		vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, \
+				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0, NULL, \
+				1, &img_mem_barrier); \
+	} while(0)
+#define BARRIER_COMPUTE(cmd_buf, img) \
+	do { \
+		VkImageSubresourceRange subresource_range = { \
+			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT, \
+			.baseMipLevel   = 0, \
+			.levelCount     = 1, \
+			.baseArrayLayer = 0, \
+			.layerCount     = 1 \
+		}; \
+		IMAGE_BARRIER(cmd_buf, \
+				.image            = img, \
+				.subresourceRange = subresource_range, \
+				.srcAccessMask    = VK_ACCESS_SHADER_WRITE_BIT, \
+				.dstAccessMask    = VK_ACCESS_SHADER_READ_BIT, \
+				.oldLayout        = VK_IMAGE_LAYOUT_GENERAL, \
+				.newLayout        = VK_IMAGE_LAYOUT_GENERAL, \
+		); \
+	} while(0)
+
 typedef struct {
 	vkimage_t			position;
 	vkimage_t			albedo;

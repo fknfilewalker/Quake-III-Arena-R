@@ -478,48 +478,6 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&bAS->geometryInstance);
 }
-#define BUFFER_BARRIER(cmd_buf, ...) \
-	do { \
-		VkBufferMemoryBarrier buf_mem_barrier = { \
-			.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, \
-			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, \
-			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, \
-			__VA_ARGS__ \
-		}; \
-		vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, \
-				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 1, &buf_mem_barrier, \
-				0, NULL); \
-	} while(0)
-#define IMAGE_BARRIER(cmd_buf, ...) \
-	do { \
-		VkImageMemoryBarrier img_mem_barrier = { \
-			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, \
-			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, \
-			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, \
-			__VA_ARGS__ \
-		}; \
-		vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, \
-				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0, NULL, \
-				1, &img_mem_barrier); \
-	} while(0)
-#define BARRIER_COMPUTE(cmd_buf, img) \
-	do { \
-		VkImageSubresourceRange subresource_range = { \
-			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT, \
-			.baseMipLevel   = 0, \
-			.levelCount     = 1, \
-			.baseArrayLayer = 0, \
-			.layerCount     = 1 \
-		}; \
-		IMAGE_BARRIER(cmd_buf, \
-				.image            = img, \
-				.subresourceRange = subresource_range, \
-				.srcAccessMask    = VK_ACCESS_SHADER_WRITE_BIT, \
-				.dstAccessMask    = VK_ACCESS_SHADER_READ_BIT, \
-				.oldLayout        = VK_IMAGE_LAYOUT_GENERAL, \
-				.newLayout        = VK_IMAGE_LAYOUT_GENERAL, \
-		); \
-	} while(0)
 
 static uint32_t RB_FindPrevInstance(drawSurf_t* drawSurfs, int numDrawSurfs, vec3_t prevOrigin) {
 	for (int i = 0; i < vk_d.prevEntityCount; i++)
@@ -1003,24 +961,19 @@ static void RB_TraceRays() {
 	VK_Bind2RayTracingDescriptorSets(&vk_d.primaryRaysPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 	VK_TraceRays(&vk_d.primaryRaysPipeline);
 
-	// reflections
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].albedo.handle);
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].position.handle);
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].normals.handle);
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].viewDir.handle);
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].objectInfo.handle);
+
+	// reflections/refractions
 	VK_BindRayTracingPipeline(&vk_d.reflectRaysPipeline);
 	VK_Bind2RayTracingDescriptorSets(&vk_d.reflectRaysPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 	VK_TraceRays(&vk_d.reflectRaysPipeline);
-	
-	/*VkMemoryBarrier barrier;
-	barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-	barrier.pNext = NULL;
-	barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-	vkCmdPipelineBarrier(vk.swapchain.CurrentCommandBuffer(),
-		VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV,
-		VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV,
-		0, 
-		1, &barrier,
-		0, NULL,
-		0, NULL); */
 
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].reflection.handle);
+	
 	// direct Ill
 	VK_BindRayTracingPipeline(&vk_d.directIlluminationPipeline);
 	VK_Bind2RayTracingDescriptorSets(&vk_d.directIlluminationPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
