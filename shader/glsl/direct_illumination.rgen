@@ -144,6 +144,7 @@ vec3 directIllumination(){
 	 	float shadowMult = trace_shadow_ray(P, L, 0.01f, distToLight, isPlayer(material));
 
 		float LdotN = clamp(dot(N, L), 0.0, 1.0);
+		float LdotN2 = clamp(dot(-light.normal, -L), 0.0, 1.0);
 		shadeColor += shadowMult * LdotN * lightIntensity; 
 	}
 

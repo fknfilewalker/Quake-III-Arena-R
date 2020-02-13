@@ -158,7 +158,7 @@ vec4 calculateRefraction( inout vec3 pos, inout vec3 direction, inout vec3 N, fl
 		HitPoint hp = getHitPoint(rp);
 		Triangle triangle = getTriangle(rp);
 		vec4 tex = getTextureLod2(hp,0);
-		albedoRefraction = tex * tex.w + albedoRefraction * (1-tex.w);
+		albedoRefraction = tex;// * tex.w + albedoRefraction * (1-tex.w);
 
 		pos = hp.pos;
 		direction = normalize(dirRefraction);
@@ -295,6 +295,7 @@ void reflectionRefrection(){
 
 			//if(primary_albedo.w == 0.0) color = albedo;
 			//color = alpha_blend(primary_albedo, albedo);
+			//color = alpha_blend_premultiplied(primary_albedo/primary_albedo.w, albedo);
 			color = primary_albedo * primary_albedo.w + albedo * (1-primary_albedo.w);
 
 			//material = get_material(rp);
