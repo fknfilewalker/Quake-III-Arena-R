@@ -22,6 +22,14 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO_PREV, set = 0) uniform global_ubo_pre
 };
 #include "traceRay.glsl"
 
+struct PrimaryRayHit{
+	vec4 albedo;
+	vec3 normal;
+	vec3 pos;
+	uint cluster;
+	uint material;
+	float depth;
+} hitData;
 
 bool projection_view_to_screen(vec3 view_pos, out vec2 screen_pos, out float distance, bool previous)
 {
@@ -34,10 +42,26 @@ bool projection_view_to_screen(vec3 view_pos, out vec2 screen_pos, out float dis
 	return screen_pos.y > 0 && screen_pos.y < 1 && screen_pos.x > 0 && screen_pos.x < 1 && view_pos.z > 0;
 }
 
+Ray
+getPrimaryRay(vec2 pos_cs)
+{
+	vec4 v_near = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs, -1.0, 1.0);
+	vec4 v_far  = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs,  0.0, 1.0);
+	v_near /= v_near.w;
+	v_far  /= v_far.w;
+
+	Ray ray;
+	ray.origin = v_near.xyz;
+	ray.direction = normalize(v_far.xyz - v_near.xyz);
+	ray.t_min = 0.01;
+	ray.t_max = 10000.0;
+	return ray;
+}
+
 vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 	vec2 tex_coord = hp.uv0;
-	Ray ray_x = get_primary_ray(screen_coord_cs + vec2(2.0 / float(gl_LaunchSizeNV.x), 0));
-	Ray ray_y = get_primary_ray(screen_coord_cs - vec2(0, 2.0 / float(gl_LaunchSizeNV.y)));
+	Ray ray_x = getPrimaryRay(screen_coord_cs + vec2(2.0 / float(gl_LaunchSizeNV.x), 0));
+	Ray ray_y = getPrimaryRay(screen_coord_cs - vec2(0, 2.0 / float(gl_LaunchSizeNV.y)));
 
 	vec3 bary_x = compute_barycentric(triangle.pos, ray_x.origin, ray_x.direction);
 	vec3 bary_y = compute_barycentric(triangle.pos, ray_y.origin, ray_y.direction);
@@ -117,79 +141,68 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 	return color;
 }
 
-void primaryRays(){
+vec2 getScreenCoordinates(){
 	vec2 pixelOffset = vec2(0.5);
 	if(ubo.randSample){
 		pixelOffset = vec2(get_rng(RNG_C(100), ubo.frameIndex), get_rng(RNG_C(100), ubo.frameIndex));
 	}
-
 	const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + pixelOffset;
-	const vec2 inUV0 = pixelCenter/vec2(gl_LaunchSizeNV.xy);
-	const vec2 screen_coord_cs  = inUV0 * 2.0 - 1.0;
+	const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeNV.xy);
+	const vec2 screen_coord_cs  = inUV * 2.0 - 1.0;
+	return screen_coord_cs;
+}
 
-	// init ray
-	Ray ray = get_primary_ray(screen_coord_cs);
-	//ray.origin = position.xyz;
-	//vec4 target = ubo.inverseProj * vec4(screen_coord_cs, -1, 1) ;
-	//ray.direction = (ubo.inverseView*vec4(normalize(target.xyz), 0)).xyz;
-	//ray.t_min = 0.01;
-	//ray.t_max = 10000.0;
-
-	// calc ray length
-	trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE);
-	ray.t_max = rp.hit_distance + 0.001;
-
-	trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
-	
-	vec4 primary_albedo;
-	vec3 normal;
-	vec3 pos;
-	uint cluster;
-	uint material;
-	float depth;
+void shootPrimaryRay(Ray ray, vec2 sccs){
+	traceRay(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
 
 	if(!found_intersection(rp)){
-		primary_albedo = sampleSky(ray.direction);
-		normal = vec3(0);
-		pos = vec3(0);
-		material = MATERIAL_KIND_SKY;
-		depth = 10000;
+		hitData.albedo = sampleSky(ray.direction);
+		hitData.normal = vec3(0);
+		hitData.pos = vec3(0);
+		hitData.material = MATERIAL_KIND_SKY;
+		hitData.depth = 10000;
 	} else {
 		HitPoint hp = getHitPoint(rp);
 		Triangle triangle = getTriangle(rp);
-		primary_albedo = getTextureLod(screen_coord_cs, triangle, hp);
-		
-		normal = hp.normal;
-		pos = hp.pos;
-		cluster = int(hp.cluster);
-		material = get_material(rp);
-		if(is_player(rp)) material |= MATERIAL_FLAG_PLAYER_OR_WEAPON;
-		depth = rp.hit_distance;
 
-		if(is_light(rp)) primary_albedo += vec4(1,0,0,0);
+		hitData.albedo = getTextureLod(sccs, triangle, hp);
+		hitData.normal = hp.normal;
+		hitData.pos = hp.pos;
+		hitData.cluster = int(hp.cluster);
+		hitData.material = get_material(rp);
+		if(is_player(rp)) hitData.material |= MATERIAL_FLAG_PLAYER_OR_WEAPON;
+		hitData.depth = rp.hit_distance;
+
+		if(is_light(rp)) hitData.albedo += vec4(1,0,0,0);
 	}
 
 	//vec3 posPrev = getHitPointPrev(rp).pos;//temp.xyz;
-	vec3 velocity;
-	vec2 screenPos;
-	float distanceCurr;
-	vec2 screenPosPrev;
-	float distancePrev;
-	projection_view_to_screen((ubo.viewMat * vec4(pos,1)).xyz, screenPos, distanceCurr, false);
+	// vec3 velocity;
+	// vec2 screenPos;
+	// float distanceCurr;
+	// vec2 screenPosPrev;
+	// float distancePrev;
+	// projection_view_to_screen((ubo.viewMat * vec4(pos,1)).xyz, screenPos, distanceCurr, false);
+
 	// projection_view_to_screen((uboPrev.viewMat * vec4(posPrev,1)).xyz, screenPosPrev, distancePrev, true);
 	// velocity.xy = abs(screenPosPrev - screenPos) * 20;
 	// velocity.z = abs(distancePrev - distanceCurr);
-
-	imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(primary_albedo));
-	imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(normal.xyz,1));
-	imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(pos.xyz, distanceCurr));
-	imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(material, cluster, rp.instanceID,0));
-	imageStore(viewGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(ray.direction.xyz, 0));
-	//imageStore(motionGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(velocity.xy, 0,1));
 }
 
 void main() 
 {
-	primaryRays();
+	vec2 sccs = getScreenCoordinates(); // screen coordinates in clip space
+	Ray ray = getPrimaryRay(sccs);
+	// get distance to first opaque object
+	traceRayOpaque(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE);
+	ray.t_max = rp.hit_distance + 0.001;
+
+	shootPrimaryRay(ray, sccs);
+
+	imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.albedo));
+	imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.normal.xyz,1));
+	imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.pos.xyz, 0));
+	imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(hitData.material, hitData.cluster, rp.instanceID,0));
+	imageStore(viewGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(ray.direction.xyz, 0));
 }
 
