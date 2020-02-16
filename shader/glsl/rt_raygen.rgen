@@ -293,7 +293,7 @@ vec3 Shade(vec3 pos, vec3 norm, vec3 difColor, uint lightIdx, uint numLights){
 vec4 path_tracer(){
 	vec2 pixelOffset = vec2(0.5);
 
-	if(ubo.randSample){
+	if(ubo.randomPixelOffset){
 		pixelOffset = vec2(get_rng(RNG_C(100), ubo.frameIndex), get_rng(RNG_C(100), ubo.frameIndex));
 	}
 

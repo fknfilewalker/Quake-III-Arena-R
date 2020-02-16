@@ -220,11 +220,13 @@ STRUCT (
     UINT    (numRandomDL)
     UINT    (numRandomIL)
     UINT    (numBounces)
-    BOOL    (randSample)
     BOOL    (randSampleLight)
+    // dof
     FLOAT   (aperture)
     FLOAT   (focalLength)
     UINT    (dof)
+    // anti aliasing
+    BOOL    (randomPixelOffset)
 ,GlobalUbo)
 
 // holds a light

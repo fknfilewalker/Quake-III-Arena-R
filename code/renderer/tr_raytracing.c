@@ -907,12 +907,12 @@ static void RB_TraceRays() {
 	ubo->numRandomDL = pt_numRandomDL->integer;
 	ubo->numRandomIL = pt_numRandomIL->integer;
 	ubo->numBounces = pt_numBounces->integer;
-	ubo->randSample = pt_randomPixelOffset->integer;
 	ubo->randSampleLight = pt_randomLightOffset->integer;
 
 	ubo->aperture = rt_aperture->value;
 	ubo->focalLength = rt_focalLength->value;
 	ubo->dof = rt_dof->integer;
+	ubo->randomPixelOffset = rt_antialiasing->integer;
 
 	float viewMatrix[16];
 	// viewMatrix (needs flip)

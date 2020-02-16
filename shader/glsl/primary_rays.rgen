@@ -61,8 +61,8 @@ getPrimaryRay(vec2 pos_cs)
 		vec3 random3 = vec3(get_rng(RNG_C(120), ubo.frameIndex), get_rng(RNG_C(122), ubo.frameIndex), get_rng(RNG_C(102), ubo.frameIndex)) * 2.0 - 1.0;
 		vec3 focalPoint = ray.origin + ray.direction * ubo.focalLength;
 		// two variants for dof
-		// 1) swivel ray origin
-		// 2) swivel screen coordinates and calculate ray origin
+		// 1) jitter ray origin
+		// 2) jitter screen coordinates and calculate ray origin
 		if(ubo.dof == 1) {
 			ray.origin += random3 * ubo.aperture;
 		} else {
@@ -158,14 +158,16 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 }
 
 vec2 getScreenCoordinates(){
+	// pixel center offset
 	vec2 pixelOffset = vec2(0.5);
-	if(ubo.randSample){
+	// for antialiasing use jittered pixel position
+	if(ubo.randomPixelOffset){
 		pixelOffset = vec2(get_rng(RNG_C(100), ubo.frameIndex), get_rng(RNG_C(100), ubo.frameIndex));
 	}
 	const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + pixelOffset;
 	const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeNV.xy);
-	const vec2 screen_coord_cs  = inUV * 2.0 - 1.0;
-	return screen_coord_cs;
+	const vec2 screenCoordClipSpace  = inUV * 2.0 - 1.0;
+	return screenCoordClipSpace;
 }
 
 void shootPrimaryRay(Ray ray, vec2 sccs){
@@ -205,8 +207,6 @@ void shootPrimaryRay(Ray ray, vec2 sccs){
 	// velocity.z = abs(distancePrev - distanceCurr);
 }
 
-
-
 void main() 
 {
 	vec2 sccs = getScreenCoordinates(); // screen coordinates in clip space
@@ -214,9 +214,9 @@ void main()
 	// get distance to first opaque object
 	traceRayOpaque(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE);
 	ray.t_max = rp.hit_distance + 0.001;
-
 	shootPrimaryRay(ray, sccs);
 
+	// store data in g buffer
 	imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.albedo));
 	imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.normal.xyz,1));
 	imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.pos.xyz, 0));
