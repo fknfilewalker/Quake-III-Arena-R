@@ -1699,12 +1699,13 @@ extern	cvar_t	*pt_cullLights;
 extern	cvar_t  *pt_numRandomDL;
 extern	cvar_t	*pt_numRandomIL;
 extern	cvar_t  *pt_numBounces;
-extern	cvar_t	*rt_antialiasing;
 extern	cvar_t  *pt_randomLightOffset;
 
+extern  cvar_t* rt_accumulate;
 extern  cvar_t* rt_aperture;
 extern  cvar_t* rt_focalLength;
 extern  cvar_t* rt_dof;
+extern	cvar_t	*rt_antialiasing;
 
 //====================================================================
 

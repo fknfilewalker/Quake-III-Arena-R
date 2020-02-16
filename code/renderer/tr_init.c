@@ -157,12 +157,14 @@ cvar_t* pt_cullLights;
 cvar_t* pt_numRandomDL;
 cvar_t* pt_numRandomIL;
 cvar_t* pt_numBounces;
-cvar_t* rt_antialiasing;
 cvar_t* pt_randomLightOffset;
 
+
+cvar_t* rt_accumulate;
 cvar_t* rt_aperture;
 cvar_t* rt_focalLength;
 cvar_t* rt_dof;
+cvar_t* rt_antialiasing;
 
 void ( APIENTRY * qglMultiTexCoord2fARB )( GLenum texture, GLfloat s, GLfloat t );
 void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
@@ -1294,6 +1296,7 @@ void R_Register( void )
 	pt_numBounces = ri.Cvar_Get("pt_numBounces", "1", 0);
 	pt_randomLightOffset = ri.Cvar_Get("pt_randomLightOffset", "1", 0);
 
+	rt_accumulate = ri.Cvar_Get("rt_accumulate", "0", 0);
 	rt_antialiasing = ri.Cvar_Get("rt_antialiasing", "1", 0);
 	rt_aperture = ri.Cvar_Get("rt_aperture", "0.05", 0);
 	rt_focalLength = ri.Cvar_Get("rt_focalLength", "15", 0);

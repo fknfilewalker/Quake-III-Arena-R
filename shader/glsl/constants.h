@@ -78,6 +78,7 @@
 
 
 #define BINDING_OFFSET_RESULT_OUTPUT                0x00000020
+#define BINDING_OFFSET_RESULT_OUTPUT_PREV           0x00000029
 // g buffer
 #define BINDING_OFFSET_GBUFFER_POS                  0x00000021
 #define BINDING_OFFSET_GBUFFER_ALBEDO               0x00000022
@@ -221,6 +222,7 @@ STRUCT (
     UINT    (numRandomIL)
     UINT    (numBounces)
     BOOL    (randSampleLight)
+    UINT    (accumulate)
     // dof
     FLOAT   (aperture)
     FLOAT   (focalLength)

@@ -913,6 +913,16 @@ static void RB_TraceRays() {
 	ubo->focalLength = rt_focalLength->value;
 	ubo->dof = rt_dof->integer;
 	ubo->randomPixelOffset = rt_antialiasing->integer;
+	ubo->accumulate = rt_accumulate->integer;
+
+	if (rt_accumulate->integer) {
+		Cvar_Set("cl_paused", "1");
+		Cvar_Set("sv_paused", "1");
+	}
+	else {
+		Cvar_Set("cl_paused", "0");
+		Cvar_Set("sv_paused", "0");
+	}
 
 	float viewMatrix[16];
 	// viewMatrix (needs flip)
@@ -1155,6 +1165,7 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 	if (r_showcluster->integer) drawCluster();
 	
+
 	//VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultFramebuffer.image);
 }
 
