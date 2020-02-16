@@ -105,6 +105,40 @@ vec3 shade(vec4 primary_albedo, vec3 P, vec3 N, uint currentCluster){
 	shadeColor *= primary_albedo.rgb / M_PI;
 	return shadeColor;
 }
+
+vec3 calcShade(vec3 P, vec3 N, vec3 albedo, uint cluster){
+	vec3 shadeColor = vec3(0);
+
+	uint numLight;
+	if(ubo.cullLights) numLight = imageLoad(lightVis_data, ivec2(0, cluster)).r;
+	else numLight = uboLights.lightList.numLights; 
+
+	for(int i = 0; i < numLight; i++){
+		uint lightIndex;
+		if(ubo.cullLights) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
+		else lightIndex = i;
+		
+	
+		DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex), ubo.randSampleLight);
+		vec3 posLight = light.pos;
+		vec3 toLight = posLight - P;
+		vec3 L = normalize(toLight);
+		float distToLight =	length(toLight);
+		float lightStrength =  min(light.mag / distToLight, 1);
+		if(lightStrength < 0.1f) continue;
+		vec3 lightIntensity = vec3(0.75) * lightStrength; //light.color * lightStrength;
+		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
+	 	float shadowMult = trace_shadow_ray(P, L, 0.01f, distToLight, false);
+
+		float LdotN = clamp(dot(N, L), 0.0, 1.0);
+		float LdotN2 = clamp(dot(-light.normal, -L), 0.0, 1.0);
+		shadeColor += shadowMult * LdotN * lightIntensity; 
+	}
+
+	shadeColor *= albedo / M_PI;
+	return shadeColor;
+}
+
 vec4 calculateReflection(inout vec3 pos, inout vec3 direction, inout vec3 N){
 	vec3 dirReflection = reflect(direction, N);
 
@@ -117,20 +151,22 @@ vec4 calculateReflection(inout vec3 pos, inout vec3 direction, inout vec3 N){
 		ray.origin -= ray.direction * 0.001;
 	else
 		ray.origin -= N * 0.001;
-	trace_ray(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
+	traceRay(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
 
 	vec4 albedoReflection = vec4(0);
 	if(!found_intersection(rp)){
 		albedoReflection = sampleSky(ray.direction);
 	} else {
 		HitPoint hp = getHitPoint(rp);
-		Triangle triangle = getTriangle(rp);
+		//Triangle triangle = getTriangle(rp);
 		vec4 tex = getTextureLod2(hp,0);
 		albedoReflection = tex;
+
 
 		pos = hp.pos;
 		direction = dirReflection;
 		N = hp.normal;
+		//albedoReflection = vec4(calcShade(pos, N, albedoReflection.xyz, hp.cluster), albedoReflection.w);
 		//albedoReflection = vec4(shade(albedoReflection, hp.pos, hp.normal, hp.cluster),1);
 	}
 	return albedoReflection;
@@ -150,19 +186,20 @@ vec4 calculateRefraction( inout vec3 pos, inout vec3 direction, inout vec3 N, fl
 	else
 		ray.origin -= N * 0.001;
 
-	trace_ray(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
+	traceRay(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
 	vec4 albedoRefraction = vec4(0);
 	if(!found_intersection(rp)){
 		albedoRefraction = sampleSky(ray.direction);
 	} else {
 		HitPoint hp = getHitPoint(rp);
-		Triangle triangle = getTriangle(rp);
+		//Triangle triangle = getTriangle(rp);
 		vec4 tex = getTextureLod2(hp,0);
 		albedoRefraction = tex;// * tex.w + albedoRefraction * (1-tex.w);
 
 		pos = hp.pos;
 		direction = normalize(dirRefraction);
 		N = hp.normal;
+		//albedoRefraction = vec4(calcShade(pos, N, albedoRefraction.xyz, hp.cluster), albedoRefraction.w);
 	}
 	return albedoRefraction;
 }
@@ -179,8 +216,8 @@ vec4 second(vec3 pos, vec3 direction, vec3 N){
 		n2 = 1.0; 
 	}
 
-	float F = pow(1.0 - max(0.0, -dot(direction, N)), 5.0);
-	F = mix(0.5, 1.0, F);
+	//float F = pow(1.0 - max(0.0, -dot(direction, N)), 5.0);
+	//F = mix(0.5, 1.0, F);
 
 	vec3 P_reflection = pos;
 	vec3 N_reflection = N;
@@ -201,6 +238,7 @@ vec4 second(vec3 pos, vec3 direction, vec3 N){
 	return color;
 }
 
+
 void reflectionRefrection(){
 	vec4 primary_albedo;
 	vec3 normal;
@@ -213,12 +251,14 @@ void reflectionRefrection(){
 
 	vec4 temp;
 	uvec4 utemp;
-	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
-	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
-	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
 	material = utemp.x;
 	cluster = utemp.y;
+	if (!isGlass(material) && !isMirror(material)) return;
+
+	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
+	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
+	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	originalDir = imageLoad(viewGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 
 	vec3 P = pos;
@@ -239,8 +279,8 @@ void reflectionRefrection(){
 				n2 = 1.0; 
 			}
 
-			float F = pow(1.0 - max(0.0, -dot(viewDir, N)), 5.0);
-			F = mix(0.5, 1.0, F);
+			//float F = pow(1.0 - max(0.0, -dot(viewDir, N)), 5.0);
+			//F = mix(0.5, 1.0, F);
 
 			vec3 P_reflection = P;
 			vec3 N_reflection = N;
@@ -271,8 +311,7 @@ void reflectionRefrection(){
 					if(dot(norm, dir) > 0) norm = -norm;
 					vec4 sec = second(hp.pos, dir, norm);
 
-					if(al.w == 0.0) albedoRefraction = sec;
-					else albedoRefraction = alpha_blend(al, sec);
+					albedoRefraction = al * al.w + sec * (1-al.w);
 				}
 			}
 			// if(isGlass(get_material(rp))){
@@ -293,10 +332,8 @@ void reflectionRefrection(){
 			float ratio = 0.2;//0.2;
 			vec4 albedo = ratio * albedoReflection + (1 - ratio) * albedoRefraction;
 
-			//if(primary_albedo.w == 0.0) color = albedo;
-			//color = alpha_blend(primary_albedo, albedo);
-			//color = alpha_blend_premultiplied(primary_albedo/primary_albedo.w, albedo);
 			color = primary_albedo * primary_albedo.w + albedo * (1-primary_albedo.w);
+			
 
 			//material = get_material(rp);
 			

@@ -376,40 +376,40 @@ DirectionalLight getLight2(Light l, ivec2 rng, bool random){
 	// if(d2.tex1 != -1) light.color += global_textureLod(d2.tex1, vec2(0.5f, 0.5f), 2).xyz;
 
 	vec4 color = vec4(0);
-	vec4 tex = global_textureLod(d.tex0, uv0, 2);
-	color = vec4(tex.xyz, 1);
-	//if(d.tex0Color) color *= (color0/255);
-	//if(d.tex0Color) color *= (hp.color0/255);
+	// vec4 tex = global_textureLod(d.tex0, uv0, 2);
+	// color = vec4(tex.xyz, 1);
+	// //if(d.tex0Color) color *= (color0/255);
+	// //if(d.tex0Color) color *= (hp.color0/255);
 
-	if(d.tex1 != -1){
-		tex = global_textureLod(d.tex1, uv1, 2);
-		//if(d.tex1Color) tex *= (color1/255);
+	// if(d.tex1 != -1){
+	// 	tex = global_textureLod(d.tex1, uv1, 2);
+	// 	//if(d.tex1Color) tex *= (color1/255);
 
-		if(d.tex1Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	}
+	// 	if(d.tex1Blend) {
+	// 		color = alpha_blend(tex, color);
+	// 	}
+	// 	else color += tex;
+	// }
 
-	if(d2.tex0 != -1){
-		tex = global_textureLod(d2.tex0, uv2, 2);
-		//if(d.tex0Color) tex *= (color2/255);
+	// if(d2.tex0 != -1){
+	// 	tex = global_textureLod(d2.tex0, uv2, 2);
+	// 	//if(d.tex0Color) tex *= (color2/255);
 
-		if(d.tex0Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	}
+	// 	if(d.tex0Blend) {
+	// 		color = alpha_blend(tex, color);
+	// 	}
+	// 	else color += tex;
+	// }
 
-	if(d2.tex1 != -1){
-		tex = global_textureLod(d2.tex1, vec2(0.5f, 0.5f), 2);
-		//if(d.tex1Color) tex *= (color3/255);
+	// if(d2.tex1 != -1){
+	// 	tex = global_textureLod(d2.tex1, vec2(0.5f, 0.5f), 2);
+	// 	//if(d.tex1Color) tex *= (color3/255);
 
-		if(d.tex1Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} 
+	// 	if(d.tex1Blend) {
+	// 		color = alpha_blend(tex, color);
+	// 	}
+	// 	else color += tex;
+	// } 
 	light.color = color.xyz;
 	return light;
 }

@@ -160,6 +160,10 @@ cvar_t* pt_numBounces;
 cvar_t* pt_randomPixelOffset;
 cvar_t* pt_randomLightOffset;
 
+cvar_t* rt_aperture;
+cvar_t* rt_focalLength;
+cvar_t* rt_dof;
+
 void ( APIENTRY * qglMultiTexCoord2fARB )( GLenum texture, GLfloat s, GLfloat t );
 void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
 void ( APIENTRY * qglClientActiveTextureARB )( GLenum texture );
@@ -328,14 +332,14 @@ static void InitVulkan(void)
 			// world buffers
 			// static
 			VK_CreateRayTracingASBuffer(&vk_d.basBufferStaticWorld, 50 * VK_AS_MEMORY_ALLIGNMENT_SIZE * sizeof(byte));
-			VK_CreateAttributeBuffer(&vk_d.geometry.idx_world_static, RTX_WORLD_STATIC_IDX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-			VK_CreateAttributeBuffer(&vk_d.geometry.xyz_world_static, RTX_WORLD_STATIC_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			VK_CreateAttributeBuffer(&vk_d.geometry.idx_world_static, RTX_WORLD_STATIC_IDX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			VK_CreateAttributeBuffer(&vk_d.geometry.xyz_world_static, RTX_WORLD_STATIC_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 			VK_CreateAttributeBuffer(&vk_d.geometry.cluster_world_static, RTX_WORLD_STATIC_IDX_SIZE/3 * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
 			// dynamic data
 			for (int i = 0; i < vk.swapchain.imageCount; i++) {
-				VK_CreateAttributeBuffer(&vk_d.geometry.idx_world_dynamic_data[i], RTX_WORLD_DYNAMIC_DATA_IDX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-				VK_CreateAttributeBuffer(&vk_d.geometry.xyz_world_dynamic_data[i], RTX_WORLD_DYNAMIC_DATA_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+				VK_CreateAttributeBuffer(&vk_d.geometry.idx_world_dynamic_data[i], RTX_WORLD_DYNAMIC_DATA_IDX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+				VK_CreateAttributeBuffer(&vk_d.geometry.xyz_world_dynamic_data[i], RTX_WORLD_DYNAMIC_DATA_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 			}
 			VK_CreateAttributeBuffer(&vk_d.geometry.cluster_world_dynamic_data, RTX_WORLD_DYNAMIC_DATA_IDX_SIZE / 3 * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
@@ -343,23 +347,23 @@ static void InitVulkan(void)
 			// dynamic AS
 			vk_d.basBufferEntityDynamicOffset = 0;
 			for (int i = 0; i < vk.swapchain.imageCount; i++) {
-				VK_CreateAttributeBuffer(&vk_d.geometry.idx_world_dynamic_as[i], RTX_WORLD_DYNAMIC_AS_IDX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-				VK_CreateAttributeBuffer(&vk_d.geometry.xyz_world_dynamic_as[i], RTX_WORLD_DYNAMIC_AS_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+				VK_CreateAttributeBuffer(&vk_d.geometry.idx_world_dynamic_as[i], RTX_WORLD_DYNAMIC_AS_IDX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+				VK_CreateAttributeBuffer(&vk_d.geometry.xyz_world_dynamic_as[i], RTX_WORLD_DYNAMIC_AS_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 				VK_CreateRayTracingASBuffer(&vk_d.basBufferWorldDynamicAS[i], 10 * VK_AS_MEMORY_ALLIGNMENT_SIZE * sizeof(byte));
 			}
 			VK_CreateAttributeBuffer(&vk_d.geometry.cluster_world_dynamic_as, RTX_WORLD_DYNAMIC_AS_IDX_SIZE / 3 * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
 			// entity
-			VK_CreateAttributeBuffer(&vk_d.geometry.idx_entity_static, RTX_ENTITY_STATIC_INDEX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-			VK_CreateAttributeBuffer(&vk_d.geometry.xyz_entity_static, RTX_ENTITY_STATIC_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			VK_CreateAttributeBuffer(&vk_d.geometry.idx_entity_static, RTX_ENTITY_STATIC_INDEX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			VK_CreateAttributeBuffer(&vk_d.geometry.xyz_entity_static, RTX_ENTITY_STATIC_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 			VK_CreateAttributeBuffer(&vk_d.geometry.cluster_entity_static, RTX_ENTITY_STATIC_INDEX_SIZE / 3 * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
 			VK_CreateRayTracingASBuffer(&vk_d.basBufferEntityStatic, VK_MAX_BOTTOM_AS * VK_AS_MEMORY_ALLIGNMENT_SIZE * sizeof(byte));
 			vk_d.basBufferEntityStaticOffset = 0;
 			vk_d.basBufferEntityDynamicOffset = 0;
 			for (int i = 0; i < vk.swapchain.imageCount; i++) {
-				VK_CreateAttributeBuffer(&vk_d.geometry.idx_entity_dynamic[i], RTX_ENTITY_DYNAMIC_IDX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-				VK_CreateAttributeBuffer(&vk_d.geometry.xyz_entity_dynamic[i], RTX_ENTITY_DYNAMIC_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+				VK_CreateAttributeBuffer(&vk_d.geometry.idx_entity_dynamic[i], RTX_ENTITY_DYNAMIC_IDX_SIZE * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+				VK_CreateAttributeBuffer(&vk_d.geometry.xyz_entity_dynamic[i], RTX_ENTITY_DYNAMIC_XYZ_SIZE * sizeof(VertexBuffer), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 				VK_CreateRayTracingASBuffer(&vk_d.basBufferEntityDynamic[i], 100 * VK_AS_MEMORY_ALLIGNMENT_SIZE * sizeof(byte));
 				// Per Frame Dynamic AS List
 				vk_d.bottomASDynamicList[i] = calloc(VK_MAX_DYNAMIC_BOTTOM_AS_INSTANCES, sizeof(vkbottomAS_t));
@@ -1291,6 +1295,10 @@ void R_Register( void )
 	pt_randomPixelOffset = ri.Cvar_Get("pt_randomPixelOffset", "1", 0);
 	pt_randomLightOffset = ri.Cvar_Get("pt_randomLightOffset", "1", 0);
 
+	rt_aperture = ri.Cvar_Get("rt_aperture", "0.05", 0);
+	rt_focalLength = ri.Cvar_Get("rt_focalLength", "15", 0);
+	rt_dof = ri.Cvar_Get("rt_dof", "0", 0);
+
 	// make sure all the commands added here are also
 	// removed in R_Shutdown
 	ri.Cmd_AddCommand( "imagelist", R_ImageList_f );
@@ -1457,6 +1465,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 					VK_DestroyBottomAccelerationStructure(&vk_d.bottomASDynamicList[i][j]);
 				}
 				VK_DestroyDescriptor(&vk_d.rtxDescriptor[i]);
+				VK_DestroyDescriptor(&vk_d.computeDescriptor[i]);
 				vk_d.bottomASDynamicCount[i] = 0;
 			}
 	

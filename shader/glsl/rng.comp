@@ -1,14 +1,167 @@
-
 #version 460
-#extension GL_GOOGLE_include_directive    : enable
-#extension GL_EXT_nonuniform_qualifier    : enable
-
+#extension GL_NV_ray_tracing : require
+#extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : enable
+#pragma optionNV (unroll all)
 #include "constants.h"
+#include "defines.glsl"
+
+// global texture
+// layout(binding = 0, set = 1) uniform sampler2D texure_array[];
+// vec4
+// global_textureLod(uint idx, vec2 tex_coord, uint lod)
+// {
+// 	return textureLod(texure_array[idx], tex_coord, lod);
+// }
+// vec4
+// alpha_blend(vec4 top, vec4 bottom)
+// {
+//     // assume top is alpha-premultiplied, bottom is not; result is premultiplied
+//     return vec4(top.rgb + bottom.rgb * (1 - top.a) * bottom.a, 1 - (1 - top.a) * (1 - bottom.a)); 
+// }
+// layout(binding = BINDING_OFFSET_UBO_LIGHTS, set = 0) uniform LightList 
+// {
+// 	LightList_s lightList;
+// } uboLights;
+
+// // buffer with instance data
+// layout(binding = BINDING_OFFSET_INSTANCE_DATA, set = 0) buffer Instance { ASInstanceData data[]; } iData;
+// // Buffer with indices and vertices
+// layout(binding = BINDING_OFFSET_IDX_WORLD_STATIC, set = 0) buffer Indices_World_static { uint i[]; } indices_world_static;
+// layout(binding = BINDING_OFFSET_XYZ_WORLD_STATIC, set = 0) buffer Vertices_World_static { VertexBuffer v[]; } vertices_world_static;
+
+// layout(binding = BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA, set = 0) buffer Indices_dynamic_data { uint i[]; } indices_dynamic_data;
+// layout(binding = BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA, set = 0) buffer Vertices_dynamic_data { VertexBuffer v[]; } vertices_dynamic_data;
+// layout(binding = BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS, set = 0) buffer Indices_dynamic_as { uint i[]; } indices_dynamic_as;
+// layout(binding = BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS, set = 0) buffer Vertices_dynamic_as { VertexBuffer v[]; } vertices_dynamic_as;
+// layout(binding = BINDING_OFFSET_IDX_ENTITY_STATIC, set = 0) buffer Indices_entity_static { uint i[]; } indices_entity_static;
+// layout(binding = BINDING_OFFSET_XYZ_ENTITY_STATIC, set = 0) buffer Vertices_entity_static { VertexBuffer v[]; } vertices_entity_static;
+// layout(binding = BINDING_OFFSET_IDX_ENTITY_DYNAMIC, set = 0) buffer Indices_entity_dynamic { uint i[]; } indices_entity_dynamic;
+// layout(binding = BINDING_OFFSET_XYZ_ENTITY_DYNAMIC, set = 0) buffer Vertices_entity_dynamic { VertexBuffer v[]; } vertices_entity_dynamic;
+
+// layout(binding = BINDING_OFFSET_CLUSTER_WORLD_STATIC, set = 0) buffer Cluster_World_static { uint c[]; } cluster_world_static;
+// layout(binding = BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_DATA, set = 0) buffer Cluster_World_dynamic_data { uint c[]; } cluster_world_dynamic_data;
+// layout(binding = BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_AS, set = 0) buffer Cluster_World_dynamic_as { uint c[]; } cluster_world_dynamic_as;
+// layout(binding = BINDING_OFFSET_CLUSTER_ENTITY_STATIC, set = 0) buffer Cluster_Entity_static { uint c[]; } cluster_entity_static;
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+// // unpack texture idx, blend/add, and req color, data
+// TextureData unpackTextureData(uint data){
+// 	TextureData d;
+// 	d.tex0 = int(data & TEX0_IDX_MASK);
+// 	d.tex1 = int((data & TEX1_IDX_MASK) >> TEX_SHIFT_BITS);
+// 	if(d.tex0 == TEX0_IDX_MASK) d.tex0 = -1;
+// 	if(d.tex1 == TEX0_IDX_MASK) d.tex1 = -1;
+// 	d.tex0Blend = (data & TEX0_BLEND_MASK) != 0;
+// 	d.tex1Blend = (data & TEX1_BLEND_MASK) != 0;
+// 	d.tex0Color = (data & TEX0_COLOR_MASK) != 0;
+// 	d.tex1Color = (data & TEX1_COLOR_MASK) != 0;
+// 	return d;
+// }
+
+// void calcLight(inout Light l){
+//     uint customIndex = uint(l.offsetIDX);
+// 	uvec3 index;
+// 	if(l.type == BAS_WORLD_STATIC) index = (ivec3(indices_world_static.i[customIndex], indices_world_static.i[customIndex + 1], indices_world_static.i[customIndex + 2])) + uint(l.offsetXYZ);
+// 	else if(l.type == BAS_WORLD_DYNAMIC_DATA)  index = (ivec3(indices_dynamic_data.i[customIndex], indices_dynamic_data.i[customIndex + 1], indices_dynamic_data.i[customIndex + 2])) + uint(l.offsetXYZ);
+// 	else if(l.type == BAS_WORLD_DYNAMIC_AS)  index = (ivec3(indices_dynamic_as.i[customIndex], indices_dynamic_as.i[customIndex + 1], indices_dynamic_as.i[customIndex + 2])) + uint(l.offsetXYZ);
+
+// 	VertexBuffer vData[3];
+// 	TextureData d;
+// 	TextureData d2;
+// 	if(l.type == BAS_WORLD_STATIC){
+// 		vData[0] = vertices_world_static.v[index.x];
+// 		vData[1] = vertices_world_static.v[index.y];
+// 		vData[2] = vertices_world_static.v[index.z];
+// 		d = unpackTextureData(vertices_world_static.v[index.x].texIdx0);
+// 		d2 = unpackTextureData(vertices_world_static.v[index.x].texIdx1);
+// 	}else if(l.type == BAS_WORLD_DYNAMIC_DATA){
+// 		vData[0] = vertices_dynamic_data.v[index.x];
+// 		vData[1] = vertices_dynamic_data.v[index.y];
+// 		vData[2] = vertices_dynamic_data.v[index.z];
+// 		d = unpackTextureData(vertices_dynamic_data.v[index.x].texIdx0);
+// 		d2 = unpackTextureData(vertices_dynamic_data.v[index.x].texIdx1);
+// 	}else if(l.type == BAS_WORLD_DYNAMIC_AS){
+// 		vData[0] = vertices_dynamic_as.v[index.x];
+// 		vData[1] = vertices_dynamic_as.v[index.y];
+// 		vData[2] = vertices_dynamic_as.v[index.z];
+// 		d = unpackTextureData(vertices_dynamic_as.v[index.x].texIdx0);
+// 		d2 = unpackTextureData(vertices_dynamic_as.v[index.x].texIdx1);
+// 	}
+// 	vec2 uv0 = (vData[0].uv0 + vData[1].uv0 + vData[2].uv0) / 3.0f;
+// 	vec2 uv1 = (vData[0].uv1 + vData[1].uv1 + vData[2].uv1) / 3.0f;
+// 	vec2 uv2 = (vData[0].uv2 + vData[1].uv2 + vData[2].uv2) / 3.0f;
+
+// 	// vec4 color0 = (unpackColor(vData[0].color0) + unpackColor(vData[1].color0) + unpackColor(vData[2].color0)) / 3.0f;
+// 	// vec4 color1 = (unpackColor(vData[0].color1) + unpackColor(vData[1].color1) + unpackColor(vData[2].color1)) / 3.0f;
+// 	// vec4 color2 = (unpackColor(vData[0].color2) + unpackColor(vData[1].color2) + unpackColor(vData[2].color2)) / 3.0f;
+// 	// vec4 color3 = (unpackColor(vData[0].color3) + unpackColor(vData[1].color3) + unpackColor(vData[2].color3)) / 3.0f;
+
+// 	//int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * uboLights.lightList.numLights ) )
+
+// 	vec3 dir_x = vData[0].pos.xyz - vData[1].pos.xyz;
+// 	vec3 dir_y = vData[2].pos.xyz - vData[1].pos.xyz;
+
+// 	DirectionalLight light;
+// 	light.normal = cross(dir_x, dir_y);
+// 	light.mag = length(light.normal);
+// 	light.pos = l.pos.xyz;
+// 	//light.pos = (vData[0].pos.xyz + vData[1].pos.xyz + vData[2].pos.xyz) / 3;
+// 	//light.pos = l.pos.xyz * sample_triangle(vec2(rng_x, rng_y)); 
+
+
+// 	// light.color = global_textureLod(d.tex0, vec2(0.5f, 0.5f), 2).xyz;
+// 	// if(d.tex1 != -1) light.color += global_textureLod(d.tex1, vec2(0.5f, 0.5f), 2).xyz;
+// 	// if(d2.tex0 != -1) light.color += global_textureLod(d2.tex0, vec2(0.5f, 0.5f), 2).xyz;
+// 	// if(d2.tex1 != -1) light.color += global_textureLod(d2.tex1, vec2(0.5f, 0.5f), 2).xyz;
+
+// 	vec4 color = vec4(0);
+// 	vec4 tex = global_textureLod(d.tex0, uv0, 2);
+// 	color = vec4(tex.xyz, 1);
+// 	//if(d.tex0Color) color *= (color0/255);
+// 	//if(d.tex0Color) color *= (hp.color0/255);
+
+// 	if(d.tex1 != -1){
+// 		tex = global_textureLod(d.tex1, uv1, 2);
+// 		//if(d.tex1Color) tex *= (color1/255);
+
+// 		if(d.tex1Blend) {
+// 			color = alpha_blend(tex, color);
+// 		}
+// 		else color += tex;
+// 	}
+
+// 	if(d2.tex0 != -1){
+// 		tex = global_textureLod(d2.tex0, uv2, 2);
+// 		//if(d.tex0Color) tex *= (color2/255);
+
+// 		if(d.tex0Blend) {
+// 			color = alpha_blend(tex, color);
+// 		}
+// 		else color += tex;
+// 	}
+
+// 	if(d2.tex1 != -1){
+// 		tex = global_textureLod(d2.tex1, vec2(0.5f, 0.5f), 2);
+// 		//if(d.tex1Color) tex *= (color3/255);
+
+// 		if(d.tex1Blend) {
+// 			color = alpha_blend(tex, color);
+// 		}
+// 		else color += tex;
+// 	} 
+// 	light.color = color.xyz;
+// 	//return light;
+// }
+
+
+
+
+
 
 void
 main()
 {
-
+//    calcLight(uboLights.lightList.lights[gl_GlobalInvocationID.x]);
 }

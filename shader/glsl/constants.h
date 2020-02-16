@@ -17,9 +17,10 @@
 // cullMask
 #define RAY_FIRST_PERSON_OPAQUE_VISIBLE 			0x00000001
 #define RAY_MIRROR_OPAQUE_VISIBLE 					0x00000002
+#define RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE 		0x00000003
+
 #define RAY_FIRST_PERSON_PARTICLE_VISIBLE 			0x00000004
 #define RAY_MIRROR_PARTICLE_VISIBLE 				0x00000008
-#define RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE 		0x00000003
 #define RAY_FIRST_PERSON_MIRROR_PARTICLE_VISIBLE 	0x0000000c
 
 #define MATERIAL_KIND_MASK          				0x0000000f
@@ -221,6 +222,9 @@ STRUCT (
     UINT    (numBounces)
     BOOL    (randSample)
     BOOL    (randSampleLight)
+    FLOAT   (aperture)
+    FLOAT   (focalLength)
+    UINT    (dof)
 ,GlobalUbo)
 
 // holds a light
@@ -230,6 +234,7 @@ STRUCT (
     UINT    (offsetXYZ)
     UINT    (type)
     INT     (cluster)
+    VEC4    (color)
 ,Light)
 
 STRUCT (

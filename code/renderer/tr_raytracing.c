@@ -5,8 +5,8 @@
 glConfig.driverType == VULKAN && r_vertexLight->value == 2
 */
 
-#define RTX_BOTTOM_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV)
-#define RTX_TOP_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_NV)
+#define RTX_BOTTOM_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_NV)
+#define RTX_TOP_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_NV)
 
 qboolean RB_ClusterVisIdent(byte* aVis, byte* bVis) {
 	if(!memcmp(aVis, bVis, vk_d.clusterBytes * sizeof(byte))) return qtrue;
@@ -299,6 +299,25 @@ void RB_CreateEntityBottomAS(vkbottomAS_t** bAS) {
 	bASList->geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
 	bASList->geometries.flags = 0;
 
+	if (strstr(tess.shader->name, "models/powerups/health/red")) {
+		int x = 2;
+		tess.shader->stages[0]->constantColor[0] = 140;
+		tess.shader->stages[0]->constantColor[1] = 0;
+		tess.shader->stages[0]->constantColor[2] = 0;
+		tess.shader->stages[0]->constantColor[3] = 0;
+		tess.shader->stages[0]->rgbGen = CGEN_CONST;
+		tess.shader->stages[0]->bundle->image[0] = tr.whiteImage;
+	}
+	if (strstr(tess.shader->name, "models/powerups/health/yellow")) {
+		int x = 2;
+		tess.shader->stages[0]->constantColor[0] = 140;
+		tess.shader->stages[0]->constantColor[1] = 140;
+		tess.shader->stages[0]->constantColor[2] = 0;
+		tess.shader->stages[0]->constantColor[3] = 0;
+		tess.shader->stages[0]->rgbGen = CGEN_CONST;
+		tess.shader->stages[0]->bundle->image[0] = tr.whiteImage;
+	}
+
 	bASList->data.offsetIDX = (*idxOffset);
 	bASList->data.offsetXYZ = (*xyzOffset);
 	// write idx
@@ -463,7 +482,7 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 		bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
 	}
 	else {
-		bAS->geometryInstance.flags = 0;
+		bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_NV;
 	}
 	switch (tess.shader->cullType) {
 		case CT_FRONT_SIDED:
@@ -891,6 +910,10 @@ static void RB_TraceRays() {
 	ubo->randSample = pt_randomPixelOffset->integer;
 	ubo->randSampleLight = pt_randomLightOffset->integer;
 
+	ubo->aperture = rt_aperture->value;
+	ubo->focalLength = rt_focalLength->value;
+	ubo->dof = rt_dof->integer;
+
 	float viewMatrix[16];
 	// viewMatrix (needs flip)
 	RB_BuildViewMatrix(&viewMatrix, &origin, &backEnd.viewParms. or .axis);
@@ -925,14 +948,14 @@ static void RB_TraceRays() {
 	myGlMultMatrix(&ubo->viewMat[0], ubo->projMat, vk_d.mvp);
 	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 0, sizeof(GlobalUbo), (void*)ubo);
 
+
+	//VK_BindComputePipeline(&vk_d.accelerationStructures.rngPipeline);
+	//VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.rngPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+	//VK_Dispatch(vk_d.lightList.numLights, 1, 1);
+
 	VK_SetAccelerationStructure(&vk_d.rtxDescriptor[vk.swapchain.currentImage], BINDING_OFFSET_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.topAS[vk.swapchain.currentImage].accelerationStructure);
 	VK_UpdateDescriptorSet(&vk_d.rtxDescriptor[vk.swapchain.currentImage]);
 	
-
-	/*VK_BindComputePipeline(&vk_d.accelerationStructures.rngPipeline);
-	VK_BindCompute1DescriptorSet(&vk_d.accelerationStructures.rngPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage]);
-	VK_Dispatch(vk.swapchain.extent.width, vk.swapchain.extent.height, 1);*/
-
 	//VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
 	//VK_Bind2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 	//VK_TraceRays(&vk_d.accelerationStructures.pipeline);

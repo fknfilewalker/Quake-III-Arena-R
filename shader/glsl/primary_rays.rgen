@@ -45,8 +45,8 @@ bool projection_view_to_screen(vec3 view_pos, out vec2 screen_pos, out float dis
 Ray
 getPrimaryRay(vec2 pos_cs)
 {
-	vec4 v_near = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs, -1.0, 1.0);
-	vec4 v_far  = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs,  0.0, 1.0);
+	vec4 v_near = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs, -1, 1.0);
+	vec4 v_far  = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs,  1, 1.0);
 	v_near /= v_near.w;
 	v_far  /= v_far.w;
 
@@ -55,6 +55,23 @@ getPrimaryRay(vec2 pos_cs)
 	ray.direction = normalize(v_far.xyz - v_near.xyz);
 	ray.t_min = 0.01;
 	ray.t_max = 10000.0;
+
+	// add dof effect
+	if(ubo.dof > 0){
+		vec3 random3 = vec3(get_rng(RNG_C(120), ubo.frameIndex), get_rng(RNG_C(122), ubo.frameIndex), get_rng(RNG_C(102), ubo.frameIndex)) * 2.0 - 1.0;
+		vec3 focalPoint = ray.origin + ray.direction * ubo.focalLength;
+		// two variants for dof
+		// 1) swivel ray origin
+		// 2) swivel screen coordinates and calculate ray origin
+		if(ubo.dof == 1) {
+			ray.origin += random3 * ubo.aperture;
+		} else {
+			v_near = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs + random3.xy * ubo.aperture, -1, 1.0);
+			v_near /= v_near.w;
+			ray.origin = v_near.xyz;
+		}
+		ray.direction = normalize(focalPoint.xyz - ray.origin);
+	}
 	return ray;
 }
 
@@ -80,14 +97,13 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 	vec4 color = vec4(0);
 	vec4 tex;
 	if(d.tex0 != -1){
-		tex = global_textureGrad(d.tex0, hp.uv0, tex_coord_x, tex_coord_y);
+		vec4 tex0 = global_textureGrad(d.tex0, hp.uv0, tex_coord_x, tex_coord_y);
 		// if we have more tex to blend set alpha to 1
-		if(d.tex1 != -1) color = vec4(tex.xyz, 1);
-		else color = tex;
+		if(d.tex1 != -1) color = vec4(tex0.xyz, 1);
+		else color = tex0;
 
 		if(d.tex0Color) color *= (hp.color0/255);
 	} else return color;
-
 	if(d.tex1 != -1){
 		tex_coord = hp.uv1;
 		tex_coord_x = triangle.uv1 * bary_x;
@@ -96,16 +112,17 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 		tex_coord_y -= tex_coord;
 		tex_coord_x *= 0.5;
 		tex_coord_y *= 0.5;
-		tex = global_textureGrad(d.tex1, hp.uv1, tex_coord_x, tex_coord_y);
-		if(d.tex1Color) tex *= (hp.color1/255);
+		vec4 tex1 = global_textureGrad(d.tex1, hp.uv1, tex_coord_x, tex_coord_y);
+		if(d.tex1Color) tex1 *= (hp.color1/255);
 
 		if(d.tex1Blend) {
-			color = alpha_blend(tex, color);
+			color = alpha_blend(tex1, color);
 		}
-		else color += tex;
+		else color += tex1;
 	} else return color;
-	d = unpackTextureData(hp.tex1);
-	if(d.tex0 != -1){
+
+	TextureData d2 = unpackTextureData(hp.tex1);
+	if(d2.tex0 != -1){
 		tex_coord = hp.uv2;
 		tex_coord_x = triangle.uv2 * bary_x;
 		tex_coord_y = triangle.uv2 * bary_y;
@@ -113,16 +130,15 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 		tex_coord_y -= tex_coord;
 		tex_coord_x *= 0.5;
 		tex_coord_y *= 0.5;
-		tex = global_textureGrad(d.tex0, hp.uv2, tex_coord_x, tex_coord_y);
-		if(d.tex0Color) tex *= (hp.color2/255);
+		vec4 tex2 = global_textureGrad(d2.tex0, hp.uv2, tex_coord_x, tex_coord_y);
+		if(d2.tex0Color) tex2 *= (hp.color2/255);
 
-		if(d.tex0Blend) {
-			color = alpha_blend(tex, color);
+		if(d2.tex0Blend) {
+			color = alpha_blend(tex2, color);
 		}
-		else color += tex;
+		else color += tex2;
 	} else return color;
-
-	if(d.tex1 != -1){
+	if(d2.tex1 != -1){
 		tex_coord = hp.uv3;
 		tex_coord_x = triangle.uv3 * bary_x;
 		tex_coord_y = triangle.uv3 * bary_y;
@@ -130,13 +146,13 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 		tex_coord_y -= tex_coord;
 		tex_coord_x *= 0.5;
 		tex_coord_y *= 0.5;
-		tex = global_textureGrad(d.tex1, hp.uv3, tex_coord_x, tex_coord_y);
-		if(d.tex1Color) tex *= (hp.color3/255);
+		vec4 tex3 = global_textureGrad(d2.tex1, hp.uv3, tex_coord_x, tex_coord_y);
+		if(d2.tex1Color) tex3 *= (hp.color3/255);
 
-		if(d.tex1Blend) {
-			color = alpha_blend(tex, color);
+		if(d2.tex1Blend) {
+			color = alpha_blend(tex3, color);
 		}
-		else color += tex;
+		else color += tex3;
 	} 
 	return color;
 }
@@ -188,6 +204,8 @@ void shootPrimaryRay(Ray ray, vec2 sccs){
 	// velocity.xy = abs(screenPosPrev - screenPos) * 20;
 	// velocity.z = abs(distancePrev - distanceCurr);
 }
+
+
 
 void main() 
 {

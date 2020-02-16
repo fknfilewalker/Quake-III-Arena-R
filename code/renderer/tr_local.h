@@ -1010,7 +1010,7 @@ Vulkan
 #define VK_VERTEX_ATTRIBUTE_DATA_SIZE 512 * 1024
 #define VK_MAX_NUM_PIPELINES 128
 
-#define VK_GLOBAL_IMAGEARRAY_SHADER_STAGE_FLAGS (VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV)
+#define VK_GLOBAL_IMAGEARRAY_SHADER_STAGE_FLAGS (VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV | VK_SHADER_STAGE_COMPUTE_BIT)
 
 // RTX
 // the aligment size for AS buffers
@@ -1701,6 +1701,10 @@ extern	cvar_t	*pt_numRandomIL;
 extern	cvar_t  *pt_numBounces;
 extern	cvar_t	*pt_randomPixelOffset;
 extern	cvar_t  *pt_randomLightOffset;
+
+extern  cvar_t* rt_aperture;
+extern  cvar_t* rt_focalLength;
+extern  cvar_t* rt_dof;
 
 //====================================================================
 

@@ -95,32 +95,32 @@ vec3 directIllumination(){
 
 	vec4 temp;
 	uvec4 utemp;
-	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
-	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
-	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
 	material = utemp.x;
 	cluster = utemp.y;
+	if(isMirror(material) || isGlass(material)){
+		vec4 reflectAlbedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
+		return reflectAlbedo.xyz;
+	}
+	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
+	if (isSky(material)) return primary_albedo.xyz;
+	if (isLight(material)) return vec3(1,0,0);
+	
+	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
+	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 
 
 	vec3 P = pos;
 	vec3 N = normal;
 	vec3 shadeColor = primary_albedo.xyz;//vec3(0);
 
-	if (isSky(material)) return shadeColor;
-	if (isLight(material)) return vec3(1,0,0);
 	//if (isGlass(material)) return vec3(0,0,1);
 
-	if(isMirror(material)){
-	vec4 reflectAlbedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
-		primary_albedo = vec4(reflectAlbedo.xyz, 1);
-		return reflectAlbedo.xyz;
-	}
-	if (isGlass(material)){
-		vec4 reflectAlbedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
-		primary_albedo = vec4(reflectAlbedo.xyz, 1);
-		return reflectAlbedo.xyz;
-	}
+	// if (isGlass(material)){
+	// 	vec4 reflectAlbedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
+	// 	primary_albedo = vec4(reflectAlbedo.xyz, 1);
+	// 	return reflectAlbedo.xyz;
+	// }
 
 	uint numLight;
 	if(ubo.cullLights) numLight = imageLoad(lightVis_data, ivec2(0, cluster)).r;

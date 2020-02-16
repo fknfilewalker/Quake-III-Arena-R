@@ -30,7 +30,7 @@ static qboolean RB_NeedsColor() {
 
 qboolean RB_StageNeedsColor(int stage) {
 	if (tess.shader->stages[stage] != NULL && tess.shader->stages[stage]->active) {
-		if (tess.shader->stages[stage]->rgbGen == CGEN_WAVEFORM) {
+		if (tess.shader->stages[stage]->rgbGen == CGEN_WAVEFORM || tess.shader->stages[stage]->rgbGen == CGEN_CONST) {
 			return qtrue;
 		}
 	}

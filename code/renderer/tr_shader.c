@@ -2128,6 +2128,9 @@ static void PathTracingsCollapse(void) {
 		//memcpy(&stages[0], &stages[1], sizeof(shaderStage_t));
 		memset(&stages[7], 0, sizeof(shaderStage_t));
 	}
+	if (strstr(shader.name, "models/powerups/health/red")) {
+		int x = 2;
+	}
 	/*for (int k = 0; k < MAX_SHADER_STAGES; k++) {
 		for (int i = 0; i < MAX_SHADER_STAGES; i++) {
 			if (i == k) continue;
