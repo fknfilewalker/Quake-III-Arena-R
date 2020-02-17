@@ -19,8 +19,8 @@ qboolean RB_IsLight(shader_t
 
 static qboolean RB_NeedsColor() {
 	for (int i = 0; i < MAX_SHADER_STAGES; i++) {
-		if (tess.shader->stages[i] != NULL && tess.shader->stages[i]->active) {
-			if (tess.shader->stages[i]->rgbGen == CGEN_WAVEFORM) {
+		if (tess.shader->rtstages[i] != NULL && tess.shader->rtstages[i]->active) {
+			if (tess.shader->rtstages[i]->rgbGen == CGEN_WAVEFORM) {
 				return qtrue;
 			}
 		}
@@ -29,8 +29,8 @@ static qboolean RB_NeedsColor() {
 }
 
 qboolean RB_StageNeedsColor(int stage) {
-	if (tess.shader->stages[stage] != NULL && tess.shader->stages[stage]->active) {
-		if (tess.shader->stages[stage]->rgbGen == CGEN_WAVEFORM || tess.shader->stages[stage]->rgbGen == CGEN_CONST) {
+	if (tess.shader->rtstages[stage] != NULL && tess.shader->rtstages[stage]->active) {
+		if (tess.shader->rtstages[stage]->rgbGen == CGEN_WAVEFORM || tess.shader->rtstages[stage]->rgbGen == CGEN_CONST) {
 			return qtrue;
 		}
 	}
@@ -59,29 +59,29 @@ uint32_t RB_GetMaterial() {
 
 uint32_t RB_GetNextTex(int stage) {
 	int indexAnim = 0;
-	if (tess.shader->stages[stage]->bundle[0].numImageAnimations > 1) {
-		indexAnim = (int)(tess.shaderTime * tess.shader->stages[stage]->bundle[0].imageAnimationSpeed * FUNCTABLE_SIZE);
+	if (tess.shader->rtstages[stage]->bundle[0].numImageAnimations > 1) {
+		indexAnim = (int)(tess.shaderTime * tess.shader->rtstages[stage]->bundle[0].imageAnimationSpeed * FUNCTABLE_SIZE);
 		indexAnim >>= FUNCTABLE_SIZE2;
 		if (indexAnim < 0) {
 			indexAnim = 0;	// may happen with shader time offsets
 		}
-		indexAnim %= tess.shader->stages[stage]->bundle[0].numImageAnimations;
+		indexAnim %= tess.shader->rtstages[stage]->bundle[0].numImageAnimations;
 	}
 	return indexAnim;
 }
 
 uint32_t RB_GetNextTexEncoded(int stage) {
-	if (tess.shader->stages[stage] != NULL && tess.shader->stages[stage]->active) {
+	if (tess.shader->rtstages[stage] != NULL && tess.shader->rtstages[stage]->active) {
 		int indexAnim = RB_GetNextTex(stage);
 
 		qboolean blend = qfalse;
-		uint32_t stateBits = tess.shader->stages[stage]->stateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS);
+		uint32_t stateBits = tess.shader->rtstages[stage]->stateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS);
 		if ((stateBits & GLS_SRCBLEND_BITS) > GLS_SRCBLEND_ONE && (stateBits & GLS_DSTBLEND_BITS) > GLS_DSTBLEND_ONE) blend = qtrue;
 		qboolean color = RB_StageNeedsColor(stage);
 
 		uint32_t nextidx = (uint32_t)indexAnim;
-		uint32_t idx = (uint32_t)tess.shader->stages[stage]->bundle[0].image[nextidx]->index;
-		tess.shader->stages[stage]->bundle[0].image[nextidx]->frameUsed = tr.frameCount;
+		uint32_t idx = (uint32_t)tess.shader->rtstages[stage]->bundle[0].image[nextidx]->index;
+		tess.shader->rtstages[stage]->bundle[0].image[nextidx]->frameUsed = tr.frameCount;
 		return (idx) | (blend ? TEX0_BLEND_MASK : 0) | (color ? TEX0_COLOR_MASK : 0);
 	}
 	return TEX0_IDX_MASK;

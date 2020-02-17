@@ -234,36 +234,36 @@ void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ, int cluster) {
 		vData[j].cluster = cluster;// c != -1 ? c : cluster;
 	}
 	// if there are multiple stages we need to upload them all
-	if (tess.shader->stages[0] != NULL && tess.shader->stages[0]->active) {
-		ComputeTexCoords(tess.shader->stages[0]);
-		ComputeColors(tess.shader->stages[0]);
+	if (tess.shader->rtstages[0] != NULL && tess.shader->rtstages[0]->active) {
+		ComputeTexCoords(tess.shader->rtstages[0]);
+		ComputeColors(tess.shader->rtstages[0]);
 		for (int j = 0; j < tess.numVertexes; j++) {
 			vData[j].color0 = tess.svars.colors[j][0] | tess.svars.colors[j][1] << 8 | tess.svars.colors[j][2] << 16 | tess.svars.colors[j][3] << 24;
 			vData[j].uv0[0] = tess.svars.texcoords[0][j][0];
 			vData[j].uv0[1] = tess.svars.texcoords[0][j][1];
 		}
 	}
-	if (tess.shader->stages[1] != NULL && tess.shader->stages[1]->active) {
-		ComputeTexCoords(tess.shader->stages[1]);
-		ComputeColors(tess.shader->stages[1]);
+	if (tess.shader->rtstages[1] != NULL && tess.shader->rtstages[1]->active) {
+		ComputeTexCoords(tess.shader->rtstages[1]);
+		ComputeColors(tess.shader->rtstages[1]);
 		for (int j = 0; j < tess.numVertexes; j++) {
 			vData[j].color1 = tess.svars.colors[j][0] | tess.svars.colors[j][1] << 8 | tess.svars.colors[j][2] << 16 | tess.svars.colors[j][3] << 24;
 			vData[j].uv1[0] = tess.svars.texcoords[0][j][0];
 			vData[j].uv1[1] = tess.svars.texcoords[0][j][1];
 		}
 	}
-	if (tess.shader->stages[2] != NULL && tess.shader->stages[2]->active) {
-		ComputeTexCoords(tess.shader->stages[2]);
-		ComputeColors(tess.shader->stages[2]);
+	if (tess.shader->rtstages[2] != NULL && tess.shader->rtstages[2]->active) {
+		ComputeTexCoords(tess.shader->rtstages[2]);
+		ComputeColors(tess.shader->rtstages[2]);
 		for (int j = 0; j < tess.numVertexes; j++) {
 			vData[j].color2 = tess.svars.colors[j][0] | tess.svars.colors[j][1] << 8 | tess.svars.colors[j][2] << 16 | tess.svars.colors[j][3] << 24;
 			vData[j].uv2[0] = tess.svars.texcoords[0][j][0];
 			vData[j].uv2[1] = tess.svars.texcoords[0][j][1];
 		}
 	}
-	if (tess.shader->stages[3] != NULL && tess.shader->stages[3]->active) {
-		ComputeTexCoords(tess.shader->stages[3]);
-		ComputeColors(tess.shader->stages[3]);
+	if (tess.shader->rtstages[3] != NULL && tess.shader->rtstages[3]->active) {
+		ComputeTexCoords(tess.shader->rtstages[3]);
+		ComputeColors(tess.shader->rtstages[3]);
 		for (int j = 0; j < tess.numVertexes; j++) {
 			vData[j].color3 = tess.svars.colors[j][0] | tess.svars.colors[j][1] << 8 | tess.svars.colors[j][2] << 16 | tess.svars.colors[j][3] << 24;
 			vData[j].uv3[0] = tess.svars.texcoords[0][j][0];
@@ -301,21 +301,21 @@ void RB_CreateEntityBottomAS(vkbottomAS_t** bAS) {
 
 	if (strstr(tess.shader->name, "models/powerups/health/red")) {
 		int x = 2;
-		tess.shader->stages[0]->constantColor[0] = 140;
-		tess.shader->stages[0]->constantColor[1] = 0;
-		tess.shader->stages[0]->constantColor[2] = 0;
-		tess.shader->stages[0]->constantColor[3] = 0;
-		tess.shader->stages[0]->rgbGen = CGEN_CONST;
-		tess.shader->stages[0]->bundle->image[0] = tr.whiteImage;
+		tess.shader->rtstages[0]->constantColor[0] = 140;
+		tess.shader->rtstages[0]->constantColor[1] = 0;
+		tess.shader->rtstages[0]->constantColor[2] = 0;
+		tess.shader->rtstages[0]->constantColor[3] = 0;
+		tess.shader->rtstages[0]->rgbGen = CGEN_CONST;
+		tess.shader->rtstages[0]->bundle->image[0] = tr.whiteImage;
 	}
 	if (strstr(tess.shader->name, "models/powerups/health/yellow")) {
 		int x = 2;
-		tess.shader->stages[0]->constantColor[0] = 140;
-		tess.shader->stages[0]->constantColor[1] = 140;
-		tess.shader->stages[0]->constantColor[2] = 0;
-		tess.shader->stages[0]->constantColor[3] = 0;
-		tess.shader->stages[0]->rgbGen = CGEN_CONST;
-		tess.shader->stages[0]->bundle->image[0] = tr.whiteImage;
+		tess.shader->rtstages[0]->constantColor[0] = 140;
+		tess.shader->rtstages[0]->constantColor[1] = 140;
+		tess.shader->rtstages[0]->constantColor[2] = 0;
+		tess.shader->rtstages[0]->constantColor[3] = 0;
+		tess.shader->rtstages[0]->rgbGen = CGEN_CONST;
+		tess.shader->rtstages[0]->bundle->image[0] = tr.whiteImage;
 	}
 
 	bASList->data.offsetIDX = (*idxOffset);
@@ -417,20 +417,20 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 	if (strstr(tess.shader->name, "orbb")) {
 		int x = 2;
 	}
-	//if (tess.shader->stages[0]->bundle[0].numImageAnimations > 1) {
-	//	indexAnim = (int)(tess.shaderTime * tess.shader->stages[0]->bundle[0].imageAnimationSpeed * FUNCTABLE_SIZE);
+	//if (tess.shader->rtstages[0]->bundle[0].numImageAnimations > 1) {
+	//	indexAnim = (int)(tess.shaderTime * tess.shader->rtstages[0]->bundle[0].imageAnimationSpeed * FUNCTABLE_SIZE);
 	//	indexAnim >>= FUNCTABLE_SIZE2;
 	//	if (indexAnim < 0) {
 	//		indexAnim = 0;	// may happen with shader time offsets
 	//	}
 	//	indexAnim %= tess.shader->stages[0]->bundle[0].numImageAnimations;	
 	//}
-	/*if (bAS->data.texIdx != (uint32_t)tess.shader->stages[0]->bundle[0].image[indexAnim]->index) {
-		bAS->data.texIdx = (uint32_t)tess.shader->stages[0]->bundle[0].image[indexAnim]->index;
-		tess.shader->stages[0]->bundle[0].image[indexAnim]->frameUsed = tr.frameCount;
+	/*if (bAS->data.texIdx != (uint32_t)tess.shader->rtstages[0]->bundle[0].image[indexAnim]->index) {
+		bAS->data.texIdx = (uint32_t)tess.shader->rtstages[0]->bundle[0].image[indexAnim]->index;
+		tess.shader->rtstages[0]->bundle[0].image[indexAnim]->frameUsed = tr.frameCount;
 	}*/
 
-	//bAS->data.blendfunc = (uint32_t)(tess.shader->stages[0]->stateBits);
+	//bAS->data.blendfunc = (uint32_t)(tess.shader->rtstages[0]->stateBits);
 
 	//// set material
 	//if (!RB_MaterialException(bAS)) {
@@ -452,7 +452,7 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 	//	//if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) {
 	//	//	bAS->data.material |= MATERIAL_FLAG_SEE_THROUGH;
 	//	//}
-	//	//if (tess.shader->sort <= SS_OPAQUE && tess.shader->contentFlags != CONTENTS_TRANSLUCENT /*!strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "proto_grate4.tga")*/) bAS->data.material |= MATERIAL_FLAG_OPAQUE;
+	//	//if (tess.shader->sort <= SS_OPAQUE && tess.shader->contentFlags != CONTENTS_TRANSLUCENT /*!strstr(tess.shader->rtstages[0]->bundle->image[0]->imgName, "proto_grate4.tga")*/) bAS->data.material |= MATERIAL_FLAG_OPAQUE;
 	//}
 
 	//if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->data.material = MATERIAL_FLAG_PLAYER_OR_WEAPON;
@@ -614,7 +614,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			(shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->sort > SS_OPAQUE) {
 			continue;
 		}
-		if (shader->stages[0] == NULL || drawSurf->bAS == NULL) continue;
+		if (shader->rtstages[0] == NULL || drawSurf->bAS == NULL) continue;
 		
 		// SS_BLEND0 bullets, ball around energy, glow around armore shards, armor glow ,lights/fire
 		// SS_DECAL bullet marks

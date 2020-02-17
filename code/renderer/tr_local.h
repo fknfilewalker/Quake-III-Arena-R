@@ -423,6 +423,7 @@ typedef struct shader_s {
 
 	int			numUnfoggedPasses;
 	shaderStage_t	*stages[MAX_SHADER_STAGES];		
+	shaderStage_t	*rtstages[MAX_SHADER_STAGES];   // used for ray tracing, remove lightmaps etc
 
 	void		(*optimalStageIteratorFunc)( void );
 

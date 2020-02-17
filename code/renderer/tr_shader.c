@@ -27,7 +27,8 @@ static char *s_shaderText;
 
 // the shader is parsed into these global variables, then copied into
 // dynamically allocated memory if it is valid.
-static	shaderStage_t	stages[MAX_SHADER_STAGES];		
+static	shaderStage_t	stages[MAX_SHADER_STAGES];	
+static	shaderStage_t	rtstages[MAX_SHADER_STAGES];
 static	shader_t		shader;
 static	texModInfo_t	texMods[MAX_SHADER_STAGES][TR_MAX_TEXMODS];
 static	qboolean		deferLoad;
@@ -1998,6 +1999,22 @@ static shader_t *GeneratePermanentShader( void ) {
 			newShader->stages[i]->bundle[b].texMods = ri.Hunk_Alloc( size, h_low );
 			Com_Memcpy( newShader->stages[i]->bundle[b].texMods, stages[i].bundle[b].texMods, size );
 		}
+
+	}
+
+	// ray tracing stages
+	for (i = 0; i < newShader->numUnfoggedPasses; i++) {
+		if (!rtstages[i].active) {
+			break;
+		}
+		newShader->rtstages[i] = ri.Hunk_Alloc(sizeof(rtstages[i]), h_low);
+		*newShader->rtstages[i] = rtstages[i];
+
+		for (b = 0; b < NUM_TEXTURE_BUNDLES; b++) {
+			size = newShader->rtstages[i]->bundle[b].numTexMods * sizeof(texModInfo_t);
+			newShader->rtstages[i]->bundle[b].texMods = ri.Hunk_Alloc(size, h_low);
+			Com_Memcpy(newShader->rtstages[i]->bundle[b].texMods, rtstages[i].bundle[b].texMods, size);
+		}
 	}
 
 	SortNewShader();
@@ -2099,26 +2116,28 @@ static void VertexLightingCollapse( void ) {
 }
 
 static void PathTracingsCollapse(void) {
+	
+
 	for (int k = 0; k < MAX_SHADER_STAGES; k++) {
 		qboolean found = qfalse;
 		for (int i = 0; i < MAX_SHADER_STAGES; i++) {
-			if (stages[i].active == qtrue) {
-				if (strstr(stages[i].bundle[0].image[0]->imgName, "*white") || strstr(stages[i].bundle[0].image[0]->imgName, "chrome_env") || strstr(stages[i].bundle[0].image[0]->imgName, "*identityLight") || 
-					/*strstr(stages[i].bundle[0].image[0]->imgName, "textures/effects/envmap") || */strstr(stages[i].bundle[0].image[0]->imgName, "textures/effects") || strstr(stages[i].bundle[0].image[0]->imgName, "textures/sfx/specular") ||
-					strstr(stages[i].bundle[0].image[0]->imgName, "textures/liquids/bubbles.tga") || // for green slime
-					strstr(stages[i].bundle[0].image[0]->imgName, "textures/base_trim/tinfx") || (i > 0 && strstr(stages[i].bundle[0].image[0]->imgName, "textures/base_trim/tin.tga")) ||
-					strstr(stages[i].bundle[0].image[0]->imgName, "shadow")) {
+			if (rtstages[i].active == qtrue) {
+				if (strstr(rtstages[i].bundle[0].image[0]->imgName, "*white") || strstr(rtstages[i].bundle[0].image[0]->imgName, "chrome_env") || strstr(rtstages[i].bundle[0].image[0]->imgName, "*identityLight") ||
+					/*strstr(stages[i].bundle[0].image[0]->imgName, "textures/effects/envmap") || */strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/effects") || strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/sfx/specular") ||
+					strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/liquids/bubbles.tga") || // for green slime
+					strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/base_trim/tinfx") || (i > 0 && strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/base_trim/tin.tga")) ||
+					strstr(rtstages[i].bundle[0].image[0]->imgName, "shadow")) {
 
 					found = qtrue;
-					memset(&stages[i], 0, sizeof(shaderStage_t));
-					stages[i].active = qfalse;
+					memset(&rtstages[i], 0, sizeof(shaderStage_t));
+					rtstages[i].active = qfalse;
 					//stages[i] = stages[i + 1];
 				}
 				if (strstr(shader.name, "models/powerups/health/red")) {
 				int x = 2;
 				}
 			}
-			if (found) stages[i] = stages[i + 1];
+			if (found) rtstages[i] = rtstages[i + 1];
 		}
 		if (found == qfalse)break;
 	}
@@ -2126,11 +2145,12 @@ static void PathTracingsCollapse(void) {
 	if (strstr(shader.name, "models/powerups/health/red")) {
 		int x = 2;
 		//memcpy(&stages[0], &stages[1], sizeof(shaderStage_t));
-		memset(&stages[7], 0, sizeof(shaderStage_t));
+		memset(&rtstages[7], 0, sizeof(shaderStage_t));
 	}
 	if (strstr(shader.name, "models/powerups/health/red")) {
 		int x = 2;
 	}
+
 	/*for (int k = 0; k < MAX_SHADER_STAGES; k++) {
 		for (int i = 0; i < MAX_SHADER_STAGES; i++) {
 			if (i == k) continue;
@@ -2279,6 +2299,8 @@ static shader_t *FinishShader( void ) {
 		shader.sort = SS_OPAQUE;
 	}
 
+	// copy stages to rt stages
+	if ((r_vertexLight->integer == 2)) Com_Memcpy(rtstages, stages, sizeof(stages));
 	//
 	// if we are in r_vertexLight mode, never use a lightmap texture
 	//
@@ -2288,9 +2310,7 @@ static shader_t *FinishShader( void ) {
 		hasLightmapStage = qfalse;
 	} else if (stage > 1 && (r_vertexLight->integer == 2 && !r_uiFullScreen->integer)) {
 		PathTracingsCollapse();
-		//hasLightmapStage = qfalse;
 	}
-
 
 	//
 	// look for multitexture potential
@@ -2307,7 +2327,6 @@ static shader_t *FinishShader( void ) {
   			shader.lightmapIndex = LIGHTMAP_NONE;
 		}
 	}
-
 
 	//
 	// compute number of passes

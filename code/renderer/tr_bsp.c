@@ -1823,11 +1823,11 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 qboolean RB_ASDataDynamic(shader_t* shader) {
 	qboolean changes = qfalse;
 	for (int i = 0; i < MAX_SHADER_STAGES; i++) {
-		if (tess.shader->stages[i] != NULL && tess.shader->stages[i]->active) {
+		if (tess.shader->rtstages[i] != NULL && tess.shader->rtstages[i]->active) {
 			for (int j = 0; j < NUM_TEXTURE_BUNDLES; j++) {
-				if (shader->stages[i]->bundle[j].numImageAnimations > 0) return qtrue;
-				if((shader->stages[i]->bundle[j].tcGen != TCGEN_BAD) && (shader->stages[i]->bundle[j].numTexMods > 0)) return qtrue;
-				if (shader->stages[i]->rgbGen == CGEN_WAVEFORM) {
+				if (shader->rtstages[i]->bundle[j].numImageAnimations > 0) return qtrue;
+				if((shader->rtstages[i]->bundle[j].tcGen != TCGEN_BAD) && (shader->rtstages[i]->bundle[j].numTexMods > 0)) return qtrue;
+				if (shader->rtstages[i]->rgbGen == CGEN_WAVEFORM) {
 					return qtrue;
 				}
 			}
@@ -1838,10 +1838,10 @@ qboolean RB_ASDataDynamic(shader_t* shader) {
 qboolean RB_ASDataDynamic2(shader_t* shader) {
 	qboolean changes = qfalse;
 	for (int i = 0; i < MAX_SHADER_STAGES; i++) {
-		if (tess.shader->stages[i] != NULL && tess.shader->stages[i]->active) {
+		if (tess.shader->rtstages[i] != NULL && tess.shader->rtstages[i]->active) {
 			for (int j = 0; j < NUM_TEXTURE_BUNDLES; j++) {
-				if ((shader->stages[i]->bundle[j].tcGen != TCGEN_BAD) && (shader->stages[i]->bundle[j].numTexMods > 0)) return qtrue;
-				if (shader->stages[i]->rgbGen == CGEN_WAVEFORM) {
+				if ((shader->rtstages[i]->bundle[j].tcGen != TCGEN_BAD) && (shader->rtstages[i]->bundle[j].numTexMods > 0)) return qtrue;
+				if (shader->rtstages[i]->rgbGen == CGEN_WAVEFORM) {
 					return qtrue;
 				}
 			}
@@ -1933,12 +1933,12 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 
 			shader_t* shader = tr.shaders[surf->shader->index];
 
-			/*if (strstr(tess.shader->stages[0]->bundle[0].image[0]->imgName, "*white")) {
+			/*if (strstr(tess.shader->rtstages[0]->bundle[0].image[0]->imgName, "*white")) {
 				continue;
 			}*/
 			int count = 0;
 			for (int i = 0; i < MAX_SHADER_STAGES; i++) {
-				if (shader->stages[i] != NULL && shader->stages[i]->active) {
+				if (shader->rtstages[i] != NULL && shader->rtstages[i]->active) {
 					count++;
 				}
 			}
@@ -1952,7 +1952,7 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 				|| strstr(shader->name, "Shadow") || shader->isSky
 				|| *surf->data == SF_BAD || *surf->data == SF_SKIP
 				|| shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP
-				|| shader->stages[0] == NULL || !shader->stages[0]->active) {
+				|| shader->rtstages[0] == NULL || !shader->rtstages[0]->active) {
 
 
 				if (!strstr(shader->name, "glass") && !strstr(shader->name, "flame")) {
@@ -1970,7 +1970,7 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 			rb_surfaceTable[*surf->data](surf->data);
 			if (tess.numIndexes == 0) continue;
 
-			//if (strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "chrome_metal")) {
+			//if (strstr(tess.shader->rtstages[0]->bundle->image[0]->imgName, "chrome_metal")) {
 			//	int x = 1;
 			//}
 
@@ -2774,14 +2774,14 @@ void R_PreparePT() {
 
 				VK_UploadImageData(&vk_d.accelerationStructures.envmap, width, height, pic, 4, 0, 5);
 			}
-			else if (shader->stages[0] != NULL) {
+			else if (shader->rtstages[0] != NULL) {
 			skyFromStage:
-				width = shader->stages[0]->bundle[0].image[0]->width;
-				height = shader->stages[0]->bundle[0].image[0]->height;
+				width = shader->rtstages[0]->bundle[0].image[0]->width;
+				height = shader->rtstages[0]->bundle[0].image[0]->height;
 				VK_CreateCubeMap(&vk_d.accelerationStructures.envmap, width, height,
 					VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1, 6);
 
-				R_LoadImage(shader->stages[0]->bundle[0].image[0]->imgName/*"textures/skies/bluedimclouds.tga"*/, &pic, &width, &height);
+				R_LoadImage(shader->rtstages[0]->bundle[0].image[0]->imgName/*"textures/skies/bluedimclouds.tga"*/, &pic, &width, &height);
 				VK_UploadImageData(&vk_d.accelerationStructures.envmap, width, height, pic, 4, 0, 0);
 				VK_UploadImageData(&vk_d.accelerationStructures.envmap, width, height, pic, 4, 0, 1);
 				VK_UploadImageData(&vk_d.accelerationStructures.envmap, width, height, pic, 4, 0, 2);
@@ -2793,7 +2793,7 @@ void R_PreparePT() {
 			cmInit = qtrue;
 			continue;
 		}
-		if (tess.shader->stages[0] == NULL) continue;
+		if (tess.shader->rtstages[0] == NULL) continue;
 		//s_worldData.surfaces[i]
 		/*if (!s_worldData.surfaces[i].added && !s_worldData.surfaces[i].skip && !RTX_DYNAMIC_DATA) {*/
 		/*if (!s_worldData.surfaces[i].added && !s_worldData.surfaces[i].skip){ 
