@@ -387,11 +387,16 @@ static void InitVulkan(void)
 				VK_CreateImage(&vk_d.accelerationStructures.resultImage[i], vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
 				VK_CreateSampler(&vk_d.accelerationStructures.resultImage[i], VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 				VK_TransitionImage(&vk_d.accelerationStructures.resultImage[i], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
 				// create descriptor
 				VK_AddSampler(&vk_d.accelerationStructures.resultImage[i].descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
 				vk_d.accelerationStructures.resultImage[i].descriptor_set.data[0].descImageInfo->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 				VK_SetSampler(&vk_d.accelerationStructures.resultImage[i].descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, vk_d.accelerationStructures.resultImage[i].sampler, vk_d.accelerationStructures.resultImage[i].view);
 				VK_FinishDescriptor(&vk_d.accelerationStructures.resultImage[i].descriptor_set);
+				
+				VK_CreateImage(&vk_d.accelerationStructures.accumulationImage[i], vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+				VK_CreateSampler(&vk_d.accelerationStructures.accumulationImage[i], VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+				VK_TransitionImage(&vk_d.accelerationStructures.accumulationImage[i], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 			}
 			// Scratch buffer for AS build
 			VK_CreateRayTracingScratchBuffer(&vk_d.scratchBuffer, VK_MAX_DYNAMIC_BOTTOM_AS_INSTANCES * VK_AS_MEMORY_ALLIGNMENT_SIZE * sizeof(byte));
@@ -1563,6 +1568,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 				VK_DestroyBuffer(&vk_d.uboBuffer[i]);
 				VK_DestroyBuffer(&vk_d.uboLightList[i]);
 				VK_DestroyImage(&vk_d.accelerationStructures.resultImage[i]);
+				VK_DestroyImage(&vk_d.accelerationStructures.accumulationImage[i]);
 			}
 			VK_DestroyBuffer(&vk_d.scratchBuffer);
 			VK_DestroyImage(&vk_d.blueNoiseTex);

@@ -12,6 +12,9 @@
 #include "gbuffer.glsl"
 
 layout(binding = BINDING_OFFSET_RESULT_OUTPUT, set = 0, rgba8) uniform image2D image;
+
+layout(binding = BINDING_OFFSET_RESULT_ACCUMULATION, set = 0, rgba8) uniform image2D imageAccumulation;
+layout(binding = BINDING_OFFSET_RESULT_ACCUMULATION_PREV, set = 0, rgba8) uniform image2D imageAccumulationPrev;
 // Bindings
 layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 {
@@ -128,6 +131,7 @@ vec3 directIllumination(){
 
 	for(int i = 0; i < numLight; i++){
 		uint lightIndex;
+		//uint rand = int( get_rng(RNG_C(0), int(ubo.frameIndex)) * (numLight)) ;
 		if(ubo.cullLights) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
 		else lightIndex = i;
 		
@@ -278,6 +282,14 @@ vec3 directIllumination(){
 void main() 
 {
 	vec3 color = directIllumination();
+	if(ubo.accumulate == 1) {
+		vec3 outPrev = imageLoad(imageAccumulationPrev, ivec2(gl_LaunchIDNV.xy)).xyz;
+		color = (color + outPrev);
+		imageStore(imageAccumulation, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));
+		color /= float(ubo.numSamples);
+	} else{
+		imageStore(imageAccumulation, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));	
+	}
 	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));
 }
 

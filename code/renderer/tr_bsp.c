@@ -2412,13 +2412,16 @@ void R_CreatePrimaryRaysPipeline() {
 		// result
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_OUTPUT, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_OUTPUT, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultImage[i].view);
+		// accumulation
+		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_ACCUMULATION, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_ACCUMULATION, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.accumulationImage[i].view);
 
 		int prevIndex = (i + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount;
 		VK_AddUniformBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GLOBAL_UBO_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetUniformBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GLOBAL_UBO_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.uboBuffer[prevIndex].buffer);
-		// result prev
-		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_OUTPUT_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_OUTPUT_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultImage[prevIndex].view);
+		// accumulation prev
+		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_ACCUMULATION_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_ACCUMULATION_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.accumulationImage[prevIndex].view);
 		/*VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_INSTANCE_DATA_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
 		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_INSTANCE_DATA_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.instanceDataBuffer[prevIndex].buffer);
 		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);

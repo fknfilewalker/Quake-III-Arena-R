@@ -78,7 +78,9 @@
 
 
 #define BINDING_OFFSET_RESULT_OUTPUT                0x00000020
-#define BINDING_OFFSET_RESULT_OUTPUT_PREV           0x00000029
+
+#define BINDING_OFFSET_RESULT_ACCUMULATION          0x0000002a
+#define BINDING_OFFSET_RESULT_ACCUMULATION_PREV     0x0000002b
 // g buffer
 #define BINDING_OFFSET_GBUFFER_POS                  0x00000021
 #define BINDING_OFFSET_GBUFFER_ALBEDO               0x00000022
@@ -215,6 +217,7 @@ STRUCT (
     INT     (currentCluster)
     INT		(numClusters)
  	INT		(clusterBytes)
+    UINT    (numSamples)
     // settings
     UINT    (showIntermediateResults)
     BOOL    (cullLights)

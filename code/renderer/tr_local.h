@@ -1278,6 +1278,7 @@ typedef struct {
 	vkimage_t					rngImage;
 
 	vkimage_t					resultImage[VK_MAX_SWAPCHAIN_SIZE];
+	vkimage_t					accumulationImage[VK_MAX_SWAPCHAIN_SIZE];
 	vkimage_t					visData;
 	vkimage_t					lightVisData;
 	vkimage_t					envmap;

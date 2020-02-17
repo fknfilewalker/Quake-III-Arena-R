@@ -918,10 +918,12 @@ static void RB_TraceRays() {
 	if (rt_accumulate->integer) {
 		Cvar_Set("cl_paused", "1");
 		Cvar_Set("sv_paused", "1");
+		ubo->numSamples = vk_d.uboGlobal[(vk.swapchain.currentImage + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount].numSamples + 1;
 	}
 	else {
 		Cvar_Set("cl_paused", "0");
 		Cvar_Set("sv_paused", "0");
+		ubo->numSamples = 1;
 	}
 
 	float viewMatrix[16];
