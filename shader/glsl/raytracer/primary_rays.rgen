@@ -10,7 +10,6 @@
 #include "random.glsl"
 #include "globalTexture.glsl"
 #include "vertexData.glsl"
-#include "lights.glsl"
 #include "gbuffer.glsl"
 
 // Bindings
@@ -23,6 +22,7 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO_PREV, set = 0) uniform global_ubo_pre
 	GlobalUbo uboPrev;
 };
 #include "traceRay.glsl"
+#include "lights.glsl"
 
 struct PrimaryRayHit{
 	vec4 albedo;

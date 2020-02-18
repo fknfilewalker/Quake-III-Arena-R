@@ -111,3 +111,53 @@ DirectionalLight getLight2(Light l, ivec2 rng, bool random){
 	light.color = color.xyz;
 	return light;
 }
+
+// vec3 Shade(vec3 pos, vec3 norm, vec3 difColor, uint lightIdx, uint numLights){
+// 	float sampleProb = 1.0f / float(numLights);
+
+// 	DirectionalLight light = getLight2(uboLights.lightList.lights[lightIdx], ivec2(lightIdx, ubo.frameIndex), ubo.randSampleLight);
+// 	vec3 lightPos = light.pos;
+// 	float distToLight = length(lightPos - pos);
+// 	vec3 lightIntensity = light.color * vec3(0.1);//(light.mag * light.color) / distToLight;
+// 	vec3 dirToLight = normalize(lightPos  - pos);
+
+// 	float NdotL = clamp(dot(norm, dirToLight), 0.0, 1.0);
+// 	float isLit = trace_shadow_ray(pos, dirToLight, 0.01f, distToLight, false);
+// 	vec3 rayColor = isLit * lightIntensity;
+
+// 	return (NdotL * rayColor * (difColor / M_PI)) / sampleProb;
+// }
+
+vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, in uint material){
+	vec3 shadeColor = vec3(0);
+
+	uint numLight;
+	if(ubo.cullLights) numLight = imageLoad(lightVis_data, ivec2(0, cluster)).r;
+	else numLight = uboLights.lightList.numLights; 
+
+	for(int i = 0; i < numLight; i++){
+		uint lightIndex;
+		//uint rand = int( get_rng(RNG_C(0), int(ubo.frameIndex)) * (numLight)) ;
+		if(ubo.cullLights) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
+		else lightIndex = i;
+		
+	
+		DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex), ubo.randSampleLight);
+		vec3 posLight = light.pos;
+		vec3 toLight = posLight - P;
+		vec3 L = normalize(toLight);
+		float distToLight =	length(toLight);
+		float lightStrength =  min(light.mag / distToLight, 1);
+		if(lightStrength < 0.1f) continue;
+		vec3 lightIntensity = vec3(0.75) * lightStrength; //light.color * lightStrength;
+		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
+	 	float shadowMult = trace_shadow_ray(P, L, 0.01f, distToLight, isPlayer(material));
+
+		float LdotN = clamp(dot(N, L), 0.0, 1.0);
+		float LdotN2 = clamp(dot(-light.normal, -L), 0.0, 1.0);
+		shadeColor += shadowMult * LdotN * lightIntensity; 
+	}
+
+	//shadeColor *= primary_albedo.rgb / M_PI;
+	return shadeColor * primary_albedo.rgb / M_PI;
+}

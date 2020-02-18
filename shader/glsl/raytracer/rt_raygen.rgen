@@ -10,7 +10,6 @@
 #include "random.glsl"
 #include "globalTexture.glsl"
 #include "vertexData.glsl"
-#include "lights.glsl"
 // Bindings
 layout(binding = BINDING_OFFSET_RESULT_OUTPUT, set = 0, rgba8) uniform image2D image;
 
@@ -19,50 +18,51 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 	GlobalUbo ubo;
 };
 #include "traceRay.glsl"
+#include "lights.glsl"
 
 
-vec4 getTextureLod2(HitPoint hp, uint lod){
+// vec4 getTextureLod2(HitPoint hp, uint lod){
 
-	TextureData d = unpackTextureData(hp.tex0);
-	vec4 color = vec4(0);
-	vec4 tex;
-	if(d.tex0 != -1){
-		tex = global_textureLod(d.tex0, hp.uv0, lod);
-		color = vec4(tex.xyz, 1);
-		if(d.tex0Color) color *= (hp.color0/255);
-	} else return color;
+// 	TextureData d = unpackTextureData(hp.tex0);
+// 	vec4 color = vec4(0);
+// 	vec4 tex;
+// 	if(d.tex0 != -1){
+// 		tex = global_textureLod(d.tex0, hp.uv0, lod);
+// 		color = vec4(tex.xyz, 1);
+// 		if(d.tex0Color) color *= (hp.color0/255);
+// 	} else return color;
 
-	if(d.tex1 != -1){
-		tex = global_textureLod(d.tex1, hp.uv1, lod);
-		if(d.tex1Color) tex *= (hp.color1/255);
+// 	if(d.tex1 != -1){
+// 		tex = global_textureLod(d.tex1, hp.uv1, lod);
+// 		if(d.tex1Color) tex *= (hp.color1/255);
 
-		if(d.tex1Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} else return color;
-	d = unpackTextureData(hp.tex1);
-	if(d.tex0 != -1){
-		tex = global_textureLod(d.tex0, hp.uv2, lod);
-		if(d.tex0Color) tex *= (hp.color2/255);
+// 		if(d.tex1Blend) {
+// 			color = alpha_blend(tex, color);
+// 		}
+// 		else color += tex;
+// 	} else return color;
+// 	d = unpackTextureData(hp.tex1);
+// 	if(d.tex0 != -1){
+// 		tex = global_textureLod(d.tex0, hp.uv2, lod);
+// 		if(d.tex0Color) tex *= (hp.color2/255);
 
-		if(d.tex0Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} else return color;
+// 		if(d.tex0Blend) {
+// 			color = alpha_blend(tex, color);
+// 		}
+// 		else color += tex;
+// 	} else return color;
 
-	if(d.tex1 != -1){
-		tex = global_textureLod(d.tex1, hp.uv3, lod);
-		if(d.tex1Color) tex *= (hp.color3/255);
+// 	if(d.tex1 != -1){
+// 		tex = global_textureLod(d.tex1, hp.uv3, lod);
+// 		if(d.tex1Color) tex *= (hp.color3/255);
 
-		if(d.tex1Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} 
-	return color;
-}
+// 		if(d.tex1Blend) {
+// 			color = alpha_blend(tex, color);
+// 		}
+// 		else color += tex;
+// 	} 
+// 	return color;
+// }
 
 Ray
 getPrimaryRay(vec2 pos_cs)
@@ -353,7 +353,7 @@ vec4 path_tracer(){
 	}else {
 		if(!mirror) primary_albedo = getTextureLod(screen_coord_cs, triangle, hp).xyz;
 		else {
-			primary_albedo = getTextureLod2(hp,0).xyz;
+			primary_albedo = getTextureWithLod(hp,0).xyz;
 			primary_albedo *= mirrorColor.xyz;
 		}
 	}
@@ -367,50 +367,52 @@ vec4 path_tracer(){
 
 	vec3 shadeColor = AMBIENT_K * primary_albedo;//vec3(0);
 
-	uint numLight;
-	if(ubo.cullLights) numLight = imageLoad(lightVis_data, ivec2(0, hitCluster)).r;
-	else numLight = uboLights.lightList.numLights; 
+	shadeColor += calcShading(vec4(primary_albedo,1), P, N, hitCluster, hp.material);
 
-	for(int i = 0; i < numLight; i++){
-		uint lightIndex;
-		if(ubo.cullLights) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, hitCluster)).r; // first index is numLight so + 1
-		else lightIndex = i;
-		// random
-		// lightIndex = imageLoad(lightVis_data, ivec2( int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
+	// uint numLight;
+	// if(ubo.cullLights) numLight = imageLoad(lightVis_data, ivec2(0, hitCluster)).r;
+	// else numLight = uboLights.lightList.numLights; 
+
+	// for(int i = 0; i < numLight; i++){
+	// 	uint lightIndex;
+	// 	if(ubo.cullLights) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, hitCluster)).r; // first index is numLight so + 1
+	// 	else lightIndex = i;
+	// 	// random
+	// 	// lightIndex = imageLoad(lightVis_data, ivec2( int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
 
 
-	//	for(int i = 0; i < 2; i++){
-		//if(hitCluster == 1333) break;
-		//if(!lightVisible( imageLoad(lightVis_data, ivec2(hitCluster, i)).r;, /*ubo.currentCluster*/ hitCluster)) continue;
+	// //	for(int i = 0; i < 2; i++){
+	// 	//if(hitCluster == 1333) break;
+	// 	//if(!lightVisible( imageLoad(lightVis_data, ivec2(hitCluster, i)).r;, /*ubo.currentCluster*/ hitCluster)) continue;
 		
-		//vec3 posLight = getLight(imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r);
+	// 	//vec3 posLight = getLight(imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r);
 		
-		DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex), ubo.randSampleLight);
-		//uint lightIndex = imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
-		//vec3 posLight = getLight(lightIndex);
-		vec3 posLight = light.pos;
-		//if(!lightVisible(i, /*ubo.currentCluster*/ hitCluster)) continue;
-		//vec3 posLight = getLight(i);
-		vec3 toLight = posLight - P;
-		vec3 L = normalize(toLight);
-		float distToLight =	length(toLight);
-		float lightStrength =  min(light.mag / distToLight, 1);
-		if(lightStrength < 0.1f) continue;
-		vec3 lightIntensity = vec3(0.25);// light.color * lightStrength;
-		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
+	// 	DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex), ubo.randSampleLight);
+	// 	//uint lightIndex = imageLoad(lightVis_data, ivec2(int( round( get_rng(RNG_C(i), int(ubo.frameIndex)) * numLight ) )+1, hitCluster)).r;
+	// 	//vec3 posLight = getLight(lightIndex);
+	// 	vec3 posLight = light.pos;
+	// 	//if(!lightVisible(i, /*ubo.currentCluster*/ hitCluster)) continue;
+	// 	//vec3 posLight = getLight(i);
+	// 	vec3 toLight = posLight - P;
+	// 	vec3 L = normalize(toLight);
+	// 	float distToLight =	length(toLight);
+	// 	float lightStrength =  min(light.mag / distToLight, 1);
+	// 	if(lightStrength < 0.1f) continue;
+	// 	vec3 lightIntensity = vec3(0.25);// light.color * lightStrength;
+	// 	//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
 
-	 	float shadowMult =  /*float(uboLights.lightList.numLights) */ /*numLight/3.0f */  trace_shadow_ray(P, L, 0.01f, distToLight, isPlayer);
-		vec3 pPos = vec3(ubo.viewMat[3].xyz);
+	//  	float shadowMult =  /*float(uboLights.lightList.numLights) */ /*numLight/3.0f */  trace_shadow_ray(P, L, 0.01f, distToLight, isPlayer);
+	// 	vec3 pPos = vec3(ubo.viewMat[3].xyz);
 
-		//if(dot(N, L) < 0) N = -N;
-		float LdotN = clamp(dot(N, L), 0.0, 1.0);
+	// 	//if(dot(N, L) < 0) N = -N;
+	// 	float LdotN = clamp(dot(N, L), 0.0, 1.0);
 
-		// Accumulate our Lambertian shading color
-		shadeColor += shadowMult * LdotN * lightIntensity; 
-	}
+	// 	// Accumulate our Lambertian shading color
+	// 	shadeColor += shadowMult * LdotN * lightIntensity; 
+	// }
 
-	// Modulate based on the physically based Lambertian term (albedo/pi)
-	shadeColor *= primary_albedo.rgb / M_PI;
+	// // Modulate based on the physically based Lambertian term (albedo/pi)
+	// shadeColor *= primary_albedo.rgb / M_PI;
 
 	// vec3 shadeColor = AMBIENT_K * primary_albedo;//vec3(0);
 

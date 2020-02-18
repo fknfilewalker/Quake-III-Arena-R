@@ -32,7 +32,7 @@ layout(binding = BINDING_OFFSET_XYZ_ENTITY_DYNAMIC_PREV, set = 0) buffer Vertice
 
 vec3 getBarycentricCoordinates(vec2 hitAttribute) { return vec3(1.0f - hitAttribute.x - hitAttribute.y, hitAttribute.x, hitAttribute.y); }
 
-vec4 unpackColor(uint color) {
+vec4 unpackColor(in uint color) {
 	return vec4(
 		color & 0xff,
 		(color & (0xff << 8)) >> 8,
@@ -41,7 +41,7 @@ vec4 unpackColor(uint color) {
 	);
 }
 
-ivec3 getVertexData(RayPayload rp, out VertexBuffer vData[3]){
+ivec3 getVertexData(in RayPayload rp, out VertexBuffer vData[3]){
 	uint customIndex = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID * 3);
 	ivec3 index;
 	if(iData.data[rp.instanceID].world == BAS_WORLD_STATIC) index = (ivec3(indices_world_static.i[customIndex], indices_world_static.i[customIndex + 1], indices_world_static.i[customIndex + 2])) + int(iData.data[rp.instanceID].offsetXYZ);
@@ -74,8 +74,7 @@ ivec3 getVertexData(RayPayload rp, out VertexBuffer vData[3]){
 	return index;
 }
 
-Triangle getTriangle(RayPayload rp){
-
+Triangle getTriangle(in RayPayload rp){
 	VertexBuffer vData[3];
 	ivec3 index = getVertexData(rp, vData);
 
@@ -128,64 +127,68 @@ Triangle getTriangle(RayPayload rp){
            				vData[2].normal.xyz * barycentricCoords.z;
 	hitTriangle.normal = (vec4(hitTriangle.normal, 0) * iData.data[rp.instanceID].modelmat).xyz;
 
+	uint idx_c;
 	switch(iData.data[rp.instanceID].world){
 		case BAS_WORLD_STATIC:
 			hitTriangle.tex0 = (vertices_world_static.v[index.x].texIdx0);
 			hitTriangle.tex1 = (vertices_world_static.v[index.x].texIdx1);
+			// cluster
+			idx_c = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID);
+			hitTriangle.cluster = cluster_world_static.c[idx_c];
+			// material
+			hitTriangle.material = vertices_world_static.v[index.x].material;
 			break;
 		case BAS_WORLD_DYNAMIC_DATA:
 			hitTriangle.tex0 = (vertices_dynamic_data.v[index.x].texIdx0);
 			hitTriangle.tex1 = (vertices_dynamic_data.v[index.x].texIdx1);
+			// cluster
+			idx_c = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID);
+			hitTriangle.cluster = cluster_world_dynamic_data.c[idx_c];
+			// material
+			hitTriangle.material = vertices_dynamic_data.v[index.x].material;
 			break;
 		case BAS_WORLD_DYNAMIC_AS:
 			hitTriangle.tex0 = (vertices_dynamic_as.v[index.x].texIdx0);
 			hitTriangle.tex1 = (vertices_dynamic_as.v[index.x].texIdx1);
-			break;
-		case BAS_ENTITY_STATIC:
-			hitTriangle.tex0 = (iData.data[rp.instanceID].texIdx0);
-			hitTriangle.tex1 = (iData.data[rp.instanceID].texIdx1);
-			break;
-		case BAS_ENTITY_DYNAMIC:
-			hitTriangle.tex0 = (iData.data[rp.instanceID].texIdx0);
-			hitTriangle.tex1 = (iData.data[rp.instanceID].texIdx1);
-			break;
-		default:
-			hitTriangle.tex0 = (iData.data[rp.instanceID].texIdx0);
-			hitTriangle.tex1 = (iData.data[rp.instanceID].texIdx1);
-	}
-
-	uint idx_c;
-	switch(iData.data[rp.instanceID].world){
-		case BAS_WORLD_STATIC:
-			idx_c = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID);
-			hitTriangle.cluster = cluster_world_static.c[idx_c];
-			break;
-		case BAS_WORLD_DYNAMIC_DATA:
-			idx_c = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID);
-			hitTriangle.cluster = cluster_world_dynamic_data.c[idx_c];
-			break;
-		case BAS_WORLD_DYNAMIC_AS:
+			// cluster
 			idx_c = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID);
 			hitTriangle.cluster = cluster_world_dynamic_as.c[idx_c];
+			// material
+			hitTriangle.material = vertices_dynamic_as.v[index.x].material;
 			break;
 		case BAS_ENTITY_STATIC:
+			hitTriangle.tex0 = (iData.data[rp.instanceID].texIdx0);
+			hitTriangle.tex1 = (iData.data[rp.instanceID].texIdx1);
+			// cluster
 			if(iData.data[rp.instanceID].isBrushModel){
 				idx_c = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID);
 				hitTriangle.cluster = cluster_entity_static.c[idx_c];
 			}
 			else hitTriangle.cluster = iData.data[rp.instanceID].cluster;
+			// material
+			hitTriangle.material = vertices_entity_static.v[index.x].material;
 			break;
 		case BAS_ENTITY_DYNAMIC:
+			hitTriangle.tex0 = (iData.data[rp.instanceID].texIdx0);
+			hitTriangle.tex1 = (iData.data[rp.instanceID].texIdx1);
+			// cluster
 			hitTriangle.cluster = vData[1].cluster;
+			// material
+			hitTriangle.material = vertices_entity_dynamic.v[index.x].material;
 			break;
 		default:
+			hitTriangle.tex0 = (iData.data[rp.instanceID].texIdx0);
+			hitTriangle.tex1 = (iData.data[rp.instanceID].texIdx1);
+			// cluster
 			hitTriangle.cluster = vData[1].cluster;
+			// material
+			hitTriangle.material = 0;
 	}
 
 	return hitTriangle;
 }
 
-HitPoint getHitPoint(RayPayload rp){
+HitPoint getHitPoint(in RayPayload rp){
 	const vec3 barycentricCoords = getBarycentricCoordinates(rp.barycentric);
 	Triangle triangle = getTriangle(rp);
 
@@ -223,10 +226,11 @@ HitPoint getHitPoint(RayPayload rp){
 	hitPoint.tex1 = triangle.tex1;
 
 	hitPoint.cluster = triangle.cluster;
+	hitPoint.material = triangle.material;
 	return hitPoint;
 }
 
-ivec3 getVertexDataPrev(RayPayload rp, out VertexBuffer vData[3]){
+ivec3 getVertexDataPrev(in RayPayload rp, out VertexBuffer vData[3]){
 	uint customIndex = uint(iDataPrev.data[rp.instanceID].offsetIDX) + (rp.primitiveID * 3);
 	ivec3 index;
 	if(iDataPrev.data[rp.instanceID].world == BAS_WORLD_STATIC) index = (ivec3(indices_world_static.i[customIndex], indices_world_static.i[customIndex + 1], indices_world_static.i[customIndex + 2])) + int(iDataPrev.data[rp.instanceID].offsetXYZ);
@@ -259,7 +263,7 @@ ivec3 getVertexDataPrev(RayPayload rp, out VertexBuffer vData[3]){
 	return index;
 }
 
-Triangle getTrianglePrev(RayPayload rp){
+Triangle getTrianglePrev(in RayPayload rp){
 	if(iData.data[rp.instanceID].world == BAS_ENTITY_STATIC) rp.instanceID = iData.data[rp.instanceID].prevInstance;
 
 	VertexBuffer vData[3];
@@ -275,9 +279,7 @@ Triangle getTrianglePrev(RayPayload rp){
 	return hitTriangle;
 }
 
-HitPoint getHitPointPrev(RayPayload rp){
-
-
+HitPoint getHitPointPrev(in RayPayload rp){
 	const vec3 barycentricCoords = getBarycentricCoordinates(rp.barycentric);
 	Triangle triangle = getTrianglePrev(rp);
 
@@ -288,26 +290,8 @@ HitPoint getHitPointPrev(RayPayload rp){
 	return hitPoint;
 }
 
-
-// unpack texture idx, blend/add, and req color, data
-TextureData unpackTextureData(uint data){
-	TextureData d;
-	d.tex0 = int(data & TEX0_IDX_MASK);
-	d.tex1 = int((data & TEX1_IDX_MASK) >> TEX_SHIFT_BITS);
-	if(d.tex0 == TEX0_IDX_MASK) d.tex0 = -1;
-	if(d.tex1 == TEX0_IDX_MASK) d.tex1 = -1;
-	d.tex0Blend = (data & TEX0_BLEND_MASK) != 0;
-	d.tex1Blend = (data & TEX1_BLEND_MASK) != 0;
-	d.tex0Color = (data & TEX0_COLOR_MASK) != 0;
-	d.tex1Color = (data & TEX1_COLOR_MASK) != 0;
-	return d;
-}
-
-
-
-
 uint 
-get_material(RayPayload rp){
+get_material(in RayPayload rp){
 	uint customIndex = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID * 3);
 	ivec3 index;
 	switch(iData.data[rp.instanceID].world){
@@ -332,7 +316,7 @@ get_material(RayPayload rp){
 }
 
 bool
-found_intersection(RayPayload rp)
+found_intersection(in RayPayload rp)
 {
 	return rp.instanceID != ~0u;
 }
@@ -367,22 +351,22 @@ is_player(RayPayload rp) // for shadows etc, so the third person model does not 
 }
 
 bool
-isLight(uint material) {
+isLight(in uint material) {
 	return ((material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT);
 }
 bool
-isGlass(uint material) {
+isGlass(in uint material) {
 	return ((material & MATERIAL_KIND_GLASS) == MATERIAL_KIND_GLASS);
 }
 bool
-isMirror(uint material) {
+isMirror(in uint material) {
 	return ((material & MATERIAL_FLAG_MIRROR) == MATERIAL_FLAG_MIRROR);
 }
 bool
-isPlayer(uint material) {
+isPlayer(in uint material) {
 	return ((material & MATERIAL_FLAG_PLAYER_OR_WEAPON) == MATERIAL_FLAG_PLAYER_OR_WEAPON);
 }
 bool
-isSky(uint material) {
+isSky(in uint material) {
 	return (material == MATERIAL_KIND_SKY);
 }

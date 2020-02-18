@@ -53,6 +53,7 @@ struct Triangle {
 	uint tex0;
 	uint tex1;
 	uint cluster;
+	uint material;
 };
 struct HitPoint {
 	vec3 pos;
@@ -68,6 +69,7 @@ struct HitPoint {
 	uint tex0;
 	uint tex1;
 	uint cluster;
+	uint material;
 };
 
 struct DirectionalLight {

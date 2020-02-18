@@ -10,7 +10,6 @@
 #include "random.glsl"
 #include "globalTexture.glsl"
 #include "vertexData.glsl"
-#include "lights.glsl"
 #include "gbuffer.glsl"
 
 // Bindings
@@ -23,119 +22,9 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO_PREV, set = 0) uniform global_ubo_pre
 	GlobalUbo uboPrev;
 };
 #include "traceRay.glsl"
+#include "lights.glsl"
 
 
-
-vec4 getTextureLod2(HitPoint hp, uint lod){
-
-	TextureData d = unpackTextureData(hp.tex0);
-	vec4 color = vec4(0);
-	vec4 tex;
-	if(d.tex0 != -1){
-		tex = global_textureLod(d.tex0, hp.uv0, lod);
-		// if we have more tex to blend set alpha to 1
-		if(d.tex1 != -1) color = vec4(tex.xyz, 1);
-		else color = tex;
-		if(d.tex0Color) color *= (hp.color0/255);
-	} else return color;
-
-	if(d.tex1 != -1){
-		tex = global_textureLod(d.tex1, hp.uv1, lod);
-		if(d.tex1Color) tex *= (hp.color1/255);
-
-		if(d.tex1Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} else return color;
-	d = unpackTextureData(hp.tex1);
-	if(d.tex0 != -1){
-		tex = global_textureLod(d.tex0, hp.uv2, lod);
-		if(d.tex0Color) tex *= (hp.color2/255);
-
-		if(d.tex0Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} else return color;
-
-	if(d.tex1 != -1){
-		tex = global_textureLod(d.tex1, hp.uv3, lod);
-		if(d.tex1Color) tex *= (hp.color3/255);
-
-		if(d.tex1Blend) {
-			color = alpha_blend(tex, color);
-		}
-		else color += tex;
-	} 
-	return color;
-}
-
-
-vec3 shade(vec4 primary_albedo, vec3 P, vec3 N, uint currentCluster){
-	vec3 shadeColor = vec3(primary_albedo);
-
-	uint numLight;
-	if(ubo.cullLights) numLight = imageLoad(lightVis_data, ivec2(0, currentCluster)).r;
-	else numLight = uboLights.lightList.numLights; 
-
-	for(int i = 0; i < numLight; i++){
-		uint lightIndex;
-		if(ubo.cullLights) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, currentCluster)).r; // first index is numLight so + 1
-		else lightIndex = i;
-		
-	
-		DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex), ubo.randSampleLight);
-		vec3 posLight = light.pos;
-		vec3 toLight = posLight - P;
-		vec3 L = normalize(toLight);
-		float distToLight =	length(toLight);
-		float lightStrength =  min(light.mag / distToLight, 1);
-		if(lightStrength < 0.1f) continue;
-		vec3 lightIntensity = vec3(0.75) * lightStrength; //light.color * lightStrength;
-		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
-	 	float shadowMult = trace_shadow_ray(P, L, 0.01f, distToLight, false);
-
-		float LdotN = clamp(dot(N, L), 0.0, 1.0);
-		shadeColor += shadowMult * LdotN * lightIntensity; 
-	}
-
-	shadeColor *= primary_albedo.rgb / M_PI;
-	return shadeColor;
-}
-
-vec3 calcShade(vec3 P, vec3 N, vec3 albedo, uint cluster){
-	vec3 shadeColor = vec3(0);
-
-	uint numLight;
-	if(ubo.cullLights) numLight = imageLoad(lightVis_data, ivec2(0, cluster)).r;
-	else numLight = uboLights.lightList.numLights; 
-
-	for(int i = 0; i < numLight; i++){
-		uint lightIndex;
-		if(ubo.cullLights) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
-		else lightIndex = i;
-		
-	
-		DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex), ubo.randSampleLight);
-		vec3 posLight = light.pos;
-		vec3 toLight = posLight - P;
-		vec3 L = normalize(toLight);
-		float distToLight =	length(toLight);
-		float lightStrength =  min(light.mag / distToLight, 1);
-		if(lightStrength < 0.1f) continue;
-		vec3 lightIntensity = vec3(0.75) * lightStrength; //light.color * lightStrength;
-		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
-	 	float shadowMult = trace_shadow_ray(P, L, 0.01f, distToLight, false);
-
-		float LdotN = clamp(dot(N, L), 0.0, 1.0);
-		float LdotN2 = clamp(dot(-light.normal, -L), 0.0, 1.0);
-		shadeColor += shadowMult * LdotN * lightIntensity; 
-	}
-
-	shadeColor *= albedo / M_PI;
-	return shadeColor;
-}
 
 vec4 calculateReflection(inout vec3 pos, inout vec3 direction, inout vec3 N){
 	vec3 dirReflection = reflect(direction, N);
@@ -157,7 +46,7 @@ vec4 calculateReflection(inout vec3 pos, inout vec3 direction, inout vec3 N){
 	} else {
 		HitPoint hp = getHitPoint(rp);
 		//Triangle triangle = getTriangle(rp);
-		vec4 tex = getTextureLod2(hp,0);
+		vec4 tex = getTextureWithLod(hp,0);
 		albedoReflection = tex;
 
 
@@ -170,7 +59,7 @@ vec4 calculateReflection(inout vec3 pos, inout vec3 direction, inout vec3 N){
 	return albedoReflection;
 }
 
-vec4 calculateRefraction( inout vec3 pos, inout vec3 direction, inout vec3 N, float n1, float n2){
+vec4 calculateRefraction( inout vec3 pos, inout vec3 direction, inout vec3 N, in float n1, in float n2){
 	vec3 dirRefraction = refract( direction, N, n2/n1 );
 	dirRefraction = refract( dirRefraction, N, n1/n2 );
 
@@ -191,7 +80,7 @@ vec4 calculateRefraction( inout vec3 pos, inout vec3 direction, inout vec3 N, fl
 	} else {
 		HitPoint hp = getHitPoint(rp);
 		//Triangle triangle = getTriangle(rp);
-		vec4 tex = getTextureLod2(hp,0);
+		vec4 tex = getTextureWithLod(hp,0);
 		albedoRefraction = tex;// * tex.w + albedoRefraction * (1-tex.w);
 
 		pos = hp.pos;
@@ -202,7 +91,7 @@ vec4 calculateRefraction( inout vec3 pos, inout vec3 direction, inout vec3 N, fl
 	return albedoRefraction;
 }
 
-vec4 second(vec3 pos, vec3 direction, vec3 N){
+vec4 second(in vec3 pos, in vec3 direction, in vec3 N){
 	vec4 color = vec4(0);
 	float n1, n2, ndotr = dot(direction, N);  
 	if( ndotr > 0.0f ) {
@@ -303,7 +192,7 @@ void reflectionRefrection(){
 			if(found_intersection(rp)){
 				if(isGlass(get_material(rp))){
 					HitPoint hp = getHitPoint(rp);
-					vec4 al = getTextureLod2(hp,0);
+					vec4 al = getTextureWithLod(hp,0);
 					vec3 dir = normalize(hp.pos - ubo.camPos.xyz);
 					vec3 norm = normalize(hp.normal);
 					if(dot(norm, dir) > 0) norm = -norm;

@@ -10,7 +10,6 @@
 #include "random.glsl"
 #include "globalTexture.glsl"
 #include "vertexData.glsl"
-#include "lights.glsl"
 #include "gbuffer.glsl"
 
 layout(binding = BINDING_OFFSET_RESULT_OUTPUT, set = 0, rgba8) uniform image2D image;
@@ -23,66 +22,7 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 	GlobalUbo ubo;
 };
 #include "traceRay.glsl"
-
-
-vec3 Shade(vec3 pos, vec3 norm, vec3 difColor, uint lightIdx, uint numLights){
-	float sampleProb = 1.0f / float(numLights);
-
-	DirectionalLight light = getLight2(uboLights.lightList.lights[lightIdx], ivec2(lightIdx, ubo.frameIndex), ubo.randSampleLight);
-	vec3 lightPos = light.pos;
-	float distToLight = length(lightPos - pos);
-	vec3 lightIntensity = light.color * vec3(0.1);//(light.mag * light.color) / distToLight;
-	vec3 dirToLight = normalize(lightPos  - pos);
-
-	float NdotL = clamp(dot(norm, dirToLight), 0.0, 1.0);
-	float isLit = trace_shadow_ray(pos, dirToLight, 0.01f, distToLight, false);
-	vec3 rayColor = isLit * lightIntensity;
-
-	return (NdotL * rayColor * (difColor / M_PI)) / sampleProb;
-}
-
-// vec4 getTextureLod2(HitPoint hp, uint lod){
-
-// 	TextureData d = unpackTextureData(hp.tex0);
-// 	vec4 color = vec4(0);
-// 	vec4 tex;
-// 	if(d.tex0 != -1){
-// 		tex = global_textureLod(d.tex0, hp.uv0, lod);
-// 		color = vec4(tex.xyz, 1);
-// 		if(d.tex0Color) color *= (hp.color0/255);
-// 	} else return color;
-
-// 	if(d.tex1 != -1){
-// 		tex = global_textureLod(d.tex1, hp.uv1, lod);
-// 		if(d.tex1Color) tex *= (hp.color1/255);
-
-// 		if(d.tex1Blend) {
-// 			color = alpha_blend(tex, color);
-// 		}
-// 		else color += tex;
-// 	} else return color;
-// 	d = unpackTextureData(hp.tex1);
-// 	if(d.tex0 != -1){
-// 		tex = global_textureLod(d.tex0, hp.uv2, lod);
-// 		if(d.tex0Color) tex *= (hp.color2/255);
-
-// 		if(d.tex0Blend) {
-// 			color = alpha_blend(tex, color);
-// 		}
-// 		else color += tex;
-// 	} else return color;
-
-// 	if(d.tex1 != -1){
-// 		tex = global_textureLod(d.tex1, hp.uv3, lod);
-// 		if(d.tex1Color) tex *= (hp.color3/255);
-
-// 		if(d.tex1Blend) {
-// 			color = alpha_blend(tex, color);
-// 		}
-// 		else color += tex;
-// 	} 
-// 	return color;
-// }
+#include "lights.glsl"
 
 vec3 directIllumination(){
 	vec4 primary_albedo;
@@ -93,7 +33,6 @@ vec3 directIllumination(){
 	float depth;
 	vec3 motion;
 
-	vec4 temp;
 	uvec4 utemp;
 	utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
 	material = utemp.x;
@@ -103,177 +42,15 @@ vec3 directIllumination(){
 		return reflectAlbedo.xyz;
 	}
 	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
+
 	if (isSky(material)) return primary_albedo.xyz;
 	if (isLight(material)) return vec3(1,0,0);
 	
 	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 
-
-	vec3 P = pos;
-	vec3 N = normal;
-	vec3 shadeColor = primary_albedo.xyz;//vec3(0);
-
-	//if (isGlass(material)) return vec3(0,0,1);
-
-	// if (isGlass(material)){
-	// 	vec4 reflectAlbedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
-	// 	primary_albedo = vec4(reflectAlbedo.xyz, 1);
-	// 	return reflectAlbedo.xyz;
-	// }
-
-	uint numLight;
-	if(ubo.cullLights) numLight = imageLoad(lightVis_data, ivec2(0, cluster)).r;
-	else numLight = uboLights.lightList.numLights; 
-
-	for(int i = 0; i < numLight; i++){
-		uint lightIndex;
-		//uint rand = int( get_rng(RNG_C(0), int(ubo.frameIndex)) * (numLight)) ;
-		if(ubo.cullLights) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
-		else lightIndex = i;
-		
-	
-		DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex), ubo.randSampleLight);
-		vec3 posLight = light.pos;
-		vec3 toLight = posLight - P;
-		vec3 L = normalize(toLight);
-		float distToLight =	length(toLight);
-		float lightStrength =  min(light.mag / distToLight, 1);
-		if(lightStrength < 0.1f) continue;
-		vec3 lightIntensity = vec3(0.75) * lightStrength; //light.color * lightStrength;
-		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
-	 	float shadowMult = trace_shadow_ray(P, L, 0.01f, distToLight, isPlayer(material));
-
-		float LdotN = clamp(dot(N, L), 0.0, 1.0);
-		float LdotN2 = clamp(dot(-light.normal, -L), 0.0, 1.0);
-		shadeColor += shadowMult * LdotN * lightIntensity; 
-	}
-
-	shadeColor *= primary_albedo.rgb / M_PI;
-
-	// //if(primary_albedo.w == 1) return primary_albedo.xyz;
-	// //shadeColor += vec3(0.25);
-
-	// vec2 rng3 = vec2(get_rng(RNG_BOUNCE_X(110), ubo.frameIndex), get_rng(RNG_BOUNCE_Y(120), ubo.frameIndex));
-	// vec3 dir_sphere = sample_sphere(rng3);
-
-	// vec3 direction = normalize(P - ubo.camPos.xyz);
-	// float rng_frensel = get_rng(RNG_FRESNEL(30), ubo.frameIndex);
-	// //float n1, n2, ndotr = dot(dir_sphere, N);  
-	// float n1, n2, ndotr = dot(direction, N);  
-	// if( ndotr > 0.0f ) {
-	// 	n1 = 1.0; 
-	// 	n2 = 1.5;
-	// 	N = -N;
-	// } else {
-	// 	n1 = 1.5;
-	// 	n2 = 1.0; 
-	// }
-	// //float r0 = (n1-n2)/(n1+n2); r0 *= r0;
-	// //float fresnel = r0 + (1.-r0) * pow(1.0-abs(ndotr),5.);
-	// //vec3 ref; 
-	// // if( hash1(seed) < fresnel ) {
-	// // 	ref = reflect( rd, n );
-	// // } else {
-	// // 	ref = refract( rd, n, n2/n1 );
-	// // }
-	// /* perfect importance sampling for the artistically driven KIT BRDF */
-
-
-	// float F = pow(1.0 - max(0.0, -dot(direction, N)), 5.0);
-	// F = mix(0.5, 1.0, F);
-
-	// //direction = normalize(direction);
-	// vec3 dirReflection = reflect(direction, N);
-	// vec3 dirRefraction = refract( direction, N, n2/n1 );
-	// dirRefraction = refract( dirRefraction, N, n1/n2 );
-
-
-
-	// // if(rng_frensel < F) {
-	// // 	vec3 dir  = reflect(direction, N);
-	// // 	//direction = normalize(dir_sphere + dir * 2.0);
-	// // 	direction = normalize(dir * 2.0);
-	// // 	if(-dot(direction, N) < 0.0)
-	// // 		//direction = refract( dir_sphere, N, n2/n1 );
-	// // 		direction = refract( dir, N, n2/n1 );
-	// // 		direction = refract( direction, N, n1/n2 );
-	// // 		//direction = reflect(direction, N);
-	// // } else {
-	// // 	direction = refract( direction, N, n2/n1 );
-	// // 	direction = refract( direction, N, n1/n2 );
-	// // 	//direction = normalize(dir_sphere + normal);
-	// // }
-	// // else {
-	// // 	direction = normalize(dir_sphere + normal);
-	// // 	//direction = refract( dir_sphere, n, n2/n1 );
-		
-	// // }
-
-	// Ray ray;
-	// ray.origin = P;
-	// ray.direction = dirReflection;
-	// ray.t_min = 0.01;
-	// ray.t_max = 10000.0;
-	// trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
-
-	// vec4 albedoReflection;
-	// if(!found_intersection(rp)){
-	// 	albedoReflection = sampleSky(ray.direction);
-	// } else {
-	// 	HitPoint hp = getHitPoint(rp);
-	// 	Triangle triangle = getTriangle(rp);
-	// 	albedoReflection = getTextureLod2(hp,0);
-
-	// }
-
-	// ray.direction = dirRefraction;
-	// trace_ray(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE);
-	// vec4 albedoRefaction;
-	// if(!found_intersection(rp)){
-	// 	albedoRefaction = sampleSky(ray.direction);
-	// } else {
-	// 	HitPoint hp = getHitPoint(rp);
-	// 	Triangle triangle = getTriangle(rp);
-	// 	albedoRefaction = getTextureLod2(hp,0);
-	// }
-
-	// float r0 = (n1-n2)/(n1+n2); r0 *= r0;
-	// float fresnel = r0 + (1.-r0) * pow(1.0-abs(ndotr),5.);
-	// float ratio = 0.2;
-	// vec4 albedo = ratio * albedoReflection + (1 - ratio) * albedoRefaction;
-
-	// shadeColor = alpha_blend(primary_albedo, albedo).xyz;
-	// //shadeColor += albedo.xyz;
-
+	vec3 shadeColor = calcShading(primary_albedo, pos, normal, cluster, material);
 	return shadeColor;
-// //#define RANDOM
-// #ifdef RANDOM
-// 	uint numLights = uboLights.lightList.numLights;
-// 	uint rand = int( get_rng(RNG_C(0), int(ubo.frameIndex)) * (numLights-1)) ;//uint(float(get_rng2(RNG_C(0), seed)) * (numLights-1) );
-// 	shadeColor = Shade(pos, normal, primary_albedo, rand, numLights);
-// #else 
-// 	uint numLights = uint(imageLoad(lightVis_data, ivec2(0, cluster)).r);//uboLights.lightList.numLights;;
-// 	for(int i = 0; i < numLights; i++){
-// 		//shadeColor += Shade(pos, normal, primary_albedo, uint(imageLoad(lightVis_data, ivec2(i+1, cluster)).r), numLights);
-// 		shadeColor += Shade(pos, normal, primary_albedo, uint(imageLoad(lightVis_data, ivec2(i+1, cluster)).r), numLights);
-// 	}
-// 	shadeColor /= numLights;
-// #endif
-
-	//float a = luminance(shadeColor) - luminance(imageLoad(imagePrev, ivec2(gl_LaunchIDNV.xy)).xyz);
-	//vec3 b = imageLoad(imagePrev, ivec2(gl_LaunchIDNV.xy)).xyz;
-	//imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4( vec3(old) ,1));
-	//float rand2 = texelFetch(blue_noise, ivec3(gl_LaunchIDNV.xy, 0),0).r;
-	//imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(motion,1) );
-	// if(a > 0) imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(1,0,0 ,1));
-	// else if(a == 0) imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(0,0,0 ,1));
-	// else imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(0,1,0,1));
-
-	
-	//imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(ndc.xyz,1));
-	//imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(ndcPrev.xyz,1));
-	//imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(velocity.xyz * 100,1));
 }
 
 void main() 
