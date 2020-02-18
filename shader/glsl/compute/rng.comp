@@ -3,8 +3,8 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_nonuniform_qualifier : enable
 #pragma optionNV (unroll all)
-#include "constants.h"
-#include "defines.glsl"
+#include "../constants.h"
+#include "../raytracer/defines.glsl"
 
 // global texture
 // layout(binding = 0, set = 1) uniform sampler2D texure_array[];

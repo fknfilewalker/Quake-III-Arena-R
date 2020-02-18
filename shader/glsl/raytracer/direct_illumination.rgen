@@ -3,10 +3,10 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_nonuniform_qualifier : enable
 #pragma optionNV (unroll all)
-#include "constants.h"
+#include "../constants.h"
 #include "defines.glsl"
 #include "rt_helper.glsl"
-#include "rt_sky.glsl"
+#include "sky.glsl"
 #include "random.glsl"
 #include "globalTexture.glsl"
 #include "vertexData.glsl"

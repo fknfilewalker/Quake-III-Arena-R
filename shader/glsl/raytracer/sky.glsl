@@ -1,4 +1,4 @@
-#include "constants.h"
+#include "../constants.h"
 layout(binding = BINDING_OFFSET_ENVMAP) uniform samplerCube samplerCubeMap;
 
 mat3 s_flipMatrix = mat3(
