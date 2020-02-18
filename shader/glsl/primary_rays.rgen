@@ -7,8 +7,10 @@
 #include "defines.glsl"
 #include "rt_helper.glsl"
 #include "rt_sky.glsl"
-#include "rt_texture.glsl"
-#include "rt_vattributes.glsl"
+#include "random.glsl"
+#include "globalTexture.glsl"
+#include "vertexData.glsl"
+#include "lights.glsl"
 #include "gbuffer.glsl"
 
 // Bindings

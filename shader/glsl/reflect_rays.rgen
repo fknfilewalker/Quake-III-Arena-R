@@ -7,8 +7,10 @@
 #include "defines.glsl"
 #include "rt_helper.glsl"
 #include "rt_sky.glsl"
-#include "rt_texture.glsl"
-#include "rt_vattributes.glsl"
+#include "random.glsl"
+#include "globalTexture.glsl"
+#include "vertexData.glsl"
+#include "lights.glsl"
 #include "gbuffer.glsl"
 
 // Bindings
@@ -21,10 +23,6 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO_PREV, set = 0) uniform global_ubo_pre
 	GlobalUbo uboPrev;
 };
 #include "traceRay.glsl"
-layout(binding = BINDING_OFFSET_UBO_LIGHTS, set = 0) uniform LightList 
-{
-	LightList_s lightList;
-} uboLights;
 
 
 

@@ -7,8 +7,10 @@
 #include "defines.glsl"
 #include "rt_helper.glsl"
 #include "rt_sky.glsl"
-#include "rt_texture.glsl"
-#include "rt_vattributes.glsl"
+#include "random.glsl"
+#include "globalTexture.glsl"
+#include "vertexData.glsl"
+#include "lights.glsl"
 #include "gbuffer.glsl"
 
 layout(binding = BINDING_OFFSET_RESULT_OUTPUT, set = 0, rgba8) uniform image2D image;
@@ -21,11 +23,6 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 	GlobalUbo ubo;
 };
 #include "traceRay.glsl"
-
-layout(binding = BINDING_OFFSET_UBO_LIGHTS, set = 0) uniform LightList 
-{
-	LightList_s lightList;
-} uboLights;
 
 
 vec3 Shade(vec3 pos, vec3 norm, vec3 difColor, uint lightIdx, uint numLights){

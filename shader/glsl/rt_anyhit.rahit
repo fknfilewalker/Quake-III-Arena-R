@@ -3,8 +3,8 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_GOOGLE_include_directive : require
 #include "defines.glsl"
-#include "rt_texture.glsl"
-#include "rt_vattributes.glsl"
+#include "globalTexture.glsl"
+#include "vertexData.glsl"
 
 hitAttributeNV vec2 hitAttribute;
 layout(location = 0) rayPayloadInNV RayPayload rp;
