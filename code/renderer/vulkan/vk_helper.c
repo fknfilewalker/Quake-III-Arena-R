@@ -357,29 +357,26 @@ void VK_GetAccelerationStructureMemoryRequirements(VkAccelerationStructureNV as,
 /*
 * PERFORMANCE
 */
-
 void VK_SetPerformanceMarker(VkCommandBuffer command_buffer, int index) {
 	vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 		vk.queryPool, (vk.swapchain.currentImage * PROFILER_IN_FLIGHT) + index);
 }
 
-void VK_ResetQueryPool(VkCommandBuffer command_buffer) {
+void VK_ResetPerformanceQueryPool(VkCommandBuffer command_buffer) {
 	vkCmdResetQueryPool(command_buffer, vk.queryPool,
 		PROFILER_IN_FLIGHT * vk.swapchain.currentImage,
 		PROFILER_IN_FLIGHT);
 }
 
-int VK_QueryPoolResults() {
-	VkResult result = vkGetQueryPoolResults(vk.device, vk.queryPool,
+void VK_PerformanceQueryPoolResults() {
+	VK_CHECK(vkGetQueryPoolResults(vk.device, vk.queryPool,
 		PROFILER_IN_FLIGHT * vk.swapchain.currentImage,
 		PROFILER_IN_FLIGHT,
 		sizeof(vk_d.queryPoolResults[0]),
 		&(vk_d.queryPoolResults[vk.swapchain.currentImage][0]),
 		sizeof(vk_d.queryPoolResults[0][0]),
-		VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
-	int result2 = 2;
-	return result2;
+		VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT), "failed to get Query results!");
 }
-void VK_TimeFromMarkers(double* ms, int start, int end) {
+void VK_TimeBetweenMarkers(double* ms, int start, int end) {
 	*ms = (double)(vk_d.queryPoolResults[vk.swapchain.currentImage][end] - vk_d.queryPoolResults[vk.swapchain.currentImage][start]) * 1e-6;
 }

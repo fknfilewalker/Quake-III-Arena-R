@@ -1113,7 +1113,7 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	// reset trace list for this frame
 	vk_d.bottomASTraceListCount = 0; 
 	// reset performance marker query
-	VK_ResetQueryPool(vk.swapchain.CurrentCommandBuffer());
+	VK_ResetPerformanceQueryPool(vk.swapchain.CurrentCommandBuffer());
 
 	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_BUILD_AS_BEGIN);
 	RB_UpdateRayTraceAS(drawSurfs, numDrawSurfs);
@@ -1164,12 +1164,12 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 	if (r_showcluster->integer) drawCluster();
 	
-	VK_QueryPoolResults();
+	VK_PerformanceQueryPoolResults();
 	double build, prim, refref, direct;
-	VK_TimeFromMarkers(&build, PROFILER_BUILD_AS_BEGIN, PROFILER_BUILD_AS_END);
-	VK_TimeFromMarkers(&prim, PROFILER_PRIMARY_RAYS_BEGIN, PROFILER_PRIMARY_RAYS_END);
-	VK_TimeFromMarkers(&refref, PROFILER_REFLECTION_REFRACTION_BEGIN, PROFILER_REFLECTION_REFRACTION_END);
-	VK_TimeFromMarkers(&direct, PROFILER_DIRECT_ILLUMINATION_BEGIN, PROFILER_DIRECT_ILLUMINATION_END);
+	VK_TimeBetweenMarkers(&build, PROFILER_BUILD_AS_BEGIN, PROFILER_BUILD_AS_END);
+	VK_TimeBetweenMarkers(&prim, PROFILER_PRIMARY_RAYS_BEGIN, PROFILER_PRIMARY_RAYS_END);
+	VK_TimeBetweenMarkers(&refref, PROFILER_REFLECTION_REFRACTION_BEGIN, PROFILER_REFLECTION_REFRACTION_END);
+	VK_TimeBetweenMarkers(&direct, PROFILER_DIRECT_ILLUMINATION_BEGIN, PROFILER_DIRECT_ILLUMINATION_END);
 
 	//ri.Printf(PRINT_ALL, "Prim %f ms\n", (prim));
 	//ri.SCR_DrawBigString(400, 400, "aasdfasd", 1.0);
