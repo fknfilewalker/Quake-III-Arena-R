@@ -156,6 +156,11 @@ typedef struct {
 	int		(*CIN_PlayCinematic)( const char *arg0, int xpos, int ypos, int width, int height, int bits);
 	e_status (*CIN_RunCinematic) (int handle);
 
+	void (*SCR_DrawSmallChar)(int x, int y, int ch);
+	void (*SCR_DrawBigString) (int x, int y, const char* s, float alpha);
+	int	(*SCR_GetBigStringWidth) (const char* str);
+	void (*CL_ConsolePrint)(char* txt);
+
 } refimport_t;
 
 

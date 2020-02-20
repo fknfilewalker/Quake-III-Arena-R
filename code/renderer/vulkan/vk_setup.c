@@ -73,7 +73,7 @@ void VK_Setup(void* p1, void* p2) {
     
     // Create Swapchain
 	VK_SetupSwapchain();
-
+	// For Performance Marker
 	VK_SetupQueryPool();
 }
 
@@ -82,6 +82,7 @@ void VK_Destroy() {
 
 	VK_DestroySwapchain();
 
+	vkDestroyQueryPool(vk.device, vk.queryPool, NULL);
 	vkDestroyCommandPool(vk.device, vk.commandPool, NULL);
 	vkDestroyDevice(vk.device, NULL);
 	vkDestroySurfaceKHR(vk.instance, vk.surface, NULL);
@@ -302,7 +303,7 @@ static void VK_SetupQueryPool() {
 		NULL,
 		NULL,
 		VK_QUERY_TYPE_TIMESTAMP,
-		3,
+		VK_MAX_SWAPCHAIN_SIZE * PROFILER_IN_FLIGHT,
 		NULL
 	};
 	VK_CHECK(vkCreateQueryPool(vk.device, &createInfo, NULL, &vk.queryPool), "failed to create queryPool!");

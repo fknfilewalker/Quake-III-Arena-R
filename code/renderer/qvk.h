@@ -164,6 +164,10 @@ PFN_vkCmdBeginDebugUtilsLabelEXT				vkCmdBeginDebugUtilsLabelEXT;
 PFN_vkCmdEndDebugUtilsLabelEXT					vkCmdEndDebugUtilsLabelEXT;
 
 PFN_vkCreateQueryPool							vkCreateQueryPool;
+PFN_vkGetQueryPoolResults						vkGetQueryPoolResults;
+PFN_vkCmdResetQueryPool							vkCmdResetQueryPool;
+PFN_vkDestroyQueryPool							vkDestroyQueryPool;
+
 PFN_vkCreatePipelineCache                       vkCreatePipelineCache;
 PFN_vkCreatePipelineLayout                      vkCreatePipelineLayout;
 PFN_vkCreateGraphicsPipelines                   vkCreateGraphicsPipelines;

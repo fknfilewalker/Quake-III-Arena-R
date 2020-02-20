@@ -133,6 +133,9 @@ qboolean VK_LoadDeviceFunctions(void)
 	vkCmdEndDebugUtilsLabelEXT = VK_DEVICE_LEVEL_FUNCTION("vkCmdEndDebugUtilsLabelEXT");
 
 	vkCreateQueryPool = VK_DEVICE_LEVEL_FUNCTION("vkCreateQueryPool");
+	vkGetQueryPoolResults = VK_DEVICE_LEVEL_FUNCTION("vkGetQueryPoolResults");
+	vkCmdResetQueryPool = VK_DEVICE_LEVEL_FUNCTION("vkCmdResetQueryPool");
+	vkDestroyQueryPool = VK_DEVICE_LEVEL_FUNCTION("vkDestroyQueryPool");
     vkCreatePipelineCache = VK_DEVICE_LEVEL_FUNCTION("vkCreatePipelineCache");
     vkCreatePipelineLayout = VK_DEVICE_LEVEL_FUNCTION("vkCreatePipelineLayout");
     vkCreateGraphicsPipelines = VK_DEVICE_LEVEL_FUNCTION("vkCreateGraphicsPipelines");

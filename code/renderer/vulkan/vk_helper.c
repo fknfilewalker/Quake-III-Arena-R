@@ -357,42 +357,29 @@ void VK_GetAccelerationStructureMemoryRequirements(VkAccelerationStructureNV as,
 /*
 * PERFORMANCE
 */
-typedef enum {
-	PROFILER_START,
-	PROFILER_STOP,
-} VKPTProfilerAction;
 
-//VkResult
-//vkpt_profiler_query(VkCommandBuffer cmd_buf, int idx, VKPTProfilerAction action)
-//{
-//	idx = idx * 2 + action + qvk.current_frame_index * NUM_PROFILER_QUERIES_PER_FRAME;
-//
-//	vkCmdWriteTimestamp(cmd_buf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-//		vk.queryPool, vk.currenti);
-//
-//	set_current_gpu(cmd_buf, ALL_GPUS);
-//
-//	profiler_queries_used[idx] = qtrue;
-//
-//	return VK_SUCCESS;
-//}
-//static inline void begin_perf_marker(VkCommandBuffer command_buffer, int index, const char* name)
-//{
-//	VK_CHECK(vkpt_profiler_query(command_buffer, index, PROFILER_START), "failed to start profiler!");
-//
-//	const VkDebugUtilsLabelEXT label = {
-//		.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-//		.pLabelName = name
-//	};
-//
-//	//if (qvkCmdBeginDebugUtilsLabelEXT != NULL)
-//	//	qvkCmdBeginDebugUtilsLabelEXT(command_buffer, &label);
-//}
-//
-//static inline void end_perf_marker(VkCommandBuffer command_buffer, int index)
-//{
-//	//if (qvkCmdEndDebugUtilsLabelEXT != NULL)
-//	//	qvkCmdEndDebugUtilsLabelEXT(command_buffer);
-//
-//	VK_CHECK(vkpt_profiler_query(command_buffer, index, PROFILER_STOP), "failed to stop profiler!");
-//}
+void VK_SetPerformanceMarker(VkCommandBuffer command_buffer, int index) {
+	vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+		vk.queryPool, (vk.swapchain.currentImage * PROFILER_IN_FLIGHT) + index);
+}
+
+void VK_ResetQueryPool(VkCommandBuffer command_buffer) {
+	vkCmdResetQueryPool(command_buffer, vk.queryPool,
+		PROFILER_IN_FLIGHT * vk.swapchain.currentImage,
+		PROFILER_IN_FLIGHT);
+}
+
+int VK_QueryPoolResults() {
+	VkResult result = vkGetQueryPoolResults(vk.device, vk.queryPool,
+		PROFILER_IN_FLIGHT * vk.swapchain.currentImage,
+		PROFILER_IN_FLIGHT,
+		sizeof(vk_d.queryPoolResults[0]),
+		&(vk_d.queryPoolResults[vk.swapchain.currentImage][0]),
+		sizeof(vk_d.queryPoolResults[0][0]),
+		VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
+	int result2 = 2;
+	return result2;
+}
+void VK_TimeFromMarkers(double* ms, int start, int end) {
+	*ms = (double)(vk_d.queryPoolResults[vk.swapchain.currentImage][end] - vk_d.queryPoolResults[vk.swapchain.currentImage][start]) * 1e-6;
+}

@@ -45,6 +45,22 @@ bool projection_view_to_screen(vec3 view_pos, out vec2 screen_pos, out float dis
 }
 
 Ray
+getRay(vec2 pos_cs)
+{
+	vec4 v_near = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs, -1, 1.0);
+	vec4 v_far  = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs,  1, 1.0);
+	v_near /= v_near.w;
+	v_far  /= v_far.w;
+
+	Ray ray;
+	ray.origin = v_near.xyz;
+	ray.direction = normalize(v_far.xyz - v_near.xyz);
+	ray.t_min = 0.01;
+	ray.t_max = 10000.0;
+	return ray;
+}
+
+Ray
 getPrimaryRay(vec2 pos_cs)
 {
 	vec4 v_near = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs, -1, 1.0);
@@ -79,8 +95,8 @@ getPrimaryRay(vec2 pos_cs)
 
 vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 	vec2 tex_coord = hp.uv0;
-	Ray ray_x = getPrimaryRay(screen_coord_cs + vec2(2.0 / float(gl_LaunchSizeNV.x), 0));
-	Ray ray_y = getPrimaryRay(screen_coord_cs - vec2(0, 2.0 / float(gl_LaunchSizeNV.y)));
+	Ray ray_x = getRay(screen_coord_cs + vec2(2.0 / float(gl_LaunchSizeNV.x), 0));
+	Ray ray_y = getRay(screen_coord_cs - vec2(0, 2.0 / float(gl_LaunchSizeNV.y)));
 
 	vec3 bary_x = compute_barycentric(triangle.pos, ray_x.origin, ray_x.direction);
 	vec3 bary_y = compute_barycentric(triangle.pos, ray_y.origin, ray_y.direction);

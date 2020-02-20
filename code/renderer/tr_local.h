@@ -1346,6 +1346,8 @@ typedef struct {
 #define RTX_DYNAMIC_AS_DATA (RTX_DYNAMIC_AS || UV_CHANGES || ANIMATE_TEXTURE)
 #define RTX_DYNAMIC_DATA (UV_CHANGES || ANIMATE_TEXTURE)
 
+#define PROFILER_SET_MARKER(cmd, idx) VK_SetPerformanceMarker(cmd, idx)
+
 #define BUFFER_BARRIER(cmd_buf, ...) \
 	do { \
 		VkBufferMemoryBarrier buf_mem_barrier = { \
@@ -1398,6 +1400,18 @@ typedef struct {
 	vkimage_t			objectInfo;
 	vkimage_t			motion;
 } vkgbuffer;
+
+typedef enum {
+	PROFILER_BUILD_AS_BEGIN,
+	PROFILER_BUILD_AS_END,
+	PROFILER_PRIMARY_RAYS_BEGIN,
+	PROFILER_PRIMARY_RAYS_END,
+	PROFILER_REFLECTION_REFRACTION_BEGIN,
+	PROFILER_REFLECTION_REFRACTION_END,
+	PROFILER_DIRECT_ILLUMINATION_BEGIN,
+	PROFILER_DIRECT_ILLUMINATION_END,
+	PROFILER_IN_FLIGHT
+} vkprofiler_e;
 
 typedef struct {
     size_t              size; // images
@@ -1551,7 +1565,7 @@ typedef struct {
 	vkimage_t			blueNoiseTex;
 
 	// statistics
-	int					asUpdateTime;
+	uint64_t			queryPoolResults[VK_MAX_SWAPCHAIN_SIZE][PROFILER_IN_FLIGHT + 1];
 	// </RTX>
 } vkdata_t;
 

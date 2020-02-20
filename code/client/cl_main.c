@@ -2221,6 +2221,11 @@ void CL_InitRef( void ) {
 	ri.CIN_PlayCinematic = CIN_PlayCinematic;
 	ri.CIN_RunCinematic = CIN_RunCinematic;
 
+	ri.SCR_DrawSmallChar = SCR_DrawSmallChar;
+	ri.SCR_DrawBigString = SCR_DrawBigString;
+	ri.SCR_GetBigStringWidth = SCR_GetBigStringWidth;
+	ri.CL_ConsolePrint = CL_ConsolePrint;
+
 	ret = GetRefAPI( REF_API_VERSION, &ri );
 
 #if defined __USEA3D && defined __A3D_GEOM

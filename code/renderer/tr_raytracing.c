@@ -991,10 +991,13 @@ static void RB_TraceRays() {
 		0, 0, NULL, 0, NULL,
 		1, &barrier);*/
 
+	
 	// primary rays
+	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_PRIMARY_RAYS_BEGIN);
 	VK_BindRayTracingPipeline(&vk_d.primaryRaysPipeline);
 	VK_Bind2RayTracingDescriptorSets(&vk_d.primaryRaysPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 	VK_TraceRays(&vk_d.primaryRaysPipeline);
+	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_PRIMARY_RAYS_END);
 
 	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].albedo.handle);
 	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].position.handle);
@@ -1003,16 +1006,20 @@ static void RB_TraceRays() {
 	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].objectInfo.handle);
 
 	// reflections/refractions
+	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_REFLECTION_REFRACTION_BEGIN);
 	VK_BindRayTracingPipeline(&vk_d.reflectRaysPipeline);
 	VK_Bind2RayTracingDescriptorSets(&vk_d.reflectRaysPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 	VK_TraceRays(&vk_d.reflectRaysPipeline);
+	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_REFLECTION_REFRACTION_END);
 
 	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].reflection.handle);
 	
 	// direct Ill
+	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_DIRECT_ILLUMINATION_BEGIN);
 	VK_BindRayTracingPipeline(&vk_d.directIlluminationPipeline);
 	VK_Bind2RayTracingDescriptorSets(&vk_d.directIlluminationPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 	VK_TraceRays(&vk_d.directIlluminationPipeline);
+	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_DIRECT_ILLUMINATION_END);
 }
 
 static void
@@ -1093,33 +1100,24 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	VkMemoryBarrier memoryBarrier = { 0 };
 	vkCmdEndRenderPass(vk.swapchain.CurrentCommandBuffer());
 
-	
-
-	//VK_BeginFramebuffer(&vk_d.accelerationStructures.resultFramebuffer);
-	//renderSky(drawSurfs, numDrawSurfs);
-	//VK_EndFramebuffer(&vk_d.accelerationStructures.resultFramebuffer);
-	//VK_CopySwapchainToImage(&vk_d.accelerationStructures.resultImage);
-
 	// destroy all dynamic as for this frame
 	for (int i = 0; i < vk_d.bottomASDynamicCount[vk.swapchain.currentImage]; i++) {
 		VK_DestroyBottomAccelerationStructure(&(vk_d.bottomASDynamicList[vk.swapchain.currentImage][i]));
 	}
 	vk_d.bottomASDynamicCount[vk.swapchain.currentImage] = 0;
-
-	// reset dynamic offsets
+	// reset offsets
 	vk_d.basBufferEntityDynamicOffset = 0;
 	vk_d.geometry.idx_entity_dynamic_offset = 0;
 	vk_d.geometry.xyz_entity_dynamic_offset = 0;
-
-	vk_d.bottomASTraceListCount = 0; // reset trace list for this frame
 	vk_d.scratchBufferOffset = 0;
-	//vk_d.lightCount = 0;
+	// reset trace list for this frame
+	vk_d.bottomASTraceListCount = 0; 
+	// reset performance marker query
+	VK_ResetQueryPool(vk.swapchain.CurrentCommandBuffer());
 
-	//VK_MapBuffer(&vk_d.instanceBuffer[vk.swapchain.currentImage]);
-	vk_d.asUpdateTime = Sys_Milliseconds();
+	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_BUILD_AS_BEGIN);
 	RB_UpdateRayTraceAS(drawSurfs, numDrawSurfs);
-	vk_d.asUpdateTime = Sys_Milliseconds() - vk_d.asUpdateTime;
-	//VK_UnmapBuffer(&vk_d.instanceBuffer[vk.swapchain.currentImage]);
+	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_BUILD_AS_END);
 
 	RB_TraceRays();
 
@@ -1147,7 +1145,7 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	//VK_UnmapBuffer(&vk_d.geometry.xyz_dynamic[vk.swapchain.currentImage]);
 	//VK_UnmapBuffer(&vk_d.geometry.idx_dynamic[vk.swapchain.currentImage]);
 	
-	// draw pt results to swap chain
+	// draw rt results to swap chain
 	VK_BeginRenderClear();
 	//VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage]);
 
@@ -1160,14 +1158,28 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			drawImage->descriptor_set.data[0].descImageInfo->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 			VK_SetSampler(&drawImage->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT, drawImage->sampler, drawImage->view);
 			VK_FinishDescriptor(&drawImage->descriptor_set);
-		}
-		
+		}	
 	}
 	VK_DrawFullscreenRect(drawImage);
 
 	if (r_showcluster->integer) drawCluster();
 	
+	VK_QueryPoolResults();
+	double build, prim, refref, direct;
+	VK_TimeFromMarkers(&build, PROFILER_BUILD_AS_BEGIN, PROFILER_BUILD_AS_END);
+	VK_TimeFromMarkers(&prim, PROFILER_PRIMARY_RAYS_BEGIN, PROFILER_PRIMARY_RAYS_END);
+	VK_TimeFromMarkers(&refref, PROFILER_REFLECTION_REFRACTION_BEGIN, PROFILER_REFLECTION_REFRACTION_END);
+	VK_TimeFromMarkers(&direct, PROFILER_DIRECT_ILLUMINATION_BEGIN, PROFILER_DIRECT_ILLUMINATION_END);
 
+	//ri.Printf(PRINT_ALL, "Prim %f ms\n", (prim));
+	//ri.SCR_DrawBigString(400, 400, "aasdfasd", 1.0);
+	//ri.CL_ConsolePrint("asdf");
+
+	//qhandle_t	charSetShader = RE_RegisterShader("gfx/2d/bigchars");
+	//RE_StretchPic(400, 400, 100, 100,
+	//	0, 0,
+	//	1, 1,
+	//	charSetShader);
 	//VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultFramebuffer.image);
 }
 
