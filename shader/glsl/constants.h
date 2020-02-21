@@ -242,6 +242,10 @@ STRUCT (
     UINT    (type)
     INT     (cluster)
     VEC4    (color)
+    VEC3    (normal)
+    FLOAT   (size)
+    VEC4    (AB)
+    VEC4    (AC)
 ,Light)
 
 STRUCT (

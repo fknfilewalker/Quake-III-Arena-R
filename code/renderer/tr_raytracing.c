@@ -152,6 +152,7 @@ void RB_UploadCluster(vkbuffer_t* buffer, uint32_t offsetIDX, int defaultC) {
 		vec4_t pos = { 0,0,0,0 };
 		for (int j = 0; j < 3; j++) {
 			VectorAdd(pos, tess.xyz[tess.indexes[(i * 3) + j]], pos);
+			VectorAdd(pos, tess.normal[tess.indexes[(i * 3) + j]], pos);
 		}
 		VectorScale(pos, 1.0f / 3.0f, pos);
 		int c = -1;//R_FindClusterForPos(pos);
@@ -189,12 +190,16 @@ void RB_UploadCluster(vkbuffer_t* buffer, uint32_t offsetIDX, int defaultC) {
 		//if (c == -1 && (clister0 == -1 && clister1 == -1)) c = clister2;
 		//if (c == -1 && (clister1 == -1 && clister2 == -1)) c = clister0;
 		//if (c == -1 && (clister2 == -1 && clister0 == -1)) c = clister1;
-		if (c == -1) c = R_FindClusterForPos(pos);
+		
 		if (c == -1) c = R_FindClusterForPos2(pos);
+		if (c == -1) c = R_FindClusterForPos(pos);
 		if (c == -1) c = R_FindClusterForPos3(pos);
 		if (c == -1) {
 			c = defaultC;
 		}
+		//c = 218;
+		//c = R_ClosestCluster(pos);
+		//c = defaultC;
 		clusterData[i] = c;
 
 	}

@@ -234,17 +234,7 @@ getRandomLight(int i){
 	// tr.world->vis + cluster * tr.world->clusterBytes;
 	return uboLights.lightList.lights[lightIDX].pos.xyz;
 }
-vec3
-getLight(uint i){
-	return uboLights.lightList.lights[i].pos.xyz;
-}
 
-bool
-lightVisible(int i, uint hitCluster){
-	uint cluster = uboLights.lightList.lights[i].cluster;
-	if((imageLoad(vis_data, ivec2(cluster>>3, hitCluster)).r  & (1<<(cluster&7))) > 0 ) return true;
-	return false;
-}
 
 #define KD 0.05 // diffuse
 vec3 Shade(vec3 pos, vec3 norm, vec3 difColor, uint lightIdx, uint numLights){

@@ -20,14 +20,16 @@ void main()
     rpb.hit_distance = gl_RayTmaxNV;
     //rpb.modelmat = gl_ObjectToWorldNV;
 
-    if(is_see_through(rpb)) {
-        HitPoint hp = getHitPoint(rpb);
-        //if(all(equal(global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0).xyz, vec3(0)))) ignoreIntersectionNV();
-        // if(global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0).x < 0.1 &&
-        // global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0).y < 0.1 &&
-        // global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0).z < 0.1) ignoreIntersectionNV();
+    if(is_light(rpb)) ignoreIntersectionNV();
+
+    // if(is_see_through(rpb)) {
+    //     HitPoint hp = getHitPoint(rpb);
+    //     //if(all(equal(global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0).xyz, vec3(0)))) ignoreIntersectionNV();
+    //     // if(global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0).x < 0.1 &&
+    //     // global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0).y < 0.1 &&
+    //     // global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0).z < 0.1) ignoreIntersectionNV();
          
-        if(global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0).w < 0.5) ignoreIntersectionNV();
-    }
+    //     if(global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0).w < 0.5) ignoreIntersectionNV();
+    // }
     
 }

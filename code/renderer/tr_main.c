@@ -1586,7 +1586,7 @@ R_GenerateDrawSurfs
 void R_GenerateDrawSurfs( void ) {
 	if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && tr.refdef.rdflags != RDF_NOWORLDMODEL) {
 		if (!r_lockpvs->integer) {
-			vk_d.currentCluster = R_FindClusterForPos(tr.viewParms.pvsOrigin);
+			vk_d.currentCluster = R_FindClusterForPos2(tr.viewParms.pvsOrigin);
 			if (r_showcluster->integer) ri.Printf(PRINT_ALL, "cluster:%i\n", vk_d.currentCluster);
 		}
 	}

@@ -381,7 +381,8 @@ static void InitVulkan(void)
 				VK_CreateAttributeBuffer(&vk_d.instanceDataBuffer[i], VK_MAX_BOTTOM_AS_INSTANCES * sizeof(ASInstanceData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 				// UBOs
 				VK_CreateUniformBuffer(&vk_d.uboBuffer[i], sizeof(GlobalUbo));
-				VK_CreateUniformBuffer(&vk_d.uboLightList[i], sizeof(LightList_s));
+				//VK_CreateUniformBuffer(&vk_d.uboLightList[i], sizeof(LightList_s));
+				VK_CreateAttributeBuffer(&vk_d.uboLightList[i], sizeof(LightList_s), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 
 				// End Result Image
 				VK_CreateImage(&vk_d.accelerationStructures.resultImage[i], vk.swapchain.extent.width, vk.swapchain.extent.height, vk.swapchain.imageFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);

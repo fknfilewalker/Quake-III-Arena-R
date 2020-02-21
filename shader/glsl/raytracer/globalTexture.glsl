@@ -2,9 +2,6 @@
 
 // global texture
 layout(binding = 0, set = 1) uniform sampler2D texure_array[];
-// vis data
-layout(binding = BINDING_OFFSET_VIS_DATA, set = 0, r8ui) uniform uimage2D vis_data;
-layout(binding = BINDING_OFFSET_LIGHT_VIS_DATA, set = 0, r32ui) uniform uimage2D lightVis_data;
 
 // texture getter
 vec4

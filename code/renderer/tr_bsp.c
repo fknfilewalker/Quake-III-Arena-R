@@ -1781,40 +1781,75 @@ qboolean R_GetEntityToken( char *buffer, int size ) {
 }
 
 void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint32_t offsetxyz) {
-	vec4_t pos = { 0,0,0,0 };
-	//if (RTX_MAX_LIGHTS == vk_d.lightList.numLights) return;
-	//for (int i = 0; i < tess.numVertexes; i++) {
-	//	//VectorAdd(pos, tess.xyz[i], pos);
-	//	if (tess.numVertexes <= 4) {
-	//		VectorCopy(tess.xyz[i], vk_d.lightList.lights[vk_d.lightList.numLights].pos);
-	//		vk_d.lightList.lights[vk_d.lightList.numLights].cluster = cluster;
-	//		vk_d.lightList.numLights++;
-	//	}
-	//}
-	if (cluster == 310) {
-		int x = 2;
-	}
-
-	if (tess.numIndexes > 6) {
-		int i = 0;
-	}
-
-	for (int i = 0; i < tess.numVertexes; i++) {
-		VectorAdd(pos, tess.xyz[i], pos);
-	}
-	VectorScale(pos, 1.0f / tess.numVertexes, pos);
-	if (vk_d.lightList.numLights < RTX_MAX_LIGHTS) {
-		if (vk_d.lightList.numLights >= RTX_MAX_LIGHTS) {
-			ri.Error(ERR_FATAL, "Vulkan: Too many lights");
+	
+	for (int i = 0; i < tess.numIndexes; i+=6) {
+		vec4_t pos = { 0,0,0,0 };
+		/*for (int i = 0; i < tess.numVertexes; i++) {
+			VectorAdd(pos, tess.xyz[i], pos);
 		}
-		VectorCopy(pos, vk_d.lightList.lights[vk_d.lightList.numLights].pos);
-		vk_d.lightList.lights[vk_d.lightList.numLights].cluster = cluster;
-		vk_d.lightList.lights[vk_d.lightList.numLights].type = type;
-		vk_d.lightList.lights[vk_d.lightList.numLights].offsetIDX = offsetidx;
-		vk_d.lightList.lights[vk_d.lightList.numLights].offsetXYZ = offsetxyz;
-		//(&vk_d.uboLightList[vk.swapchain.currentImage], vk_d.lightCount * sizeof(vec4_t), 1 * sizeof(vec4_t), (void*)&vk_d.lightList[vk_d.lightCount]);
-		vk_d.lightList.numLights++;
-		//VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], RTX_MAX_LIGHTS * sizeof(vec4_t), 1 * sizeof(uint32_t), (void*)&vk_d.lightCount);
+		VectorScale(pos, 1.0f / tess.numVertexes, pos);*/
+
+		if (vk_d.lightList.numLights < RTX_MAX_LIGHTS) {
+			if (vk_d.lightList.numLights >= RTX_MAX_LIGHTS) {
+				ri.Error(ERR_FATAL, "Vulkan: Too many lights");
+			}
+
+			vec4_t AB;
+			vec4_t AC;
+			VectorSubtract(tess.xyz[tess.indexes[i + 1]], tess.xyz[tess.indexes[i + 0]], AB);
+			VectorSubtract(tess.xyz[tess.indexes[i + 2]], tess.xyz[tess.indexes[i + 0]], AC);
+			vec3_t normal;
+			CrossProduct(AB, AC, normal);
+			float size = VectorLength(normal);
+			VectorScale(normal, 1.0f / size, normal);
+
+			VectorCopy(tess.xyz[tess.indexes[i + 0]], vk_d.lightList.lights[vk_d.lightList.numLights].pos);
+			vk_d.lightList.lights[vk_d.lightList.numLights].cluster = cluster;
+			vk_d.lightList.lights[vk_d.lightList.numLights].type = type;
+			vk_d.lightList.lights[vk_d.lightList.numLights].offsetIDX = offsetidx;
+			vk_d.lightList.lights[vk_d.lightList.numLights].offsetXYZ = offsetxyz;
+			vk_d.lightList.lights[vk_d.lightList.numLights].size = size;
+			memcpy(vk_d.lightList.lights[vk_d.lightList.numLights].normal, normal, sizeof(vec3_t));
+			memcpy(vk_d.lightList.lights[vk_d.lightList.numLights].AB, AB, sizeof(vec4_t));
+			memcpy(vk_d.lightList.lights[vk_d.lightList.numLights].AC, AC, sizeof(vec4_t));
+			if (strstr(tess.shader->name, "proto_lightred")) {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 245.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 0;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 0;
+			}
+			else if (strstr(tess.shader->name, "ceil1_4")) {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 245.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 205.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 0;
+			}
+			else if (strstr(tess.shader->name, "proto_light")) {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 245.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 205.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 139.0f / 255.0f;
+			}
+			else if (strstr(tess.shader->name, "gothic_light")) {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 245.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 205.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 139.0f / 255.0f;
+			}
+			else if (strstr(tess.shader->name, "baslt4_1")) {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 245.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 205.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 139.0f / 255.0f;
+			}
+			else if (strstr(tess.shader->name, "flame")) {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 226.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 88.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 34.0f / 255.0f;
+			}
+			else {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 0;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 1;
+			}
+			vk_d.lightList.lights[vk_d.lightList.numLights].color[3] = 0;
+			vk_d.lightList.numLights++;
+		}
 	}
 }
 
@@ -2012,10 +2047,38 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 				if (node->cluster == 1003) {
 					int x = 2;
 				}
+				clusterIDX = node->cluster;
 				//c = 1288;
 				//if(RB_IsLight(tess.shader)) RB_AddLightToLightList(c, 0, 0, 0);
 				//if(strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "bluemetalsupport2eye"))
 				//{ int x = 1; }
+				//if (node->cluster == 1566) {
+				//	int x = 2;
+				//	tess.shader->rtstages[0]->constantColor[0] = 140;
+				//	tess.shader->rtstages[0]->constantColor[1] = 0;
+				//	tess.shader->rtstages[0]->constantColor[2] = 0;
+				//	tess.shader->rtstages[0]->constantColor[3] = 0;
+				//	tess.shader->rtstages[0]->rgbGen = CGEN_CONST;
+				//	tess.shader->rtstages[0]->bundle->image[0] = tr.whiteImage;
+				//}
+				//else
+				//{
+				//	/*tess.shader->rtstages[0]->constantColor[0] = 0;
+				//	tess.shader->rtstages[0]->constantColor[1] = 140;
+				//	tess.shader->rtstages[0]->constantColor[2] = 0;
+				//	tess.shader->rtstages[0]->constantColor[3] = 0;
+				//	tess.shader->rtstages[0]->rgbGen = CGEN_CONST;
+				//	tess.shader->rtstages[0]->bundle->image[0] = tr.whiteImage;*/
+				//	/*const byte* clusterVis = s_worldData.vis + node->cluster * s_worldData.clusterBytes;
+				//	if ((clusterVis[276 >> 3] & (1 << (276 & 7))) > 0) {
+				//		tess.shader->rtstages[0]->constantColor[0] = 0;
+				//		tess.shader->rtstages[0]->constantColor[1] = 140;
+				//		tess.shader->rtstages[0]->constantColor[2] = 0;
+				//		tess.shader->rtstages[0]->constantColor[3] = 0;
+				//		tess.shader->rtstages[0]->rgbGen = CGEN_CONST;
+				//		tess.shader->rtstages[0]->bundle->image[0] = tr.whiteImage;
+				//	}*/
+				//}
 				
 				uint32_t material = 0;
 				// different buffer and offsets for static, dynamic data and dynamic as
@@ -2124,168 +2187,168 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 		}	
 	}
 }
-
-void R_RecursiveTrans(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstatic, uint32_t* countIDXdynamicData, uint32_t* countXYZdynamicData, uint32_t* countIDXdynamicAS, uint32_t* countXYZdynamicAS) {
-	do {
-		if (node->contents != -1) {
-			break;
-		}
-		R_RecursiveTrans(node->children[0], countIDXstatic, countXYZstatic, countIDXdynamicData, countXYZdynamicData, countIDXdynamicAS, countXYZdynamicAS);
-		node = node->children[1];
-	} while (1);
-	{
-		// leaf node, so add mark surfaces
-		int			c;
-		msurface_t* surf, ** mark;
-
-		mark = node->firstmarksurface;
-		c = node->nummarksurfaces;
-		for (int j = 0; j < c; j++) {
-			tess.numVertexes = 0;
-			tess.numIndexes = 0;
-			surf = mark[j];
-
-			shader_t* shader = tr.shaders[surf->shader->index];
-
-			/*if (strstr(tess.shader->stages[0]->bundle[0].image[0]->imgName, "*white")) {
-				continue;
-			}*/
-			int count = 0;
-			for (int i = 0; i < MAX_SHADER_STAGES; i++) {
-				if (shader->stages[i] != NULL && shader->stages[i]->active) {
-					count++;
-				}
-			}
-			if (count > 4) {
-				int x = 0;
-			}
-			if (strstr(shader->name, "flame")) {
-				int x = 2;
-			}
-			if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
-				|| strstr(shader->name, "Shadow") || shader->isSky
-				|| *surf->data == SF_BAD || *surf->data == SF_SKIP
-				|| shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP
-				|| shader->stages[0] == NULL || !shader->stages[0]->active) {
-				surf->skip = qtrue;
-				continue;
-			}
-			if ((shader->contentFlags & CONTENTS_TRANSLUCENT) != CONTENTS_TRANSLUCENT) continue;
-			//grate1_3
-			tess.shader = shader;
-
-
-			rb_surfaceTable[*surf->data](surf->data);
-			if (tess.numIndexes == 0) continue;
-
-			if (strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "chrome_metal")) {
-				int x = 1;
-			}
-
-			if (!surf->added && !surf->skip) {
-
-				
-
-				//if(strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "bluemetalsupport2eye"))
-				//{ int x = 1; }
-
-				uint32_t material = 0;
-				// different buffer and offsets for static, dynamic data and dynamic as
-				uint32_t* countIDX;
-				uint32_t* countXYZ;
-				vkbuffer_t* idx_buffer;
-				vkbuffer_t* xyz_buffer;
-				uint32_t* idx_buffer_offset;
-				uint32_t* xyz_buffer_offset;
-
-				qboolean dynamic = qfalse;
-				if (!RB_ASDynamic(tess.shader) && !RB_ASDataDynamic(tess.shader)) {
-					countIDX = countIDXstatic;
-					countXYZ = countXYZstatic;
-					//vk_d.geometry.idx_world_static_offset
-					idx_buffer = &vk_d.geometry.idx_world_static;
-					xyz_buffer = &vk_d.geometry.xyz_world_static;
-					idx_buffer_offset = &vk_d.geometry.idx_world_static_offset;
-					xyz_buffer_offset = &vk_d.geometry.xyz_world_static_offset;
-
-					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster, BAS_WORLD_STATIC, 
-						(*idx_buffer_offset) + (*countIDX),
-						(*xyz_buffer_offset));
-					RB_UploadCluster(&vk_d.geometry.cluster_world_static, vk_d.geometry.cluster_world_static_offset);
-					vk_d.geometry.cluster_world_static_offset += (tess.numIndexes/3);
-				}
-				else if (!RB_ASDynamic(tess.shader) && RB_ASDataDynamic(tess.shader)) {
-					countIDX = countIDXdynamicData;
-					countXYZ = countXYZdynamicData;
-					idx_buffer = &vk_d.geometry.idx_world_dynamic_data;
-					xyz_buffer = &vk_d.geometry.xyz_world_dynamic_data;
-					idx_buffer_offset = &vk_d.geometry.idx_world_dynamic_data_offset;
-					xyz_buffer_offset = &vk_d.geometry.xyz_world_dynamic_data_offset;
-					dynamic = qtrue;
-
-					// keep track of dynamic data surf
-					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].shader = tess.shader;
-					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].numXYZ = tess.numVertexes;
-					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].surf = surf;
-					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].offsetIDX = *idx_buffer_offset;
-					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].offsetXYZ = *xyz_buffer_offset;
-					vk_d.updateDataOffsetXYZCount++;
-
-					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster, BAS_WORLD_DYNAMIC_DATA, 
-																		(*idx_buffer_offset) + (*countIDX),
-																		(*xyz_buffer_offset));
-					RB_UploadCluster(&vk_d.geometry.cluster_world_dynamic_data, vk_d.geometry.cluster_world_dynamic_data_offset);
-					vk_d.geometry.cluster_world_dynamic_data_offset += (tess.numIndexes / 3);
-				}
-				else if (RB_ASDynamic(tess.shader)) {
-					countIDX = countIDXdynamicAS;
-					countXYZ = countXYZdynamicAS;
-					idx_buffer = &vk_d.geometry.idx_world_dynamic_as;
-					xyz_buffer = &vk_d.geometry.xyz_world_dynamic_as;
-					idx_buffer_offset = &vk_d.geometry.idx_world_dynamic_as_offset;
-					xyz_buffer_offset = &vk_d.geometry.xyz_world_dynamic_as_offset;
-					dynamic = qtrue;
-
-					// keep track of dynamic as surf
-					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].shader = tess.shader;
-					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].numXYZ = tess.numVertexes;
-					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].surf = surf;
-					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].offsetIDX = *idx_buffer_offset;
-					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].offsetXYZ = *xyz_buffer_offset;
-					vk_d.updateASOffsetXYZCount++;
-
-					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster, BAS_WORLD_DYNAMIC_AS,
-						(*idx_buffer_offset) + (*countIDX),
-						(*xyz_buffer_offset));
-				}
-				else {
-					surf->skip = qtrue;
-					continue;
-				}
-
-				// write idx
-				RB_UploadIDX(idx_buffer, (*idx_buffer_offset), (*countXYZ));
-				if (dynamic)for (int i = 1; i < vk.swapchain.imageCount; i++) RB_UploadIDX(idx_buffer[i], (*idx_buffer_offset), (*countXYZ));
-
-				// write xyz
-				RB_UploadXYZ(xyz_buffer, (*xyz_buffer_offset));
-				if (dynamic) {
-					for (int i = 1; i < vk.swapchain.imageCount; i++) {
-						RB_UploadXYZ(&xyz_buffer[i], (*xyz_buffer_offset));
-					}
-				}
-				surf->added = qtrue;
-
-				(*idx_buffer_offset) += tess.numIndexes;
-				(*xyz_buffer_offset) += tess.numVertexes;
-				(*countIDX) += tess.numIndexes;
-				(*countXYZ) += tess.numVertexes;
-			}
-			tess.numVertexes = 0;
-			tess.numIndexes = 0;
-		}
-	}
-}
+//
+//void R_RecursiveTrans(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstatic, uint32_t* countIDXdynamicData, uint32_t* countXYZdynamicData, uint32_t* countIDXdynamicAS, uint32_t* countXYZdynamicAS) {
+//	do {
+//		if (node->contents != -1) {
+//			break;
+//		}
+//		R_RecursiveTrans(node->children[0], countIDXstatic, countXYZstatic, countIDXdynamicData, countXYZdynamicData, countIDXdynamicAS, countXYZdynamicAS);
+//		node = node->children[1];
+//	} while (1);
+//	{
+//		// leaf node, so add mark surfaces
+//		int			c;
+//		msurface_t* surf, ** mark;
+//
+//		mark = node->firstmarksurface;
+//		c = node->nummarksurfaces;
+//		for (int j = 0; j < c; j++) {
+//			tess.numVertexes = 0;
+//			tess.numIndexes = 0;
+//			surf = mark[j];
+//
+//			shader_t* shader = tr.shaders[surf->shader->index];
+//
+//			/*if (strstr(tess.shader->stages[0]->bundle[0].image[0]->imgName, "*white")) {
+//				continue;
+//			}*/
+//			int count = 0;
+//			for (int i = 0; i < MAX_SHADER_STAGES; i++) {
+//				if (shader->stages[i] != NULL && shader->stages[i]->active) {
+//					count++;
+//				}
+//			}
+//			if (count > 4) {
+//				int x = 0;
+//			}
+//			if (strstr(shader->name, "flame")) {
+//				int x = 2;
+//			}
+//			if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
+//				|| strstr(shader->name, "Shadow") || shader->isSky
+//				|| *surf->data == SF_BAD || *surf->data == SF_SKIP
+//				|| shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP
+//				|| shader->stages[0] == NULL || !shader->stages[0]->active) {
+//				surf->skip = qtrue;
+//				continue;
+//			}
+//			if ((shader->contentFlags & CONTENTS_TRANSLUCENT) != CONTENTS_TRANSLUCENT) continue;
+//			//grate1_3
+//			tess.shader = shader;
+//
+//
+//			rb_surfaceTable[*surf->data](surf->data);
+//			if (tess.numIndexes == 0) continue;
+//
+//			if (strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "chrome_metal")) {
+//				int x = 1;
+//			}
+//
+//			if (!surf->added && !surf->skip) {
+//
+//				
+//
+//				//if(strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "bluemetalsupport2eye"))
+//				//{ int x = 1; }
+//
+//				uint32_t material = 0;
+//				// different buffer and offsets for static, dynamic data and dynamic as
+//				uint32_t* countIDX;
+//				uint32_t* countXYZ;
+//				vkbuffer_t* idx_buffer;
+//				vkbuffer_t* xyz_buffer;
+//				uint32_t* idx_buffer_offset;
+//				uint32_t* xyz_buffer_offset;
+//
+//				qboolean dynamic = qfalse;
+//				if (!RB_ASDynamic(tess.shader) && !RB_ASDataDynamic(tess.shader)) {
+//					countIDX = countIDXstatic;
+//					countXYZ = countXYZstatic;
+//					//vk_d.geometry.idx_world_static_offset
+//					idx_buffer = &vk_d.geometry.idx_world_static;
+//					xyz_buffer = &vk_d.geometry.xyz_world_static;
+//					idx_buffer_offset = &vk_d.geometry.idx_world_static_offset;
+//					xyz_buffer_offset = &vk_d.geometry.xyz_world_static_offset;
+//
+//					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster, BAS_WORLD_STATIC, 
+//						(*idx_buffer_offset) + (*countIDX),
+//						(*xyz_buffer_offset));
+//					RB_UploadCluster(&vk_d.geometry.cluster_world_static, vk_d.geometry.cluster_world_static_offset);
+//					vk_d.geometry.cluster_world_static_offset += (tess.numIndexes/3);
+//				}
+//				else if (!RB_ASDynamic(tess.shader) && RB_ASDataDynamic(tess.shader)) {
+//					countIDX = countIDXdynamicData;
+//					countXYZ = countXYZdynamicData;
+//					idx_buffer = &vk_d.geometry.idx_world_dynamic_data;
+//					xyz_buffer = &vk_d.geometry.xyz_world_dynamic_data;
+//					idx_buffer_offset = &vk_d.geometry.idx_world_dynamic_data_offset;
+//					xyz_buffer_offset = &vk_d.geometry.xyz_world_dynamic_data_offset;
+//					dynamic = qtrue;
+//
+//					// keep track of dynamic data surf
+//					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].shader = tess.shader;
+//					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].numXYZ = tess.numVertexes;
+//					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].surf = surf;
+//					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].offsetIDX = *idx_buffer_offset;
+//					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].offsetXYZ = *xyz_buffer_offset;
+//					vk_d.updateDataOffsetXYZCount++;
+//
+//					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster, BAS_WORLD_DYNAMIC_DATA, 
+//																		(*idx_buffer_offset) + (*countIDX),
+//																		(*xyz_buffer_offset));
+//					RB_UploadCluster(&vk_d.geometry.cluster_world_dynamic_data, vk_d.geometry.cluster_world_dynamic_data_offset);
+//					vk_d.geometry.cluster_world_dynamic_data_offset += (tess.numIndexes / 3);
+//				}
+//				else if (RB_ASDynamic(tess.shader)) {
+//					countIDX = countIDXdynamicAS;
+//					countXYZ = countXYZdynamicAS;
+//					idx_buffer = &vk_d.geometry.idx_world_dynamic_as;
+//					xyz_buffer = &vk_d.geometry.xyz_world_dynamic_as;
+//					idx_buffer_offset = &vk_d.geometry.idx_world_dynamic_as_offset;
+//					xyz_buffer_offset = &vk_d.geometry.xyz_world_dynamic_as_offset;
+//					dynamic = qtrue;
+//
+//					// keep track of dynamic as surf
+//					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].shader = tess.shader;
+//					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].numXYZ = tess.numVertexes;
+//					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].surf = surf;
+//					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].offsetIDX = *idx_buffer_offset;
+//					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].offsetXYZ = *xyz_buffer_offset;
+//					vk_d.updateASOffsetXYZCount++;
+//
+//					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster, BAS_WORLD_DYNAMIC_AS,
+//						(*idx_buffer_offset) + (*countIDX),
+//						(*xyz_buffer_offset));
+//				}
+//				else {
+//					surf->skip = qtrue;
+//					continue;
+//				}
+//
+//				// write idx
+//				RB_UploadIDX(idx_buffer, (*idx_buffer_offset), (*countXYZ));
+//				if (dynamic)for (int i = 1; i < vk.swapchain.imageCount; i++) RB_UploadIDX(idx_buffer[i], (*idx_buffer_offset), (*countXYZ));
+//
+//				// write xyz
+//				RB_UploadXYZ(xyz_buffer, (*xyz_buffer_offset));
+//				if (dynamic) {
+//					for (int i = 1; i < vk.swapchain.imageCount; i++) {
+//						RB_UploadXYZ(&xyz_buffer[i], (*xyz_buffer_offset));
+//					}
+//				}
+//				surf->added = qtrue;
+//
+//				(*idx_buffer_offset) += tess.numIndexes;
+//				(*xyz_buffer_offset) += tess.numVertexes;
+//				(*countIDX) += tess.numIndexes;
+//				(*countXYZ) += tess.numVertexes;
+//			}
+//			tess.numVertexes = 0;
+//			tess.numIndexes = 0;
+//		}
+//	}
+//}
 
 int R_GetClusterFromSurface(surfaceType_t* surf) {
 	for (int i = 0; i < s_worldData.numnodes; i++) {
@@ -2299,6 +2362,43 @@ int R_GetClusterFromSurface(surfaceType_t* surf) {
 		}
 	}
 	return -1;
+}
+
+int R_ClosestCluster(const vec3_t p) {
+
+	float dist = 999999;
+	int cluster = -1;
+	for (float x = -100; x < 1000; x+=10) {
+		for (float y = -1000; y < 0; y+= 10) {
+			for (float z = 0; z < 100; z+= 10) {
+				vec3_t center = {(x+(x+ 10))/2.0f,
+									(y + (y + 10)) / 2.0f,
+									(z + (z + 10)) / 2.0f };
+				float dist2 = abs(Distance(center, p));
+				if (dist2 < dist && R_FindClusterForPos2(center) != -1) {
+					dist = dist2;
+					cluster = R_FindClusterForPos2(center);
+				}
+			}
+		}
+	}
+
+	/*float dist = 999999;
+	int cluster = -1;
+	for (int i = 0; i < vk_d.numClusters; i++) {
+		vec3_t res;
+		VectorAdd(vk_d.clusterList[i].mins, vk_d.clusterList[i].maxs, res);
+		VectorScale(res, 1.0f / 2.0f, res);
+		float dist2 = abs(Distance(res, p));
+		if (dist2 < dist) {
+			dist = dist2;
+			cluster = i;
+
+			int zwei = R_FindClusterForPos2(res);
+			if (zwei != -1 && i != zwei) cluster = zwei;
+		}
+	}*/
+	return cluster;
 }
 
 void R_CalcClusterAABB(mnode_t* node) {
@@ -2383,8 +2483,8 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_AddSampler(&vk_d.rtxDescriptor[i], BINDING_OFFSET_BLUE_NOISE, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetSampler(&vk_d.rtxDescriptor[i], BINDING_OFFSET_BLUE_NOISE, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.blueNoiseTex.sampler, vk_d.blueNoiseTex.view);
 
-		VK_AddUniformBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetUniformBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.uboLightList[i].buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.uboLightList[i].buffer);
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_VIS_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_VIS_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.visData.view);
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_LIGHT_VIS_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV);
@@ -2463,8 +2563,8 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_AddStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_IDX_ENTITY_DYNAMIC, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_IDX_ENTITY_DYNAMIC, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.geometry.idx_entity_dynamic[i].buffer);
 
-		VK_AddUniformBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetUniformBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.uboLightList[i].buffer);
+		VK_AddStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.uboLightList[i].buffer);
 
 		VK_FinishDescriptor(&vk_d.computeDescriptor[i]);
 	}
@@ -2525,6 +2625,8 @@ void R_PreparePT() {
 	}
 
 	R_CalcClusterAABB(s_worldData.nodes);
+
+	
 
 	uint32_t offsetXYZ = 0;
 	uint32_t offsetXYZdynamicData = 0;
@@ -2914,8 +3016,8 @@ void R_PreparePT() {
 		//VK_UploadBufferDataOffset(&vk_d.uboLightList[i], vk_d.lightList.numLights  * sizeof(Light), sizeof(uint32_t), (void*)&vk_d.lightList.numLights);
 	}
 
-	VK_CreateImage(&vk_d.accelerationStructures.visData, s_worldData.clusterBytes, s_worldData.numClusters, VK_FORMAT_R8_UINT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 1);
-	VK_UploadMipImageData(&vk_d.accelerationStructures.visData, s_worldData.clusterBytes, s_worldData.numClusters, s_worldData.vis, 1, 0);
+	VK_CreateImage(&vk_d.accelerationStructures.visData, s_worldData.clusterBytes, vk_d.numClusters, VK_FORMAT_R8_UINT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 1);
+	VK_UploadMipImageData(&vk_d.accelerationStructures.visData, s_worldData.clusterBytes, vk_d.numClusters, vk_d.vis, 1, 0);
 	VK_TransitionImage(&vk_d.accelerationStructures.visData, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 	//VK_CreateSampler(&vk_d.accelerationStructures.visData, VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 

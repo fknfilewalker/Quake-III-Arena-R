@@ -209,7 +209,7 @@ void shootPrimaryRay(Ray ray, vec2 sccs){
 		if(is_player(rp)) hitData.material |= MATERIAL_FLAG_PLAYER_OR_WEAPON;
 		hitData.depth = rp.hit_distance;
 
-		if(is_light(rp)) hitData.albedo += vec4(1,0,0,0);
+		//if(is_light(rp)) hitData.albedo += vec4(1,0,0,0);
 	}
 
 	//vec3 posPrev = getHitPointPrev(rp).pos;//temp.xyz;
