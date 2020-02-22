@@ -2806,7 +2806,7 @@ void R_PreparePT() {
 		//vk_d.bottomASWorldStatic.data.texIdx = 60;
 		//vk_d.bottomASWorldStatic.data.material |= MATERIAL_KIND_REGULAR;
 		vk_d.bottomASWorldStaticTrans.geometryInstance.instanceCustomIndex = 0;
-		vk_d.bottomASWorldStaticTrans.geometryInstance.instanceOffset = 0;
+		vk_d.bottomASWorldStaticTrans.geometryInstance.instanceOffset = 1;
 		vk_d.bottomASWorldStaticTrans.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 		vk_d.bottomASWorldStaticTrans.geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_NV;
 		vk_d.bottomASWorldStaticTrans.geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
@@ -2847,6 +2847,7 @@ void R_PreparePT() {
 		//vk_d.bottomASWorldDynamicData.data.texIdx = 60;
 		//vk_d.bottomASWorldDynamicData.data.material |= MATERIAL_KIND_REGULAR;
 		vk_d.bottomASWorldDynamicDataTrans.geometryInstance.instanceCustomIndex = 0;
+		vk_d.bottomASWorldDynamicDataTrans.geometryInstance.instanceOffset = 1;
 		vk_d.bottomASWorldDynamicDataTrans.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 		vk_d.bottomASWorldDynamicDataTrans.geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_NV;
 		vk_d.bottomASWorldDynamicDataTrans.geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
@@ -2890,6 +2891,7 @@ void R_PreparePT() {
 			//vk_d.bottomASWorldDynamicAS[i].data.texIdx = 60;
 			//vk_d.bottomASWorldDynamicAS[i].data.material |= MATERIAL_KIND_REGULAR;
 			vk_d.bottomASWorldDynamicASTrans[i].geometryInstance.instanceCustomIndex = 0;
+			vk_d.bottomASWorldDynamicASTrans[i].geometryInstance.instanceOffset = 1;
 			vk_d.bottomASWorldDynamicASTrans[i].geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 			vk_d.bottomASWorldDynamicASTrans[i].geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_NV;
 			vk_d.bottomASWorldDynamicASTrans[i].geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;

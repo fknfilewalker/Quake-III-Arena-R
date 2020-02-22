@@ -71,13 +71,24 @@ void main()
 	rpb.hit_distance = gl_RayTmaxNV;
   //rpb.modelmat = gl_ObjectToWorldNV;
 
-  if(is_see_through(rpb)) {
-    HitPoint hp = getHitPoint(rpb);
-   rp.transparent = global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0);
-   if(rp.transparent.w < 0.5) {
-     rp.transparent = vec4(0,1,0,0);
-   }
-  }
+  HitPoint hp = getHitPoint(rpb);
+  vec4 contrib = vec4(0,0,0,0);
+
+  vec4 tex = getTextureWithLod(hp,0);
+// tex.xyz *= tex.w;
+//   if(rp.max_transparent_distance < gl_HitTNV)
+//     rp.transparent = alpha_blend_premultiplied(rp.transparent, tex);
+//   else
+//     rp.transparent = alpha_blend_premultiplied(tex, rp.transparent);
+  //rp.transparent += tex;
+  // if(is_see_through(rpb)) {
+  //   HitPoint hp = getHitPoint(rpb);
+  //  rp.transparent = global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0);
+  //  if(rp.transparent.w < 0.5) {
+  //    rp.transparent = vec4(0,1,0,0);
+  //  }
+  // }
+  rp.transparent += tex;
   rp.max_transparent_distance = gl_HitTNV;
 	ignoreIntersectionNV();
 }

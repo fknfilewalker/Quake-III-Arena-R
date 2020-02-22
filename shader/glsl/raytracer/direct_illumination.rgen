@@ -26,6 +26,7 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 
 vec3 directIllumination(){
 	vec4 primary_albedo;
+	vec4 transparent;
 	vec3 normal;
 	vec3 pos;
 	uint cluster;
@@ -42,6 +43,7 @@ vec3 directIllumination(){
 		return reflectAlbedo.xyz;
 	}
 	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
+	transparent = imageLoad(transparentGBuffer, ivec2(gl_LaunchIDNV.xy));
 
 	if (isSky(material)) return primary_albedo.xyz;
 	if (isLight(material)) return vec3(1,0,0);
@@ -50,6 +52,7 @@ vec3 directIllumination(){
 	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 
 	vec3 shadeColor = calcShading(primary_albedo, pos, normal, cluster, material);
+	shadeColor = alpha_blend( transparent, vec4(shadeColor.rgb,1) ).xyz;
 	return shadeColor;
 }
 

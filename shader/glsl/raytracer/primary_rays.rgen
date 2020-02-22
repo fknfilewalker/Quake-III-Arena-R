@@ -26,6 +26,7 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO_PREV, set = 0) uniform global_ubo_pre
 
 struct PrimaryRayHit{
 	vec4 albedo;
+	vec4 transparent;
 	vec3 normal;
 	vec3 pos;
 	uint cluster;
@@ -202,6 +203,7 @@ void shootPrimaryRay(Ray ray, vec2 sccs){
 		Triangle triangle = getTriangle(rp);
 
 		hitData.albedo = getTextureLod(sccs, triangle, hp);
+		hitData.transparent = rp.transparent;
 		hitData.normal = hp.normal;
 		hitData.pos = hp.pos;
 		hitData.cluster = int(hp.cluster);
@@ -236,6 +238,7 @@ void main()
 
 	// store data in g buffer
 	imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.albedo));
+	imageStore(transparentGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.transparent));
 	imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.normal.xyz,1));
 	imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.pos.xyz, 0));
 	imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(hitData.material, hitData.cluster, rp.instanceID,0));
