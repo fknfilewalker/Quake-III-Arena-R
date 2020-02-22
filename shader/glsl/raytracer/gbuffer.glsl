@@ -5,3 +5,4 @@ layout(binding = BINDING_OFFSET_GBUFFER_REFLECTION, set = 0, rgba32f) uniform im
 layout(binding = BINDING_OFFSET_GBUFFER_OBJECT, set = 0, rgba32ui) uniform uimage2D objectGBuffer;
 layout(binding = BINDING_OFFSET_GBUFFER_MOTION, set = 0, rgba32f) uniform image2D motionGBuffer;
 layout(binding = BINDING_OFFSET_GBUFFER_VIEW_DIR, set = 0, rgba32f) uniform image2D viewGBuffer;
+layout(binding = BINDING_OFFSET_GBUFFER_TRANSPARENT, set = 0, rgba32f) uniform image2D transparentGBuffer;

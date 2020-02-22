@@ -13,6 +13,7 @@ void main()
 {
     //if (alphaTestFails(attribs))
 	//	IgnoreHit();
+    
     RayPayload rpb;
     rpb.barycentric = hitAttribute;
     rpb.instanceID = gl_InstanceID;
@@ -21,7 +22,7 @@ void main()
     //rpb.modelmat = gl_ObjectToWorldNV;
 
     if(is_light(rpb)) ignoreIntersectionNV();
-
+    if(isGlass(get_material(rpb))) ignoreIntersectionNV();
     // if(is_see_through(rpb)) {
     //     HitPoint hp = getHitPoint(rpb);
     //     //if(all(equal(global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0).xyz, vec3(0)))) ignoreIntersectionNV();

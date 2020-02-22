@@ -20,7 +20,7 @@ void trace_ray(Ray ray, uint cullMask)
 
 void traceRayOpaque(Ray ray, uint cullMask)
 {
-	const uint rayFlags = gl_RayFlagsCullNoOpaqueNV | gl_RayFlagsOpaqueNV | gl_RayFlagsTerminateOnFirstHitNV ;
+	const uint rayFlags =   gl_RayFlagsTerminateOnFirstHitNV ;
 	rp.transparent = vec4(0);
 	rp.max_transparent_distance = 0;
 

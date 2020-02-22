@@ -1396,6 +1396,7 @@ typedef struct {
 	vkimage_t			albedo;
 	vkimage_t			normals;
 	vkimage_t			viewDir;
+	vkimage_t			transparent;
 	vkimage_t			reflection;
 	vkimage_t			objectInfo;
 	vkimage_t			motion;
@@ -1501,9 +1502,11 @@ typedef struct {
 	vkbuffer_t			basBufferStaticWorld;
 	// world dynamic data (world geometry that requieres texture/color or uv updates)
 	vkbottomAS_t		bottomASWorldDynamicData;
+	vkbottomAS_t		bottomASWorldDynamicDataTrans;
 	vkbuffer_t			basBufferWorldDynamicData;
 	// world dynamic AS (world geometry that requieres AS updates)
 	vkbottomAS_t		bottomASWorldDynamicAS[VK_MAX_SWAPCHAIN_SIZE];
+	vkbottomAS_t		bottomASWorldDynamicASTrans[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t			basBufferWorldDynamicAS[VK_MAX_SWAPCHAIN_SIZE];
 	// entity
 	// entity static AS (entities that do no requiere updates)
@@ -1538,6 +1541,7 @@ typedef struct {
 	struct {
 		uint32_t offsetIDX;
 		uint32_t offsetXYZ;
+		uint32_t countXYZ;
 		uint32_t numXYZ;
 		shader_t* shader;
 		msurface_t* surf;

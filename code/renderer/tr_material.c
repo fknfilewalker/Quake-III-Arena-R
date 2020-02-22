@@ -2,8 +2,8 @@
 
 qboolean RB_IsLight(shader_t
 	* shader) {
-	if (tess.numIndexes > 6) {
-		//return qfalse;
+	if (tess.numIndexes > 12) {
+		return qfalse;
 	}
 	if (strstr(shader->name, "wsupprt1_12") || strstr(shader->name, "scrolllight") || strstr(shader->name, "runway")) return qfalse;
 

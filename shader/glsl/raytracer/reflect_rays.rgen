@@ -54,7 +54,7 @@ vec4 calculateReflection(inout vec3 pos, inout vec3 direction, inout vec3 N){
 		direction = dirReflection;
 		N = hp.normal;
 		//albedoReflection = vec4(calcShade(pos, N, albedoReflection.xyz, hp.cluster), albedoReflection.w);
-		//albedoReflection = vec4(shade(albedoReflection, hp.pos, hp.normal, hp.cluster),1);
+		albedoReflection = vec4(calcShading(albedoReflection, hp.pos, hp.normal, hp.cluster, hp.material),1);
 	}
 	return albedoReflection;
 }
@@ -87,6 +87,7 @@ vec4 calculateRefraction( inout vec3 pos, inout vec3 direction, inout vec3 N, in
 		direction = normalize(dirRefraction);
 		N = hp.normal;
 		//albedoRefraction = vec4(calcShade(pos, N, albedoRefraction.xyz, hp.cluster), albedoRefraction.w);
+		albedoRefraction = vec4(calcShading(albedoRefraction, hp.pos, hp.normal, hp.cluster, hp.material),1);
 	}
 	return albedoRefraction;
 }
