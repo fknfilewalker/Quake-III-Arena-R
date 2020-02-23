@@ -69,17 +69,35 @@ void main()
   rpb.instanceID = gl_InstanceID;
 	rpb.primitiveID = gl_PrimitiveID;
 	rpb.hit_distance = gl_RayTmaxNV;
-  //rpb.modelmat = gl_ObjectToWorldNV;
+  uint material = get_material(rpb);
 
-  HitPoint hp = getHitPoint(rpb);
-  vec4 contrib = vec4(0,0,0,0);
+  if(isSeeThrough(material)) {
+    HitPoint hp = getHitPoint(rpb);
+    vec4 contrib = vec4(0,0,0,0);
 
-  vec4 tex = getTextureWithLod(hp,0);
-// tex.xyz *= tex.w;
-//   if(rp.max_transparent_distance < gl_HitTNV)
-//     rp.transparent = alpha_blend_premultiplied(rp.transparent, tex);
-//   else
-//     rp.transparent = alpha_blend_premultiplied(tex, rp.transparent);
+    vec4 tex = getTextureWithLod(hp,0);
+    tex.xyz *= tex.w;
+    if(rp.max_transparent_distance < gl_HitTNV)
+      rp.transparent = alpha_blend_premultiplied(rp.transparent, tex);
+    else
+      rp.transparent = alpha_blend_premultiplied(tex, rp.transparent);
+  }
+  else if(isSeeThroughAdd(material)) {
+    HitPoint hp = getHitPoint(rpb);
+    vec4 contrib = vec4(0,0,0,0);
+
+    vec4 tex = getTextureWithLod(hp,0);
+    rp.transparent.xyz += tex.xyz;
+    // if(rp.max_transparent_distance < gl_HitTNV)
+    //   rp.transparent = alpha_blend(rp.transparent, tex);
+    // else
+    //   rp.transparent = alpha_blend(tex, rp.transparent);
+  } else {
+    HitPoint hp = getHitPoint(rpb);
+    vec4 tex = getTextureWithLod(hp,0);
+    rp.transparent.xyz += tex.xyz;
+    rp.transparent.w = 1;
+  }
   //rp.transparent += tex;
   // if(is_see_through(rpb)) {
   //   HitPoint hp = getHitPoint(rpb);
@@ -88,7 +106,8 @@ void main()
   //    rp.transparent = vec4(0,1,0,0);
   //  }
   // }
-  rp.transparent += tex;
+  //rp.transparent += tex;
+  
   rp.max_transparent_distance = gl_HitTNV;
 	ignoreIntersectionNV();
 }

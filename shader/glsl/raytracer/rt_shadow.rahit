@@ -19,10 +19,19 @@ void main()
     rpb.instanceID = gl_InstanceID;
     rpb.primitiveID = gl_PrimitiveID;
     rpb.hit_distance = gl_RayTmaxNV;
-    //rpb.modelmat = gl_ObjectToWorldNV;
+    uint material = get_material(rpb);
+    
+    if(isLight(material)) ignoreIntersectionNV();
+    if(isGlass(material)) ignoreIntersectionNV();
 
-    if(is_light(rpb)) ignoreIntersectionNV();
-    if(isGlass(get_material(rpb))) ignoreIntersectionNV();
+    if(isSeeThrough(material)) ignoreIntersectionNV();
+
+    // HitPoint hp = getHitPoint(rpb);
+	// vec4 tex = getTextureWithLod(hp,0);
+    
+    //if(tex.w < 0.5f) ignoreIntersectionNV();
+    //     // global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0).y < 0.1 &&
+    //     // global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0).z < 0.1) ignoreIntersectionNV();
     // if(is_see_through(rpb)) {
     //     HitPoint hp = getHitPoint(rpb);
     //     //if(all(equal(global_texture(hp.tex0 & TEX0_IDX_MASK, hp.uv0).xyz, vec3(0)))) ignoreIntersectionNV();

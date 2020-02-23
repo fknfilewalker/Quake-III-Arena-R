@@ -49,7 +49,13 @@ uint32_t RB_GetMaterial() {
 	}
 
 	if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) material |= MATERIAL_FLAG_MIRROR;
-	if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) material |= MATERIAL_FLAG_SEE_THROUGH;
+	else if ((strstr(tess.shader->name, "gratelamp/gratelamp") && !strstr(tess.shader->name, "gratelamp/gratelamp_b"))
+		|| strstr(tess.shader->name, "gratelamp/gratetorch2b") 
+		|| strstr(tess.shader->name, "timlamp/timlamp")) material |= MATERIAL_FLAG_SEE_THROUGH;
+	else if (strstr(tess.shader->name, "flame")) {
+		material |= MATERIAL_FLAG_SEE_THROUGH_ADD;
+	}
+	else if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) material |= MATERIAL_FLAG_SEE_THROUGH;
 
 	if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) {
 		material |= MATERIAL_FLAG_PLAYER_OR_WEAPON;

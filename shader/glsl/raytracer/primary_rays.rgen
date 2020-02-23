@@ -194,6 +194,7 @@ void shootPrimaryRay(Ray ray, vec2 sccs){
 
 	if(!found_intersection(rp)){
 		hitData.albedo = sampleSky(ray.direction);
+		hitData.transparent = rp.transparent;
 		hitData.normal = vec3(0);
 		hitData.pos = vec3(0);
 		hitData.material = MATERIAL_KIND_SKY;
@@ -210,7 +211,6 @@ void shootPrimaryRay(Ray ray, vec2 sccs){
 		hitData.material = get_material(rp);
 		if(is_player(rp)) hitData.material |= MATERIAL_FLAG_PLAYER_OR_WEAPON;
 		hitData.depth = rp.hit_distance;
-
 		//if(is_light(rp)) hitData.albedo += vec4(1,0,0,0);
 	}
 
@@ -233,7 +233,7 @@ void main()
 	Ray ray = getPrimaryRay(sccs);
 	// get distance to first opaque object
 	traceRayOpaque(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE);
-	ray.t_max = rp.hit_distance + 0.001;
+	if(found_intersection(rp)) ray.t_max = rp.hit_distance + 0.001;
 	shootPrimaryRay(ray, sccs);
 
 	// store data in g buffer

@@ -1842,6 +1842,16 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 88.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 34.0f / 255.0f;
 			}
+			else if (strstr(tess.shader->name, "xceil1_39")) {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 218.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 205.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 173.0f / 255.0f;
+			}
+			else if (strstr(tess.shader->name, "ceil1_38")) {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 216.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 216.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 208.0f / 255.0f;
+			}
 			else {
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 0;
@@ -2000,6 +2010,14 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 				//if (!strstr(shader->name, "glass") && !strstr(shader->name, "flame"))continue;
 				if (!strstr(shader->name, "glass"))continue;
 			}
+
+			if (!transparent) {
+				if ((strstr(shader->name, "gratelamp/gratelamp") && !strstr(shader->name, "gratelamp/gratelamp_b"))
+					|| (strstr(shader->name, "gratelamp/gratetorch2b"))
+					|| (strstr(shader->name, "timlamp/timlamp"))) {
+					continue;
+				}
+			}
 			//grate1_3
 			tess.shader = shader;
 
@@ -2153,168 +2171,6 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 		}	
 	}
 }
-//
-//void R_RecursiveTrans(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstatic, uint32_t* countIDXdynamicData, uint32_t* countXYZdynamicData, uint32_t* countIDXdynamicAS, uint32_t* countXYZdynamicAS) {
-//	do {
-//		if (node->contents != -1) {
-//			break;
-//		}
-//		R_RecursiveTrans(node->children[0], countIDXstatic, countXYZstatic, countIDXdynamicData, countXYZdynamicData, countIDXdynamicAS, countXYZdynamicAS);
-//		node = node->children[1];
-//	} while (1);
-//	{
-//		// leaf node, so add mark surfaces
-//		int			c;
-//		msurface_t* surf, ** mark;
-//
-//		mark = node->firstmarksurface;
-//		c = node->nummarksurfaces;
-//		for (int j = 0; j < c; j++) {
-//			tess.numVertexes = 0;
-//			tess.numIndexes = 0;
-//			surf = mark[j];
-//
-//			shader_t* shader = tr.shaders[surf->shader->index];
-//
-//			/*if (strstr(tess.shader->stages[0]->bundle[0].image[0]->imgName, "*white")) {
-//				continue;
-//			}*/
-//			int count = 0;
-//			for (int i = 0; i < MAX_SHADER_STAGES; i++) {
-//				if (shader->stages[i] != NULL && shader->stages[i]->active) {
-//					count++;
-//				}
-//			}
-//			if (count > 4) {
-//				int x = 0;
-//			}
-//			if (strstr(shader->name, "flame")) {
-//				int x = 2;
-//			}
-//			if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
-//				|| strstr(shader->name, "Shadow") || shader->isSky
-//				|| *surf->data == SF_BAD || *surf->data == SF_SKIP
-//				|| shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP
-//				|| shader->stages[0] == NULL || !shader->stages[0]->active) {
-//				surf->skip = qtrue;
-//				continue;
-//			}
-//			if ((shader->contentFlags & CONTENTS_TRANSLUCENT) != CONTENTS_TRANSLUCENT) continue;
-//			//grate1_3
-//			tess.shader = shader;
-//
-//
-//			rb_surfaceTable[*surf->data](surf->data);
-//			if (tess.numIndexes == 0) continue;
-//
-//			if (strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "chrome_metal")) {
-//				int x = 1;
-//			}
-//
-//			if (!surf->added && !surf->skip) {
-//
-//				
-//
-//				//if(strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "bluemetalsupport2eye"))
-//				//{ int x = 1; }
-//
-//				uint32_t material = 0;
-//				// different buffer and offsets for static, dynamic data and dynamic as
-//				uint32_t* countIDX;
-//				uint32_t* countXYZ;
-//				vkbuffer_t* idx_buffer;
-//				vkbuffer_t* xyz_buffer;
-//				uint32_t* idx_buffer_offset;
-//				uint32_t* xyz_buffer_offset;
-//
-//				qboolean dynamic = qfalse;
-//				if (!RB_ASDynamic(tess.shader) && !RB_ASDataDynamic(tess.shader)) {
-//					countIDX = countIDXstatic;
-//					countXYZ = countXYZstatic;
-//					//vk_d.geometry.idx_world_static_offset
-//					idx_buffer = &vk_d.geometry.idx_world_static;
-//					xyz_buffer = &vk_d.geometry.xyz_world_static;
-//					idx_buffer_offset = &vk_d.geometry.idx_world_static_offset;
-//					xyz_buffer_offset = &vk_d.geometry.xyz_world_static_offset;
-//
-//					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster, BAS_WORLD_STATIC, 
-//						(*idx_buffer_offset) + (*countIDX),
-//						(*xyz_buffer_offset));
-//					RB_UploadCluster(&vk_d.geometry.cluster_world_static, vk_d.geometry.cluster_world_static_offset);
-//					vk_d.geometry.cluster_world_static_offset += (tess.numIndexes/3);
-//				}
-//				else if (!RB_ASDynamic(tess.shader) && RB_ASDataDynamic(tess.shader)) {
-//					countIDX = countIDXdynamicData;
-//					countXYZ = countXYZdynamicData;
-//					idx_buffer = &vk_d.geometry.idx_world_dynamic_data;
-//					xyz_buffer = &vk_d.geometry.xyz_world_dynamic_data;
-//					idx_buffer_offset = &vk_d.geometry.idx_world_dynamic_data_offset;
-//					xyz_buffer_offset = &vk_d.geometry.xyz_world_dynamic_data_offset;
-//					dynamic = qtrue;
-//
-//					// keep track of dynamic data surf
-//					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].shader = tess.shader;
-//					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].numXYZ = tess.numVertexes;
-//					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].surf = surf;
-//					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].offsetIDX = *idx_buffer_offset;
-//					vk_d.updateDataOffsetXYZ[vk_d.updateDataOffsetXYZCount].offsetXYZ = *xyz_buffer_offset;
-//					vk_d.updateDataOffsetXYZCount++;
-//
-//					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster, BAS_WORLD_DYNAMIC_DATA, 
-//																		(*idx_buffer_offset) + (*countIDX),
-//																		(*xyz_buffer_offset));
-//					RB_UploadCluster(&vk_d.geometry.cluster_world_dynamic_data, vk_d.geometry.cluster_world_dynamic_data_offset);
-//					vk_d.geometry.cluster_world_dynamic_data_offset += (tess.numIndexes / 3);
-//				}
-//				else if (RB_ASDynamic(tess.shader)) {
-//					countIDX = countIDXdynamicAS;
-//					countXYZ = countXYZdynamicAS;
-//					idx_buffer = &vk_d.geometry.idx_world_dynamic_as;
-//					xyz_buffer = &vk_d.geometry.xyz_world_dynamic_as;
-//					idx_buffer_offset = &vk_d.geometry.idx_world_dynamic_as_offset;
-//					xyz_buffer_offset = &vk_d.geometry.xyz_world_dynamic_as_offset;
-//					dynamic = qtrue;
-//
-//					// keep track of dynamic as surf
-//					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].shader = tess.shader;
-//					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].numXYZ = tess.numVertexes;
-//					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].surf = surf;
-//					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].offsetIDX = *idx_buffer_offset;
-//					vk_d.updateASOffsetXYZ[vk_d.updateASOffsetXYZCount].offsetXYZ = *xyz_buffer_offset;
-//					vk_d.updateASOffsetXYZCount++;
-//
-//					if (RB_IsLight(tess.shader)) RB_AddLightToLightList(node->cluster, BAS_WORLD_DYNAMIC_AS,
-//						(*idx_buffer_offset) + (*countIDX),
-//						(*xyz_buffer_offset));
-//				}
-//				else {
-//					surf->skip = qtrue;
-//					continue;
-//				}
-//
-//				// write idx
-//				RB_UploadIDX(idx_buffer, (*idx_buffer_offset), (*countXYZ));
-//				if (dynamic)for (int i = 1; i < vk.swapchain.imageCount; i++) RB_UploadIDX(idx_buffer[i], (*idx_buffer_offset), (*countXYZ));
-//
-//				// write xyz
-//				RB_UploadXYZ(xyz_buffer, (*xyz_buffer_offset));
-//				if (dynamic) {
-//					for (int i = 1; i < vk.swapchain.imageCount; i++) {
-//						RB_UploadXYZ(&xyz_buffer[i], (*xyz_buffer_offset));
-//					}
-//				}
-//				surf->added = qtrue;
-//
-//				(*idx_buffer_offset) += tess.numIndexes;
-//				(*xyz_buffer_offset) += tess.numVertexes;
-//				(*countIDX) += tess.numIndexes;
-//				(*countXYZ) += tess.numVertexes;
-//			}
-//			tess.numVertexes = 0;
-//			tess.numIndexes = 0;
-//		}
-//	}
-//}
 
 int R_GetClusterFromSurface(surfaceType_t* surf) {
 	for (int i = 0; i < s_worldData.numnodes; i++) {
@@ -2392,20 +2248,6 @@ void R_CalcClusterAABB(mnode_t* node) {
 	}
 }
 
-void shuffle(uint32_t* array, size_t n)
-{
-	if (n > 1)
-	{
-		size_t i;
-		for (i = 0; i < n - 1; i++)
-		{
-			size_t j = i + rand() / (RAND_MAX / (n - i) + 1);
-			int t = array[j];
-			array[j] = array[i];
-			array[i] = t;
-		}
-	}
-}
 
 void R_CreatePrimaryRaysPipeline() {
 	for (int i = 0; i < vk.swapchain.imageCount; i++) {

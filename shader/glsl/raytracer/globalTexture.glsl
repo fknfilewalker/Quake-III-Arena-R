@@ -38,6 +38,11 @@ vec4 alpha_blend_premultiplied(in vec4 top,  in vec4 bottom)
     return vec4(top.rgb + bottom.rgb * (1 - top.a), 1 - (1 - top.a) * (1 - bottom.a)); 
 }
 
+vec4 alphaBlendSimple(in vec4 top, in vec4 bottom)
+{
+	return bottom * bottom.w + top * (1-bottom.w);
+}
+
 // unpack texture idx, blend/add, and req color, data
 TextureData unpackTextureData(in uint data){
 	TextureData d;

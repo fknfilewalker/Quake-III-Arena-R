@@ -220,8 +220,9 @@ void reflectionRefrection(){
 			float ratio = 0.2;//0.2;
 			vec4 albedo = ratio * albedoReflection + (1 - ratio) * albedoRefraction;
 
+			if(primary_albedo.w != 0) primary_albedo = vec4(calcShading(primary_albedo, P, N, cluster, material),primary_albedo.w);
 			color = primary_albedo * primary_albedo.w + albedo * (1-primary_albedo.w);
-			
+			//color = vec4(color.xyz, primary_albedo.w);
 
 			//material = get_material(rp);
 			
