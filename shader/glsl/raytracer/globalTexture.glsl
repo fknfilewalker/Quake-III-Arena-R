@@ -60,13 +60,14 @@ TextureData unpackTextureData(in uint data){
 vec4 getTextureWithLod(in HitPoint hp, in uint lod){
 
 	TextureData d = unpackTextureData(hp.tex0);
+	TextureData d2 = unpackTextureData(hp.tex1);
 	vec4 color = vec4(0);
 	if(d.tex0 != -1){
 		vec4 tex = global_textureLod(d.tex0, hp.uv0, lod);
 		// if we have more tex to blend set alpha to 1
 		if(d.tex1 != -1) color = vec4(tex.xyz, 1);
 		else color = tex;
-		if(d.tex0Color) color *= (hp.color0/255);
+		color *= (hp.color0/255);
 	} else return color;
 	if(d.tex1 != -1){
 		vec4 tex = global_textureLod(d.tex1, hp.uv1, lod);
@@ -76,8 +77,6 @@ vec4 getTextureWithLod(in HitPoint hp, in uint lod){
 		}
 		else color += tex;
 	} else return color;
-
-	TextureData d2 = unpackTextureData(hp.tex1);
 	if(d2.tex0 != -1){
 		vec4 tex = global_textureLod(d2.tex0, hp.uv2, lod);
 		if(d2.tex0Color) tex *= (hp.color2/255);

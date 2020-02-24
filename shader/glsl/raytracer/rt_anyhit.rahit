@@ -9,6 +9,19 @@
 hitAttributeNV vec2 hitAttribute;
 layout(location = 0) rayPayloadInNV RayPayload rp;
 
+void blendSeeThrough(in HitPoint hp){
+  vec4 tex = getTextureWithLod(hp,0);
+  tex.xyz *= tex.w;
+  if(rp.max_transparent_distance < gl_HitTNV)
+    rp.transparent = alpha_blend_premultiplied(rp.transparent, tex);
+  else
+    rp.transparent = alpha_blend_premultiplied(tex, rp.transparent);
+}
+void blendSeeThroughAdd(in HitPoint hp){
+  vec4 tex = getTextureWithLod(hp,0);
+  rp.transparent.xyz += (tex.xyz * tex.w);
+}
+
 void main()
 {
   // HitPoint hp = getHitPoint(gl_InstanceID, gl_PrimitiveID, attribs);
@@ -71,31 +84,15 @@ void main()
 	rpb.hit_distance = gl_RayTmaxNV;
   uint material = get_material(rpb);
 
+  HitPoint hp = getHitPoint(rpb);
   if(isSeeThrough(material)) {
-    HitPoint hp = getHitPoint(rpb);
-    vec4 contrib = vec4(0,0,0,0);
-
-    vec4 tex = getTextureWithLod(hp,0);
-    tex.xyz *= tex.w;
-    if(rp.max_transparent_distance < gl_HitTNV)
-      rp.transparent = alpha_blend_premultiplied(rp.transparent, tex);
-    else
-      rp.transparent = alpha_blend_premultiplied(tex, rp.transparent);
+    blendSeeThrough(hp);
   }
   else if(isSeeThroughAdd(material)) {
-    HitPoint hp = getHitPoint(rpb);
-    vec4 contrib = vec4(0,0,0,0);
-
-    vec4 tex = getTextureWithLod(hp,0);
-    rp.transparent.xyz += tex.xyz;
-    // if(rp.max_transparent_distance < gl_HitTNV)
-    //   rp.transparent = alpha_blend(rp.transparent, tex);
-    // else
-    //   rp.transparent = alpha_blend(tex, rp.transparent);
+    blendSeeThroughAdd(hp);
   } else {
-    HitPoint hp = getHitPoint(rpb);
     vec4 tex = getTextureWithLod(hp,0);
-    rp.transparent.xyz += tex.xyz;
+    rp.transparent.xyz += tex.www;
     rp.transparent.w = 1;
   }
   //rp.transparent += tex;

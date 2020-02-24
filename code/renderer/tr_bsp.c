@@ -1987,11 +1987,9 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 					count++;
 				}
 			}
-			if (count > 4) {
-				int x = 0;
-			}
-			if (strstr(shader->name, "flame")) {
-				int x = 2;
+			
+			if (strstr(shader->name, "textures/sfx/portal_sfx_ring")) {
+				int x = 2; //continue;
 			}
 			if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
 				|| strstr(shader->name, "Shadow") || shader->isSky
@@ -2000,7 +1998,7 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 				|| shader->rtstages[0] == NULL || !shader->rtstages[0]->active) {
 
 				//continue;
-				if (!strstr(shader->name, "glass")){// && !strstr(shader->name, "flame")) {
+				if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white")){// && !strstr(shader->name, "flame")) {
 					surf->skip = qtrue;
 					continue;
 				}
@@ -2008,7 +2006,7 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 			if (!transparent && ((shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->sort > SS_OPAQUE)) {
 				//continue;
 				//if (!strstr(shader->name, "glass") && !strstr(shader->name, "flame"))continue;
-				if (!strstr(shader->name, "glass"))continue;
+				if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white"))continue;
 			}
 
 			if (!transparent) {
@@ -2017,6 +2015,9 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 					|| (strstr(shader->name, "timlamp/timlamp"))) {
 					continue;
 				}
+			}
+			else {
+				int a = 2;
 			}
 			//grate1_3
 			tess.shader = shader;
@@ -2031,6 +2032,18 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 
 			if (!surf->added && !surf->skip) {		
 				int clusterIDX = node->cluster;
+
+				if (strstr(tess.shader->name, "console/jacobs") || strstr(tess.shader->name, "kmlamp_white")) {
+					tess.shader->rtstages[0]->active = qfalse;
+				}
+				if (strstr(shader->name, "textures/sfx/portal_sfx_ring")) {
+					//tess.shader->rtstages[1]->active = qfalse;
+					//memcpy(&tess.shader->rtstages[1], &tess.shader->rtstages[2], sizeof(shaderStage_t));
+					//memcpy(tess.shader->rtstages[2], tess.shader->rtstages[3], sizeof(shaderStage_t));
+					//memcpy(tess.shader->rtstages[3], tess.shader->rtstages[4], sizeof(shaderStage_t));
+					tess.shader->rtstages[2]->active = qfalse;
+					tess.shader->rtstages[3]->active = qfalse;
+				}
 				//c = 1288;
 				//if(RB_IsLight(tess.shader)) RB_AddLightToLightList(c, 0, 0, 0);
 				//if(strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "bluemetalsupport2eye"))

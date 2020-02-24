@@ -44,18 +44,25 @@ uint32_t RB_GetMaterial() {
 		material |= MATERIAL_FLAG_LIGHT;
 	}
 
-	if (strstr(tess.shader->name, "glass")) {
+	if (strstr(tess.shader->name, "glass") || strstr(tess.shader->name, "console/jacobs") || strstr(tess.shader->name, "kmlamp_white")) {
 		material = MATERIAL_KIND_GLASS;
 	}
+	//+		tess.shader	0x0000027dd20c1da8 {name=0x0000027dd20c1da8 "textures/sfx/portal_sfx_ring" lightmapIndex=-3 index=118 ...}	shader_s *
 
+	// consol/sphere2
 	if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) material |= MATERIAL_FLAG_MIRROR;
 	else if ((strstr(tess.shader->name, "gratelamp/gratelamp") && !strstr(tess.shader->name, "gratelamp/gratelamp_b"))
 		|| strstr(tess.shader->name, "gratelamp/gratetorch2b") 
-		|| strstr(tess.shader->name, "timlamp/timlamp")) material |= MATERIAL_FLAG_SEE_THROUGH;
-	else if (strstr(tess.shader->name, "flame")) {
+		|| strstr(tess.shader->name, "timlamp/timlamp")
+		|| strstr(tess.shader->name, "proto_grate") 
+		|| strstr(tess.shader->name, "textures/sfx/portal_sfx_ring")) material |= MATERIAL_FLAG_SEE_THROUGH;
+	else if (strstr(tess.shader->name, "flame") || strstr(tess.shader->name, "models/mapobjects/bitch/orb") || strstr(tess.shader->name, "console/sphere") || strstr(tess.shader->name, "console")
+		|| strstr(tess.shader->name, "tesla") || strstr(tess.shader->name, "proto_zzz") || strstr(tess.shader->name, "cybergrate")) {
 		material |= MATERIAL_FLAG_SEE_THROUGH_ADD;
 	}
-	else if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) material |= MATERIAL_FLAG_SEE_THROUGH;
+	else if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) {
+		material |= MATERIAL_FLAG_SEE_THROUGH;
+	}
 
 	if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) {
 		material |= MATERIAL_FLAG_PLAYER_OR_WEAPON;

@@ -2126,14 +2126,15 @@ static void PathTracingsCollapse(void) {
 					/*strstr(stages[i].bundle[0].image[0]->imgName, "textures/effects/envmap") || */strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/effects") || strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/sfx/specular") ||
 					strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/liquids/bubbles.tga") || // for green slime
 					strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/base_trim/tinfx") || (i > 0 && strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/base_trim/tin.tga")) ||
-					strstr(rtstages[i].bundle[0].image[0]->imgName, "shadow")) {
+					strstr(rtstages[i].bundle[0].image[0]->imgName, "shadow") || strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/effects/tinfxb") || strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/sfx/cabletest.tga")) {
+					//+		bundle	0x000001df8ca54850 {{image=0x000001df8ca54850 {0x000001df8ca53508 {imgName=0x000001df8ca53508 "textures/sfx/cabletest2.tga" ...}, ...} ...}, ...}	textureBundle_t[2]
 
 					found = qtrue;
 					memset(&rtstages[i], 0, sizeof(shaderStage_t));
 					rtstages[i].active = qfalse;
 					//stages[i] = stages[i + 1];
 				}
-				if (strstr(shader.name, "models/powerups/health/red")) {
+				if (strstr(shader.name, "textures/effects/tinfxb")) {
 				int x = 2;
 				}
 			}
@@ -2141,6 +2142,24 @@ static void PathTracingsCollapse(void) {
 		}
 		if (found == qfalse)break;
 	}
+
+	/*if (rtstages[0].active == qtrue && strstr(rtstages[0].bundle[0].image[0]->imgName, "textures/sfx/cabletest2.tga")) {
+		for (int k = 1; k < MAX_SHADER_STAGES; k++) {
+			shaderStage_t buff;
+			memcpy(&buff, &rtstages[k-1], sizeof(shaderStage_t));
+			memcpy(&rtstages[k-1], &rtstages[k], sizeof(shaderStage_t));
+			memcpy(&rtstages[k], &buff, sizeof(shaderStage_t));
+		}
+	}
+	if (rtstages[1].active == qtrue && strstr(rtstages[1].bundle[0].image[0]->imgName, "textures/sfx/cabletest2.tga")) {
+		for (int k = 2; k < MAX_SHADER_STAGES; k++) {
+			shaderStage_t buff;
+			memcpy(&buff, &rtstages[k - 1], sizeof(shaderStage_t));
+			memcpy(&rtstages[k - 1], &rtstages[k], sizeof(shaderStage_t));
+			memcpy(&rtstages[k], &buff, sizeof(shaderStage_t));
+		}
+	}*/
+
 
 	if (strstr(shader.name, "models/powerups/health/red")) {
 		int x = 2;
