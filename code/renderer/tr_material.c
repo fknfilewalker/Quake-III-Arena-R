@@ -3,11 +3,11 @@
 qboolean RB_IsLight(shader_t
 	* shader) {
 	if (tess.numIndexes > 12) {
-		return qfalse;
+		//return qfalse;
 	}
 	if (strstr(shader->name, "wsupprt1_12") || strstr(shader->name, "scrolllight") || strstr(shader->name, "runway")) return qfalse;
 
-	if (strstr(shader->name, "base_light") || strstr(shader->name, "gothic_light") /*|| strstr(tess.shader->name, "eye")*/) { // all lamp textures
+	if (strstr(shader->name, "base_light") || strstr(shader->name, "gothic_light") || strstr(shader->name, "lamplight_y") /*|| strstr(tess.shader->name, "eye")*/) { // all lamp textures
 		return qtrue;
 	}
 	
@@ -44,7 +44,8 @@ uint32_t RB_GetMaterial() {
 		material |= MATERIAL_FLAG_LIGHT;
 	}
 
-	if (strstr(tess.shader->name, "glass") || strstr(tess.shader->name, "console/jacobs") || strstr(tess.shader->name, "kmlamp_white")) {
+	if (strstr(tess.shader->name, "glass") || strstr(tess.shader->name, "console/jacobs") || strstr(tess.shader->name, "kmlamp_white") || strstr(tess.shader->name, "slamp/slamp2") 
+		|| strstr(tess.shader->name, "timlamp/timlamp") || strstr(tess.shader->name, "lamplight_y")) {
 		material = MATERIAL_KIND_GLASS;
 	}
 	//+		tess.shader	0x0000027dd20c1da8 {name=0x0000027dd20c1da8 "textures/sfx/portal_sfx_ring" lightmapIndex=-3 index=118 ...}	shader_s *
@@ -55,9 +56,11 @@ uint32_t RB_GetMaterial() {
 		|| strstr(tess.shader->name, "gratelamp/gratetorch2b") 
 		|| strstr(tess.shader->name, "timlamp/timlamp")
 		|| strstr(tess.shader->name, "proto_grate") 
-		|| strstr(tess.shader->name, "textures/sfx/portal_sfx_ring")) material |= MATERIAL_FLAG_SEE_THROUGH;
+		|| strstr(tess.shader->name, "textures/sfx/portal_sfx_ring")
+		|| strstr(tess.shader->name, "models/mapobjects/flag/banner_strgg")) material |= MATERIAL_FLAG_SEE_THROUGH;
 	else if (strstr(tess.shader->name, "flame") || strstr(tess.shader->name, "models/mapobjects/bitch/orb") || strstr(tess.shader->name, "console/sphere") || strstr(tess.shader->name, "console")
-		|| strstr(tess.shader->name, "tesla") || strstr(tess.shader->name, "proto_zzz") || strstr(tess.shader->name, "cybergrate")) {
+		|| strstr(tess.shader->name, "tesla") || strstr(tess.shader->name, "proto_zzz") || strstr(tess.shader->name, "cybergrate")
+		|| strstr(tess.shader->name, "teleporter/energy")) {
 		material |= MATERIAL_FLAG_SEE_THROUGH_ADD;
 	}
 	else if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) {

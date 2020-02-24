@@ -20,6 +20,7 @@ void blendSeeThrough(in HitPoint hp){
 void blendSeeThroughAdd(in HitPoint hp){
   vec4 tex = getTextureWithLod(hp,0);
   rp.transparent.xyz += (tex.xyz * tex.w);
+  rp.transparent.xyz /= 2.0f;
 }
 
 void main()
@@ -92,7 +93,7 @@ void main()
     blendSeeThroughAdd(hp);
   } else {
     vec4 tex = getTextureWithLod(hp,0);
-    rp.transparent.xyz += tex.www;
+    rp.transparent.xyz += tex.xyz;
     rp.transparent.w = 1;
   }
   //rp.transparent += tex;

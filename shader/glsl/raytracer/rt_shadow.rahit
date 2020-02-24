@@ -25,6 +25,7 @@ void main()
     if(isGlass(material)) ignoreIntersectionNV();
 
     if(isSeeThrough(material)) ignoreIntersectionNV();
+    if(isSeeThroughAdd(material)) ignoreIntersectionNV();
 
     // HitPoint hp = getHitPoint(rpb);
 	// vec4 tex = getTextureWithLod(hp,0);

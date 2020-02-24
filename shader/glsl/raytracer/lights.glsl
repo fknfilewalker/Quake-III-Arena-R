@@ -62,7 +62,7 @@ DirectionalLight getLight2(in Light l, ivec2 rng, bool random){
 // }
 
 vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, in uint material){
-	vec3 shadeColor = vec3(primary_albedo);
+	vec3 shadeColor = vec3(0);
 
 	uint numLight = uboLights.lightList.numLights; 
 	if(ubo.cullLights) numLight = imageLoad(lightVis_data, ivec2(0, cluster)).r;
@@ -104,6 +104,6 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 	}
 
 	//shadeColor *= primary_albedo.rgb / M_PI;
-	return shadeColor * primary_albedo.rgb / M_PI;
+	return (shadeColor * primary_albedo.rgb / M_PI) + primary_albedo.rgb * 0.25f;
 	//return primary_albedo.rgb;
 }

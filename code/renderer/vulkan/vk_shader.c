@@ -614,14 +614,14 @@ void VK_LoadDirectIlluminationShadersFromVariable(vkshader_t* shader) {
 			.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_NV,
 			.generalShader = VK_SHADER_UNUSED_NV,
 			.closestHitShader = 5,
-			.anyHitShader = VK_SHADER_UNUSED_NV,
+			.anyHitShader = 6,
 			.intersectionShader = VK_SHADER_UNUSED_NV
 		},
 		[SBT_RAHIT_SHADOW_RAY] = {
 			.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_NV,
 			.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_NV,
 			.generalShader = VK_SHADER_UNUSED_NV,
-			.closestHitShader = VK_SHADER_UNUSED_NV,
+			.closestHitShader = 5,
 			.anyHitShader = 6,
 			.intersectionShader = VK_SHADER_UNUSED_NV
 		}

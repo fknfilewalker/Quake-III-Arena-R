@@ -1831,6 +1831,7 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 245.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 205.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 139.0f / 255.0f;
+				if (strstr(tess.shader->name, "pentagram")) vk_d.lightList.lights[vk_d.lightList.numLights].size /= 2;
 			}
 			else if (strstr(tess.shader->name, "baslt4_1")) {
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 245.0f / 255.0f;
@@ -1841,6 +1842,7 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 226.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 88.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 34.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].size /= 2;
 			}
 			else if (strstr(tess.shader->name, "xceil1_39")) {
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 218.0f / 255.0f;
@@ -1851,6 +1853,17 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 216.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 216.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 208.0f / 255.0f;
+			}
+			else if (strstr(tess.shader->name, "lamplight_y")) {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 248.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 213.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 104.0f / 255.0f;
+			}
+			else if (strstr(tess.shader->name, "base_light/light1_")) {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 193.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 181.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 183.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].size /= 1.75;
 			}
 			else {
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0;
@@ -1988,17 +2001,19 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 				}
 			}
 			
-			if (strstr(shader->name, "textures/sfx/portal_sfx_ring")) {
+			if (strstr(shader->name, "models/mapobjects/flag/banner_strgg")) {
 				int x = 2; //continue;
 			}
 			if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
 				|| strstr(shader->name, "Shadow") || shader->isSky
 				|| *surf->data == SF_BAD || *surf->data == SF_SKIP
 				|| shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP
-				|| shader->rtstages[0] == NULL || !shader->rtstages[0]->active) {
+				|| shader->rtstages[0] == NULL || !shader->rtstages[0]->active
+				|| strstr(shader->name, "slamp/slamp3")) {
 
 				//continue;
-				if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white")){// && !strstr(shader->name, "flame")) {
+				if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white") && !strstr(shader->name, "slamp/slamp2")
+					&& !strstr(shader->name, "timlamp/timlamp") && !strstr(shader->name, "lamplight_y")){// && !strstr(shader->name, "flame")) {
 					surf->skip = qtrue;
 					continue;
 				}
@@ -2006,8 +2021,10 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 			if (!transparent && ((shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->sort > SS_OPAQUE)) {
 				//continue;
 				//if (!strstr(shader->name, "glass") && !strstr(shader->name, "flame"))continue;
-				if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white"))continue;
+				if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white") && !strstr(shader->name, "slamp/slamp2")
+					&& !strstr(shader->name, "timlamp/timlamp") && !strstr(shader->name, "lamplight_y"))continue;
 			}
+
 
 			if (!transparent) {
 				if ((strstr(shader->name, "gratelamp/gratelamp") && !strstr(shader->name, "gratelamp/gratelamp_b"))
@@ -2034,6 +2051,9 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 				int clusterIDX = node->cluster;
 
 				if (strstr(tess.shader->name, "console/jacobs") || strstr(tess.shader->name, "kmlamp_white")) {
+					tess.shader->rtstages[0]->active = qfalse;
+				}
+				if (strstr(shader->name, "slamp/slamp2") || strstr(tess.shader->name, "lamplight_y")) {
 					tess.shader->rtstages[0]->active = qfalse;
 				}
 				if (strstr(shader->name, "textures/sfx/portal_sfx_ring")) {
