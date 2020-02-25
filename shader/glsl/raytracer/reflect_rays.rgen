@@ -263,7 +263,7 @@ void reflectionRefrection(){
 			color.w = primary_albedo.w;
 			//color = vec4(color.xyz, primary_albedo.w);
 
-			//material = get_material(rp);
+			//material = get_material(rp); 
 			
 		//}
 	} else if(isMirror(material)){
