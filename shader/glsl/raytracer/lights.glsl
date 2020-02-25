@@ -104,6 +104,6 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 	}
 
 	//shadeColor *= primary_albedo.rgb / M_PI;
-	//return (shadeColor * primary_albedo.rgb / M_PI);
-	return primary_albedo.rgb;
+	return (shadeColor * primary_albedo.rgb / M_PI) + primary_albedo.rgb * 0.25f;
+	//return primary_albedo.rgb;
 }

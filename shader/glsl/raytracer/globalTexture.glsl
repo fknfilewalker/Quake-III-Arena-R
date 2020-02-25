@@ -67,7 +67,7 @@ vec4 getTextureWithLod(in HitPoint hp, in uint lod){
 		// if we have more tex to blend set alpha to 1
 		if(d.tex1 != -1) color = vec4(tex.xyz, 1);
 		else color = tex;
-		color *= (hp.color0/255);
+		if(d.tex0Color) color *= (hp.color0/255);
 	} else return color;
 	if(d.tex1 != -1){
 		vec4 tex = global_textureLod(d.tex1, hp.uv1, lod);
