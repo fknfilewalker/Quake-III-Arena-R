@@ -2036,6 +2036,7 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 			else {
 				int a = 2;
 			}
+			
 			//grate1_3
 			tess.shader = shader;
 
@@ -2446,6 +2447,12 @@ void R_CreatePrimaryRaysPipeline() {
 	//VK_AddRayTracingPushConstant(&vk_d.primaryRaysPipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0, 40 * sizeof(float));
 	//VK_AddRayTracingPushConstant(&vk_d.primaryRaysPipeline, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, 40 * sizeof(float), 16 * sizeof(float));
 	//VK_FinishRayTracingPipeline(&vk_d.indirectIlluminationPipeline);
+
+	vkshader_t indirectIlluminationShader = { 0 };
+	VK_RTX_IndirectIlluminationShader(&indirectIlluminationShader);
+	VK_Set2RayTracingDescriptorSets(&vk_d.indirectIlluminationPipeline, &vk_d.rtxDescriptor[0], &vk_d.imageDescriptor);
+	VK_SetRayTracingShader(&vk_d.indirectIlluminationPipeline, &indirectIlluminationShader);
+	VK_FinishRayTracingPipeline(&vk_d.indirectIlluminationPipeline);
 }
 
 void R_PreparePT() {

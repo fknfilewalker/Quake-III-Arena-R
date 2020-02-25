@@ -50,8 +50,8 @@ TextureData unpackTextureData(in uint data){
 	d.tex1 = int((data & TEX1_IDX_MASK) >> TEX_SHIFT_BITS);
 	if(d.tex0 == TEX0_IDX_MASK) d.tex0 = -1;
 	if(d.tex1 == TEX0_IDX_MASK) d.tex1 = -1;
-	d.tex0Blend = (data & TEX0_BLEND_MASK) != 0;
-	d.tex1Blend = (data & TEX1_BLEND_MASK) != 0;
+	d.tex0Blend = (data & TEX0_BLEND_MASK);
+	d.tex1Blend = (data & TEX1_BLEND_MASK);
 	d.tex0Color = (data & TEX0_COLOR_MASK) != 0;
 	d.tex1Color = (data & TEX1_COLOR_MASK) != 0;
 	return d;
@@ -72,24 +72,43 @@ vec4 getTextureWithLod(in HitPoint hp, in uint lod){
 	if(d.tex1 != -1){
 		vec4 tex = global_textureLod(d.tex1, hp.uv1, lod);
 		if(d.tex1Color) tex *= (hp.color1/255);
-		if(d.tex1Blend) {
+		if(d.tex1Blend == TEX1_NORMAL_BLEND_MASK) {
 			color = alpha_blend(tex, color);
 		}
+		else if(d.tex1Blend == TEX1_MUL_BLEND_MASK){
+			color.xyz *= tex.xyz;
+		}
+		else if(d.tex1Blend == TEX1_ADD_BLEND_MASK){
+			color += tex;
+		}
 		else color += tex;
+		//color.xyz *= tex.xyz;
 	} else return color;
 	if(d2.tex0 != -1){
 		vec4 tex = global_textureLod(d2.tex0, hp.uv2, lod);
 		if(d2.tex0Color) tex *= (hp.color2/255);
-		if(d2.tex0Blend) {
+		if(d2.tex0Blend == TEX0_NORMAL_BLEND_MASK) {
 			color = alpha_blend(tex, color);
+		}
+		else if(d2.tex0Blend == TEX0_MUL_BLEND_MASK){
+			color.xyz *= tex.xyz;
+		}
+		else if(d2.tex0Blend == TEX0_ADD_BLEND_MASK){
+			color += tex;
 		}
 		else color += tex;
 	} else return color;
 	if(d2.tex1 != -1){
 		vec4 tex = global_textureLod(d2.tex1, hp.uv3, lod);
 		if(d2.tex1Color) tex *= (hp.color3/255);
-		if(d2.tex1Blend) {
+		if(d2.tex1Blend == TEX1_NORMAL_BLEND_MASK) {
 			color = alpha_blend(tex, color);
+		}
+		else if(d2.tex1Blend == TEX1_MUL_BLEND_MASK){
+			color.xyz *= tex.xyz;
+		}
+		else if(d2.tex1Blend == TEX1_ADD_BLEND_MASK){
+			color += tex;
 		}
 		else color += tex;
 	} 

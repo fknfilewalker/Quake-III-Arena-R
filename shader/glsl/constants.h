@@ -132,10 +132,18 @@
 #define TEX0_IDX_MASK                               0x000001ff
 #define TEX1_IDX_MASK                               0x01ff0000
 
-#define TEX0_BLEND_MASK                             0x00000200
-#define TEX1_BLEND_MASK                             0x02000000
-#define TEX0_COLOR_MASK                             0x00000400
-#define TEX1_COLOR_MASK                             0x04000000
+#define TEX0_COLOR_MASK                             0x00000200
+#define TEX1_COLOR_MASK                             0x02000000
+#define TEX0_NORMAL_BLEND_MASK                      0x00000400
+#define TEX0_MUL_BLEND_MASK                         0x00000800
+#define TEX0_ADD_BLEND_MASK                         0x00001000
+#define TEX1_NORMAL_BLEND_MASK                      0x04000000
+#define TEX1_MUL_BLEND_MASK                         0x08000000
+#define TEX1_ADD_BLEND_MASK                         0x10000000
+#define TEX0_BLEND_MASK                             0x00001C00
+#define TEX1_BLEND_MASK                             0x1C000000
+
+
 
 // shared structures between GLSL and C
 #ifdef GLSL

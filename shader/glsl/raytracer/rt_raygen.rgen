@@ -145,7 +145,7 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 		tex = global_textureGrad(d.tex1, hp.uv1, tex_coord_x, tex_coord_y);
 		if(d.tex1Color) tex *= (hp.color1/255);
 
-		if(d.tex1Blend) {
+		if(d.tex1Blend == 1) {
 			color = alpha_blend(tex, color);
 		}
 		else color += tex;
@@ -162,7 +162,7 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 		tex = global_textureGrad(d.tex0, hp.uv2, tex_coord_x, tex_coord_y);
 		if(d.tex0Color) tex *= (hp.color2/255);
 
-		if(d.tex0Blend) {
+		if(d.tex0Blend == 1) {
 			color = alpha_blend(tex, color);
 		}
 		else color += tex;
@@ -179,7 +179,7 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 		tex = global_textureGrad(d.tex1, hp.uv3, tex_coord_x, tex_coord_y);
 		if(d.tex1Color) tex *= (hp.color3/255);
 
-		if(d.tex1Blend) {
+		if(d.tex1Blend == 1) {
 			color = alpha_blend(tex, color);
 		}
 		else color += tex;

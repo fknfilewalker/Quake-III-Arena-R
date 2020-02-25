@@ -82,8 +82,8 @@ struct DirectionalLight {
 struct TextureData {
 	int tex0;
 	int tex1;
-	bool tex0Blend;
-	bool tex1Blend;
+	uint tex0Blend;
+	uint tex1Blend;
 	bool tex0Color;
 	bool tex1Color;
 };
