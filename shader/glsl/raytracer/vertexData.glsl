@@ -364,11 +364,15 @@ isLight(in uint material) {
 }
 bool
 isGlass(in uint material) {
-	return ((material & MATERIAL_KIND_GLASS) == MATERIAL_KIND_GLASS);
+	return ((material & MATERIAL_KIND_MASK) == MATERIAL_KIND_GLASS);
 }
 bool
 isMirror(in uint material) {
 	return ((material & MATERIAL_FLAG_MIRROR) == MATERIAL_FLAG_MIRROR);
+}
+bool
+isWater(in uint material) {
+	return ((material & MATERIAL_KIND_MASK) == MATERIAL_KIND_WATER);
 }
 bool
 isPlayer(in uint material) {

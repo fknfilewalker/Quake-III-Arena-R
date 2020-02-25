@@ -39,7 +39,7 @@ vec3 directIllumination(){
 	material = utemp.x;
 	cluster = utemp.y;
 	transparent = imageLoad(transparentGBuffer, ivec2(gl_LaunchIDNV.xy));
-	if(isMirror(material) || isGlass(material)){
+	if(isMirror(material) || isGlass(material) || isWater(material)){
 		vec4 reflectAlbedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
 		return alpha_blend( transparent, reflectAlbedo).xyz;
 	}

@@ -2013,7 +2013,7 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 
 				//continue;
 				if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white") && !strstr(shader->name, "slamp/slamp2")
-					&& !strstr(shader->name, "timlamp/timlamp") && !strstr(shader->name, "lamplight_y")){// && !strstr(shader->name, "flame")) {
+					&& !strstr(shader->name, "timlamp/timlamp") && !strstr(shader->name, "lamplight_y") && !strstr(shader->name, "textures/liquids/calm_poollight")){// && !strstr(shader->name, "flame")) {
 					surf->skip = qtrue;
 					continue;
 				}
@@ -2022,7 +2022,7 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 				//continue;
 				//if (!strstr(shader->name, "glass") && !strstr(shader->name, "flame"))continue;
 				if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white") && !strstr(shader->name, "slamp/slamp2")
-					&& !strstr(shader->name, "timlamp/timlamp") && !strstr(shader->name, "lamplight_y"))continue;
+					&& !strstr(shader->name, "timlamp/timlamp") && !strstr(shader->name, "lamplight_y") && !strstr(shader->name, "textures/liquids/calm_poollight"))continue;
 			}
 
 

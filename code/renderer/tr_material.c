@@ -2,7 +2,7 @@
 
 qboolean RB_IsLight(shader_t
 	* shader) {
-	if (tess.numIndexes > 6) {
+	if (tess.numIndexes > 12) {
 		return qfalse;
 	}
 	if (strstr(shader->name, "wsupprt1_12") || strstr(shader->name, "scrolllight") || strstr(shader->name, "runway")) return qfalse;
@@ -55,9 +55,13 @@ uint32_t RB_GetMaterial() {
 	}
 	if (strstr(tess.shader->name, "textures/liquids/calm_poollight")) {
 		material = MATERIAL_KIND_WATER;
+		//tess.shader->rtstages[0]->active = qfalse;
+		//tess.shader->rtstages[1]->active = qfalse;
+		//tess.shader->rtstages[2]->active = qfalse;
+		//tess.shader->rtstages[3]->active = qfalse;
 	}
 	if (strstr(tess.shader->name, "tesla")) {
-		material = MATERIAL_KIND_WATER;
+		//material = MATERIAL_KIND_WATER;
 	}
 	//+		tess.shader	0x0000027dd20c1da8 {name=0x0000027dd20c1da8 "textures/sfx/portal_sfx_ring" lightmapIndex=-3 index=118 ...}	shader_s *
 	//+		name	0x0000020228d63a68 "textures/liquids/calm_poollight"	char[64]
@@ -75,7 +79,7 @@ uint32_t RB_GetMaterial() {
 	}
 	else if (strstr(tess.shader->name, "flame") || strstr(tess.shader->name, "models/mapobjects/bitch/orb") || strstr(tess.shader->name, "console/sphere") || strstr(tess.shader->name, "console")
 		|| strstr(tess.shader->name, "tesla") || strstr(tess.shader->name, "proto_zzz") || strstr(tess.shader->name, "cybergrate")
-		|| strstr(tess.shader->name, "teleporter/energy") || strstr(tess.shader->name, "textures/liquids/calm_poollight")) {
+		|| strstr(tess.shader->name, "teleporter/energy")) {
 		material |= MATERIAL_FLAG_SEE_THROUGH_ADD;
 	}
 	else if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) {

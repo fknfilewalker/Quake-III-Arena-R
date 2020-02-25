@@ -142,7 +142,7 @@ void reflectionRefrection(){
 	utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
 	material = utemp.x;
 	cluster = utemp.y;
-	if (!isGlass(material) && !isMirror(material)) return;
+	if (!isGlass(material) && !isMirror(material) && !isWater(material)) return;
 
 	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
 	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
@@ -227,14 +227,53 @@ void reflectionRefrection(){
 			//material = get_material(rp);
 			
 		//}
+	} else if(isWater(material)){
+		//for(int i =0; i< 2; i++){
+			float n1, n2, ndotr = dot(viewDir, N);  
+			if( ndotr > 0.0f ) {
+				n1 = 1.0; 
+				n2 = 1.3;
+				N = -N;
+			} else {
+				n1 = 1.3;
+				n2 = 1.0; 
+			}
+
+			vec3 P_reflection = P;
+			vec3 N_reflection = N;
+			vec3 ViewDir_reflection = viewDir;
+			vec4 albedoReflection = calculateReflection(P_reflection, ViewDir_reflection, N_reflection);
+			if(isGlass(get_material(rp))){
+				albedoReflection = calculateReflection(P_reflection, ViewDir_reflection, N_reflection);
+			}
+
+			vec3 P_refraction = P;
+			vec3 N_refraction = N;
+			vec3 ViewDir_refraction = viewDir;
+			vec4 albedoRefraction = calculateRefraction(P_refraction, ViewDir_refraction, N_refraction, n1, n2);
+
+			float r0 = (n1-n2)/(n1+n2); r0 *= r0;
+			float fresnel = r0 + (1.-r0) * pow(1.0-abs(ndotr),5.);
+			float ratio = fresnel;//0.2;
+			vec4 albedo = ratio * albedoReflection + (1 - ratio) * albedoRefraction;
+
+			primary_albedo = vec4(calcShading(primary_albedo, P, N, cluster, material),primary_albedo.w);
+			//color = primary_albedo * primary_albedo.w + albedo * (1-primary_albedo.w);
+			color.xyz = albedo.xyz * (primary_albedo.xyz/3.0f);//alpha_blend( albedo, primary_albedo);
+			color.w = primary_albedo.w;
+			//color = vec4(color.xyz, primary_albedo.w);
+
+			//material = get_material(rp);
+			
+		//}
 	} else if(isMirror(material)){
 		vec4 mirrorColor = primary_albedo;
 		mirrorColor = 1 - vec4(mirrorColor/1);
 		// 1 - vec4(src/1)
 		vec4 reflection = calculateReflection(P, viewDir, N);
 		color = vec4(mirrorColor.xyz * reflection.xyz,1);
-	} 
 
+	} 
 	//imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(normal.xyz,1));
 	//imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(pos.xyz, 0));
 	//imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(material, cluster, 0,0));
