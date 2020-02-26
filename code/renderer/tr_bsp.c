@@ -2003,7 +2003,7 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 				}
 			}
 			
-			if (strstr(shader->name, "textures/liquids/calm_poollight")) {
+			if (strstr(shader->name, "conduit")) {
 				int x = 2; //continue;
 			}
 			if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
@@ -2011,7 +2011,8 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 				|| *surf->data == SF_BAD || *surf->data == SF_SKIP
 				|| shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP
 				|| shader->rtstages[0] == NULL || !shader->rtstages[0]->active
-				|| strstr(shader->name, "slamp/slamp3")) {
+				|| strstr(shader->name, "slamp/slamp3")
+				|| strstr(shader->name, "gratelamp_flare")) {
 
 				//continue;
 				if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white") && !strstr(shader->name, "slamp/slamp2")

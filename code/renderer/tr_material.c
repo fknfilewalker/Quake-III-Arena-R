@@ -53,7 +53,8 @@ uint32_t RB_GetMaterial() {
 	}
 
 	if (strstr(tess.shader->name, "glass") || strstr(tess.shader->name, "console/jacobs") || strstr(tess.shader->name, "kmlamp_white") || strstr(tess.shader->name, "slamp/slamp2") 
-		|| strstr(tess.shader->name, "timlamp/timlamp") || strstr(tess.shader->name, "lamplight_y")) {
+		|| strstr(tess.shader->name, "timlamp/timlamp") || strstr(tess.shader->name, "lamplight_y") || strstr(tess.shader->name, "green_sphere") 
+		|| strstr(tess.shader->name, "yellow_sphere") || strstr(tess.shader->name, "red_sphere") || strstr(tess.shader->name, "plasma_glass")) {
 		material = MATERIAL_KIND_GLASS;
 	}
 	if (strstr(tess.shader->name, "textures/liquids/calm_poollight")) {
@@ -63,20 +64,24 @@ uint32_t RB_GetMaterial() {
 		//tess.shader->rtstages[2]->active = qfalse;
 		//tess.shader->rtstages[3]->active = qfalse;
 	}
-	if (strstr(tess.shader->name, "tesla")) {
+	if (strstr(tess.shader->name, "hologirl")) {
 		int x = 2;//material = MATERIAL_KIND_WATER;
 	}
 	//+		tess.shader	0x0000027dd20c1da8 {name=0x0000027dd20c1da8 "textures/sfx/portal_sfx_ring" lightmapIndex=-3 index=118 ...}	shader_s *
 	//+		name	0x0000020228d63a68 "textures/liquids/calm_poollight"	char[64]
 
 	// consol/sphere2
+	//!strstr(shader->name, "green_sphere") && !strstr(shader->name, "energy_grn1")
 	if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) material |= MATERIAL_FLAG_MIRROR;
 	else if ((strstr(tess.shader->name, "gratelamp/gratelamp") && !strstr(tess.shader->name, "gratelamp/gratelamp_b"))
 		|| strstr(tess.shader->name, "gratelamp/gratetorch2b")
 		|| strstr(tess.shader->name, "timlamp/timlamp")
 		|| strstr(tess.shader->name, "models/mapobjects/flag/banner_strgg")
 		|| strstr(tess.shader->name, "proto_grate")
-		|| strstr(tess.shader->name, "skull/ribcage")) {
+		|| strstr(tess.shader->name, "skull/ribcage")
+		|| strstr(tess.shader->name, "models/mapobjects/flares/electric")
+		|| strstr(tess.shader->name, "hologirl")
+		) {
 		material |= MATERIAL_FLAG_SEE_THROUGH;
 	}
 	else if (strstr(tess.shader->name, "flame") || strstr(tess.shader->name, "models/mapobjects/bitch/orb") || strstr(tess.shader->name, "console/sphere") || strstr(tess.shader->name, "console")
@@ -85,7 +90,10 @@ uint32_t RB_GetMaterial() {
 		|| strstr(tess.shader->name, "textures/sfx/portal_sfx_ring")
 		|| strstr(tess.shader->name, "tesla")
 			|| strstr(tess.shader->name, "flame1_hell")
-		) {
+		|| strstr(tess.shader->name, "energy_grn1")
+		|| strstr(tess.shader->name, "teleportEffect")
+		
+		){
 		material |= MATERIAL_FLAG_SEE_THROUGH_ADD;
 	}
 	else if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) {
@@ -119,7 +127,7 @@ uint32_t RB_GetNextTexEncoded(int stage) {
 		uint32_t stateBits = tess.shader->rtstages[stage]->stateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS);
 		if ((stateBits & GLS_SRCBLEND_BITS) > GLS_SRCBLEND_ONE && (stateBits & GLS_DSTBLEND_BITS) > GLS_DSTBLEND_ONE) blend = TEX0_NORMAL_BLEND_MASK;
 		if (stateBits == 19) blend = TEX0_MUL_BLEND_MASK;
-		if (stateBits == 34) blend = TEX0_ADD_BLEND_MASK;
+		if (stateBits == 34 || stateBits == 1073742080) blend = TEX0_ADD_BLEND_MASK;
 		if (stateBits == 101) blend = TEX0_NORMAL_BLEND_MASK;
 		// 34 one one
 		// 101 GLS_SRCBLEND_SRC_ALPHA GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA

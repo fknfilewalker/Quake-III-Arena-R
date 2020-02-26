@@ -96,7 +96,7 @@ void main()
   } else {
     vec4 tex = getTextureWithLod(hp,0);
     rp.transparent.xyz += tex.xyz;
-    rp.transparent.w = 1;
+    //rp.transparent.w = 1;
   }
   //rp.transparent += tex;
   // if(is_see_through(rpb)) {

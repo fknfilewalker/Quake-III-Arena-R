@@ -489,6 +489,13 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	else {
 		bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_NV;
 	}
+
+	if (strstr(tess.shader->name, "energy_grn1") || strstr(tess.shader->name, "teleportEffect") || strstr(tess.shader->name, "shotgun_laser")) {
+		bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_NV;
+		bAS->geometryInstance.instanceOffset = 1;
+	}
+
+
 	switch (tess.shader->cullType) {
 		case CT_FRONT_SIDED:
 			bAS->geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_NV; break;
@@ -632,10 +639,25 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
 			|| strstr(shader->name, "Shadow") || shader->isSky ||
 			(shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->sort > SS_OPAQUE) {
+			if(!strstr(shader->name, "green_sphere") && !strstr(shader->name, "yellow_sphere") && !strstr(shader->name, "red_sphere") && !strstr(shader->name, "energy_grn1")
+				&& !strstr(shader->name, "teleportEffect") && !strstr(shader->name, "bloodExplosion")) continue;
+		}
+
+		if (strstr(shader->name, "green_sphere") || strstr(shader->name, "yellow_sphere") || strstr(shader->name, "red_sphere") || strstr(shader->name, "plasma_glass")) {
+			shader->rtstages[0]->active = qfalse;
+		}
+	
+		if (strstr(shader->name, "bloodExplosion")) {// bloodExplotion
+			int i = 2;
+			//rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
 			continue;
 		}
-		if (shader->rtstages[0] == NULL || drawSurf->bAS == NULL) continue;
-		
+		if (shader->rtstages[0] == NULL || drawSurf->bAS == NULL) if (!strstr(shader->name, "bloodExplosion"))  continue;
+		if (drawSurf->bAS == NULL) {
+
+		}
+
+
 		// SS_BLEND0 bullets, ball around energy, glow around armore shards, armor glow ,lights/fire
 		// SS_DECAL bullet marks
 		forceUpdate = qfalse;
@@ -773,6 +795,13 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
 
 			dynamic = qfalse;
+		}
+
+		if (drawSurf->bAS == NULL && tess.numIndexes == 6 && tess.numVertexes == 4) {
+			int i = 2;
+		}
+		if (strstr(shader->name, "blood")) {
+			int i = 2;
 		}
 		if (drawSurf->bAS == NULL && drawSurf->surface == SF_ENTITY) {
 			int x = 2;

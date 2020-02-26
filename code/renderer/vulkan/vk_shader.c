@@ -16,6 +16,7 @@
 #include "../../../shader/header/primary_rays.rgen.h"
 #include "../../../shader/header/reflect_rays.rgen.h"
 #include "../../../shader/header/direct_illumination.rgen.h"
+#include "../../../shader/header/indirect_illumination.rgen.h"
 
 #include "../../../shader/header/rt_raygen.rgen.h"
 #include "../../../shader/header/rt_miss.rmiss.h"
@@ -791,7 +792,7 @@ void VK_LoadIndirectIlluminationShadersFromVariable(vkshader_t* shader) {
 	shader->flags[5] = VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV;
 	shader->flags[6] = VK_SHADER_STAGE_ANY_HIT_BIT_NV;
 
-	VK_CreateShaderModule(&shader->modules[0], &direct_illuminationRGen, sizeof(direct_illuminationRGen));
+	VK_CreateShaderModule(&shader->modules[0], &indirect_illuminationRGen, sizeof(indirect_illuminationRGen));
 	VK_CreateShaderModule(&shader->modules[1], &rt_missRMiss, sizeof(rt_missRMiss));
 	VK_CreateShaderModule(&shader->modules[2], &rt_closesthitRCHit, sizeof(rt_closesthitRCHit));
 	VK_CreateShaderModule(&shader->modules[3], &rt_anyhitRAHit, sizeof(rt_anyhitRAHit));

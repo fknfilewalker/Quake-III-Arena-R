@@ -156,7 +156,6 @@ void reflectionRefrection(){
 
 	vec4 color = vec4(0);
 	if (isGlass(material)){
-		//for(int i =0; i< 2; i++){
 			float n1, n2, ndotr = dot(viewDir, N);  
 			if( ndotr > 0.0f ) {
 				n1 = 1.0; 
