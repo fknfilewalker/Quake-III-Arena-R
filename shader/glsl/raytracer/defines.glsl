@@ -28,6 +28,7 @@ struct RayPayload {
 	uint primitiveID;
 	float hit_distance;
 	vec4 transparent;
+	uint addCount;
 	float max_transparent_distance;
 	//mat4x3 modelmat;
 };

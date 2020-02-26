@@ -34,6 +34,9 @@ qboolean RB_StageNeedsColor(int stage) {
 	if (strstr(tess.shader->name, "textures/liquids/calm_poollight")) {
 		int x = 2;
 	}
+	if (strstr(tess.shader->name, "textures/sfx/portal_sfx_ring")) {
+		int x = 2;
+	}
 	if (tess.shader->rtstages[stage] != NULL && tess.shader->rtstages[stage]->active) {
 		if (tess.shader->rtstages[stage]->rgbGen == CGEN_WAVEFORM || tess.shader->rtstages[stage]->rgbGen == CGEN_CONST) {
 			return qtrue;
@@ -61,7 +64,7 @@ uint32_t RB_GetMaterial() {
 		//tess.shader->rtstages[3]->active = qfalse;
 	}
 	if (strstr(tess.shader->name, "tesla")) {
-		//material = MATERIAL_KIND_WATER;
+		int x = 2;//material = MATERIAL_KIND_WATER;
 	}
 	//+		tess.shader	0x0000027dd20c1da8 {name=0x0000027dd20c1da8 "textures/sfx/portal_sfx_ring" lightmapIndex=-3 index=118 ...}	shader_s *
 	//+		name	0x0000020228d63a68 "textures/liquids/calm_poollight"	char[64]
@@ -71,15 +74,18 @@ uint32_t RB_GetMaterial() {
 	else if ((strstr(tess.shader->name, "gratelamp/gratelamp") && !strstr(tess.shader->name, "gratelamp/gratelamp_b"))
 		|| strstr(tess.shader->name, "gratelamp/gratetorch2b")
 		|| strstr(tess.shader->name, "timlamp/timlamp")
-		|| strstr(tess.shader->name, "proto_grate")
-		|| strstr(tess.shader->name, "textures/sfx/portal_sfx_ring")
 		|| strstr(tess.shader->name, "models/mapobjects/flag/banner_strgg")
+		|| strstr(tess.shader->name, "proto_grate")
 		|| strstr(tess.shader->name, "skull/ribcage")) {
 		material |= MATERIAL_FLAG_SEE_THROUGH;
 	}
 	else if (strstr(tess.shader->name, "flame") || strstr(tess.shader->name, "models/mapobjects/bitch/orb") || strstr(tess.shader->name, "console/sphere") || strstr(tess.shader->name, "console")
-		|| strstr(tess.shader->name, "tesla") || strstr(tess.shader->name, "proto_zzz") || strstr(tess.shader->name, "cybergrate")
-		|| strstr(tess.shader->name, "teleporter/energy")) {
+		 || strstr(tess.shader->name, "proto_zzz") || strstr(tess.shader->name, "cybergrate")
+		|| strstr(tess.shader->name, "teleporter/energy")
+		|| strstr(tess.shader->name, "textures/sfx/portal_sfx_ring")
+		|| strstr(tess.shader->name, "tesla")
+			|| strstr(tess.shader->name, "flame1_hell")
+		) {
 		material |= MATERIAL_FLAG_SEE_THROUGH_ADD;
 	}
 	else if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) {
@@ -115,6 +121,8 @@ uint32_t RB_GetNextTexEncoded(int stage) {
 		if (stateBits == 19) blend = TEX0_MUL_BLEND_MASK;
 		if (stateBits == 34) blend = TEX0_ADD_BLEND_MASK;
 		if (stateBits == 101) blend = TEX0_NORMAL_BLEND_MASK;
+		// 34 one one
+		// 101 GLS_SRCBLEND_SRC_ALPHA GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA
 		qboolean color = RB_StageNeedsColor(stage);
 
 		uint32_t nextidx = (uint32_t)indexAnim;

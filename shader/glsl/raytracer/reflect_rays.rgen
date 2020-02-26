@@ -259,7 +259,7 @@ void reflectionRefrection(){
 
 			primary_albedo = vec4(calcShading(primary_albedo, P, N, cluster, material),primary_albedo.w);
 			//color = primary_albedo * primary_albedo.w + albedo * (1-primary_albedo.w);
-			color.xyz = albedo.xyz * (primary_albedo.xyz/3.0f);//alpha_blend( albedo, primary_albedo);
+			color.xyz = (albedo.xyz) * primary_albedo.xyz;//alpha_blend( albedo, primary_albedo);
 			color.w = primary_albedo.w;
 			//color = vec4(color.xyz, primary_albedo.w);
 

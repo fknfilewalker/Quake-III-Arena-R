@@ -1782,6 +1782,7 @@ qboolean R_GetEntityToken( char *buffer, int size ) {
 
 void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint32_t offsetxyz) {
 	
+	
 	for (int i = 0; i < tess.numIndexes; i+=6) {
 		vec4_t pos = { 0,0,0,0 };
 		/*for (int i = 0; i < tess.numVertexes; i++) {
@@ -1843,6 +1844,7 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 88.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 34.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].size /= 2;
+				if (strstr(tess.shader->name, "flame1side")) vk_d.lightList.lights[vk_d.lightList.numLights].size /= 3;
 			}
 			else if (strstr(tess.shader->name, "xceil1_39")) {
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 218.0f / 255.0f;
@@ -2001,7 +2003,7 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 				}
 			}
 			
-			if (strstr(shader->name, "models/mapobjects/flag/banner_strgg")) {
+			if (strstr(shader->name, "textures/liquids/calm_poollight")) {
 				int x = 2; //continue;
 			}
 			if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
@@ -2058,12 +2060,16 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 					tess.shader->rtstages[0]->active = qfalse;
 				}
 				if (strstr(shader->name, "textures/sfx/portal_sfx_ring")) {
-					//tess.shader->rtstages[1]->active = qfalse;
-					//memcpy(&tess.shader->rtstages[1], &tess.shader->rtstages[2], sizeof(shaderStage_t));
-					//memcpy(tess.shader->rtstages[2], tess.shader->rtstages[3], sizeof(shaderStage_t));
-					//memcpy(tess.shader->rtstages[3], tess.shader->rtstages[4], sizeof(shaderStage_t));
-					tess.shader->rtstages[2]->active = qfalse;
-					tess.shader->rtstages[3]->active = qfalse;
+					tess.shader->rtstages[1]->alphaGen = AGEN_CONST;
+					tess.shader->rtstages[1]->constantColor[3] = 0;
+					tess.shader->rtstages[2]->alphaGen = AGEN_CONST;
+					tess.shader->rtstages[2]->constantColor[3] = 0;
+					tess.shader->rtstages[3]->alphaGen = AGEN_CONST;
+					tess.shader->rtstages[3]->constantColor[3] = 0;
+				}
+				if (strstr(tess.shader->name, "tesla")) {
+					int x = 2;
+					//tess.shader->rtstages[]->active = qfalse;
 				}
 				//c = 1288;
 				//if(RB_IsLight(tess.shader)) RB_AddLightToLightList(c, 0, 0, 0);

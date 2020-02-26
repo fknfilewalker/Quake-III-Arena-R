@@ -65,9 +65,20 @@ vec4 getTextureWithLod(in HitPoint hp, in uint lod){
 	if(d.tex0 != -1){
 		vec4 tex = global_textureLod(d.tex0, hp.uv0, lod);
 		// if we have more tex to blend set alpha to 1
-		if(d.tex1 != -1) color = vec4(tex.xyz, 1);
-		else color = tex;
-		if(d.tex0Color) color *= (hp.color0/255);
+		//if(d.tex1 != -1) color = vec4(tex.xyz, 1);
+		//else color = tex;
+		if(d.tex0Color) tex *= (hp.color0/255);
+		if(d.tex0Blend == TEX1_NORMAL_BLEND_MASK) {
+			color = alpha_blend(tex, color);
+		}
+		else if(d.tex0Blend == TEX1_MUL_BLEND_MASK){
+			color.xyz *= tex.xyz;
+		}
+		else if(d.tex0Blend == TEX1_ADD_BLEND_MASK){
+			color += tex;
+		}
+		else color += tex;
+		
 	} else return color;
 	if(d.tex1 != -1){
 		vec4 tex = global_textureLod(d.tex1, hp.uv1, lod);
@@ -80,6 +91,7 @@ vec4 getTextureWithLod(in HitPoint hp, in uint lod){
 		}
 		else if(d.tex1Blend == TEX1_ADD_BLEND_MASK){
 			color += tex;
+			
 		}
 		else color += tex;
 		//color.xyz *= tex.xyz;

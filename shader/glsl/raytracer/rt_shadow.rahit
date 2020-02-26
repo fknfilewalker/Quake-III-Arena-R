@@ -23,6 +23,7 @@ void main()
     
     if(isLight(material)) ignoreIntersectionNV();
     if(isGlass(material)) ignoreIntersectionNV();
+    if(isWater(material)) ignoreIntersectionNV();
 
     if(isSeeThrough(material)) ignoreIntersectionNV();
     if(isSeeThroughAdd(material)) ignoreIntersectionNV();

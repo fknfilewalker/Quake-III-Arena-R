@@ -2122,6 +2122,15 @@ static void PathTracingsCollapse(void) {
 		qboolean found = qfalse;
 		for (int i = 0; i < MAX_SHADER_STAGES; i++) {
 			if (rtstages[i].active == qtrue) {
+				if (strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/sfx/cabletest2.tga")) {
+					rtstages[i].rgbGen = CGEN_CONST;
+					//rtstages[i].alphaGen = AGEN_CONST;
+					rtstages[i].constantColor[0] = 0;
+					rtstages[i].constantColor[1] = 0;
+					rtstages[i].constantColor[2] = 0;
+					//rtstages[i].stateBits = 19;
+					//rtstages[i].constantColor[2] = 0;
+				}
 				if (strstr(rtstages[i].bundle[0].image[0]->imgName, "*white") || strstr(rtstages[i].bundle[0].image[0]->imgName, "chrome_env") || strstr(rtstages[i].bundle[0].image[0]->imgName, "*identityLight") ||
 					/*strstr(stages[i].bundle[0].image[0]->imgName, "textures/effects/envmap") || */strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/effects") || strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/sfx/specular") ||
 					strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/liquids/bubbles.tga") || // for green slime
@@ -2129,6 +2138,7 @@ static void PathTracingsCollapse(void) {
 					strstr(rtstages[i].bundle[0].image[0]->imgName, "shadow") || strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/effects/tinfxb") || strstr(rtstages[i].bundle[0].image[0]->imgName, "textures/sfx/cabletest.tga")) {
 					//+		bundle	0x000001df8ca54850 {{image=0x000001df8ca54850 {0x000001df8ca53508 {imgName=0x000001df8ca53508 "textures/sfx/cabletest2.tga" ...}, ...} ...}, ...}	textureBundle_t[2]
 
+					
 					found = qtrue;
 					memset(&rtstages[i], 0, sizeof(shaderStage_t));
 					rtstages[i].active = qfalse;

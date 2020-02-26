@@ -12,6 +12,7 @@ void trace_ray(Ray ray, uint cullMask)
 	//const uint cullMask = RAY_FIRST_PERSON_VISIBLE;
 	rp.transparent = vec4(0);
 	rp.max_transparent_distance = 0;
+	rp.addCount = 0;
 
 	traceNV( topLevelAS, rayFlags, cullMask,
 			SBT_RCHIT_OPAQUE /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_PATH_TRACER /*missIndex*/,
@@ -23,6 +24,7 @@ void traceRayOpaque(Ray ray, uint cullMask)
 	const uint rayFlags = gl_RayFlagsCullNoOpaqueNV;
 	rp.transparent = vec4(0);
 	rp.max_transparent_distance = 0;
+	rp.addCount = 0;
 
 	traceNV( topLevelAS, rayFlags, cullMask,
 			SBT_RCHIT_OPAQUE /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_PATH_TRACER /*missIndex*/,
@@ -33,6 +35,7 @@ void traceRay(Ray ray, uint cullMask)
 	const uint rayFlags = gl_RayFlagsNoneNV;
 	rp.transparent = vec4(0);
 	rp.max_transparent_distance = 0;
+	rp.addCount = 0;
 
 	traceNV( topLevelAS, rayFlags, cullMask,
 			SBT_RCHIT_OPAQUE /*sbtRecordOffset*/, 0 /*sbtRecordStride*/, SBT_RMISS_PATH_TRACER /*missIndex*/,

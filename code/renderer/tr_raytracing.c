@@ -819,10 +819,12 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 		//// blood ray projectile etc
 		//if (drawSurf->bAS == NULL && tess.numIndexes == 6 && tess.numVertexes == 4){//backEnd.currentEntity->e.reType == RT_SPRITE) {RT_BEAM
-		//	drawSurf->bAS = &vk_d.bottomASList[0];
+		//	int x = 2;
+		//																			//RB_CreateBottomAS(&drawSurf->bAS, dynamic);
+		//	/*drawSurf->bAS = &vk_d.bottomASList[0];
 		//	dynamic = qtrue;
 		//	forceUpdate = qtrue;
-		//	drawSurf->bAS->data.material |= (MATERIAL_FLAG_NEEDSCOLOR | MATERIAL_FLAG_PARTICLE);
+		//	drawSurf->bAS->data.material |= (MATERIAL_FLAG_NEEDSCOLOR | MATERIAL_FLAG_PARTICLE);*/
 		//}
 		//
 		//if (i > 30) //continue;
