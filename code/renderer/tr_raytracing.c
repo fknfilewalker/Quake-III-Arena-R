@@ -1215,12 +1215,19 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 	if (r_showcluster->integer) drawCluster();
 	
-	VK_PerformanceQueryPoolResults();
-	double build, prim, refref, direct;
-	VK_TimeBetweenMarkers(&build, PROFILER_BUILD_AS_BEGIN, PROFILER_BUILD_AS_END);
-	VK_TimeBetweenMarkers(&prim, PROFILER_PRIMARY_RAYS_BEGIN, PROFILER_PRIMARY_RAYS_END);
-	VK_TimeBetweenMarkers(&refref, PROFILER_REFLECTION_REFRACTION_BEGIN, PROFILER_REFLECTION_REFRACTION_END);
-	VK_TimeBetweenMarkers(&direct, PROFILER_DIRECT_ILLUMINATION_BEGIN, PROFILER_DIRECT_ILLUMINATION_END);
+	if (rt_printPerformanceStatistic->integer > 0) {
+		VK_PerformanceQueryPoolResults();
+		double build, prim, refref, direct;
+		VK_TimeBetweenMarkers(&build, PROFILER_BUILD_AS_BEGIN, PROFILER_BUILD_AS_END);
+		VK_TimeBetweenMarkers(&prim, PROFILER_PRIMARY_RAYS_BEGIN, PROFILER_PRIMARY_RAYS_END);
+		VK_TimeBetweenMarkers(&refref, PROFILER_REFLECTION_REFRACTION_BEGIN, PROFILER_REFLECTION_REFRACTION_END);
+		VK_TimeBetweenMarkers(&direct, PROFILER_DIRECT_ILLUMINATION_BEGIN, PROFILER_DIRECT_ILLUMINATION_END);
+		ri.Printf(PRINT_ALL, "Build/Update AS           %f ms\n", build);
+		ri.Printf(PRINT_ALL, "Primary Ray Stage         %f ms\n", prim);
+		ri.Printf(PRINT_ALL, "Reflect/Refract Stage     %f ms\n", refref);
+		ri.Printf(PRINT_ALL, "Direct Illumination Stage %f ms\n", direct);
+		rt_printPerformanceStatistic->integer = 0;
+	}
 
 	//ri.Printf(PRINT_ALL, "Prim %f ms\n", (prim));
 	//ri.SCR_DrawBigString(400, 400, "aasdfasd", 1.0);

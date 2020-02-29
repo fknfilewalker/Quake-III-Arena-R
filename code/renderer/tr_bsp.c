@@ -1970,12 +1970,12 @@ int R_FindClusterForPos3(const vec3_t p) {
 	return -1;
 }
 
-void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstatic, uint32_t* countIDXdynamicData, uint32_t* countXYZdynamicData, uint32_t* countIDXdynamicAS, uint32_t* countXYZdynamicAS, qboolean transparent) {
+void R_RecursiveCreateAS(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstatic, uint32_t* countIDXdynamicData, uint32_t* countXYZdynamicData, uint32_t* countIDXdynamicAS, uint32_t* countXYZdynamicAS, qboolean transparent) {
 	do {
 		if (node->contents != -1) {
 			break;
 		}
-		R_Recursive(node->children[0], countIDXstatic, countXYZstatic, countIDXdynamicData, countXYZdynamicData, countIDXdynamicAS, countXYZdynamicAS, transparent);
+		R_RecursiveCreateAS(node->children[0], countIDXstatic, countXYZstatic, countIDXdynamicData, countXYZdynamicData, countIDXdynamicAS, countXYZdynamicAS, transparent);
 		node = node->children[1];
 	} while (1);
 	{
@@ -1992,16 +1992,6 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 			surf->notBrush = qtrue;
 
 			shader_t* shader = tr.shaders[surf->shader->index];
-
-			/*if (strstr(tess.shader->rtstages[0]->bundle[0].image[0]->imgName, "*white")) {
-				continue;
-			}*/
-			int count = 0;
-			for (int i = 0; i < MAX_SHADER_STAGES; i++) {
-				if (shader->rtstages[i] != NULL && shader->rtstages[i]->active) {
-					count++;
-				}
-			}
 			
 			if (strstr(shader->name, "conduit")) {
 				int x = 2; //continue;
@@ -2022,88 +2012,21 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 				}
 			}
 			if (!transparent && ((shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->sort > SS_OPAQUE)) {
-				//continue;
-				//if (!strstr(shader->name, "glass") && !strstr(shader->name, "flame"))continue;
 				if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white") && !strstr(shader->name, "slamp/slamp2")
-					&& !strstr(shader->name, "timlamp/timlamp") && !strstr(shader->name, "lamplight_y") && !strstr(shader->name, "textures/liquids/calm_poollight"))continue;
+					 && !strstr(shader->name, "lamplight_y") && !strstr(shader->name, "textures/liquids/calm_poollight"))continue;
 			}
 
-
-			if (!transparent) {
-				if ((strstr(shader->name, "gratelamp/gratelamp") && !strstr(shader->name, "gratelamp/gratelamp_b"))
-					|| (strstr(shader->name, "gratelamp/gratetorch2b"))
-					|| (strstr(shader->name, "timlamp/timlamp"))) {
-					continue;
-				}
-			}
-			else {
-				int a = 2;
-			}
 			
 			//grate1_3
 			tess.shader = shader;
 
-
 			rb_surfaceTable[*surf->data](surf->data);
 			if (tess.numIndexes == 0) continue;
 
-			//if (strstr(tess.shader->rtstages[0]->bundle->image[0]->imgName, "chrome_metal")) {
-			//	int x = 1;
-			//}
 
 			if (!surf->added && !surf->skip) {		
 				int clusterIDX = node->cluster;
 
-				if (strstr(tess.shader->name, "console/jacobs") || strstr(tess.shader->name, "kmlamp_white")) {
-					tess.shader->rtstages[0]->active = qfalse;
-				}
-				if (strstr(shader->name, "slamp/slamp2") || strstr(tess.shader->name, "lamplight_y")) {
-					tess.shader->rtstages[0]->active = qfalse;
-				}
-				if (strstr(shader->name, "textures/sfx/portal_sfx_ring")) {
-					tess.shader->rtstages[1]->alphaGen = AGEN_CONST;
-					tess.shader->rtstages[1]->constantColor[3] = 0;
-					tess.shader->rtstages[2]->alphaGen = AGEN_CONST;
-					tess.shader->rtstages[2]->constantColor[3] = 0;
-					tess.shader->rtstages[3]->alphaGen = AGEN_CONST;
-					tess.shader->rtstages[3]->constantColor[3] = 0;
-				}
-				if (strstr(tess.shader->name, "tesla")) {
-					int x = 2;
-					//tess.shader->rtstages[]->active = qfalse;
-				}
-				//c = 1288;
-				//if(RB_IsLight(tess.shader)) RB_AddLightToLightList(c, 0, 0, 0);
-				//if(strstr(tess.shader->stages[0]->bundle->image[0]->imgName, "bluemetalsupport2eye"))
-				//{ int x = 1; }
-				//if (node->cluster == 1566) {
-				//	int x = 2;
-				//	tess.shader->rtstages[0]->constantColor[0] = 140;
-				//	tess.shader->rtstages[0]->constantColor[1] = 0;
-				//	tess.shader->rtstages[0]->constantColor[2] = 0;
-				//	tess.shader->rtstages[0]->constantColor[3] = 0;
-				//	tess.shader->rtstages[0]->rgbGen = CGEN_CONST;
-				//	tess.shader->rtstages[0]->bundle->image[0] = tr.whiteImage;
-				//}
-				//else
-				//{
-				//	/*tess.shader->rtstages[0]->constantColor[0] = 0;
-				//	tess.shader->rtstages[0]->constantColor[1] = 140;
-				//	tess.shader->rtstages[0]->constantColor[2] = 0;
-				//	tess.shader->rtstages[0]->constantColor[3] = 0;
-				//	tess.shader->rtstages[0]->rgbGen = CGEN_CONST;
-				//	tess.shader->rtstages[0]->bundle->image[0] = tr.whiteImage;*/
-				//	/*const byte* clusterVis = s_worldData.vis + node->cluster * s_worldData.clusterBytes;
-				//	if ((clusterVis[276 >> 3] & (1 << (276 & 7))) > 0) {
-				//		tess.shader->rtstages[0]->constantColor[0] = 0;
-				//		tess.shader->rtstages[0]->constantColor[1] = 140;
-				//		tess.shader->rtstages[0]->constantColor[2] = 0;
-				//		tess.shader->rtstages[0]->constantColor[3] = 0;
-				//		tess.shader->rtstages[0]->rgbGen = CGEN_CONST;
-				//		tess.shader->rtstages[0]->bundle->image[0] = tr.whiteImage;
-				//	}*/
-				//}
-				
 				uint32_t material = 0;
 				// different buffer and offsets for static, dynamic data and dynamic as
 				uint32_t* countIDX;
@@ -2115,15 +2038,15 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 
 				qboolean dynamic = qfalse;
 				if (tess.shader->surfaceFlags == SURF_NODRAW) continue;
-				//origin = 0x0000006e384ff498 {-1830.72034, 3114.09717, 166.582550}
+
+				// for dm0 some strange object in the distance
 				if (Distance(tess.xyz, (vec3_t){ -1830.72034, 3114.09717, 166.582550 }) < 250) {
-					int a = 2;
 					continue;
 				}
+				// if as is static we need one buffer
 				if (!RB_ASDynamic(tess.shader) && !RB_ASDataDynamic(tess.shader)) {
 					countIDX = countIDXstatic;
 					countXYZ = countXYZstatic;
-					//vk_d.geometry.idx_world_static_offset
 					idx_buffer = &vk_d.geometry.idx_world_static;
 					xyz_buffer = &vk_d.geometry.xyz_world_static;
 					idx_buffer_offset = &vk_d.geometry.idx_world_static_offset;
@@ -2135,6 +2058,7 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 					RB_UploadCluster(&vk_d.geometry.cluster_world_static, vk_d.geometry.cluster_world_static_offset, node->cluster);
 					vk_d.geometry.cluster_world_static_offset += (tess.numIndexes/3);
 				}
+				// if the data of an object changes we need one as buffer but #swapchain object data buffers
 				else if (!RB_ASDynamic(tess.shader) && RB_ASDataDynamic(tess.shader)) {
 					countIDX = countIDXdynamicData;
 					countXYZ = countXYZdynamicData;
@@ -2159,6 +2083,7 @@ void R_Recursive(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstat
 					RB_UploadCluster(&vk_d.geometry.cluster_world_dynamic_data, vk_d.geometry.cluster_world_dynamic_data_offset, node->cluster);
 					vk_d.geometry.cluster_world_dynamic_data_offset += (tess.numIndexes / 3);
 				}
+				// object changes we need #swapchain as buffer
 				else if (RB_ASDynamic(tess.shader)) {
 					countIDX = countIDXdynamicAS;
 					countXYZ = countXYZdynamicAS;
@@ -2245,22 +2170,6 @@ int R_ClosestCluster(const vec3_t p) {
 			}
 		}
 	}
-
-	/*float dist = 999999;
-	int cluster = -1;
-	for (int i = 0; i < vk_d.numClusters; i++) {
-		vec3_t res;
-		VectorAdd(vk_d.clusterList[i].mins, vk_d.clusterList[i].maxs, res);
-		VectorScale(res, 1.0f / 2.0f, res);
-		float dist2 = abs(Distance(res, p));
-		if (dist2 < dist) {
-			dist = dist2;
-			cluster = i;
-
-			int zwei = R_FindClusterForPos2(res);
-			if (zwei != -1 && i != zwei) cluster = zwei;
-		}
-	}*/
 	return cluster;
 }
 
@@ -2483,8 +2392,6 @@ void R_PreparePT() {
 
 	R_CalcClusterAABB(s_worldData.nodes);
 
-	
-
 	uint32_t offsetXYZ = 0;
 	uint32_t offsetXYZdynamicData = 0;
 	uint32_t offsetXYZdynamicAS = 0;
@@ -2496,7 +2403,7 @@ void R_PreparePT() {
 	VkDeviceSize offsetDynamicDataWorld = 0;
 	VkDeviceSize offsetDynamicASWorld[VK_MAX_SWAPCHAIN_SIZE] = { 0 };
 
-	R_Recursive(s_worldData.nodes, &offsetIDX, &offsetXYZ, &offsetIDXdynamicData, &offsetXYZdynamicData, &offsetIDXdynamicAS, &offsetXYZdynamicAS, qfalse);
+	R_RecursiveCreateAS(s_worldData.nodes, &offsetIDX, &offsetXYZ, &offsetIDXdynamicData, &offsetXYZdynamicData, &offsetIDXdynamicAS, &offsetXYZdynamicAS, qfalse);
 	// world static
 	{
 		vk_d.bottomASWorldStatic.geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
@@ -2518,8 +2425,6 @@ void R_PreparePT() {
 
 		vk_d.bottomASWorldStatic.data.offsetIDX = 0;
 		vk_d.bottomASWorldStatic.data.offsetXYZ = 0;
-		//vk_d.geometry.idx_world_static_offset += offsetIDX;
-		//vk_d.geometry.xyz_world_static_offset += offsetXYZ;
 
 		VkCommandBuffer commandBuffer = { 0 };
 		VK_BeginSingleTimeCommands(&commandBuffer);
@@ -2529,8 +2434,6 @@ void R_PreparePT() {
 		VK_EndSingleTimeCommands(&commandBuffer);
 
 		vk_d.bottomASWorldStatic.data.world = BAS_WORLD_STATIC;
-		//vk_d.bottomASWorldStatic.data.texIdx = 60;
-		//vk_d.bottomASWorldStatic.data.material |= MATERIAL_KIND_REGULAR;
 		vk_d.bottomASWorldStatic.geometryInstance.instanceCustomIndex = 0;
 		vk_d.bottomASWorldStatic.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 		vk_d.bottomASWorldStatic.geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
@@ -2565,8 +2468,6 @@ void R_PreparePT() {
 
 		vk_d.bottomASWorldDynamicData.data.offsetIDX = 0;
 		vk_d.bottomASWorldDynamicData.data.offsetXYZ = 0;
-		//vk_d.geometry.idx_world_dynamic_data_offset += offsetIDXdynamicData;
-		//vk_d.geometry.xyz_world_dynamic_data_offset += offsetXYZdynamicData;
 
 		VkCommandBuffer commandBuffer = { 0 };
 		VK_BeginSingleTimeCommands(&commandBuffer);
@@ -2577,8 +2478,6 @@ void R_PreparePT() {
 		VK_EndSingleTimeCommands(&commandBuffer);
 
 		vk_d.bottomASWorldDynamicData.data.world = BAS_WORLD_DYNAMIC_DATA;
-		//vk_d.bottomASWorldDynamicData.data.texIdx = 60;
-		//vk_d.bottomASWorldDynamicData.data.material |= MATERIAL_KIND_REGULAR;
 		vk_d.bottomASWorldDynamicData.geometryInstance.instanceCustomIndex = 0;
 		vk_d.bottomASWorldDynamicData.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 		vk_d.bottomASWorldDynamicData.geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
@@ -2614,8 +2513,6 @@ void R_PreparePT() {
 
 			vk_d.bottomASWorldDynamicAS[i].data.offsetIDX = 0;
 			vk_d.bottomASWorldDynamicAS[i].data.offsetXYZ = 0;
-			//vk_d.geometry.idx_world_dynamic_as_offset[i] += offsetIDXdynamicAS;
-			//vk_d.geometry.xyz_world_dynamic_as_offset[i] += offsetXYZdynamicAS;
 
 			VkCommandBuffer commandBuffer = { 0 };
 			VK_BeginSingleTimeCommands(&commandBuffer);
@@ -2626,8 +2523,6 @@ void R_PreparePT() {
 			VK_EndSingleTimeCommands(&commandBuffer);
 
 			vk_d.bottomASWorldDynamicAS[i].data.world = BAS_WORLD_DYNAMIC_AS;
-			//vk_d.bottomASWorldDynamicAS[i].data.texIdx = 60;
-			//vk_d.bottomASWorldDynamicAS[i].data.material |= MATERIAL_KIND_REGULAR;
 			vk_d.bottomASWorldDynamicAS[i].geometryInstance.instanceCustomIndex = 0;
 			vk_d.bottomASWorldDynamicAS[i].geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 			vk_d.bottomASWorldDynamicAS[i].geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
@@ -2666,9 +2561,7 @@ void R_PreparePT() {
 		vk_d.bottomASWorldDynamicASTrans[i].data.offsetIDX = vk_d.geometry.idx_world_dynamic_as_offset[0];
 	}
 	
-	R_Recursive(s_worldData.nodes, &offsetIDX, &offsetXYZ, &offsetIDXdynamicData, &offsetXYZdynamicData, &offsetIDXdynamicAS, &offsetXYZdynamicAS, qtrue);
-	//R_RecursiveTrans(s_worldData.nodes, &offsetIDX, &offsetXYZ, &offsetIDXdynamicData, &offsetXYZdynamicData, &offsetIDXdynamicAS, &offsetXYZdynamicAS);
-
+	R_RecursiveCreateAS(s_worldData.nodes, &offsetIDX, &offsetXYZ, &offsetIDXdynamicData, &offsetXYZdynamicData, &offsetIDXdynamicAS, &offsetXYZdynamicAS, qtrue);
 	// world static trans
 	{
 		vk_d.bottomASWorldStaticTrans.geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
@@ -2692,8 +2585,6 @@ void R_PreparePT() {
 		VK_EndSingleTimeCommands(&commandBuffer);
 
 		vk_d.bottomASWorldStaticTrans.data.world = BAS_WORLD_STATIC;
-		//vk_d.bottomASWorldStatic.data.texIdx = 60;
-		//vk_d.bottomASWorldStatic.data.material |= MATERIAL_KIND_REGULAR;
 		vk_d.bottomASWorldStaticTrans.geometryInstance.instanceCustomIndex = 0;
 		vk_d.bottomASWorldStaticTrans.geometryInstance.instanceOffset = 1;
 		vk_d.bottomASWorldStaticTrans.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
@@ -2733,8 +2624,6 @@ void R_PreparePT() {
 		VK_EndSingleTimeCommands(&commandBuffer);
 
 		vk_d.bottomASWorldDynamicDataTrans.data.world = BAS_WORLD_DYNAMIC_DATA;
-		//vk_d.bottomASWorldDynamicData.data.texIdx = 60;
-		//vk_d.bottomASWorldDynamicData.data.material |= MATERIAL_KIND_REGULAR;
 		vk_d.bottomASWorldDynamicDataTrans.geometryInstance.instanceCustomIndex = 0;
 		vk_d.bottomASWorldDynamicDataTrans.geometryInstance.instanceOffset = 1;
 		vk_d.bottomASWorldDynamicDataTrans.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
@@ -2766,8 +2655,6 @@ void R_PreparePT() {
 			vk_d.bottomASWorldDynamicASTrans[i].geometries.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
 			vk_d.bottomASWorldDynamicASTrans[i].geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
 			vk_d.bottomASWorldDynamicASTrans[i].geometries.flags = 0;
-			//vk_d.geometry.idx_world_dynamic_as_offset[i] += offsetIDXdynamicAS;
-			//vk_d.geometry.xyz_world_dynamic_as_offset[i] += offsetXYZdynamicAS;
 
 			VkCommandBuffer commandBuffer = { 0 };
 			VK_BeginSingleTimeCommands(&commandBuffer);
@@ -2777,8 +2664,6 @@ void R_PreparePT() {
 			VK_EndSingleTimeCommands(&commandBuffer);
 
 			vk_d.bottomASWorldDynamicASTrans[i].data.world = BAS_WORLD_DYNAMIC_AS;
-			//vk_d.bottomASWorldDynamicAS[i].data.texIdx = 60;
-			//vk_d.bottomASWorldDynamicAS[i].data.material |= MATERIAL_KIND_REGULAR;
 			vk_d.bottomASWorldDynamicASTrans[i].geometryInstance.instanceCustomIndex = 0;
 			vk_d.bottomASWorldDynamicASTrans[i].geometryInstance.instanceOffset = 1;
 			vk_d.bottomASWorldDynamicASTrans[i].geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
@@ -2972,17 +2857,15 @@ void R_PreparePT() {
 	}
 	vk_d.scratchBufferOffset = 0;
 
+	// lights
 	for (i = 0; i < vk.swapchain.imageCount; i++) {
 		VK_UploadBufferDataOffset(&vk_d.uboLightList[i], 0, sizeof(LightList_s), (void*)&vk_d.lightList);
-		//VK_UploadBufferDataOffset(&vk_d.uboLightList[i], vk_d.lightList.numLights  * sizeof(Light), sizeof(uint32_t), (void*)&vk_d.lightList.numLights);
 	}
 
 	VK_CreateImage(&vk_d.accelerationStructures.visData, s_worldData.clusterBytes, vk_d.numClusters, VK_FORMAT_R8_UINT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 1);
 	VK_UploadMipImageData(&vk_d.accelerationStructures.visData, s_worldData.clusterBytes, vk_d.numClusters, vk_d.vis, 1, 0);
 	VK_TransitionImage(&vk_d.accelerationStructures.visData, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-	//VK_CreateSampler(&vk_d.accelerationStructures.visData, VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 
-	// lights
 
 	// cluster rows
 	// first index number lights
@@ -3001,10 +2884,6 @@ void R_PreparePT() {
 			}
 		}
 		lightVisibility[cluster * RTX_MAX_LIGHTS] = lightCount;
-		//shuffle(&lightVisibility[cluster * RTX_MAX_LIGHTS + 1], lightCount);
-
-
-
 		if (lightCount > RTX_MAX_LIGHTS) ri.Error(ERR_FATAL, "PT: To many lights!");
 	}
 

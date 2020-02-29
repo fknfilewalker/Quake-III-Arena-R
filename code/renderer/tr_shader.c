@@ -2023,6 +2023,27 @@ static shader_t *GeneratePermanentShader( void ) {
 	newShader->next = hashTable[hash];
 	hashTable[hash] = newShader;
 
+	// RT: fix shader errors
+	if ((r_vertexLight->integer == 2)) {
+		if ((strstr(newShader->name, "gratelamp/gratelamp") && !strstr(newShader->name, "gratelamp/gratelamp_b")) || (strstr(newShader->name, "gratelamp/gratetorch2b")) || (strstr(newShader->name, "timlamp/timlamp"))) {
+			newShader->contentFlags |= CONTENTS_TRANSLUCENT;
+		}
+		if (strstr(newShader->name, "console/jacobs") || strstr(newShader->name, "kmlamp_white")) {
+			newShader->rtstages[0]->active = qfalse;
+		}
+		if (strstr(newShader->name, "slamp/slamp2") || strstr(newShader->name, "lamplight_y")) {
+			newShader->rtstages[0]->active = qfalse;
+		}
+		if (strstr(newShader->name, "textures/sfx/portal_sfx_ring")) {
+			newShader->rtstages[1]->alphaGen = AGEN_CONST;
+			newShader->rtstages[1]->constantColor[3] = 0;
+			newShader->rtstages[2]->alphaGen = AGEN_CONST;
+			newShader->rtstages[2]->constantColor[3] = 0;
+			newShader->rtstages[3]->alphaGen = AGEN_CONST;
+			newShader->rtstages[3]->constantColor[3] = 0;
+		}
+	}
+
 	return newShader;
 }
 
@@ -2169,8 +2190,9 @@ static void PathTracingsCollapse(void) {
 			memcpy(&rtstages[k], &buff, sizeof(shaderStage_t));
 		}
 	}*/
+	
 
-
+		
 	if (strstr(shader.name, "models/powerups/health/red")) {
 		int x = 2;
 		//memcpy(&stages[0], &stages[1], sizeof(shaderStage_t));
@@ -2212,7 +2234,6 @@ static shader_t *FinishShader( void ) {
 
 	hasLightmapStage = qfalse;
 	vertexLightmap = qfalse;
-
 	//
 	// set sky stuff appropriate
 	//

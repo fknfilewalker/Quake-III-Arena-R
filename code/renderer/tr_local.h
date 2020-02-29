@@ -1721,6 +1721,7 @@ extern	cvar_t	*pt_numRandomIL;
 extern	cvar_t  *pt_numBounces;
 extern	cvar_t  *pt_randomLightOffset;
 
+extern  cvar_t* rt_printPerformanceStatistic;
 extern  cvar_t* rt_accumulate;
 extern  cvar_t* rt_aperture;
 extern  cvar_t* rt_focalLength;
