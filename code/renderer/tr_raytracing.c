@@ -490,7 +490,7 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 		bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_NV;
 	}
 
-	if (strstr(tess.shader->name, "energy_grn1") || strstr(tess.shader->name, "teleportEffect") || strstr(tess.shader->name, "shotgun_laser")) {
+	if (strstr(tess.shader->name, "energy_grn1") || strstr(tess.shader->name, "teleportEffect") || strstr(tess.shader->name, "shotgun_laser") || strstr(tess.shader->name, "models/players/hunter/hunter_f")) {
 		bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_NV;
 		bAS->geometryInstance.instanceOffset = 1;
 	}

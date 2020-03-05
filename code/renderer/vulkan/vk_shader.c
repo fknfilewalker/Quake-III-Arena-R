@@ -18,7 +18,6 @@
 #include "../../../shader/header/direct_illumination.rgen.h"
 #include "../../../shader/header/indirect_illumination.rgen.h"
 
-#include "../../../shader/header/rt_raygen.rgen.h"
 #include "../../../shader/header/rt_miss.rmiss.h"
 #include "../../../shader/header/rt_closesthit.rchit.h"
 #include "../../../shader/header/rt_anyhit.rahit.h"
@@ -32,7 +31,6 @@ static vkshader_t *clearAttachment;
 static vkshader_t *fullscreenRect;
 static vkshader_t* rngCompShader;
 // rtx
-static vkshader_t* rayTracing;
 static vkshader_t* rayTracingAny;
 static vkshader_t* primaryRays;
 static vkshader_t* reflectRays;
@@ -83,13 +81,6 @@ void VK_RngCompShader(vkshader_t* shader) {
 }
 
 // rtx
-void VK_RayTracingShader(vkshader_t* shader) {
-	if (rayTracing == NULL) {
-		rayTracing = malloc(sizeof(vkshader_t));
-		VK_LoadRayTracingShadersFromVariable(rayTracing, &rt_raygenRGen, sizeof(rt_raygenRGen), &rt_missRMiss, sizeof(rt_missRMiss), &rt_closesthitRCHit, sizeof(rt_closesthitRCHit));
-	}
-	Com_Memcpy(shader, rayTracing, sizeof(vkshader_t));
-}
 
 void VK_DestroyShader(vkshader_t* shader) {
 	for (int i = 0; i < shader->size; ++i) {
@@ -125,11 +116,6 @@ void VK_DestroyAllShaders() {
 		rngCompShader = NULL;
 	}
 	// RTX
-	if (rayTracing != NULL) {
-		VK_DestroyShader(rayTracing);
-		free(rayTracing);
-		rayTracing = NULL;
-	}
 	if (rayTracingAny != NULL) {
 		VK_DestroyShader(rayTracingAny);
 		free(rayTracingAny);
@@ -421,15 +407,6 @@ void VK_LoadRayTracingShadersWithAnyFromVariable(vkshader_t* shader, const char*
 	shader->shaderGroupSize = sizeof(groups) / sizeof(VkRayTracingShaderGroupCreateInfoNV);
 	shader->shaderGroupCreateInfos = calloc(shader->shaderGroupSize, sizeof(VkRayTracingShaderGroupCreateInfoNV));
 	memcpy(shader->shaderGroupCreateInfos, &groups[0], sizeof(groups));
-}
-
-void VK_RayTracingShaderWithAny(vkshader_t* shader) {
-	if (rayTracingAny == NULL) {
-		rayTracingAny = malloc(sizeof(vkshader_t));
-		VK_LoadRayTracingShadersWithAnyFromVariable(rayTracingAny, &rt_raygenRGen, sizeof(rt_raygenRGen), &rt_missRMiss, sizeof(rt_missRMiss), &rt_closesthitRCHit, sizeof(rt_closesthitRCHit), &rt_anyhitRAHit, sizeof(rt_anyhitRAHit),
-			&rt_shadowRMiss, sizeof(rt_shadowRMiss), &rt_shadowRCHit, sizeof(rt_shadowRCHit) ,&rt_shadowRAHit, sizeof(rt_shadowRAHit));
-	}
-	Com_Memcpy(shader, rayTracingAny, sizeof(vkshader_t));
 }
 
 void VK_LoadPrimaryRaysShadersFromVariable(vkshader_t* shader) {

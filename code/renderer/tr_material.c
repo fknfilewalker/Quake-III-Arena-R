@@ -64,7 +64,7 @@ uint32_t RB_GetMaterial() {
 		//tess.shader->rtstages[2]->active = qfalse;
 		//tess.shader->rtstages[3]->active = qfalse;
 	}
-	if (strstr(tess.shader->name, "hologirl")) {
+	if (strstr(tess.shader->name, "flag")) {
 		int x = 2;//material = MATERIAL_KIND_WATER;
 	}
 	//+		tess.shader	0x0000027dd20c1da8 {name=0x0000027dd20c1da8 "textures/sfx/portal_sfx_ring" lightmapIndex=-3 index=118 ...}	shader_s *
@@ -73,7 +73,7 @@ uint32_t RB_GetMaterial() {
 	// consol/sphere2
 	//!strstr(shader->name, "green_sphere") && !strstr(shader->name, "energy_grn1")
 	if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) material |= MATERIAL_FLAG_MIRROR;
-	else if ((strstr(tess.shader->name, "gratelamp/gratelamp") && !strstr(tess.shader->name, "gratelamp/gratelamp_b"))
+	/*else if ((strstr(tess.shader->name, "gratelamp/gratelamp") && !strstr(tess.shader->name, "gratelamp/gratelamp_b"))
 		|| strstr(tess.shader->name, "gratelamp/gratetorch2b")
 		|| strstr(tess.shader->name, "timlamp/timlamp")
 		|| strstr(tess.shader->name, "models/mapobjects/flag/banner_strgg")
@@ -83,18 +83,30 @@ uint32_t RB_GetMaterial() {
 		|| strstr(tess.shader->name, "hologirl")
 		) {
 		material |= MATERIAL_FLAG_SEE_THROUGH;
-	}
-	else if (strstr(tess.shader->name, "flame") || strstr(tess.shader->name, "models/mapobjects/bitch/orb") || strstr(tess.shader->name, "console/sphere") || strstr(tess.shader->name, "console")
-		 || strstr(tess.shader->name, "proto_zzz") || strstr(tess.shader->name, "cybergrate")
-		|| strstr(tess.shader->name, "teleporter/energy")
-		|| strstr(tess.shader->name, "textures/sfx/portal_sfx_ring")
-		|| strstr(tess.shader->name, "tesla")
-			|| strstr(tess.shader->name, "flame1_hell")
-		|| strstr(tess.shader->name, "energy_grn1")
-		|| strstr(tess.shader->name, "teleportEffect")
-		
-		){
+	}*/
+	//else if (strstr(tess.shader->name, "flame") || strstr(tess.shader->name, "models/mapobjects/bitch/orb") || strstr(tess.shader->name, "console/sphere") || strstr(tess.shader->name, "console")
+	//	 || strstr(tess.shader->name, "proto_zzz") || strstr(tess.shader->name, "cybergrate")
+	//	|| strstr(tess.shader->name, "teleporter/energy")
+	//	|| strstr(tess.shader->name, "textures/sfx/portal_sfx_ring")
+	//	|| strstr(tess.shader->name, "tesla")
+	//		|| strstr(tess.shader->name, "flame1_hell")
+	//	|| strstr(tess.shader->name, "energy_grn1")
+	//	|| strstr(tess.shader->name, "teleportEffect")
+	//	
+	//	){
+	//	material |= MATERIAL_FLAG_SEE_THROUGH_ADD;
+	//}
+	else if (strstr(tess.shader->name, "models/players/hunter/hunter_f")) {
 		material |= MATERIAL_FLAG_SEE_THROUGH_ADD;
+	}
+	else if (tess.shader->sort == SS_BLEND0) {
+		material |= MATERIAL_FLAG_SEE_THROUGH_ADD;
+	}
+	else if (tess.shader->sort == SS_UNDERWATER || tess.shader->sort == SS_BANNER) {
+		material |= MATERIAL_FLAG_SEE_THROUGH;
+	}
+	else if (tess.shader->sort == SS_DECAL && ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT)) {
+		material |= MATERIAL_FLAG_SEE_THROUGH;
 	}
 	else if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) {
 		material |= MATERIAL_FLAG_SEE_THROUGH;

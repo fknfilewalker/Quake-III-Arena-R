@@ -1462,7 +1462,6 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			vk_d.lightList.numLights = 0;
 			// <RTX>
 			vk_d.worldASInit = qfalse;
-			VK_DestroyRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
 			VK_DestroyRayTracingPipeline(&vk_d.primaryRaysPipeline);
 			VK_DestroyRayTracingPipeline(&vk_d.reflectRaysPipeline);
 			VK_DestroyRayTracingPipeline(&vk_d.directIlluminationPipeline);

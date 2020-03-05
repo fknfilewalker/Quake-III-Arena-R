@@ -1283,7 +1283,6 @@ typedef struct {
 	vkimage_t					visData;
 	vkimage_t					lightVisData;
 	vkimage_t					envmap;
-	vkrtpipeline_t				pipeline;
 } vkaccelerationStructures_t;
 
 typedef struct {
