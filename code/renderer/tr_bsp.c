@@ -1781,15 +1781,8 @@ qboolean R_GetEntityToken( char *buffer, int size ) {
 }
 
 void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint32_t offsetxyz) {
-	
-	
 	for (int i = 0; i < tess.numIndexes; i+=6) {
 		vec4_t pos = { 0,0,0,0 };
-		/*for (int i = 0; i < tess.numVertexes; i++) {
-			VectorAdd(pos, tess.xyz[i], pos);
-		}
-		VectorScale(pos, 1.0f / tess.numVertexes, pos);*/
-
 		if (vk_d.lightList.numLights < RTX_MAX_LIGHTS) {
 			if (vk_d.lightList.numLights >= RTX_MAX_LIGHTS) {
 				ri.Error(ERR_FATAL, "Vulkan: Too many lights");
@@ -1806,6 +1799,18 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 
 			VectorCopy(tess.xyz[tess.indexes[i + 0]], vk_d.lightList.lights[vk_d.lightList.numLights].pos);
 			vk_d.lightList.lights[vk_d.lightList.numLights].cluster = cluster;
+
+			vec3_t center, anti_center;
+			float posN[9];
+			VectorCopy(tess.xyz[tess.indexes[(i ) + 0]], &posN[0]);
+			VectorCopy(tess.xyz[tess.indexes[(i ) + 1]], &posN[3]);
+			VectorCopy(tess.xyz[tess.indexes[(i ) + 2]], &posN[6]);
+
+			get_triangle_off_center(&posN, center, anti_center);
+			vk_d.lightList.lights[vk_d.lightList.numLights].cluster = R_FindClusterForPos(center);
+			//if(vk_d.lightList.lights[vk_d.lightList.numLights].cluster == -1)vk_d.lightList.lights[vk_d.lightList.numLights].cluster = R_FindClusterForPos(anti_center);
+			if (vk_d.lightList.lights[vk_d.lightList.numLights].cluster == -1)vk_d.lightList.lights[vk_d.lightList.numLights].cluster = cluster;
+
 			vk_d.lightList.lights[vk_d.lightList.numLights].type = type;
 			vk_d.lightList.lights[vk_d.lightList.numLights].offsetIDX = offsetidx;
 			vk_d.lightList.lights[vk_d.lightList.numLights].offsetXYZ = offsetxyz;
@@ -1911,6 +1916,26 @@ qboolean RB_ASDataDynamic2(shader_t* shader) {
 }
 qboolean RB_ASDynamic(shader_t* shader) {
 	return (shader->numDeforms > 0) || (backEnd.currentEntity->e.frame > 0 || backEnd.currentEntity->e.oldframe > 0);
+}
+
+int BSP_PointLeaf(vec3_t p)
+{
+	mnode_t* node;
+	float		d;
+	cplane_t* plane;
+
+	node = s_worldData.nodes;
+
+	while (node->plane) {
+		plane = node->plane;
+		d = DotProduct(p, plane->normal) - plane->dist;
+		if (d < 0)
+			node = node->children[1];
+		else
+			node = node->children[0];
+	}
+
+	return node->cluster;
 }
 
  int R_FindClusterForPos(const vec3_t p) {
@@ -2188,13 +2213,88 @@ void R_CalcClusterAABB(mnode_t* node) {
 		if (node->cluster > s_worldData.numClusters) {
 			return;
 		}
-		vk_d.clusterList[node->cluster].mins[0] = min(vk_d.clusterList[node->cluster].mins[0], node->mins[0]);
-		vk_d.clusterList[node->cluster].mins[1] = min(vk_d.clusterList[node->cluster].mins[1], node->mins[1]);
-		vk_d.clusterList[node->cluster].mins[2] = min(vk_d.clusterList[node->cluster].mins[2], node->mins[2]);
 
-		vk_d.clusterList[node->cluster].maxs[0] = max(vk_d.clusterList[node->cluster].maxs[0], node->maxs[0]);
-		vk_d.clusterList[node->cluster].maxs[1] = max(vk_d.clusterList[node->cluster].maxs[1], node->maxs[1]);
-		vk_d.clusterList[node->cluster].maxs[2] = max(vk_d.clusterList[node->cluster].maxs[2], node->maxs[2]);
+		// leaf node, so add mark surfaces
+		int			c;
+		msurface_t* surf, ** mark;
+
+		mark = node->firstmarksurface;
+		c = node->nummarksurfaces;
+
+		for (int j = 0; j < c; j++) {
+			tess.numVertexes = 0;
+			tess.numIndexes = 0;
+			surf = mark[j];
+
+			rb_surfaceTable[*surf->data](surf->data);
+			if (tess.numIndexes == 0) continue;
+
+			for (int i = 0; i < tess.numIndexes/3; i++) {
+				vec3_t center, anti_center;
+
+				float posN2[9];
+				VectorCopy(tess.xyz[tess.indexes[(i * 3) + 0]], &posN2[0]);
+				VectorCopy(tess.xyz[tess.indexes[(i * 3) + 1]], &posN2[3]);
+				VectorCopy(tess.xyz[tess.indexes[(i * 3) + 2]], &posN2[6]);
+				
+				vec3_t normal;
+				const float* v0 = posN2 + 0;
+				const float* v1 = posN2 + 3;
+				const float* v2 = posN2 + 6;
+				// Compute the normal
+				vec3_t e1, e2, e3, e4, e5, e6;
+				VectorSubtract(v1, v0, e1);
+				VectorSubtract(v2, v0, e2);
+				VectorSubtract(v0, v1, e3);
+				VectorSubtract(v2, v1, e4);
+				VectorSubtract(v0, v2, e5);
+				VectorSubtract(v1, v2, e6);
+				CrossProduct(e1, e2, normal);
+				VectorNormalize(normal);
+				VectorNormalize(e1);
+				VectorNormalize(e2);
+				VectorNormalize(e3);
+				VectorNormalize(e4);
+				VectorNormalize(e5);
+				VectorNormalize(e6);
+
+				//get_triangle_norm(&posN2, &norm[0]);
+				VectorAdd(normal, &posN2[0], &posN2[0]);
+				VectorAdd(normal, &posN2[3], &posN2[3]);
+				VectorAdd(normal, &posN2[6], &posN2[6]);
+
+				VectorAdd(e1, &posN2[0], &posN2[0]);
+				VectorAdd(e2, &posN2[0], &posN2[0]);
+				VectorAdd(e3, &posN2[3], &posN2[3]);
+				VectorAdd(e4, &posN2[3], &posN2[3]);
+				VectorAdd(e5, &posN2[6], &posN2[6]);
+				VectorAdd(e6, &posN2[6], &posN2[6]);
+
+			/*	VectorAdd(e1, &posN2[3], &posN2[3]);
+				VectorAdd(e2, &posN2[3], &posN2[3]);
+				VectorAdd(normal, &posN2[6], &posN2[6]);*/
+
+				int cluster[3];
+				cluster[0] = R_FindClusterForPos((vec3_t) { posN2[0], posN2[1], posN2[2] });
+				cluster[1] = R_FindClusterForPos((vec3_t) { posN2[3], posN2[4], posN2[5] });
+				cluster[2] = R_FindClusterForPos((vec3_t) { posN2[6], posN2[7], posN2[8] });
+
+				if (cluster[0] != -1 || cluster[1] != -1 || cluster[2] != -1) {
+					int x = 2;
+				}
+			}
+
+			vk_d.clusterList[node->cluster].mins[0] = min(vk_d.clusterList[node->cluster].mins[0], node->mins[0]);
+			vk_d.clusterList[node->cluster].mins[1] = min(vk_d.clusterList[node->cluster].mins[1], node->mins[1]);
+			vk_d.clusterList[node->cluster].mins[2] = min(vk_d.clusterList[node->cluster].mins[2], node->mins[2]);
+
+			vk_d.clusterList[node->cluster].maxs[0] = max(vk_d.clusterList[node->cluster].maxs[0], node->maxs[0]);
+			vk_d.clusterList[node->cluster].maxs[1] = max(vk_d.clusterList[node->cluster].maxs[1], node->maxs[1]);
+			vk_d.clusterList[node->cluster].maxs[2] = max(vk_d.clusterList[node->cluster].maxs[2], node->maxs[2]);
+
+			tess.numVertexes = 0;
+			tess.numIndexes = 0;
+		}
 	}
 }
 
@@ -2374,14 +2474,11 @@ void R_CreatePrimaryRaysPipeline() {
 void R_PreparePT() {
 	int i;
 	//tr.world->numClusters
+	build_pvs2(&s_worldData);
 
-	vk_d.numFixedCluster = s_worldData.numClusters;
 	vk_d.numClusters = s_worldData.numClusters;
-	vk_d.numMaxClusters = s_worldData.numClusters * 3;
 	vk_d.clusterBytes = s_worldData.clusterBytes;
-	vk_d.vis = calloc(vk_d.numMaxClusters, sizeof(byte) * s_worldData.clusterBytes);
-	memcpy(vk_d.vis, s_worldData.vis, s_worldData.numClusters * sizeof(byte) * s_worldData.clusterBytes);
-	//const byte* clusterVis = s_worldData.vis + cluster * s_worldData.clusterBytes;
+	vk_d.vis = s_worldData.vis2;
 	
 	vk_d.clusterList = calloc(s_worldData.numClusters, sizeof(cluster_t));
 	for (int i = 0; i < s_worldData.numClusters; i++) {
@@ -2887,7 +2984,7 @@ void R_PreparePT() {
 		if (lightCount > RTX_MAX_LIGHTS) ri.Error(ERR_FATAL, "PT: To many lights!");
 	}
 
-	VK_CreateImage(&vk_d.accelerationStructures.lightVisData, RTX_MAX_LIGHTS, vk_d.numMaxClusters, VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 1);
+	VK_CreateImage(&vk_d.accelerationStructures.lightVisData, RTX_MAX_LIGHTS, vk_d.numClusters, VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 1);
 	VK_UploadMipImageData(&vk_d.accelerationStructures.lightVisData, RTX_MAX_LIGHTS, vk_d.numClusters, &lightVisibility[0], 4, 0);
 	VK_TransitionImage(&vk_d.accelerationStructures.lightVisData, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 	free(lightVisibility);

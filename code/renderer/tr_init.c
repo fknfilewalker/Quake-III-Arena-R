@@ -439,9 +439,10 @@ static void InitVulkan(void)
 			byte* pic;
 			VK_CreateImageArray(&vk_d.blueNoiseTex, BLUE_NOISE_RES, BLUE_NOISE_RES, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1, NUM_BLUE_NOISE_TEX);
 			for (int i = 0; i < NUM_BLUE_NOISE_TEX; i++) {
-				uint8_t img[2* BLUE_NOISE_RES * BLUE_NOISE_RES];
+				uint8_t img[BLUE_NOISE_RES * BLUE_NOISE_RES];
 				char buf[1024];
-				snprintf(buf, sizeof buf, "blue_noise/LDR_RGBA_%04d.tga", i);
+				//snprintf(buf, sizeof buf, "blue_noise/LDR_RGBA_%04d.tga", i);
+				snprintf(buf, sizeof buf, "blue_noise_textures/%d_%d/LDR_RGBA_%04d.png", 256, 256, i);
 				//snprintf(buf, sizeof buf, "blue_noise_textures/256_256/HDR_RGBA_%04d.png", i);
 				R_LoadImage(buf, &pic, &width, &height);
 
@@ -453,6 +454,50 @@ static void InitVulkan(void)
 				ri.Free(pic);
 			}
 			VK_CreateSampler(&vk_d.blueNoiseTex, VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+
+			int		width16, height16;
+			byte* pic16;
+			//VK_CreateImageArray(&vk_d.blueNoiseTex, BLUE_NOISE_RES, BLUE_NOISE_RES, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1, NUM_BLUE_NOISE_TEX);
+			for (int i = 0; i < 15; i++) {
+				uint8_t img[BLUE_NOISE_RES * BLUE_NOISE_RES];
+				char buf[4* 1024];
+				//snprintf(buf, sizeof buf, "blue_noise/LDR_RGBA_%04d.tga", i);
+				snprintf(buf, sizeof buf, "blue_noise_textures/%d_%d/HDR_RGBA_%01d.png", 128, 128, i);
+				//snprintf(buf, sizeof buf, "blue_noise_textures/256_256/HDR_RGBA_%04d.png", i);
+				R_LoadImage16(buf, &pic16, &width16, &height16);
+				ri.Free(pic16);
+			}
+			/*int w, h, n;
+			int i = 0;
+			char buf[1024];
+			int res = 256;
+			snprintf(buf, sizeof buf, "blue_noise_textures/%d_%d/HDR_RGBA_%04d.png", res, res, i);*/
+
+			/*byte* filedata = 0;
+			uint16_t* data = 0;
+			int filelen = ri.FS_ReadFile(buf, &filedata);
+
+			if (filedata) {
+				data = stbi_load_16_from_memory(filedata, filelen, &w, &h, &n, 4);
+				Z_Free(filedata);
+			}*/
+
+			//if (!data) {
+			//	int x = 2;
+			//	//Com_EPrintf("error loading blue noise tex %s\n", buf);
+			//	//buffer_unmap(&buf_img_upload);
+			//	//buffer_destroy(&buf_img_upload);
+			//	//return VK_ERROR_INITIALIZATION_FAILED;
+			//}
+
+			/////* loaded images are RGBA, want to upload as texture array though */
+			////for (int k = 0; k < 4; k++) {
+			////	for (int j = 0; j < img_size; j++) {
+			////		//bn_tex[(i * 4 + k) * img_size + j] = data[j * 4 + k];
+			////}
+			////}
+
+			//stbi_image_free(data);
 		}
 		// </RTX>
 
@@ -1455,10 +1500,10 @@ void RE_Shutdown( qboolean destroyWindow ) {
 				free(vk_d.clusterList);
 				vk_d.clusterList = NULL;
 			}
-			if (vk_d.vis != NULL) {
+			/*if (vk_d.vis != NULL) {
 				free(vk_d.vis);
 				vk_d.vis = NULL;
-			}
+			}*/
 			vk_d.lightList.numLights = 0;
 			// <RTX>
 			vk_d.worldASInit = qfalse;

@@ -133,7 +133,7 @@ Triangle getTriangle(in RayPayload rp){
 			hitTriangle.tex0 = (vertices_world_static.v[index.x].texIdx0);
 			hitTriangle.tex1 = (vertices_world_static.v[index.x].texIdx1);
 			// cluster
-			idx_c = uint(iData.data[rp.instanceID].offsetIDX) + (rp.primitiveID);
+			idx_c = uint(iData.data[rp.instanceID].offsetIDX/3) + (rp.primitiveID);
 			hitTriangle.cluster = cluster_world_static.c[idx_c];
 			// material
 			hitTriangle.material = vertices_world_static.v[index.x].material;

@@ -552,7 +552,7 @@ void VectorRotate( vec3_t in, vec3_t matrix[3], vec3_t out )
 float Q_rsqrt( float number )
 {
     
-    // the size of the long datatype on win/linux is 4 bytes but on macOS it is 8 bytes (the hex value that is set is for 4 bytes)
+    // the size of the long datatype on win is 4 bytes but on macOS/linux it is 8 bytes (the hex value that is set is for 4 bytes)
 #ifdef _WIN32
 	long i;
 #else

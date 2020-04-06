@@ -24,9 +24,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 static void* q3_stbi_malloc(size_t size) {
 	return ri.Malloc((int)size);
+	//return malloc((int)size);
 }
 static void q3_stbi_free(void* p) {
-	ri.Free(p);
+	if(p) ri.Free(p);
+	//Z_Free(p);
 }
 static void* q3_stbi_realloc(void* p, size_t old_size, size_t new_size) {
 	if (p == NULL)
@@ -35,7 +37,8 @@ static void* q3_stbi_realloc(void* p, size_t old_size, size_t new_size) {
 	void* p_new;
 	if (old_size < new_size) {
 		p_new = q3_stbi_malloc(new_size);
-		memcpy(p_new, p, old_size);
+		
+		Com_Memcpy(p_new, p, old_size);
 		q3_stbi_free(p);
 	}
 	else {
@@ -46,9 +49,17 @@ static void* q3_stbi_realloc(void* p, size_t old_size, size_t new_size) {
 #define STBI_MALLOC q3_stbi_malloc
 #define STBI_FREE q3_stbi_free
 #define STBI_REALLOC_SIZED q3_stbi_realloc
+//#define STBI_MALLOC(sz)           Z_Malloc(sz)
+//#define STBI_REALLOC(p,newsz)     Z_Realloc(p,newsz)
+//#define STBI_FREE(p)              Z_Free(p)
+
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_NO_GIF
 #include "stb_image.h"
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 #define TJE_IMPLEMENTATION
 #include "tiny_jpeg.h"
@@ -1465,6 +1476,64 @@ static void LoadJPG(const char *filename, byte **pic, int *width, int *height) {
 	ri.FS_FreeFile(fbuffer);
 }
 
+static void LoadPNG(const char* filename, byte** pic, int* width, int* height) {
+	byte* fbuffer;
+	int len = ri.FS_ReadFile((char*)filename, (void**)&fbuffer);
+	if (!fbuffer) {
+		return;
+	}
+
+	int components;
+	*pic = stbi_load_from_memory(fbuffer, len, width, height, &components, STBI_rgb_alpha);
+	if (*pic == NULL) {
+		ri.FS_FreeFile(fbuffer);
+		return;
+	}
+
+	// clear all the alphas to 255
+	{
+		int	i, j;
+		byte* buf;
+
+		buf = *pic;
+
+		j = *width * *height * 4;
+		for (i = 3; i < j; i += 4) {
+			buf[i] = 255;
+		}
+	}
+	ri.FS_FreeFile(fbuffer);
+}
+
+static void LoadPNG16(const char* filename, byte** pic, int* width, int* height) {
+	byte* fbuffer;
+	int len = ri.FS_ReadFile((char*)filename, (void**)&fbuffer);
+	if (!fbuffer) {
+		return;
+	}
+
+	int components;
+	*pic = stbi_load_16_from_memory(fbuffer, len, width, height, &components, STBI_rgb_alpha);
+	if (*pic == NULL) {
+		ri.FS_FreeFile(fbuffer);
+		return;
+	}
+
+	// clear all the alphas to 255
+	{
+		int	i, j;
+		byte* buf;
+
+		buf = *pic;
+
+		j = *width * *height * 4;
+		for (i = 3; i < j; i += 4) {
+			buf[i] = 255;
+		}
+	}
+	ri.FS_FreeFile(fbuffer);
+}
+
 struct Write_Context {
 	byte* buffer;
 	int capacity;
@@ -1557,8 +1626,34 @@ void R_LoadImage(const char *name, byte **pic, int *width, int *height) {
 	else if (!Q_stricmp(name + len - 4, ".jpg")) {
 		LoadJPG(name, pic, width, height);
 	}
+	else if (!Q_stricmp(name + len - 4, ".png")) {
+		LoadPNG(name, pic, width, height);
+	}
 }
+/*
+================ =
+R_LoadImage
 
+Loads any of the supported image types into a cannonical
+32 bit format.
+================ =
+*/
+void R_LoadImage16(const char* name, byte * *pic, int* width, int* height) {
+	int		len;
+
+	*pic = NULL;
+	*width = 0;
+	*height = 0;
+
+	len = (int)strlen(name);
+	if (len < 5) {
+		return;
+	}
+
+	if (!Q_stricmp(name + len - 4, ".png")) {
+		LoadPNG16(name, pic, width, height);
+	}
+}
 
 /*
 ===============
