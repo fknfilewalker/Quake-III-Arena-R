@@ -1500,10 +1500,10 @@ void RE_Shutdown( qboolean destroyWindow ) {
 				free(vk_d.clusterList);
 				vk_d.clusterList = NULL;
 			}
-			/*if (vk_d.vis != NULL) {
+			if (vk_d.vis != NULL) {
 				free(vk_d.vis);
 				vk_d.vis = NULL;
-			}*/
+			}
 			vk_d.lightList.numLights = 0;
 			// <RTX>
 			vk_d.worldASInit = qfalse;
