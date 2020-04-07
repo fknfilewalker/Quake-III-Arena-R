@@ -756,7 +756,6 @@ typedef struct {
 	int			numClusters;
 	int			clusterBytes;
 	const byte	*vis;			// may be passed in by CM_LoadMap to save space
-	const byte* vis2;
 
 	byte		*novis;			// clusterBytes of 0xff
 
@@ -1460,8 +1459,11 @@ typedef struct {
 	// <RTX>
 	cluster_t			*clusterList;
 	int					currentCluster;
+	int					numFixedCluster;
 	int					numClusters;
 	int					clusterBytes;
+
+	int					numMaxClusters;
 	const byte			*vis;
 
 	// AS
