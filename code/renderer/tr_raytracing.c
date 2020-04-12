@@ -1226,7 +1226,9 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		ri.Printf(PRINT_ALL, "Primary Ray Stage         %f ms\n", prim);
 		ri.Printf(PRINT_ALL, "Reflect/Refract Stage     %f ms\n", refref);
 		ri.Printf(PRINT_ALL, "Direct Illumination Stage %f ms\n", direct);
-		rt_printPerformanceStatistic->integer = 0;
+		ri.Printf(PRINT_ALL, "Accumulated Images        %d\n", vk_d.uboGlobal[vk.swapchain.currentImage].numSamples);
+		//rt_printPerformanceStatistic->integer = 0;
+		ri.Cvar_Set("rt_printPerfStats", 0);
 	}
 
 	//ri.Printf(PRINT_ALL, "Prim %f ms\n", (prim));
