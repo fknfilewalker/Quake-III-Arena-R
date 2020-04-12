@@ -153,18 +153,18 @@ int		max_polyverts;
 
 // PT
 cvar_t* pt_showIntermediateResults;
-cvar_t* pt_cullLights;
-cvar_t* pt_numRandomDL;
 cvar_t* pt_numRandomIL;
 cvar_t* pt_numBounces;
-cvar_t* pt_randomLightOffset;
 
+cvar_t* rt_cullLights;
+cvar_t* rt_numRandomDL;
 cvar_t* rt_printPerformanceStatistic;
 cvar_t* rt_accumulate;
+cvar_t* rt_antialiasing;
+cvar_t* rt_softshadows;
 cvar_t* rt_aperture;
 cvar_t* rt_focalLength;
 cvar_t* rt_dof;
-cvar_t* rt_antialiasing;
 
 void ( APIENTRY * qglMultiTexCoord2fARB )( GLenum texture, GLfloat s, GLfloat t );
 void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
@@ -1345,17 +1345,17 @@ void R_Register( void )
 
 	// RTX
 	pt_showIntermediateResults = ri.Cvar_Get("pt_showIntermediateResults", "1", 0);
-	pt_cullLights = ri.Cvar_Get("pt_cullLights", "1", 0);
-	pt_numRandomDL = ri.Cvar_Get("pt_numRandomDL", "0", 0);
 	pt_numRandomIL = ri.Cvar_Get("pt_numRandomIL", "1", 0);
 	pt_numBounces = ri.Cvar_Get("pt_numBounces", "1", 0);
-	pt_randomLightOffset = ri.Cvar_Get("pt_randomLightOffset", "1", 0);
 
 	rt_printPerformanceStatistic = ri.Cvar_Get("rt_printPerfStats", "0", CVAR_TEMP);
+	rt_cullLights = ri.Cvar_Get("rt_cullLights", "1", 0);
+	rt_numRandomDL = ri.Cvar_Get("rt_numRandomDL", "0", 0);
 	rt_accumulate = ri.Cvar_Get("rt_accumulate", "0", 0);
 	rt_antialiasing = ri.Cvar_Get("rt_antialiasing", "1", 0);
+	rt_softshadows = ri.Cvar_Get("rt_softshadows", "1", 0);
 	rt_aperture = ri.Cvar_Get("rt_aperture", "0.05", 0);
-	rt_focalLength = ri.Cvar_Get("rt_focalLength", "15", 0);
+	rt_focalLength = ri.Cvar_Get("rt_focallength", "15", 0);
 	rt_dof = ri.Cvar_Get("rt_dof", "0", 0);
 
 	// make sure all the commands added here are also

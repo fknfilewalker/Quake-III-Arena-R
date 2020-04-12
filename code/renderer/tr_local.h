@@ -1714,11 +1714,11 @@ extern	cvar_t	*r_saveFontData;
 
 // PT
 extern  cvar_t  *pt_showIntermediateResults;
-extern	cvar_t	*pt_cullLights;
-extern	cvar_t  *pt_numRandomDL;
+extern	cvar_t	*rt_cullLights;
+extern	cvar_t  *rt_numRandomDL;
 extern	cvar_t	*pt_numRandomIL;
 extern	cvar_t  *pt_numBounces;
-extern	cvar_t  *pt_randomLightOffset;
+extern	cvar_t  *rt_softshadows;
 
 extern  cvar_t* rt_printPerformanceStatistic;
 extern  cvar_t* rt_accumulate;

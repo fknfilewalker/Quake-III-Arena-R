@@ -64,15 +64,26 @@ DirectionalLight getLight2(in Light l, ivec2 rng, bool random){
 vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, in uint material){
 	vec3 shadeColor = vec3(0);
 
-	uint numLight = uboLights.lightList.numLights; 
-	if(ubo.cullLights) numLight = imageLoad(lightVis_data, ivec2(0, cluster)).r;
-	else numLight = uboLights.lightList.numLights; 
+	float amplification = 1;
+	uint numLights; 
+	if(ubo.cullLights) numLights = imageLoad(lightVis_data, ivec2(0, cluster)).r;
+	else numLights = uboLights.lightList.numLights;
+	uint totalNumLights = numLights;
 
-	for(int i = 0; i < numLight; i++){
+	if(ubo.numRandomDL > 0) {
+		numLights = min(numLights, ubo.numRandomDL);
+		amplification = totalNumLights / numLights;
+	}
+
+	for(int i = 0; i < numLights; i++){
 		uint lightIndex;
-		//uint rand = int( get_rng(RNG_C(0), int(ubo.frameIndex)) * (numLight)) ;
+		//uint rand = int(round(get_rng(RNG_C(0), int(ubo.frameIndex)) * (numLight))) ;
 		if(ubo.cullLights) {
-			lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
+			if(ubo.numRandomDL > 0) {
+				uint rand = int(round(get_rng(RNG_C(i), int(ubo.frameIndex)) * (totalNumLights)));
+				lightIndex = imageLoad(lightVis_data, ivec2( rand + 1, cluster)).r;
+			}
+			else lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
 			// if(lightVisible(i, cluster)){
 			// 	lightIndex = i;
 			// }
@@ -83,7 +94,10 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 			// 	lightIndex = i;
 			// }
 			// else continue;
-			lightIndex = i;
+			if(ubo.numRandomDL > 0) {
+				lightIndex = int(round(get_rng(RNG_C(i), int(ubo.frameIndex)) * (totalNumLights)));
+			}
+			else lightIndex = i;
 		}
 		
 	
@@ -97,6 +111,7 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 		vec3 lightIntensity = light.color * lightStrength;
 		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
 	 	float shadowMult = trace_shadow_ray(P, L, 0.01f, distToLight, isPlayer(material));
+		shadowMult *= amplification; // if we only would use one light it would need to be multiplied with numLights
 
 		float LdotN = clamp(dot(N, L), 0.0, 1.0);
 		float LdotN2 = clamp(dot(-light.normal, -L), 0.0, 1.0);

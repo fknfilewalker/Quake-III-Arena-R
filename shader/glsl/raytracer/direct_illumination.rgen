@@ -46,7 +46,7 @@ vec3 directIllumination(){
 	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
 
 	if (isSky(material)) return alpha_blend( transparent, vec4(primary_albedo.xyz,1)).xyz;
-	if (isLight(material)) return vec3(1,0,0);
+	//if (isLight(material)) return vec3(1,0,0);
 	
 	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;

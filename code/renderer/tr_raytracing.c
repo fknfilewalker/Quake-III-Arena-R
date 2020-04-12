@@ -954,11 +954,11 @@ static void RB_TraceRays() {
 	ubo->numClusters = vk_d.numClusters;
 
 	ubo->showIntermediateResults = pt_showIntermediateResults->integer;
-	ubo->cullLights = pt_cullLights->integer;
-	ubo->numRandomDL = pt_numRandomDL->integer;
+	ubo->cullLights = rt_cullLights->integer;
+	ubo->numRandomDL = rt_numRandomDL->integer;
 	ubo->numRandomIL = pt_numRandomIL->integer;
 	ubo->numBounces = pt_numBounces->integer;
-	ubo->randSampleLight = pt_randomLightOffset->integer;
+	ubo->randSampleLight = rt_softshadows->integer;
 
 	ubo->aperture = rt_aperture->value;
 	ubo->focalLength = rt_focalLength->value;
