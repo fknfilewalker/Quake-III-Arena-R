@@ -1566,6 +1566,7 @@ typedef struct {
 	/*vec4_t				lightList[RTX_MAX_LIGHTS];
 	uint32_t			lightCount;*/
 	vkimage_t			blueNoiseTex;
+	//vkimage_t			blueNoiseTex16;
 
 	// statistics
 	uint64_t			queryPoolResults[VK_MAX_SWAPCHAIN_SIZE][PROFILER_IN_FLIGHT + 1];

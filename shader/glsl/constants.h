@@ -121,7 +121,7 @@
 #define RTX_MAX_LIGHTS								(512)
 
 // blue noise
-#define NUM_BLUE_NOISE_TEX							(64)
+#define NUM_BLUE_NOISE_TEX							(128)
 #define BLUE_NOISE_RES								(256)
 
 #define UINT_MAX                                    0xffffffff

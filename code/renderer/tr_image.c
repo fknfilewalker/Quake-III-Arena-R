@@ -1520,7 +1520,7 @@ static void LoadPNG16(const char* filename, byte** pic, int* width, int* height)
 	}
 
 	// clear all the alphas to 255
-	{
+	/*{
 		int	i, j;
 		byte* buf;
 
@@ -1530,7 +1530,7 @@ static void LoadPNG16(const char* filename, byte** pic, int* width, int* height)
 		for (i = 3; i < j; i += 4) {
 			buf[i] = 255;
 		}
-	}
+	}*/
 	ri.FS_FreeFile(fbuffer);
 }
 
