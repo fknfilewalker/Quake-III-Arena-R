@@ -233,7 +233,7 @@ STRUCT (
     BOOL    (cullLights)
     UINT    (numRandomDL)
     UINT    (numRandomIL)
-    UINT    (numBounces)
+    BOOL    (illumination)
     BOOL    (randSampleLight)
     UINT    (accumulate)
     // dof

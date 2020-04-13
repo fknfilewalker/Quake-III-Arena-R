@@ -62,6 +62,7 @@ DirectionalLight getLight2(in Light l, ivec2 rng, bool random){
 // }
 
 vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, in uint material){
+	if(!ubo.illumination) return primary_albedo.xyz;
 	vec3 shadeColor = vec3(0);
 
 	float amplification = 1;

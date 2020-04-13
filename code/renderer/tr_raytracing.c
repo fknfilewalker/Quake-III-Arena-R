@@ -957,9 +957,9 @@ static void RB_TraceRays() {
 	ubo->cullLights = rt_cullLights->integer;
 	ubo->numRandomDL = rt_numRandomDL->integer;
 	ubo->numRandomIL = pt_numRandomIL->integer;
-	ubo->numBounces = pt_numBounces->integer;
 	ubo->randSampleLight = rt_softshadows->integer;
 
+	ubo->illumination = rt_illumination->integer;
 	ubo->aperture = rt_aperture->value;
 	ubo->focalLength = rt_focalLength->value;
 	ubo->dof = rt_dof->integer;

@@ -154,7 +154,7 @@ int		max_polyverts;
 // PT
 cvar_t* pt_showIntermediateResults;
 cvar_t* pt_numRandomIL;
-cvar_t* pt_numBounces;
+cvar_t* rt_illumination;
 
 cvar_t* rt_cullLights;
 cvar_t* rt_numRandomDL;
@@ -1307,7 +1307,7 @@ void R_Register( void )
 	// RTX
 	pt_showIntermediateResults = ri.Cvar_Get("pt_showIntermediateResults", "1", 0);
 	pt_numRandomIL = ri.Cvar_Get("pt_numRandomIL", "1", 0);
-	pt_numBounces = ri.Cvar_Get("pt_numBounces", "1", 0);
+	rt_illumination = ri.Cvar_Get("rt_illumination", "1", 0);
 
 	rt_printPerformanceStatistic = ri.Cvar_Get("rt_printPerfStats", "0", CVAR_TEMP);
 	rt_cullLights = ri.Cvar_Get("rt_cullLights", "1", 0);
