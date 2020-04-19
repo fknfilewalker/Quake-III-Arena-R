@@ -92,6 +92,8 @@ vec4 calculateRefraction( inout vec3 pos, inout vec3 direction, inout vec3 N, in
 	return albedoRefraction;
 }
 
+
+
 vec4 second(in vec3 pos, in vec3 direction, in vec3 N){
 	vec4 color = vec4(0);
 	float n1, n2, ndotr = dot(direction, N);  

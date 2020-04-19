@@ -2152,26 +2152,6 @@ int R_GetClusterFromSurface(surfaceType_t* surf) {
 	return -1;
 }
 
-int R_ClosestCluster(const vec3_t p) {
-
-	float dist = 999999;
-	int cluster = -1;
-	for (float x = -100; x < 1000; x+=10) {
-		for (float y = -1000; y < 0; y+= 10) {
-			for (float z = 0; z < 100; z+= 10) {
-				vec3_t center = {(x+(x+ 10))/2.0f,
-									(y + (y + 10)) / 2.0f,
-									(z + (z + 10)) / 2.0f };
-				float dist2 = abs(Distance(center, p));
-				if (dist2 < dist && R_FindClusterForPos2(center) != -1) {
-					dist = dist2;
-					cluster = R_FindClusterForPos2(center);
-				}
-			}
-		}
-	}
-	return cluster;
-}
 
 void R_CalcClusterAABB(mnode_t* node) {
 	do {
@@ -2742,18 +2722,6 @@ void R_PreparePT() {
 			continue;
 		}
 		if (tess.shader->rtstages[0] == NULL) continue;
-		//s_worldData.surfaces[i]
-		/*if (!s_worldData.surfaces[i].added && !s_worldData.surfaces[i].skip && !RTX_DYNAMIC_DATA) {*/
-		/*if (!s_worldData.surfaces[i].added && !s_worldData.surfaces[i].skip){ 
-			vk_d.scratchBufferOffset = 0;
-			tess.numVertexes = 0;
-			tess.numIndexes = 0;
-			tess.shader = shader;
-			rb_surfaceTable[*s_worldData.surfaces[i].data](s_worldData.surfaces[i].data);
-			RB_CreateBottomAS(&s_worldData.surfaces[i].bAS, qtrue);
-			tess.numVertexes = 0;
-			tess.numIndexes = 0;
-		}*/
 
 		// add brush models
 		if (s_worldData.surfaces[i].bAS == NULL && !s_worldData.surfaces[i].notBrush && !s_worldData.surfaces[i].added && !s_worldData.surfaces[i].skip) {
@@ -2777,56 +2745,11 @@ void R_PreparePT() {
 			for (int j = 0; j < tess.numVertexes; j++) {
 				VectorAdd(pos, tess.xyz[j], pos);
 
-				////if (clu[0] == -1) {
-				//	if (clu[0] == -1) clu[0] = R_FindClusterForPos3(tess.xyz[j]);
-				//	if (clu[0] == -1) clu[0] = R_FindClusterForPos(tess.xyz[j]);
-				//	if (clu[0] == -1) clu[0] = R_FindClusterForPos2(tess.xyz[j]);
-				////}
-				////else if (clu[1] == -1) {
-				//	if (clu[1] == -1) clu[1] = R_FindClusterForPos3(tess.xyz[j]);
-				//	if (clu[0] == clu[1]) clu[1] = -1;
-				//	if (clu[1] == -1) clu[1] = R_FindClusterForPos(tess.xyz[j]);
-				//	if (clu[0] == clu[1]) clu[1] = -1;
-				//	if (clu[1] == -1) clu[1] = R_FindClusterForPos2(tess.xyz[j]);
-				//	if (clu[0] == clu[1]) clu[1] = -1;
-				////}
-				////else if (clu[2] == -1) {
-				//	if (clu[2] == -1) clu[2] = R_FindClusterForPos3(tess.xyz[j]);
-				//	if (clu[0] == clu[2] || clu[1] == clu[2]) clu[2] = -1;
-				//	if (clu[2] == -1) clu[2] = R_FindClusterForPos(tess.xyz[j]);
-				//	if (clu[0] == clu[2] || clu[1] == clu[2]) clu[2] = -1;
-				//	if (clu[2] == -1) clu[2] = R_FindClusterForPos2(tess.xyz[j]);
-				//	if (clu[0] == clu[2] || clu[1] == clu[2]) clu[2] = -1;
-				////}
-				//
-				//if (clu[0] != -1 && clu[1] != -1 && clu[2] != -1) break;
 				s_worldData.surfaces[i].bAS->c = R_FindClusterForPos3(tess.xyz[j]);
-				/*if (surf->bAS->c == -1) R_FindClusterForPos(tess.xyz[j]);
-				if (surf->bAS->c == -1) R_FindClusterForPos3(tess.xyz[j]);*/
-
 				if (s_worldData.surfaces[i].bAS->c != -1) break;
 			}
 
-			/*int wc = -1;
-			for (int i = 0; i < s_worldData.numnodes; i++) {
-				mnode_t* node = &s_worldData.nodes[i];
-				if (node->contents == -1) continue;
-
-				msurface_t** mark = node->firstmarksurface;
-				int c = node->nummarksurfaces;
-				for (int j = 0; j < c; j++) {
-					if (mark[j]->data == s_worldData.surfaces[i].data)
-					{
-						wc = node->cluster;
-						break;
-					}
-				}
-			}
-			
-			s_worldData.surfaces[i].bAS->c = RB_TryMergeCluster(clu, wc);*/
-
 			RB_UploadCluster(&vk_d.geometry.cluster_entity_static, s_worldData.surfaces[i].bAS->data.offsetIDX, R_GetClusterFromSurface(s_worldData.surfaces[i].data));
-			//vk_d.geometry.cluster_world_static_offset += (tess.numIndexes / 3);
 
 			backEnd.refdef.floatTime = originalTime;
 			tess.numVertexes = 0;

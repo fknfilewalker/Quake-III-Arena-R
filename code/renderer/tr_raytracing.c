@@ -8,143 +8,6 @@ glConfig.driverType == VULKAN && r_vertexLight->value == 2
 #define RTX_BOTTOM_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_NV)
 #define RTX_TOP_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_NV)
 
-qboolean RB_ClusterVisIdent(byte* aVis, byte* bVis) {
-	if(!memcmp(aVis, bVis, vk_d.clusterBytes * sizeof(byte))) return qtrue;
-	/*for (int b = 0; b < vk_d.clusterBytes; b++) {
-		if (aVis[b] != bVis[b]) return qfalse;
-	}*/
-	return qfalse;
-}
-
-int RB_CheckClusterExist(byte* cVis) {
-	for (int i = vk_d.numFixedCluster; i < vk_d.numClusters; i++) {
-		byte* allVis = (vk_d.vis + i * vk_d.clusterBytes);
-		if (RB_ClusterVisIdent(allVis, cVis)) return i;
-	}
-	return -1;
-}
-
-int RB_TryMergeCluster(int cluster[3], int defaultC) {
-	if ((cluster[0] == -1 && cluster[1] == -1) || (cluster[1] == -1 && cluster[2] == -1) || (cluster[2] == -1 && cluster[0] == -1)) return -1;
-	//if ((cluster[0] == -1 && cluster[1] == -1) && cluster[2] == defaultC) return -1;
-	//if ((cluster[1] == -1 && cluster[2] == -1) && cluster[0] == defaultC) return -1;
-	//if ((cluster[2] == -1 && cluster[0] == -1) && cluster[1] == defaultC) return -1;
-	//if ((cluster[0] == -1 && cluster[1] == -1) || (cluster[1] == -1 && cluster[2] == -1) || (cluster[2] == -1 && cluster[0] == -1)) return -1;
-
-	if (cluster[0] != cluster[1] || cluster[1] != cluster[2] || cluster[0] != cluster[2]) {
-		vec3_t mins = { 99999, 99999, 99999 };
-		vec3_t maxs = { -99999, -99999, -99999 };
-		if (cluster[0] != -1) {
-			mins[0] = mins[0] < vk_d.clusterList[cluster[0]].mins[0] ? mins[0] : vk_d.clusterList[cluster[0]].mins[0];
-			mins[1] = mins[1] < vk_d.clusterList[cluster[0]].mins[1] ? mins[1] : vk_d.clusterList[cluster[0]].mins[1];
-			mins[2] = mins[2] < vk_d.clusterList[cluster[0]].mins[2] ? mins[2] : vk_d.clusterList[cluster[0]].mins[2];
-			maxs[0] = maxs[0] > vk_d.clusterList[cluster[0]].maxs[0] ? maxs[0] : vk_d.clusterList[cluster[0]].maxs[0];
-			maxs[1] = maxs[1] > vk_d.clusterList[cluster[0]].maxs[1] ? maxs[1] : vk_d.clusterList[cluster[0]].maxs[1];
-			maxs[2] = maxs[2] > vk_d.clusterList[cluster[0]].maxs[2] ? maxs[2] : vk_d.clusterList[cluster[0]].maxs[2];
-		}
-		if (cluster[1] != -1) {
-			mins[0] = mins[0] < vk_d.clusterList[cluster[1]].mins[0] ? mins[0] : vk_d.clusterList[cluster[1]].mins[0];
-			mins[1] = mins[1] < vk_d.clusterList[cluster[1]].mins[1] ? mins[1] : vk_d.clusterList[cluster[1]].mins[1];
-			mins[2] = mins[2] < vk_d.clusterList[cluster[1]].mins[2] ? mins[2] : vk_d.clusterList[cluster[1]].mins[2];
-			maxs[0] = maxs[0] > vk_d.clusterList[cluster[1]].maxs[0] ? maxs[0] : vk_d.clusterList[cluster[1]].maxs[0];
-			maxs[1] = maxs[1] > vk_d.clusterList[cluster[1]].maxs[1] ? maxs[1] : vk_d.clusterList[cluster[1]].maxs[1];
-			maxs[2] = maxs[2] > vk_d.clusterList[cluster[1]].maxs[2] ? maxs[2] : vk_d.clusterList[cluster[1]].maxs[2];
-		}
-		if (cluster[2] != -1) {
-			mins[0] = mins[0] < vk_d.clusterList[cluster[2]].mins[0] ? mins[0] : vk_d.clusterList[cluster[2]].mins[0];
-			mins[1] = mins[1] < vk_d.clusterList[cluster[2]].mins[1] ? mins[1] : vk_d.clusterList[cluster[2]].mins[1];
-			mins[2] = mins[2] < vk_d.clusterList[cluster[2]].mins[2] ? mins[2] : vk_d.clusterList[cluster[2]].mins[2];
-			maxs[0] = maxs[0] > vk_d.clusterList[cluster[2]].maxs[0] ? maxs[0] : vk_d.clusterList[cluster[2]].maxs[0];
-			maxs[1] = maxs[1] > vk_d.clusterList[cluster[2]].maxs[1] ? maxs[1] : vk_d.clusterList[cluster[2]].maxs[1];
-			maxs[2] = maxs[2] > vk_d.clusterList[cluster[2]].maxs[2] ? maxs[2] : vk_d.clusterList[cluster[2]].maxs[2];
-		}
-		if (defaultC != -1) {
-			mins[0] = mins[0] < vk_d.clusterList[defaultC].mins[0] ? mins[0] : vk_d.clusterList[defaultC].mins[0];
-			mins[1] = mins[1] < vk_d.clusterList[defaultC].mins[1] ? mins[1] : vk_d.clusterList[defaultC].mins[1];
-			mins[2] = mins[2] < vk_d.clusterList[defaultC].mins[2] ? mins[2] : vk_d.clusterList[defaultC].mins[2];
-			maxs[0] = maxs[0] > vk_d.clusterList[defaultC].maxs[0] ? maxs[0] : vk_d.clusterList[defaultC].maxs[0];
-			maxs[1] = maxs[1] > vk_d.clusterList[defaultC].maxs[1] ? maxs[1] : vk_d.clusterList[defaultC].maxs[1];
-			maxs[2] = maxs[2] > vk_d.clusterList[defaultC].maxs[2] ? maxs[2] : vk_d.clusterList[defaultC].maxs[2];
-		}
-
-
-		byte* vis = calloc(1, sizeof(byte) * vk_d.clusterBytes);
-		for (int i = 0; i < vk_d.numFixedCluster; i++) {
-			if ((vk_d.clusterList[i].mins[0] >= mins[0] && vk_d.clusterList[i].mins[1] >= mins[1] && vk_d.clusterList[i].mins[2] >= mins[2]) &&
-				(vk_d.clusterList[i].maxs[0] <= maxs[0] && vk_d.clusterList[i].maxs[1] <= maxs[1] && vk_d.clusterList[i].maxs[2] <= maxs[2])) {
-
-				byte* allVis = (vk_d.vis + i * vk_d.clusterBytes);
-				for (int b = 0; b < vk_d.clusterBytes; b++) {
-
-					vis[b] = vis[b] | allVis[b];
-				}
-				//const byte* clusterVis = vk_d.vis + cluster * s_worldData.clusterBytes;
-				int x = 2;
-			}
-		}
-
-		int c = RB_CheckClusterExist(vis);
-		if (c == -1) {
-			byte* allVis = (vk_d.vis + vk_d.numClusters * vk_d.clusterBytes);
-			for (int b = 0; b < vk_d.clusterBytes; b++) {
-				allVis[b] = vis[b];
-			}
-			c = vk_d.numClusters;
-			vk_d.numClusters++;
-		}
-		free(vis);
-		
-		return c;
-
-		//else c = 0;
-	}
-	return -1;
-}
-int RB_GetCluster() {
-	vec3_t mins = { 99999, 99999, 99999 };
-	vec3_t maxs = { -99999, -99999, -99999 };
-
-	for (int i = 0; i < (tess.numVertexes); i++) {
-		int cluster = R_FindClusterForPos3(tess.xyz[i]);
-		if(cluster == -1) cluster = R_FindClusterForPos(tess.xyz[i]);
-		if (cluster == -1) cluster = R_FindClusterForPos2(tess.xyz[i]);
-
-		if (cluster != -1) {
-			mins[0] = mins[0] < vk_d.clusterList[cluster].mins[0] ? mins[0] : vk_d.clusterList[cluster].mins[0];
-			mins[1] = mins[1] < vk_d.clusterList[cluster].mins[1] ? mins[1] : vk_d.clusterList[cluster].mins[1];
-			mins[2] = mins[2] < vk_d.clusterList[cluster].mins[2] ? mins[2] : vk_d.clusterList[cluster].mins[2];
-			maxs[0] = maxs[0] > vk_d.clusterList[cluster].maxs[0] ? maxs[0] : vk_d.clusterList[cluster].maxs[0];
-			maxs[1] = maxs[1] > vk_d.clusterList[cluster].maxs[1] ? maxs[1] : vk_d.clusterList[cluster].maxs[1];
-			maxs[2] = maxs[2] > vk_d.clusterList[cluster].maxs[2] ? maxs[2] : vk_d.clusterList[cluster].maxs[2];
-		}
-	}
-
-	byte* vis = calloc(1, sizeof(byte) * vk_d.clusterBytes);
-	for (int i = 0; i < vk_d.numFixedCluster; i++) {
-		if ((vk_d.clusterList[i].mins[0] >= mins[0] && vk_d.clusterList[i].mins[1] >= mins[1] && vk_d.clusterList[i].mins[2] >= mins[2]) &&
-			(vk_d.clusterList[i].maxs[0] <= maxs[0] && vk_d.clusterList[i].maxs[1] <= maxs[1] && vk_d.clusterList[i].maxs[2] <= maxs[2])) {
-
-			byte* allVis = (vk_d.vis + i * vk_d.clusterBytes);
-			for (int b = 0; b < vk_d.clusterBytes; b++) {
-
-				vis[b] = vis[b] | allVis[b];
-			}
-			//const byte* clusterVis = vk_d.vis + cluster * s_worldData.clusterBytes;
-			int x = 2;
-		}
-
-	}
-
-	byte* allVis = (vk_d.vis + vk_d.numClusters * vk_d.clusterBytes);
-	for (int b = 0; b < vk_d.clusterBytes; b++) {
-		allVis[b] = vis[b];
-	}
-
-	free(vis);
-	int c = vk_d.numClusters;
-	vk_d.numClusters++;
-	return c;
-}
 
 void RB_UploadCluster(vkbuffer_t* buffer, uint32_t offsetIDX, int defaultC) {
 	uint32_t* clusterData = calloc(tess.numIndexes/3, sizeof(uint32_t));
@@ -155,8 +18,9 @@ void RB_UploadCluster(vkbuffer_t* buffer, uint32_t offsetIDX, int defaultC) {
 			VectorAdd(pos, tess.normal[tess.indexes[(i * 3) + j]], pos);
 		}
 		VectorScale(pos, 1.0f / 3.0f, pos);
-		int c = -1;//R_FindClusterForPos(pos);
+		int c = -1;
 
+		// the cluster calculation in Quake III is unreliable, therefore we need multiple fallbacks
 		int cluster[3];
 		cluster[0] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 0]]);
 		cluster[1] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 1]]);
@@ -170,38 +34,18 @@ void RB_UploadCluster(vkbuffer_t* buffer, uint32_t offsetIDX, int defaultC) {
 		if (cluster[1] == -1) cluster[1] = R_FindClusterForPos2(tess.xyz[tess.indexes[(i * 3) + 1]]);
 		if (cluster[2] == -1) cluster[2] = R_FindClusterForPos2(tess.xyz[tess.indexes[(i * 3) + 2]]);
 
+		// if each vertex is in a different cluster merge them to one where the whole triangle is inside
 		c = RB_TryMergeCluster(cluster, defaultC);
-
-		/*if (c == -1) {
-			cluster[0] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 0]]);
-			cluster[1] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 1]]);
-			cluster[2] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 2]]);
-
-			if (cluster[0] == -1) cluster[0] = R_FindClusterForPos(tess.xyz[tess.indexes[(i * 3) + 0]]);
-			if (cluster[1] == -1) cluster[1] = R_FindClusterForPos(tess.xyz[tess.indexes[(i * 3) + 1]]);
-			if (cluster[2] == -1) cluster[2] = R_FindClusterForPos(tess.xyz[tess.indexes[(i * 3) + 2]]);
-
-			if (cluster[0] == -1) cluster[0] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 0]]);
-			if (cluster[1] == -1) cluster[1] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 1]]);
-			if (cluster[2] == -1) cluster[2] = R_FindClusterForPos3(tess.xyz[tess.indexes[(i * 3) + 2]]);
-			c = RB_TryMergeCluster(cluster, defaultC);
-		}*/
 		
-		//if (c == -1 && (clister0 == -1 && clister1 == -1)) c = clister2;
-		//if (c == -1 && (clister1 == -1 && clister2 == -1)) c = clister0;
-		//if (c == -1 && (clister2 == -1 && clister0 == -1)) c = clister1;
-		
+		// if we still got no cluster try the center
 		if (c == -1) c = R_FindClusterForPos2(pos);
 		if (c == -1) c = R_FindClusterForPos(pos);
 		if (c == -1) c = R_FindClusterForPos3(pos);
 		if (c == -1) {
+			// use default cluster as last resort
 			c = defaultC;
 		}
-		//c = 218;
-		//c = R_ClosestCluster(pos);
-		//c = defaultC;
 		clusterData[i] = c;
-
 	}
 	VK_UploadBufferDataOffset(buffer, offsetIDX * sizeof(uint32_t), (tess.numIndexes/3) * sizeof(uint32_t), (void*)clusterData);
 	free(clusterData);
@@ -341,75 +185,6 @@ void RB_CreateEntityBottomAS(vkbottomAS_t** bAS) {
 	if (bAS != NULL) (*bAS) = bASList;
 }
 
-//
-//static qboolean RB_MaterialException(vkbottomAS_t* bAS) {
-//	// -- lights --
-//	if (strstr(tess.shader->name, "base_light") || strstr(tess.shader->name, "gothic_light")) { // all lamp textures
-//		bAS->data.material = MATERIAL_KIND_REGULAR;
-//		bAS->data.material |= MATERIAL_FLAG_LIGHT;
-//		//RB_AddLightToLightList();
-//	}
-//	else
-//	if (strstr(tess.shader->name, "flame")) { // all fire textures
-//		bAS->data.material = MATERIAL_KIND_REGULAR;
-//		bAS->data.material |= MATERIAL_FLAG_LIGHT;
-//		//RB_AddLightToLightList();
-//	}
-//	//else
-//	//if (strstr(tess.shader->name, "beam")  /* || (strstr(tess.shader->name, "lamp") && strstr(tess.shader->name, "flare"))*/ ) { // light rect and cones (beam == cones, lamp = squares)
-//	//	bAS->data.material = MATERIAL_KIND_INVISIBLE;
-//	//	bAS->data.material |= MATERIAL_FLAG_LIGHT;
-//	//}
-//	else
-//	// -- glass --
-//	if (strstr(tess.shader->name, "glass") || strstr(tess.shader->name, "jacobs") || strstr(tess.shader->name, "green_sphere") || strstr(tess.shader->name, "yellow_sphere") || strstr(tess.shader->name, "red_sphere")) { // glass (jacobs = console glass, green sphere = life)
-//		bAS->data.material = MATERIAL_KIND_GLASS;
-//		//bAS->data.material |= MATERIAL_FLAG_LIGHT;
-//	} 
-//	else
-//	if (tess.shader->sort == SS_BLEND0) {
-//		int x = 2;
-//		//bAS->data.material == MATERIAL_KIND_GLASS;
-//	}
-//	//	else
-//	//if (strstr(tess.shader->name, "gratelamp/gratelamp") && !strstr(tess.shader->name, "flare") && !strstr(tess.shader->name, "_b")) {
-//	//	bAS->data.material == MATERIAL_KIND_INVISIBLE;
-//	//	//bAS->data.material |= MATERIAL_FLAG_LIGHT;
-//	//}
-//	//else
-//	//if (backEnd.currentEntity->e.reType == (RT_SPRITE) &&
-//	//	(strstr(tess.shader->name, "rocketExplosion") || strstr(tess.shader->name, "plasma1") || strstr(tess.shader->name, "grenadeExplosion") || strstr(tess.shader->name, "bfgExplosion"))) {
-//	//	//bAS->data.material |= MATERIAL_KIND_BULLET;
-//	//	bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
-//	//}
-//	//else if (backEnd.currentEntity->e.reType == RT_RAIL_CORE || backEnd.currentEntity->e.reType == RT_RAIL_RINGS || backEnd.currentEntity->e.reType == RT_LIGHTNING) {
-//	//	//bAS->data.material |= MATERIAL_KIND_BULLET;
-//	//	bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
-//	//}
-//	//else if (strstr(tess.shader->name, "railExplosion")) {
-//	//	bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
-//	//	bAS->data.material |= MATERIAL_FLAG_TRANSPARENT;
-//	//}
-//	//else if (tess.shader->sort == SS_DECAL) {
-//	//	//bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
-//	//	bAS->data.material |= MATERIAL_FLAG_BULLET_MARK;
-//	//}else if (strstr(tess.shader->name, "hologirl")) {
-//	//	bAS->data.material = MATERIAL_FLAG_SEE_THROUGH;
-//	//	//bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
-//	//}
-//	//else if (strstr(tess.shader->name, "gratelamp/gratelamp") && !strstr(tess.shader->name, "flare") && !strstr(tess.shader->name, "_b")) {
-//	//	bAS->data.material = MATERIAL_FLAG_SEE_THROUGH;
-//	//}
-//	//else if (strstr(tess.shader->name, "flare") || strstr(tess.shader->name, "textures/sfx/beam")) {
-//	//	bAS->data.material = MATERIAL_FLAG_LIGHT;
-//	//}
-//	//else if (strstr(tess.shader->name, "railgun")) bAS->data.material |= MATERIAL_FLAG_NEEDSCOLOR;
-//	else return qfalse;
-//	return qtrue;
-//}
-
-
-
 void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 	// set texture id and calc texture animation
 	//int indexAnim = RB_GetNextTex(0);
@@ -422,45 +197,6 @@ void RB_UpdateInstanceDataBuffer(vkbottomAS_t* bAS) {
 	if (strstr(tess.shader->name, "orbb")) {
 		int x = 2;
 	}
-	//if (tess.shader->rtstages[0]->bundle[0].numImageAnimations > 1) {
-	//	indexAnim = (int)(tess.shaderTime * tess.shader->rtstages[0]->bundle[0].imageAnimationSpeed * FUNCTABLE_SIZE);
-	//	indexAnim >>= FUNCTABLE_SIZE2;
-	//	if (indexAnim < 0) {
-	//		indexAnim = 0;	// may happen with shader time offsets
-	//	}
-	//	indexAnim %= tess.shader->stages[0]->bundle[0].numImageAnimations;	
-	//}
-	/*if (bAS->data.texIdx != (uint32_t)tess.shader->rtstages[0]->bundle[0].image[indexAnim]->index) {
-		bAS->data.texIdx = (uint32_t)tess.shader->rtstages[0]->bundle[0].image[indexAnim]->index;
-		tess.shader->rtstages[0]->bundle[0].image[indexAnim]->frameUsed = tr.frameCount;
-	}*/
-
-	//bAS->data.blendfunc = (uint32_t)(tess.shader->rtstages[0]->stateBits);
-
-	//// set material
-	//if (!RB_MaterialException(bAS)) {
-
-	//	bAS->data.material &= 0xfffffff0;
-	//	switch (tess.shader->contentFlags & 0x0000007f) {
-	//	case CONTENTS_SOLID: bAS->data.material |= MATERIAL_KIND_REGULAR; break;
-	//	case CONTENTS_LAVA: bAS->data.material |= MATERIAL_KIND_LAVA; break;
-	//	case CONTENTS_SLIME: bAS->data.material |= MATERIAL_KIND_SLIME; break;
-	//	case CONTENTS_WATER: bAS->data.material |= MATERIAL_KIND_WATER; break;
-	//	case CONTENTS_FOG: bAS->data.material |= MATERIAL_KIND_FOG; break;
-	//	default: bAS->data.material |= MATERIAL_KIND_INVALID; break;
-	//	}
-	//CONTENTS_TRANSLUCENT
-	//	if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") != NULL) bAS->data.material |= MATERIAL_FLAG_MIRROR;
-	//	//else if (tess.shader->sort == SS_PORTAL && strstr(tess.shader->name, "mirror") == NULL) bAS->data.material |= MATERIAL_FLAG_PORTAL;
-	//	////if (tess.shader->sort <= SS_OPAQUE) bAS->data.material |= MATERIAL_FLAG_OPAQUE;
-	//	//if (tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1) bAS->data.material |= MATERIAL_FLAG_TRANSPARENT;
-	//	//if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) {
-	//	//	bAS->data.material |= MATERIAL_FLAG_SEE_THROUGH;
-	//	//}
-	//	//if (tess.shader->sort <= SS_OPAQUE && tess.shader->contentFlags != CONTENTS_TRANSLUCENT /*!strstr(tess.shader->rtstages[0]->bundle->image[0]->imgName, "proto_grate4.tga")*/) bAS->data.material |= MATERIAL_FLAG_OPAQUE;
-	//}
-
-	//if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->data.material = MATERIAL_FLAG_PLAYER_OR_WEAPON;
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&bAS->data);
 }
 
@@ -470,18 +206,6 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) bAS->geometryInstance.mask = RAY_MIRROR_OPAQUE_VISIBLE;
 	else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_OPAQUE_VISIBLE;
 	else bAS->geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
-
-	
-
-	/*if (bAS->data.material & MATERIAL_FLAG_PARTICLE || tess.shader->sort == SS_BLEND0 || tess.shader->sort == SS_BLEND1 || tess.shader->sort == SS_DECAL) {
-		bAS->geometryInstance.instanceOffset = 1;
-		if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) bAS->geometryInstance.mask = RAY_MIRROR_PARTICLE_VISIBLE;
-		else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_PARTICLE_VISIBLE;
-		else bAS->geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_PARTICLE_VISIBLE;
-	}
-	else {
-		bAS->geometryInstance.instanceOffset = 0;
-	}*/
 
 	if (tess.shader->sort <= SS_OPAQUE) {
 		bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
@@ -513,8 +237,6 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 static uint32_t RB_FindPrevInstance(drawSurf_t* drawSurfs, int numDrawSurfs, vec3_t prevOrigin) {
 	for (int i = 0; i < vk_d.prevEntityCount; i++)
 	{
-		//if (!memcmp(vk_d.entityOriginsPrev[i].origin, prevOrigin, sizeof(vec3_t))) return vk_d.entityOriginsPrev[i].instance;
-
 		if (Distance(vk_d.entityOriginsPrev[i].origin, prevOrigin) < 3) {
 			return vk_d.entityOriginsPrev[i].instance;
 		}
@@ -628,10 +350,6 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage], sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
 
-	// lights
-	//VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], 0, sizeof(LightList_s), (void*)&vk_d.lightList);
-	//VK_UploadBufferDataOffset(&vk_d.uboLightList[vk.swapchain.currentImage], RTX_MAX_LIGHTS * sizeof(vec4_t), 1 * sizeof(uint32_t), (void*)&vk_d.lightCount);
-
 	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
 
 		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
@@ -656,7 +374,6 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		if (drawSurf->bAS == NULL) {
 
 		}
-
 
 		// SS_BLEND0 bullets, ball around energy, glow around armore shards, armor glow ,lights/fire
 		// SS_DECAL bullet marks
@@ -768,11 +485,6 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				}
 				else drawSurf->bAS->data.isPlayer = qfalse;
 
-				/*Com_Memcpy(&vk_d.entityOriginsCurrent[vk_d.currentEntityCount].origin, &backEnd.currentEntity->e.origin, sizeof(float[3]));
-				vk_d.entityOriginsCurrent[vk_d.currentEntityCount].instance = vk_d.bottomASTraceListCount;
-				vk_d.currentEntityCount++;
-				drawSurf->bAS->data.prevInstance = RB_FindPrevInstance(drawSurfs, numDrawSurfs, backEnd.currentEntity->e.origin);*/
-				//drawSurf->bAS->data.currentInstance = vk_d.bottomASTraceListCount;
 				Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));	
 				Com_Memcpy(&drawSurf->bAS->data.modelmat, &tM, sizeof(float[12]));
 				RB_UpdateInstanceDataBuffer(drawSurf->bAS);
@@ -818,78 +530,12 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		if (drawSurf->bAS == NULL) {
 			continue;
 		}
-		
-		//if (shader->sort == SS_DECAL) {
-		//	continue;
-		//	vec3_t a;
-		//	vec3_t b;
-		//	VectorSubtract(tess.xyz[0], tess.xyz[1], a);
-		//	VectorSubtract(tess.xyz[0], tess.xyz[2], b);
 
-		//	vec3_t normal;
-		//	CrossProduct(a, b, normal);
-		//	VectorNormalizeFast(normal);
-		//	for (int u = 0; u < tess.numVertexes; u++) {
-		//		tess.xyz[u][0] += 0.5f * normal[0];
-		//		tess.xyz[u][1] += 0.5f * normal[1];
-		//		tess.xyz[u][2] -= 0.5f * normal[2];
-		//	}
-		//	if (drawSurf->bAS == NULL && tess.numIndexes == 6 && tess.numVertexes == 4) {//backEnd.currentEntity->e.reType == RT_SPRITE) {RT_BEAM
-		//		drawSurf->bAS = &vk_d.bottomASList[0];
-		//		dynamic = qtrue;
-		//		forceUpdate = qtrue;
-		//		if (shader->stages[0]->stateBits == 65/*strstr(shader->name, "bullet_mrk") || strstr(shader->name, "burn_med_mrk")*/) drawSurf->bAS->data.material = MATERIAL_FLAG_BULLET_MARK | MATERIAL_FLAG_NEEDSCOLOR;
-		//		else drawSurf->bAS->data.material = MATERIAL_FLAG_NEEDSCOLOR | MATERIAL_FLAG_PARTICLE;//MATERIAL_FLAG_BULLET_MARK;
-		//	}
-		//}
-		//if (backEnd.currentEntity->e.reType & (RT_SPRITE)) {
-		//	int x;
-		//}
-
-		//// blood ray projectile etc
-		//if (drawSurf->bAS == NULL && tess.numIndexes == 6 && tess.numVertexes == 4){//backEnd.currentEntity->e.reType == RT_SPRITE) {RT_BEAM
-		//	int x = 2;
-		//																			//RB_CreateBottomAS(&drawSurf->bAS, dynamic);
-		//	/*drawSurf->bAS = &vk_d.bottomASList[0];
-		//	dynamic = qtrue;
-		//	forceUpdate = qtrue;
-		//	drawSurf->bAS->data.material |= (MATERIAL_FLAG_NEEDSCOLOR | MATERIAL_FLAG_PARTICLE);*/
-		//}
-		//
-		//if (i > 30) //continue;
-		//if (strstr(shader->name, "wire")) {
-		//	//continue;
-		//}
-		//// everything else
-		///*if (drawSurf->bAS == NULL && tess.shader->stages[0] != NULL) {
-		//	dynamic = qtrue;
-		//	forceUpdate = qtrue;
-		//	RB_CreateBottomAS(&drawSurf->bAS, dynamic);
-		//}*/
-		
-		if (drawSurf->bAS == NULL) {
-			continue;
-		}
-		
-		
-		/*if (drawSurf->bAS->as_for_each_swapchain_image) {
-			Com_Memcpy(&drawSurf->bAS[vk.swapchain.currentImage].geometryInstance.transform, &tM, sizeof(float[12]));
-			RB_AddBottomAS(&drawSurf->bAS[vk.swapchain.currentImage], dynamic, forceUpdate);
-		}
-		else {
-			Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
-			RB_AddBottomAS(drawSurf->bAS, dynamic, forceUpdate);
-		}*/
 	}
 	backEnd.refdef.floatTime = originalTime;
 
-	/*Com_Memcpy(&vk_d.entityOriginsPrev, &vk_d.entityOriginsCurrent, sizeof(vk_d.entityOriginsCurrent));
-	vk_d.prevEntityCount = vk_d.currentEntityCount;
-	vk_d.currentEntityCount = 0;*/
-
 	VK_DestroyTopAccelerationStructure(&vk_d.topAS[vk.swapchain.currentImage]);
 	VK_MakeTopAS(vk.swapchain.CurrentCommandBuffer(), &vk_d.topAS[vk.swapchain.currentImage], &vk_d.topASBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceList, vk_d.bottomASTraceListCount, vk_d.instanceBuffer[vk.swapchain.currentImage], RTX_TOP_AS_FLAG);
-	//VK_UpdateTopAS(vk.swapchain.CurrentCommandBuffer(), &vk_d.topAS[vk.swapchain.currentImage], &vk_d.topAS[vk.swapchain.currentImage], &vk_d.topASBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceList, vk_d.bottomASTraceListCount, vk_d.instanceBuffer[vk.swapchain.currentImage], VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
 
 	tess.numIndexes = 0;
 	tess.numVertexes = 0;
@@ -1011,37 +657,8 @@ static void RB_TraceRays() {
 	myGlMultMatrix(&ubo->viewMat[0], ubo->projMat, vk_d.mvp);
 	VK_UploadBufferDataOffset(&vk_d.uboBuffer[vk.swapchain.currentImage], 0, sizeof(GlobalUbo), (void*)ubo);
 
-
-	//VK_BindComputePipeline(&vk_d.accelerationStructures.rngPipeline);
-	//VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.rngPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-	//VK_Dispatch(vk_d.lightList.numLights, 1, 1);
-
 	VK_SetAccelerationStructure(&vk_d.rtxDescriptor[vk.swapchain.currentImage], BINDING_OFFSET_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.topAS[vk.swapchain.currentImage].accelerationStructure);
 	VK_UpdateDescriptorSet(&vk_d.rtxDescriptor[vk.swapchain.currentImage]);
-	
-	//VK_BindRayTracingPipeline(&vk_d.accelerationStructures.pipeline);
-	//VK_Bind2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-	//VK_TraceRays(&vk_d.accelerationStructures.pipeline);
-
-	/*VkImageMemoryBarrier barrier = { 0 };
-	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = 1;
-	barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-	barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-	barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT | VK_ACCESS_MEMORY_READ_BIT;
-	barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-	int prevIndex = (vk.swapchain.currentImage + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount;
-	barrier.image = vk_d.gBuffer[vk.swapchain.currentImage].position.handle;
-	vkCmdPipelineBarrier(vk.swapchain.CurrentCommandBuffer(),
-		VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV,
-		VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV,
-		0, 0, NULL, 0, NULL,
-		1, &barrier);*/
-
 	
 	// primary rays
 	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_PRIMARY_RAYS_BEGIN);
@@ -1177,32 +794,14 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	memoryBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
 	vkCmdPipelineBarrier(vk.swapchain.CurrentCommandBuffer(), VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 1, &memoryBarrier, 0, 0, 0, 0);
 
-	/*memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-	memoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
-	memoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-	vkCmdPipelineBarrier(vk.swapchain.CurrentCommandBuffer(), VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 1, &memoryBarrier, 0, 0, 0, 0);*/
-
-
-
 	vk_d.portalInView = qfalse;
 	vk_d.mirrorInView = qfalse;
 
-
-	//VK_UnmapBuffer(&vk_d.uboBuffer[vk.swapchain.currentImage]);
-	//VK_UnmapBuffer(&vk_d.uboLightList[vk.swapchain.currentImage]);
-	//VK_UnmapBuffer(&vk_d.instanceDataBuffer[vk.swapchain.currentImage]);
-	//VK_UnmapBuffer(&vk_d.geometry.idx_entity_static);
-	//VK_UnmapBuffer(&vk_d.geometry.xyz_entity_static);
-	//VK_UnmapBuffer(&vk_d.geometry.xyz_dynamic[vk.swapchain.currentImage]);
-	//VK_UnmapBuffer(&vk_d.geometry.idx_dynamic[vk.swapchain.currentImage]);
-	
 	// draw rt results to swap chain
 	VK_BeginRenderClear();
-	//VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage]);
 
 	// create descriptor
-	vkimage_t* drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];// &vk_d.gBuffer[vk.swapchain.currentImage].albedo;
-	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].reflection;
+	vkimage_t* drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];
 	{
 		if (drawImage->descriptor_set.set == NULL) {
 			VK_AddSampler(&drawImage->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -1227,19 +826,8 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		ri.Printf(PRINT_ALL, "Reflect/Refract Stage     %f ms\n", refref);
 		ri.Printf(PRINT_ALL, "Direct Illumination Stage %f ms\n", direct);
 		ri.Printf(PRINT_ALL, "Accumulated Images        %d\n", vk_d.uboGlobal[vk.swapchain.currentImage].numSamples);
-		//rt_printPerformanceStatistic->integer = 0;
 		ri.Cvar_Set("rt_printPerfStats", 0);
 	}
 
-	//ri.Printf(PRINT_ALL, "Prim %f ms\n", (prim));
-	//ri.SCR_DrawBigString(400, 400, "aasdfasd", 1.0);
-	//ri.CL_ConsolePrint("asdf");
-
-	//qhandle_t	charSetShader = RE_RegisterShader("gfx/2d/bigchars");
-	//RE_StretchPic(400, 400, 100, 100,
-	//	0, 0,
-	//	1, 1,
-	//	charSetShader);
-	//VK_DrawFullscreenRect(&vk_d.accelerationStructures.resultFramebuffer.image);
 }
 
