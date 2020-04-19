@@ -1895,24 +1895,12 @@ qboolean RB_ASDataDynamic(shader_t* shader) {
 	}
 	return changes;
 }
-qboolean RB_ASDataDynamic2(shader_t* shader) {
-	qboolean changes = qfalse;
-	for (int i = 0; i < MAX_SHADER_STAGES; i++) {
-		if (tess.shader->rtstages[i] != NULL && tess.shader->rtstages[i]->active) {
-			for (int j = 0; j < NUM_TEXTURE_BUNDLES; j++) {
-				if ((shader->rtstages[i]->bundle[j].tcGen != TCGEN_BAD) && (shader->rtstages[i]->bundle[j].numTexMods > 0)) return qtrue;
-				if (shader->rtstages[i]->rgbGen == CGEN_WAVEFORM) {
-					return qtrue;
-				}
-			}
-		}
-	}
-	return changes;
-}
+
 qboolean RB_ASDynamic(shader_t* shader) {
 	return (shader->numDeforms > 0) || (backEnd.currentEntity->e.frame > 0 || backEnd.currentEntity->e.oldframe > 0);
 }
 
+// multiple different ways to find a cluster
  int R_FindClusterForPos(const vec3_t p) {
 	mnode_t* node;
 	float		d;
@@ -1965,6 +1953,20 @@ int R_FindClusterForPos3(const vec3_t p) {
 			vk_d.clusterList[i].mins[1] <= p[1] && p[1] <= vk_d.clusterList[i].maxs[1] &&
 			vk_d.clusterList[i].mins[2] <= p[2] && p[2] <= vk_d.clusterList[i].maxs[2]) {
 			return i;
+		}
+	}
+	return -1;
+}
+
+int R_GetClusterFromSurface(surfaceType_t* surf) {
+	for (int i = 0; i < s_worldData.numnodes; i++) {
+		mnode_t* node = &s_worldData.nodes[i];
+		if (node->contents == -1) continue;
+
+		msurface_t** mark = node->firstmarksurface;
+		int c = node->nummarksurfaces;
+		for (int j = 0; j < c; j++) {
+			if (mark[j]->data == surf) return node->cluster;
 		}
 	}
 	return -1;
@@ -2138,21 +2140,6 @@ void R_RecursiveCreateAS(mnode_t* node, uint32_t* countIDXstatic, uint32_t* coun
 	}
 }
 
-int R_GetClusterFromSurface(surfaceType_t* surf) {
-	for (int i = 0; i < s_worldData.numnodes; i++) {
-		mnode_t* node = &s_worldData.nodes[i];
-		if (node->contents == -1) continue;
-
-		msurface_t** mark = node->firstmarksurface;
-		int c = node->nummarksurfaces;
-		for (int j = 0; j < c; j++) {
-			if (mark[j]->data == surf) return node->cluster;
-		}
-	}
-	return -1;
-}
-
-
 void R_CalcClusterAABB(mnode_t* node) {
 	do {
 		if (node->contents != -1) {
@@ -2177,7 +2164,6 @@ void R_CalcClusterAABB(mnode_t* node) {
 		vk_d.clusterList[node->cluster].maxs[2] = max(vk_d.clusterList[node->cluster].maxs[2], node->maxs[2]);
 	}
 }
-
 
 void R_CreatePrimaryRaysPipeline() {
 	for (int i = 0; i < vk.swapchain.imageCount; i++) {
