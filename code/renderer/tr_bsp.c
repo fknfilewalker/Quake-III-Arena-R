@@ -2250,7 +2250,8 @@ void R_CreatePrimaryRaysPipeline() {
 		// accumulation prev
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_ACCUMULATION_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_ACCUMULATION_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.accumulationImage[prevIndex].view);
-		/*VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_INSTANCE_DATA_PREV, flags);
+		
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_INSTANCE_DATA_PREV, flags);
 		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_INSTANCE_DATA_PREV, flags, vk_d.instanceDataBuffer[prevIndex].buffer);
 		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA_PREV, flags);
 		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA_PREV, flags, vk_d.geometry.xyz_world_dynamic_data[prevIndex].buffer);
@@ -2263,8 +2264,7 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_ENTITY_DYNAMIC_PREV, flags);
 		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_ENTITY_DYNAMIC_PREV, flags, vk_d.geometry.xyz_entity_dynamic[prevIndex].buffer);
 		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_ENTITY_DYNAMIC_PREV, flags);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_ENTITY_DYNAMIC_PREV, flags, vk_d.geometry.idx_entity_dynamic[prevIndex].buffer);*/
-
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_ENTITY_DYNAMIC_PREV, flags, vk_d.geometry.idx_entity_dynamic[prevIndex].buffer);
 		VK_FinishDescriptor(&vk_d.rtxDescriptor[i]);
 
 		VK_AddStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_INSTANCE_DATA, VK_SHADER_STAGE_COMPUTE_BIT);

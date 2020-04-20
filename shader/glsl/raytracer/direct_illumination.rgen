@@ -36,8 +36,8 @@ vec3 directIllumination(){
 
 	uvec4 utemp;
 	utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
-	material = utemp.x;
-	cluster = utemp.y;
+	// material = utemp.x;
+	// cluster = utemp.y;
 	transparent = imageLoad(transparentGBuffer, ivec2(gl_LaunchIDNV.xy));
 	if(isWater(material)){
 		vec4 reflectAlbedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
@@ -47,12 +47,14 @@ vec3 directIllumination(){
 	// if(isGlass(material)){
 	// 	primary_albedo	= imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
 	// }
+	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
+	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
+	material = uint(imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
+	cluster = uint(imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
 
 	if (isSky(material)) return alpha_blend( transparent, vec4(primary_albedo.xyz,1)).xyz;
 	//if (isLight(material)) return vec3(1,0,0);
 	
-	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
-	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 
 	vec3 shadeColor = calcShading(primary_albedo, pos, normal, cluster, material);
 	shadeColor = alpha_blend( transparent, vec4(shadeColor.rgb,1) ).xyz;

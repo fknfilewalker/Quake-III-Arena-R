@@ -296,13 +296,13 @@ void main()
 	vec4 temp;
 	uvec4 utemp;
 	utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
-	material = utemp.x;
-	cluster = utemp.y;
+	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
+	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
+	material = uint(imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
+	cluster = uint(imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
 	if (!isGlass(material) && !isMirror(material) && !isWater(material)) return;
 
 	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
-	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
-	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	originalDir = imageLoad(viewGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 
 	vec3 P = pos;
@@ -321,8 +321,8 @@ void main()
 		mirrorColor = 1 - vec4(mirrorColor/1);
 		vec4 color = vec4(mirrorColor.xyz * rrp.color.xyz,1);
 		imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), color);
-		imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.normal.xyz,1));
-		imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.pos.xyz, 0));
+		imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.normal.xyz,rrp.material));
+		imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.pos.xyz, rrp.cluster));
 		imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(rrp.material, rrp.cluster, 0,0));
 	}
 	if (isGlass(material)){
@@ -354,8 +354,8 @@ void main()
 		vec4 color = primary_albedo * primary_albedo.w + albedo * (1-primary_albedo.w);
 		imageStore(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(color.xyz,1));
 		imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(color.xyz,1));
-		imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.normal.xyz,1));
-		imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.pos.xyz, 0));
+		imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.normal.xyz, rrp.material));
+		imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.pos.xyz, rrp.cluster));
 		imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(rrp.material, rrp.cluster, 0,0));
 	}
 }

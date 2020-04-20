@@ -207,6 +207,10 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_OPAQUE_VISIBLE;
 	else bAS->geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 
+	/*if (strstr(tess.shader->name, "glass")) {
+		bAS->geometryInstance.mask = RAY_GLASS_VISIBLE;
+	}*/
+
 	if (tess.shader->sort <= SS_OPAQUE) {
 		bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
 	}
@@ -802,6 +806,7 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 	// create descriptor
 	vkimage_t* drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];
+	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].motion;
 	{
 		if (drawImage->descriptor_set.set == NULL) {
 			VK_AddSampler(&drawImage->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);

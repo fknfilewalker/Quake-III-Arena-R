@@ -32,7 +32,7 @@ void main()
 	//rrp.color += vec4(0.2, 0.2, 0.2, 1);
 
 	if(isGlass(hp.material)){
-		// if texture not see through enough then do not trace further
+		// if texture (alpha) not see through enough then do not trace further
 		if(tex.w > 0.5) {
 			rrp.pos = hp.pos;
 			rrp.normal = hp.normal;
