@@ -2166,44 +2166,46 @@ void R_CalcClusterAABB(mnode_t* node) {
 }
 
 void R_CreatePrimaryRaysPipeline() {
+	VkShaderStageFlagBits flags = VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV | VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV;
+
 	for (int i = 0; i < vk.swapchain.imageCount; i++) {
-		VK_AddAccelerationStructure(&vk_d.rtxDescriptor[i], BINDING_OFFSET_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetAccelerationStructure(&vk_d.rtxDescriptor[i], BINDING_OFFSET_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV, &vk_d.topAS[i].accelerationStructure);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_INSTANCE_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_INSTANCE_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.instanceDataBuffer[i].buffer);
+		VK_AddAccelerationStructure(&vk_d.rtxDescriptor[i], BINDING_OFFSET_AS, flags);
+		VK_SetAccelerationStructure(&vk_d.rtxDescriptor[i], BINDING_OFFSET_AS, flags, &vk_d.topAS[i].accelerationStructure);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_INSTANCE_DATA, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_INSTANCE_DATA, flags, vk_d.instanceDataBuffer[i].buffer);
 
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_world_static.buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_world_static.buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_world_dynamic_data[i].buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_world_dynamic_data[i].buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_world_dynamic_as[i].buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_world_dynamic_as[i].buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_ENTITY_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_ENTITY_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_entity_static.buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_ENTITY_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_ENTITY_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_entity_static.buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_ENTITY_DYNAMIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_ENTITY_DYNAMIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_entity_dynamic[i].buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_ENTITY_DYNAMIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_ENTITY_DYNAMIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_entity_dynamic[i].buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_STATIC, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_STATIC, flags, vk_d.geometry.xyz_world_static.buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_STATIC, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_STATIC, flags, vk_d.geometry.idx_world_static.buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA, flags, vk_d.geometry.xyz_world_dynamic_data[i].buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA, flags, vk_d.geometry.idx_world_dynamic_data[i].buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS, flags, vk_d.geometry.xyz_world_dynamic_as[i].buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS, flags, vk_d.geometry.idx_world_dynamic_as[i].buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_ENTITY_STATIC, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_ENTITY_STATIC, flags, vk_d.geometry.xyz_entity_static.buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_ENTITY_STATIC, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_ENTITY_STATIC, flags, vk_d.geometry.idx_entity_static.buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_ENTITY_DYNAMIC, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_ENTITY_DYNAMIC, flags, vk_d.geometry.xyz_entity_dynamic[i].buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_ENTITY_DYNAMIC, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_ENTITY_DYNAMIC, flags, vk_d.geometry.idx_entity_dynamic[i].buffer);
 
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_WORLD_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.cluster_world_static.buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.cluster_world_dynamic_data.buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.cluster_world_dynamic_as.buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_ENTITY_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_ENTITY_STATIC, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.cluster_entity_static.buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_WORLD_STATIC, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_WORLD_STATIC, flags, vk_d.geometry.cluster_world_static.buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_DATA, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_DATA, flags, vk_d.geometry.cluster_world_dynamic_data.buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_AS, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_AS, flags, vk_d.geometry.cluster_world_dynamic_as.buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_ENTITY_STATIC, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_CLUSTER_ENTITY_STATIC, flags, vk_d.geometry.cluster_entity_static.buffer);
 
-		VK_AddSampler(&vk_d.rtxDescriptor[i], BINDING_OFFSET_ENVMAP, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetSampler(&vk_d.rtxDescriptor[i], BINDING_OFFSET_ENVMAP, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.envmap.sampler, vk_d.accelerationStructures.envmap.view);
+		VK_AddSampler(&vk_d.rtxDescriptor[i], BINDING_OFFSET_ENVMAP, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_MISS_BIT_NV);
+		VK_SetSampler(&vk_d.rtxDescriptor[i], BINDING_OFFSET_ENVMAP, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_MISS_BIT_NV, vk_d.accelerationStructures.envmap.sampler, vk_d.accelerationStructures.envmap.view);
 		VK_AddSampler(&vk_d.rtxDescriptor[i], BINDING_OFFSET_BLUE_NOISE, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetSampler(&vk_d.rtxDescriptor[i], BINDING_OFFSET_BLUE_NOISE, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.blueNoiseTex.sampler, vk_d.blueNoiseTex.view);
 
@@ -2248,20 +2250,20 @@ void R_CreatePrimaryRaysPipeline() {
 		// accumulation prev
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_ACCUMULATION_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_ACCUMULATION_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.accumulationImage[prevIndex].view);
-		/*VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_INSTANCE_DATA_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_INSTANCE_DATA_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.instanceDataBuffer[prevIndex].buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_world_dynamic_data[prevIndex].buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_world_dynamic_data[prevIndex].buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_world_dynamic_as[prevIndex].buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_world_dynamic_as[prevIndex].buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_ENTITY_DYNAMIC_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_ENTITY_DYNAMIC_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.xyz_entity_dynamic[prevIndex].buffer);
-		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_ENTITY_DYNAMIC_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV);
-		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_ENTITY_DYNAMIC_PREV, VK_SHADER_STAGE_RAYGEN_BIT_NV | VK_SHADER_STAGE_ANY_HIT_BIT_NV, vk_d.geometry.idx_entity_dynamic[prevIndex].buffer);*/
+		/*VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_INSTANCE_DATA_PREV, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_INSTANCE_DATA_PREV, flags, vk_d.instanceDataBuffer[prevIndex].buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA_PREV, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_DATA_PREV, flags, vk_d.geometry.xyz_world_dynamic_data[prevIndex].buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA_PREV, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_DATA_PREV, flags, vk_d.geometry.idx_world_dynamic_data[prevIndex].buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS_PREV, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_WORLD_DYNAMIC_AS_PREV, flags, vk_d.geometry.xyz_world_dynamic_as[prevIndex].buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS_PREV, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS_PREV, flags, vk_d.geometry.idx_world_dynamic_as[prevIndex].buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_ENTITY_DYNAMIC_PREV, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_XYZ_ENTITY_DYNAMIC_PREV, flags, vk_d.geometry.xyz_entity_dynamic[prevIndex].buffer);
+		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_ENTITY_DYNAMIC_PREV, flags);
+		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_IDX_ENTITY_DYNAMIC_PREV, flags, vk_d.geometry.idx_entity_dynamic[prevIndex].buffer);*/
 
 		VK_FinishDescriptor(&vk_d.rtxDescriptor[i]);
 

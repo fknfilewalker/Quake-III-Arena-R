@@ -107,12 +107,11 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 		vec3 toLight = posLight - P;
 		vec3 L = normalize(toLight);
 		float distToLight =	length(toLight);
-		float lightStrength =  min(light.mag / distToLight, 5);
-		//if(lightStrength < 0.1f) continue;
-		vec3 lightIntensity = light.color * lightStrength;
-		//if(i > 30 && i < 50) lightIntensity = vec3(0.55,0,0);
 	 	float shadowMult = trace_shadow_ray(P, L, 0.01f, distToLight, isPlayer(material));
+		if(shadowMult == 0) continue;
 		shadowMult *= amplification; // if we only would use one light it would need to be multiplied with numLights
+		float lightStrength =  min(light.mag / distToLight, 5);
+		vec3 lightIntensity = light.color * lightStrength;
 
 		float LdotN = clamp(dot(N, L), 0.0, 1.0);
 		float LdotN2 = clamp(dot(-light.normal, -L), 0.0, 1.0);

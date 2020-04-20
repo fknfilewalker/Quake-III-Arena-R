@@ -64,3 +64,29 @@ float trace_shadow_ray(vec3 pos, vec3 dir, float t_min, float t_max, bool is_pla
 
 	return rp_shadow.visFactor;
 }
+
+void traceReflect(vec3 P, vec3 D, vec3 N){
+	D = reflect(D, N);
+	if(dot(D, N) >= 0)
+		P -= D * 0.001;
+	else
+		P -= N * 0.001;
+
+	traceNV( topLevelAS, gl_RayFlagsNoneNV, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE,
+			SBT_RCHIT_OPAQUE, 0, SBT_RMISS_PATH_TRACER,
+			P, 0.01, D, 10000.0, PAYLOAD_REFLECT);
+	//return rrp.color;
+}
+void traceRefract(vec3 P, vec3 D, vec3 N, float n1, float n2){
+	D = refract( D, N, n2/n1 );
+	D = refract( D, N, n1/n2 );
+	if(dot(D, N) >= 0)
+		P -= D * 0.001;
+	else
+		P -= N * 0.001;
+		
+	traceNV( topLevelAS, gl_RayFlagsNoneNV, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE,
+			SBT_RCHIT_OPAQUE, 0, SBT_RMISS_PATH_TRACER,
+			P, 0.01, D, 10000.0, PAYLOAD_REFLECT);
+	//return rrp.color;
+}

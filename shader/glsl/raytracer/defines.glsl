@@ -8,7 +8,8 @@
 // 	uint cullMask;
 // };
 #define PAYLOAD_BRDF 0
-#define PAYLOAD_SHADOW 1
+#define PAYLOAD_REFLECT 1
+#define PAYLOAD_SHADOW 2
 
 #define M_PI 3.14159265358979323846264338327950288f
 
@@ -31,6 +32,14 @@ struct RayPayload {
 	uint addCount;
 	float max_transparent_distance;
 	//mat4x3 modelmat;
+};
+struct RayPayloadReflect {
+	vec4 color;
+	vec3 pos;
+	uint cluster;
+	vec3 normal;
+	uint depth;
+	uint material;
 };
 struct ShadowRayPayload
 {

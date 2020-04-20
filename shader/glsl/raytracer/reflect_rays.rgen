@@ -26,110 +26,264 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO_PREV, set = 0) uniform global_ubo_pre
 
 
 
-vec4 calculateReflection(inout vec3 pos, inout vec3 direction, inout vec3 N){
-	vec3 dirReflection = reflect(direction, N);
+// vec4 calculateReflection(inout vec3 pos, inout vec3 direction, inout vec3 N){
+// 	vec3 dirReflection = reflect(direction, N);
 
-	Ray ray;
-	ray.origin = pos;
-	ray.direction = dirReflection;
-	ray.t_min = 0.01;
-	ray.t_max = 10000.0;
-	if(dot(ray.direction, N) >= 0)
-		ray.origin -= ray.direction * 0.001;
-	else
-		ray.origin -= N * 0.001;
-	traceRay(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
+// 	Ray ray;
+// 	ray.origin = pos;
+// 	ray.direction = dirReflection;
+// 	ray.t_min = 0.01;
+// 	ray.t_max = 10000.0;
+// 	if(dot(ray.direction, N) >= 0)
+// 		ray.origin -= ray.direction * 0.001;
+// 	else
+// 		ray.origin -= N * 0.001;
+// 	traceRay(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
 
-	vec4 albedoReflection = vec4(0);
-	if(!found_intersection(rp)){
-		albedoReflection = sampleSky(ray.direction);
-	} else {
-		HitPoint hp = getHitPoint(rp);
-		//Triangle triangle = getTriangle(rp);
-		vec4 tex = getTextureWithLod(hp,0);
-		albedoReflection = tex;
-
-
-		pos = hp.pos;
-		direction = dirReflection;
-		N = hp.normal;
-		//albedoReflection = vec4(calcShade(pos, N, albedoReflection.xyz, hp.cluster), albedoReflection.w);
-		albedoReflection = vec4(calcShading(albedoReflection, hp.pos, hp.normal, hp.cluster, hp.material),1);
-	}
-	return albedoReflection;
-}
-
-vec4 calculateRefraction( inout vec3 pos, inout vec3 direction, inout vec3 N, in float n1, in float n2){
-	vec3 dirRefraction = refract( direction, N, n2/n1 );
-	dirRefraction = refract( dirRefraction, N, n1/n2 );
-
-	Ray ray;
-	ray.origin = pos;
-	ray.direction = dirRefraction;
-	ray.t_min = 0.01;
-	ray.t_max = 10000.0;
-	if(dot(ray.direction, N) >= 0)
-		ray.origin -= ray.direction * 0.001;
-	else
-		ray.origin -= N * 0.001;
-
-	traceRay(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
-	vec4 albedoRefraction = vec4(0);
-	if(!found_intersection(rp)){
-		albedoRefraction = sampleSky(ray.direction);
-	} else {
-		HitPoint hp = getHitPoint(rp);
-		//Triangle triangle = getTriangle(rp);
-		vec4 tex = getTextureWithLod(hp,0);
-		albedoRefraction = tex;// * tex.w + albedoRefraction * (1-tex.w);
-
-		pos = hp.pos;
-		direction = normalize(dirRefraction);
-		N = hp.normal;
-		//albedoRefraction = vec4(calcShade(pos, N, albedoRefraction.xyz, hp.cluster), albedoRefraction.w);
-		albedoRefraction = vec4(calcShading(albedoRefraction, hp.pos, hp.normal, hp.cluster, hp.material),1);
-	}
-	return albedoRefraction;
-}
+// 	vec4 albedoReflection = vec4(0);
+// 	if(!found_intersection(rp)){
+// 		albedoReflection = sampleSky(ray.direction);
+// 	} else {
+// 		HitPoint hp = getHitPoint(rp);
+// 		//Triangle triangle = getTriangle(rp);
+// 		vec4 tex = getTextureWithLod(hp,0);
+// 		albedoReflection = tex;
 
 
+// 		pos = hp.pos;
+// 		direction = dirReflection;
+// 		N = hp.normal;
+// 		//albedoReflection = vec4(calcShade(pos, N, albedoReflection.xyz, hp.cluster), albedoReflection.w);
+// 		albedoReflection = vec4(calcShading(albedoReflection, hp.pos, hp.normal, hp.cluster, hp.material),1);
+// 	}
+// 	return albedoReflection;
+// }
 
-vec4 second(in vec3 pos, in vec3 direction, in vec3 N){
-	vec4 color = vec4(0);
-	float n1, n2, ndotr = dot(direction, N);  
-	if( ndotr > 0.0f ) {
-		n1 = 1.0; 
-		n2 = 1.5;
-		N = -N;
-	} else {
-		n1 = 1.5;
-		n2 = 1.0; 
-	}
+// vec4 calculateRefraction( inout vec3 pos, inout vec3 direction, inout vec3 N, in float n1, in float n2){
+// 	vec3 dirRefraction = refract( direction, N, n2/n1 );
+// 	dirRefraction = refract( dirRefraction, N, n1/n2 );
 
-	//float F = pow(1.0 - max(0.0, -dot(direction, N)), 5.0);
-	//F = mix(0.5, 1.0, F);
+// 	Ray ray;
+// 	ray.origin = pos;
+// 	ray.direction = dirRefraction;
+// 	ray.t_min = 0.01;
+// 	ray.t_max = 10000.0;
+// 	if(dot(ray.direction, N) >= 0)
+// 		ray.origin -= ray.direction * 0.001;
+// 	else
+// 		ray.origin -= N * 0.001;
 
-	vec3 P_reflection = pos;
-	vec3 N_reflection = N;
-	vec3 ViewDir_reflection = direction;
-	vec4 albedoReflection = calculateReflection(P_reflection, ViewDir_reflection, N_reflection);
+// 	traceRay(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
+// 	vec4 albedoRefraction = vec4(0);
+// 	if(!found_intersection(rp)){
+// 		albedoRefraction = sampleSky(ray.direction);
+// 	} else {
+// 		HitPoint hp = getHitPoint(rp);
+// 		//Triangle triangle = getTriangle(rp);
+// 		vec4 tex = getTextureWithLod(hp,0);
+// 		albedoRefraction = tex;// * tex.w + albedoRefraction * (1-tex.w);
 
-	vec3 P_refraction = pos;
-	vec3 N_refraction = N;
-	vec3 ViewDir_refraction = direction;
-	vec4 albedoRefraction = calculateRefraction(P_refraction, ViewDir_refraction, N_refraction, n1, n2);
-
-	float r0 = (n1-n2)/(n1+n2); r0 *= r0;
-	float fresnel = r0 + (1.-r0) * pow(1.0-abs(ndotr),5.);
-	float ratio = fresnel;//0.2;
-	vec4 albedo = ratio * albedoReflection + (1 - ratio) * albedoRefraction;
-
-	color = albedo;
-	return color;
-}
+// 		pos = hp.pos;
+// 		direction = normalize(dirRefraction);
+// 		N = hp.normal;
+// 		//albedoRefraction = vec4(calcShade(pos, N, albedoRefraction.xyz, hp.cluster), albedoRefraction.w);
+// 		albedoRefraction = vec4(calcShading(albedoRefraction, hp.pos, hp.normal, hp.cluster, hp.material),1);
+// 	}
+// 	return albedoRefraction;
+// }
 
 
-void reflectionRefrection(){
+
+// vec4 second(in vec3 pos, in vec3 direction, in vec3 N){
+// 	vec4 color = vec4(0);
+// 	float n1, n2, ndotr = dot(direction, N);  
+// 	if( ndotr > 0.0f ) {
+// 		n1 = 1.0; 
+// 		n2 = 1.5;
+// 		N = -N;
+// 	} else {
+// 		n1 = 1.5;
+// 		n2 = 1.0; 
+// 	}
+
+// 	//float F = pow(1.0 - max(0.0, -dot(direction, N)), 5.0);
+// 	//F = mix(0.5, 1.0, F);
+
+// 	vec3 P_reflection = pos;
+// 	vec3 N_reflection = N;
+// 	vec3 ViewDir_reflection = direction;
+// 	vec4 albedoReflection = calculateReflection(P_reflection, ViewDir_reflection, N_reflection);
+
+// 	vec3 P_refraction = pos;
+// 	vec3 N_refraction = N;
+// 	vec3 ViewDir_refraction = direction;
+// 	vec4 albedoRefraction = calculateRefraction(P_refraction, ViewDir_refraction, N_refraction, n1, n2);
+
+// 	float r0 = (n1-n2)/(n1+n2); r0 *= r0;
+// 	float fresnel = r0 + (1.-r0) * pow(1.0-abs(ndotr),5.);
+// 	float ratio = fresnel;//0.2;
+// 	vec4 albedo = ratio * albedoReflection + (1 - ratio) * albedoRefraction;
+
+// 	color = albedo;
+// 	return color;
+// }
+
+
+// void reflectionRefrection(){
+// 	vec4 primary_albedo;
+// 	vec3 normal;
+// 	vec3 pos;
+// 	uint cluster;
+// 	uint material;
+// 	float depth;
+// 	vec3 motion;
+// 	vec3 originalDir;
+
+// 	vec4 temp;
+// 	uvec4 utemp;
+// 	utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
+// 	material = utemp.x;
+// 	cluster = utemp.y;
+// 	if (!isGlass(material) && !isMirror(material) && !isWater(material)) return;
+
+// 	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
+// 	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
+// 	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
+// 	originalDir = imageLoad(viewGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
+
+// 	vec3 P = pos;
+// 	vec3 N = normalize(normal);
+// 	vec3 shadeColor = primary_albedo.xyz;
+// 	vec3 viewDir = normalize(P - ubo.camPos.xyz);
+
+// 	vec4 color = vec4(0);
+// 	if (isGlass(material)){
+// 			float n1, n2, ndotr = dot(viewDir, N);  
+// 			if( ndotr > 0.0f ) {
+// 				n1 = 1.0; 
+// 				n2 = 1.5;
+// 				N = -N;
+// 			} else {
+// 				n1 = 1.5;
+// 				n2 = 1.0; 
+// 			}
+
+// 			//float F = pow(1.0 - max(0.0, -dot(viewDir, N)), 5.0);
+// 			//F = mix(0.5, 1.0, F);
+
+// 			vec3 P_reflection = P;
+// 			vec3 N_reflection = N;
+// 			vec3 ViewDir_reflection = viewDir;
+// 			vec4 albedoReflection = calculateReflection(P_reflection, ViewDir_reflection, N_reflection);
+// 			if(isGlass(get_material(rp))){
+// 				albedoReflection = calculateReflection(P_reflection, ViewDir_reflection, N_reflection);
+// 			}
+
+// 			vec3 P_refraction = P;
+// 			vec3 N_refraction = N;
+// 			vec3 ViewDir_refraction = viewDir;
+// 			vec4 albedoRefraction = calculateRefraction(P_refraction, ViewDir_refraction, N_refraction, n1, n2);
+	
+// 			Ray ray;
+// 			ray.origin = P;
+// 			ray.direction = originalDir;
+// 			ray.t_min = 0.01;
+// 			ray.t_max = 10000.0;
+// 			trace_ray(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
+
+// 			if(found_intersection(rp)){
+// 				if(isGlass(get_material(rp))){
+// 					HitPoint hp = getHitPoint(rp);
+// 					vec4 al = getTextureWithLod(hp,0);
+// 					vec3 dir = normalize(hp.pos - ubo.camPos.xyz);
+// 					vec3 norm = normalize(hp.normal);
+// 					if(dot(norm, dir) > 0) norm = -norm;
+// 					vec4 sec = second(hp.pos, dir, norm);
+
+// 					albedoRefraction = al * al.w + sec * (1-al.w);
+// 				}
+// 			}
+// 			// if(isGlass(get_material(rp))){
+// 			// 	float n12, n22, ndotr2 = dot(viewDir, N);  
+// 			// 	if( ndotr2 > 0.0f ) {
+// 			// 		n12 = 1.0; 
+// 			// 		n22 = 1.5;
+// 			// 		N = -N;
+// 			// 	} else {
+// 			// 		n12 = 1.5;
+// 			// 		n22 = 1.0; 
+// 			// 	}
+// 			// 	albedoRefraction = calculateRefraction(P, viewDir, N, n12, n22);
+// 			// }
+
+// 			float r0 = (n1-n2)/(n1+n2); r0 *= r0;
+// 			float fresnel = r0 + (1.-r0) * pow(1.0-abs(ndotr),5.);
+// 			float ratio = 0.2;//0.2;
+// 			vec4 albedo = ratio * albedoReflection + (1 - ratio) * albedoRefraction;
+
+// 			if(primary_albedo.w != 0) primary_albedo = vec4(calcShading(primary_albedo, P, N, cluster, material),primary_albedo.w);
+// 			color = primary_albedo * primary_albedo.w + albedo * (1-primary_albedo.w);
+// 			//color = vec4(color.xyz, primary_albedo.w);
+
+// 			//material = get_material(rp);
+			
+// 		//}
+// 	} else if(isWater(material)){
+// 		//for(int i =0; i< 2; i++){
+// 			float n1, n2, ndotr = dot(viewDir, N);  
+// 			if( ndotr > 0.0f ) {
+// 				n1 = 1.0; 
+// 				n2 = 1.3;
+// 				N = -N;
+// 			} else {
+// 				n1 = 1.3;
+// 				n2 = 1.0; 
+// 			}
+
+// 			vec3 P_reflection = P;
+// 			vec3 N_reflection = N;
+// 			vec3 ViewDir_reflection = viewDir;
+// 			vec4 albedoReflection = calculateReflection(P_reflection, ViewDir_reflection, N_reflection);
+// 			if(isGlass(get_material(rp))){
+// 				albedoReflection = calculateReflection(P_reflection, ViewDir_reflection, N_reflection);
+// 			}
+
+// 			vec3 P_refraction = P;
+// 			vec3 N_refraction = N;
+// 			vec3 ViewDir_refraction = viewDir;
+// 			vec4 albedoRefraction = calculateRefraction(P_refraction, ViewDir_refraction, N_refraction, n1, n2);
+
+// 			float r0 = (n1-n2)/(n1+n2); r0 *= r0;
+// 			float fresnel = r0 + (1.-r0) * pow(1.0-abs(ndotr),5.);
+// 			float ratio = fresnel;//0.2;
+// 			vec4 albedo = ratio * albedoReflection + (1 - ratio) * albedoRefraction;
+
+// 			primary_albedo = vec4(calcShading(primary_albedo, P, N, cluster, material),primary_albedo.w);
+// 			//color = primary_albedo * primary_albedo.w + albedo * (1-primary_albedo.w);
+// 			color.xyz = (albedo.xyz) * primary_albedo.xyz;//alpha_blend( albedo, primary_albedo);
+// 			color.w = primary_albedo.w;
+// 			//color = vec4(color.xyz, primary_albedo.w);
+
+// 			//material = get_material(rp); 
+			
+// 		//}
+// 	} else if(isMirror(material)){
+// 		vec4 mirrorColor = primary_albedo;
+// 		mirrorColor = 1 - vec4(mirrorColor/1);
+// 		// 1 - vec4(src/1)
+// 		vec4 reflection = calculateReflection(P, viewDir, N);
+// 		color = vec4(mirrorColor.xyz * reflection.xyz,1);
+
+// 	} 
+	//imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(normal.xyz,1));
+	//imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(pos.xyz, 0));
+	//imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(material, cluster, 0,0));
+	//imageStore(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(color));
+
+layout(location = PAYLOAD_REFLECT) rayPayloadNV RayPayloadReflect rrp;
+
+void main() 
+{
 	vec4 primary_albedo;
 	vec3 normal;
 	vec3 pos;
@@ -155,134 +309,54 @@ void reflectionRefrection(){
 	vec3 N = normalize(normal);
 	vec3 shadeColor = primary_albedo.xyz;
 	vec3 viewDir = normalize(P - ubo.camPos.xyz);
-
 	vec4 color = vec4(0);
-	if (isGlass(material)){
-			float n1, n2, ndotr = dot(viewDir, N);  
-			if( ndotr > 0.0f ) {
-				n1 = 1.0; 
-				n2 = 1.5;
-				N = -N;
-			} else {
-				n1 = 1.5;
-				n2 = 1.0; 
-			}
 
-			//float F = pow(1.0 - max(0.0, -dot(viewDir, N)), 5.0);
-			//F = mix(0.5, 1.0, F);
+	if (isMirror(material)){
+		vec4 albedoReflection;
+		rrp.color = vec4(0);
+		rrp.depth = 0;
+		traceReflect(pos, originalDir, N);
 
-			vec3 P_reflection = P;
-			vec3 N_reflection = N;
-			vec3 ViewDir_reflection = viewDir;
-			vec4 albedoReflection = calculateReflection(P_reflection, ViewDir_reflection, N_reflection);
-			if(isGlass(get_material(rp))){
-				albedoReflection = calculateReflection(P_reflection, ViewDir_reflection, N_reflection);
-			}
-
-			vec3 P_refraction = P;
-			vec3 N_refraction = N;
-			vec3 ViewDir_refraction = viewDir;
-			vec4 albedoRefraction = calculateRefraction(P_refraction, ViewDir_refraction, N_refraction, n1, n2);
-	
-			Ray ray;
-			ray.origin = P;
-			ray.direction = originalDir;
-			ray.t_min = 0.01;
-			ray.t_max = 10000.0;
-			trace_ray(ray, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
-
-			if(found_intersection(rp)){
-				if(isGlass(get_material(rp))){
-					HitPoint hp = getHitPoint(rp);
-					vec4 al = getTextureWithLod(hp,0);
-					vec3 dir = normalize(hp.pos - ubo.camPos.xyz);
-					vec3 norm = normalize(hp.normal);
-					if(dot(norm, dir) > 0) norm = -norm;
-					vec4 sec = second(hp.pos, dir, norm);
-
-					albedoRefraction = al * al.w + sec * (1-al.w);
-				}
-			}
-			// if(isGlass(get_material(rp))){
-			// 	float n12, n22, ndotr2 = dot(viewDir, N);  
-			// 	if( ndotr2 > 0.0f ) {
-			// 		n12 = 1.0; 
-			// 		n22 = 1.5;
-			// 		N = -N;
-			// 	} else {
-			// 		n12 = 1.5;
-			// 		n22 = 1.0; 
-			// 	}
-			// 	albedoRefraction = calculateRefraction(P, viewDir, N, n12, n22);
-			// }
-
-			float r0 = (n1-n2)/(n1+n2); r0 *= r0;
-			float fresnel = r0 + (1.-r0) * pow(1.0-abs(ndotr),5.);
-			float ratio = 0.2;//0.2;
-			vec4 albedo = ratio * albedoReflection + (1 - ratio) * albedoRefraction;
-
-			if(primary_albedo.w != 0) primary_albedo = vec4(calcShading(primary_albedo, P, N, cluster, material),primary_albedo.w);
-			color = primary_albedo * primary_albedo.w + albedo * (1-primary_albedo.w);
-			//color = vec4(color.xyz, primary_albedo.w);
-
-			//material = get_material(rp);
-			
-		//}
-	} else if(isWater(material)){
-		//for(int i =0; i< 2; i++){
-			float n1, n2, ndotr = dot(viewDir, N);  
-			if( ndotr > 0.0f ) {
-				n1 = 1.0; 
-				n2 = 1.3;
-				N = -N;
-			} else {
-				n1 = 1.3;
-				n2 = 1.0; 
-			}
-
-			vec3 P_reflection = P;
-			vec3 N_reflection = N;
-			vec3 ViewDir_reflection = viewDir;
-			vec4 albedoReflection = calculateReflection(P_reflection, ViewDir_reflection, N_reflection);
-			if(isGlass(get_material(rp))){
-				albedoReflection = calculateReflection(P_reflection, ViewDir_reflection, N_reflection);
-			}
-
-			vec3 P_refraction = P;
-			vec3 N_refraction = N;
-			vec3 ViewDir_refraction = viewDir;
-			vec4 albedoRefraction = calculateRefraction(P_refraction, ViewDir_refraction, N_refraction, n1, n2);
-
-			float r0 = (n1-n2)/(n1+n2); r0 *= r0;
-			float fresnel = r0 + (1.-r0) * pow(1.0-abs(ndotr),5.);
-			float ratio = fresnel;//0.2;
-			vec4 albedo = ratio * albedoReflection + (1 - ratio) * albedoRefraction;
-
-			primary_albedo = vec4(calcShading(primary_albedo, P, N, cluster, material),primary_albedo.w);
-			//color = primary_albedo * primary_albedo.w + albedo * (1-primary_albedo.w);
-			color.xyz = (albedo.xyz) * primary_albedo.xyz;//alpha_blend( albedo, primary_albedo);
-			color.w = primary_albedo.w;
-			//color = vec4(color.xyz, primary_albedo.w);
-
-			//material = get_material(rp); 
-			
-		//}
-	} else if(isMirror(material)){
 		vec4 mirrorColor = primary_albedo;
 		mirrorColor = 1 - vec4(mirrorColor/1);
-		// 1 - vec4(src/1)
-		vec4 reflection = calculateReflection(P, viewDir, N);
-		color = vec4(mirrorColor.xyz * reflection.xyz,1);
+		vec4 color = vec4(mirrorColor.xyz * rrp.color.xyz,1);
+		imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), color);
+		imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.normal.xyz,1));
+		imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.pos.xyz, 0));
+		imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(rrp.material, rrp.cluster, 0,0));
+	}
+	if (isGlass(material)){
+		// if texture (alpha) not see through enough then do not trace further
+		if(primary_albedo.w > 0.5) return;
 
-	} 
-	//imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(normal.xyz,1));
-	//imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(pos.xyz, 0));
-	//imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(material, cluster, 0,0));
-	imageStore(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(color));
-}
+		float n1 = 1.3, n2 = 1.0, ndotr = dot(originalDir, N);  
+		if( ndotr > 0.0f ) {
+			N = -N;
+		}
 
-void main() 
-{
-	reflectionRefrection();
+		vec4 albedoReflection;
+		vec4 albedoRefraction;
+		rrp.color = vec4(0);
+		rrp.depth = 0;
+		traceReflect(pos, originalDir, N);
+		albedoReflection = rrp.color;
+
+		rrp.color = vec4(0);
+		rrp.depth = 0;
+		traceRefract(pos, originalDir, N, n1, n2);
+		albedoRefraction = rrp.color;
+
+		float r0 = (n1-n2)/(n1+n2); r0 *= r0;
+		float fresnel = r0 + (1.-r0) * pow(1.0-abs(ndotr),5.);
+		float ratio = 0.2;
+		vec4 albedo = ratio * albedoReflection + (1 - ratio) * albedoRefraction;
+
+		vec4 color = primary_albedo * primary_albedo.w + albedo * (1-primary_albedo.w);
+		imageStore(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(color.xyz,1));
+		imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(color.xyz,1));
+		imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.normal.xyz,1));
+		imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.pos.xyz, 0));
+		imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(rrp.material, rrp.cluster, 0,0));
+	}
 }
 

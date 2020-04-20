@@ -90,6 +90,7 @@ void main()
   HitPoint hp = getHitPoint(rpb);
   if(isSeeThrough(material)) {
     blendSeeThrough(hp);
+      rp.max_transparent_distance = gl_HitTNV;
   }
   else if(isSeeThroughAdd(material)) {
     blendSeeThroughAdd(hp);
@@ -97,6 +98,7 @@ void main()
     vec4 tex = getTextureWithLod(hp,0);
     rp.transparent.xyz += tex.xyz;
     //rp.transparent.w = 1;
+      rp.max_transparent_distance = gl_HitTNV;
   }
   //rp.transparent += tex;
   // if(is_see_through(rpb)) {
@@ -108,6 +110,6 @@ void main()
   // }
   //rp.transparent += tex;
   
-  rp.max_transparent_distance = gl_HitTNV;
+
 	ignoreIntersectionNV();
 }

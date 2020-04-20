@@ -39,11 +39,14 @@ vec3 directIllumination(){
 	material = utemp.x;
 	cluster = utemp.y;
 	transparent = imageLoad(transparentGBuffer, ivec2(gl_LaunchIDNV.xy));
-	if(isMirror(material) || isGlass(material) || isWater(material)){
+	if(isWater(material)){
 		vec4 reflectAlbedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
 		return alpha_blend( transparent, reflectAlbedo).xyz;
 	}
 	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
+	// if(isGlass(material)){
+	// 	primary_albedo	= imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
+	// }
 
 	if (isSky(material)) return alpha_blend( transparent, vec4(primary_albedo.xyz,1)).xyz;
 	//if (isLight(material)) return vec3(1,0,0);

@@ -108,7 +108,7 @@ static void VK_CreateRayTracingPipeline(vkrtpipeline_t* pipeline)
 	rayPipelineInfo.pStages = &pipeline->shader->shaderStageCreateInfos[0];
 	rayPipelineInfo.groupCount = pipeline->shader->shaderGroupSize;//sizeof(groups) / sizeof(VkRayTracingShaderGroupCreateInfoNV);
 	rayPipelineInfo.pGroups = &pipeline->shader->shaderGroupCreateInfos[0];//&groups[0];
-	rayPipelineInfo.maxRecursionDepth = 1;
+	rayPipelineInfo.maxRecursionDepth = 5;
 	rayPipelineInfo.layout = pipeline->layout;
 	VK_CHECK(vkCreateRayTracingPipelinesNV(vk.device, VK_NULL_HANDLE, 1, &rayPipelineInfo, NULL, &pipeline->handle), " failed to create Ray Tracing Pipeline");
 }
