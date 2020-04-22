@@ -104,6 +104,7 @@ typedef struct {
 	// extra sprite information
 	float		radius;
 	float		rotation;
+	int			id;
 } refEntity_t;
 
 

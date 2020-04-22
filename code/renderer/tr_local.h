@@ -302,7 +302,7 @@ typedef struct {
 	qboolean						isWorldSurface;	// just for entity bas which are from world surfaces
 	int c;
 	qboolean hasOldIdx[10];
-	int oldIdx[10];
+	int surfcount;
 } vkbottomAS_t;
 
 #define	MAX_IMAGE_ANIMATIONS	8

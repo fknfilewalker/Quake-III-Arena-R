@@ -810,15 +810,18 @@ CG_AddLocalEntities
 */
 void CG_AddLocalEntities( void ) {
 	localEntity_t	*le, *next;
+	int id;
 
 	// walk the list backwards, so any new local entities generated
 	// (trails, marks, etc) will be present this frame
 	le = cg_activeLocalEntities.prev;
+	id = 50;
 	for ( ; le != &cg_activeLocalEntities ; le = next ) {
 		// grab next now, so if the local entity is freed we
 		// still have it
 		next = le->prev;
-
+		le->refEntity.id = id;
+		id++;
 		if ( cg.time >= le->endTime ) {
 			CG_FreeLocalEntity( le );
 			continue;

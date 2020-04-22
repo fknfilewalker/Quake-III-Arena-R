@@ -1236,6 +1236,7 @@ void CG_AddPlayerWeapon( refEntity_t *parent, playerState_t *ps, centity_t *cent
 
 	// add the weapon
 	memset( &gun, 0, sizeof( gun ) );
+	gun.id = parent->id + 3;
 	VectorCopy( parent->lightingOrigin, gun.lightingOrigin );
 	gun.shadowPlane = parent->shadowPlane;
 	gun.renderfx = parent->renderfx;
@@ -1282,6 +1283,7 @@ void CG_AddPlayerWeapon( refEntity_t *parent, playerState_t *ps, centity_t *cent
 	// add the spinning barrel
 	if ( weapon->barrelModel ) {
 		memset( &barrel, 0, sizeof( barrel ) );
+		barrel.id = parent->id + 4;
 		VectorCopy( parent->lightingOrigin, barrel.lightingOrigin );
 		barrel.shadowPlane = parent->shadowPlane;
 		barrel.renderfx = parent->renderfx;
@@ -1296,7 +1298,7 @@ void CG_AddPlayerWeapon( refEntity_t *parent, playerState_t *ps, centity_t *cent
 
 		CG_AddWeaponWithPowerups( &barrel, cent->currentState.powerups );
 	}
-
+	
 	// make sure we aren't looking at cg.predictedPlayerEntity for LG
 	nonPredictedCent = &cg_entities[cent->currentState.clientNum];
 
@@ -1320,6 +1322,7 @@ void CG_AddPlayerWeapon( refEntity_t *parent, playerState_t *ps, centity_t *cent
 	}
 
 	memset( &flash, 0, sizeof( flash ) );
+	flash.id = parent->id + 5;
 	VectorCopy( parent->lightingOrigin, flash.lightingOrigin );
 	flash.shadowPlane = parent->shadowPlane;
 	flash.renderfx = parent->renderfx;
@@ -1421,6 +1424,7 @@ void CG_AddViewWeapon( playerState_t *ps ) {
 	weapon = &cg_weapons[ ps->weapon ];
 
 	memset (&hand, 0, sizeof(hand));
+	hand.id = 1;
 
 	// set up gun position
 	CG_CalculateWeaponPosition( hand.origin, angles );

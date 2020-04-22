@@ -238,16 +238,7 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&bAS->geometryInstance);
 }
 
-static uint32_t RB_FindPrevInstance(drawSurf_t* drawSurfs, int numDrawSurfs, vec3_t prevOrigin) {
-	for (int i = 0; i < vk_d.prevEntityCount; i++)
-	{
-		if (Distance(vk_d.entityOriginsPrev[i].origin, prevOrigin) < 3) {
-			return vk_d.entityOriginsPrev[i].instance;
-		}
-	}
-	return 0;
-}
-
+uint32_t preInstanceIDs[21500];
 static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	shader_t*		shader;
 	int				fogNum;
@@ -263,21 +254,25 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	backEnd.currentEntity = &tr.worldEntity;
 	
 	// add static world
+	vk_d.bottomASWorldStatic.data.prevInstanceID = vk_d.bottomASTraceListCount;
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldStatic.data);
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldStatic.geometryInstance);
 	Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldStatic, sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
 	// add static world trans
+	vk_d.bottomASWorldStaticTrans.data.prevInstanceID = vk_d.bottomASTraceListCount;
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldStaticTrans.data);
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldStaticTrans.geometryInstance);
 	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldStaticTrans, sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
 	// add world with dynamic data
+	vk_d.bottomASWorldDynamicData.data.prevInstanceID = vk_d.bottomASTraceListCount;
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldDynamicData.data);
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldDynamicData.geometryInstance);
 	Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicData, sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
 	// add world with dynamic data trans
+	vk_d.bottomASWorldDynamicDataTrans.data.prevInstanceID = vk_d.bottomASTraceListCount;
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldDynamicDataTrans.data);
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldDynamicDataTrans.geometryInstance);
 	Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicDataTrans, sizeof(vkbottomAS_t));
@@ -336,6 +331,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		tess.numIndexes = 0;
 
 	}
+	vk_d.bottomASWorldDynamicAS[vk.swapchain.currentImage].data.prevInstanceID = vk_d.bottomASTraceListCount;
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldDynamicAS[vk.swapchain.currentImage].data);
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldDynamicAS[vk.swapchain.currentImage].geometryInstance);
 	VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), &vk_d.bottomASWorldDynamicAS[vk.swapchain.currentImage],
@@ -345,6 +341,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicAS[vk.swapchain.currentImage], sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
 	// trans
+	vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage].data.prevInstanceID = vk_d.bottomASTraceListCount;
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage].data);
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage].geometryInstance);
 	VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), &vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage],
@@ -440,6 +437,9 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 				Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
 				Com_Memcpy(&drawSurf->bAS->data.modelmat, &tM, sizeof(float[12]));
+				
+				drawSurf->bAS->data.prevInstanceID = preInstanceIDs[backEnd.currentEntity->e.id + drawSurf->bAS->surfcount];
+				preInstanceIDs[backEnd.currentEntity->e.id + drawSurf->bAS->surfcount] = vk_d.bottomASTraceListCount;
 				RB_UpdateInstanceDataBuffer(drawSurf->bAS);
 				RB_UpdateInstanceBuffer(drawSurf->bAS);
 				// add bottom to trace as list
@@ -449,6 +449,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			else if (RB_ASDynamic(tess.shader)) {
 				//continue;
 				// ?leak only in debug build?
+				//if(backEnd.currentEntity->e.id == 10) continue;
 				vkbottomAS_t *newAS = &vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]];
 				vk_d.bottomASDynamicCount[vk.swapchain.currentImage]++;
 				Com_Memcpy(newAS, drawSurf->bAS, sizeof(vkbottomAS_t));
@@ -474,6 +475,9 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				Com_Memcpy(&newAS->data.modelmat, &tM, sizeof(float[12]));
 
 				VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), drawSurf->bAS, newAS, &vk_d.basBufferEntityDynamic[vk.swapchain.currentImage], &vk_d.basBufferEntityDynamicOffset, RTX_BOTTOM_AS_FLAG);
+				
+				newAS->data.prevInstanceID = preInstanceIDs[backEnd.currentEntity->e.id + drawSurf->bAS->surfcount];
+				preInstanceIDs[backEnd.currentEntity->e.id + drawSurf->bAS->surfcount] = vk_d.bottomASTraceListCount;
 				RB_UpdateInstanceDataBuffer(newAS);
 				RB_UpdateInstanceBuffer(newAS);
 				// add bottom to trace as list
@@ -481,6 +485,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				vk_d.bottomASTraceListCount++;
 			}
 			else {
+				//if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) continue;
 				drawSurf->bAS->data.world = BAS_ENTITY_STATIC;
 				drawSurf->bAS->data.cluster = cluster;
 
@@ -491,6 +496,10 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 				Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));	
 				Com_Memcpy(&drawSurf->bAS->data.modelmat, &tM, sizeof(float[12]));
+		
+
+				drawSurf->bAS->data.prevInstanceID = preInstanceIDs[backEnd.currentEntity->e.id + drawSurf->bAS->surfcount];
+				preInstanceIDs[backEnd.currentEntity->e.id + drawSurf->bAS->surfcount] = vk_d.bottomASTraceListCount;
 				RB_UpdateInstanceDataBuffer(drawSurf->bAS);
 				RB_UpdateInstanceBuffer(drawSurf->bAS);
 				// add bottom to trace as list

@@ -390,6 +390,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 			}
 		
 		}
+		tr.currentModel->bAS[lod][i]->surfcount = i;
 
 		// we will add shadows even if the main object isn't visible in the view
 

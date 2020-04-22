@@ -351,16 +351,10 @@ void VK_BeginFrame()
 	vk.swapchain.lastImage = vk.swapchain.currentImage;
 	vkAcquireNextImageKHR(vk.device, vk.swapchain.handle, UINT64_MAX, vk.swapchain.imageAvailableSemaphores[vk.swapchain.currentFrame], VK_NULL_HANDLE, &vk.swapchain.currentImage);
 
-    //Com_Printf("fence %d %d %d\n", vkGetFenceStatus(vk.device, vk.swapchain.inFlightFences[0]) == VK_SUCCESS,
-    //           vkGetFenceStatus(vk.device, vk.swapchain.inFlightFences[1]) == VK_SUCCESS,
-    //           vkGetFenceStatus(vk.device, vk.swapchain.inFlightFences[2]) == VK_SUCCESS);
     clock_t start = clock();
-
-	//vkDeviceWaitIdle(vk.device);
-	//vkDeviceWaitIdle(vk.device);
-	//int prevIndex = (vk.swapchain.currentImage + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount;
-	//vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[prevIndex], VK_TRUE, UINT64_MAX);
+	// we want to wait until the commands frm the current image and next image have completed execution in order to avoid race condition when reading the prev buffers
     vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentImage], VK_TRUE, UINT64_MAX);
+	vkWaitForFences(vk.device, 1, &vk.swapchain.inFlightFences[(vk.swapchain.currentImage + 1) % vk.swapchain.imageCount], VK_TRUE, UINT64_MAX);
     vkResetFences(vk.device, 1, &vk.swapchain.inFlightFences[vk.swapchain.currentImage]);
     clock_t end = clock();
     float seconds = (float)(end - start) / CLOCKS_PER_SEC;

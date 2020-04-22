@@ -208,10 +208,11 @@ void shootPrimaryRay(Ray ray, vec2 sccs){
 
 
 	vec4 point = ubo.projMat * ubo.viewMat * vec4(hitData.pos.xyz, 1.0);
-	vec4 pointPrev = uboPrev.projMat * uboPrev.viewMat * vec4(hitData.pos.xyz, 1.0);
+	vec4 pointPrev = uboPrev.projMat * uboPrev.viewMat * vec4(getPrevPos(rp),1.0);
 	vec3 ndc = point.xyz / point.w;
 	vec3 ndcPrev = pointPrev.xyz / pointPrev.w;
-	hitData.motion = ndc.xy - ndcPrev.xy;
+	if(found_intersection(rp)) hitData.motion = ndc.xy - ndcPrev.xy;
+	else hitData.motion = vec2(0);
 }
 
 void main() 
@@ -230,6 +231,10 @@ void main()
 	imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.pos.xyz, hitData.cluster));
 	imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(hitData.material, hitData.cluster, rp.instanceID,0));
 	imageStore(viewGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(ray.direction.xyz, 0));
-	imageStore(motionGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.motion, 0, 1));
+	imageStore(motionGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.motion*130, 0, 1));
 }
 
+// vkWaitForFences(qvk.device, 1, &qvk.fence_vertex_sync, VK_TRUE, ~((uint64_t)0));
+// 	vkResetFences(qvk.device, 1, &qvk.fence_vertex_sync);
+
+// 	vkpt_submit_command_buffer(cmd_buf, qvk.queue_graphics, (1 << qvk.device_count) - 1, 0, NULL, NULL, NULL, 0, NULL, NULL, qvk.fence_vertex_sync);

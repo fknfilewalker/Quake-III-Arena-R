@@ -74,6 +74,7 @@ ivec3 getVertexData(in RayPayload rp, out VertexBuffer vData[3]){
 	return index;
 }
 
+
 Triangle getTriangle(in RayPayload rp){
 	VertexBuffer vData[3];
 	ivec3 index = getVertexData(rp, vData);
@@ -263,31 +264,20 @@ ivec3 getVertexDataPrev(in RayPayload rp, out VertexBuffer vData[3]){
 	return index;
 }
 
-Triangle getTrianglePrev(in RayPayload rp){
-	if(iData.data[rp.instanceID].world == BAS_ENTITY_STATIC) rp.instanceID = iData.data[rp.instanceID].prevInstance;
+vec3 getPrevPos(RayPayload rp){
+	rp.instanceID = iData.data[rp.instanceID].prevInstanceID;
 
 	VertexBuffer vData[3];
 	ivec3 index = getVertexDataPrev(rp, vData);
 
-	Triangle hitTriangle;
+	const vec3 barycentricCoords = getBarycentricCoordinates(rp.barycentric);
 	// POS
 	// Some Entitiys are in Object Space
-	hitTriangle.pos[0] = (vec4(vData[0].pos.xyz, 1) * iDataPrev.data[rp.instanceID].modelmat).xyz;
-	hitTriangle.pos[1] = (vec4(vData[1].pos.xyz, 1) * iDataPrev.data[rp.instanceID].modelmat).xyz;
-	hitTriangle.pos[2] = (vec4(vData[2].pos.xyz, 1) * iDataPrev.data[rp.instanceID].modelmat).xyz;
-
-	return hitTriangle;
-}
-
-HitPoint getHitPointPrev(in RayPayload rp){
-	const vec3 barycentricCoords = getBarycentricCoordinates(rp.barycentric);
-	Triangle triangle = getTrianglePrev(rp);
-
-	HitPoint hitPoint;
-	hitPoint.pos = triangle.pos[0] * barycentricCoords.x +
-					triangle.pos[1] * barycentricCoords.y +
-            		triangle.pos[2] * barycentricCoords.z;
-	return hitPoint;
+	vec3 pos[3];
+	pos[0] = (vec4(vData[0].pos.xyz, 1) * iDataPrev.data[rp.instanceID].modelmat).xyz;
+	pos[1] = (vec4(vData[1].pos.xyz, 1) * iDataPrev.data[rp.instanceID].modelmat).xyz;
+	pos[2] = (vec4(vData[2].pos.xyz, 1) * iDataPrev.data[rp.instanceID].modelmat).xyz;
+	return pos[0] * barycentricCoords.x + pos[1] * barycentricCoords.y + pos[2] * barycentricCoords.z;
 }
 
 uint 

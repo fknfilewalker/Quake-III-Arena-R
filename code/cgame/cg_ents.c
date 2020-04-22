@@ -171,7 +171,7 @@ static void CG_General( centity_t *cent ) {
 	}
 
 	memset (&ent, 0, sizeof(ent));
-
+	ent.id = cent->id;
 	// set frame
 
 	ent.frame = s1->frame;
@@ -245,6 +245,7 @@ static void CG_Item( centity_t *cent ) {
 	item = &bg_itemlist[ es->modelindex ];
 	if ( cg_simpleItems.integer && item->giType != IT_TEAM ) {
 		memset( &ent, 0, sizeof( ent ) );
+		ent.id = cent->id;
 		ent.reType = RT_SPRITE;
 		VectorCopy( cent->lerpOrigin, ent.origin );
 		ent.radius = 14;
@@ -256,13 +257,12 @@ static void CG_Item( centity_t *cent ) {
 		trap_R_AddRefEntityToScene(&ent);
 		return;
 	}
-
+	
 	// items bob up and down continuously
 	scale = 0.005 + cent->currentState.number * 0.00001;
 	cent->lerpOrigin[2] += 4 + cos( ( cg.time + 1000 ) *  scale ) * 4;
 
 	memset (&ent, 0, sizeof(ent));
-
 	// autorotate at one of two speeds
 	if ( item->giType == IT_HEALTH ) {
 		VectorCopy( cg.autoAnglesFast, cent->lerpAngles );
@@ -340,6 +340,7 @@ static void CG_Item( centity_t *cent ) {
 	}
 #endif
 
+	ent.id = cent->id;
 	// add to refresh list
 	trap_R_AddRefEntityToScene(&ent);
 
@@ -389,6 +390,7 @@ static void CG_Item( centity_t *cent ) {
 					VectorScale( ent.axis[2], frac, ent.axis[2] );
 					ent.nonNormalizedAxes = qtrue;
 				}
+				ent.id = cent->id+1;
 				trap_R_AddRefEntityToScene( &ent );
 			}
 		}
@@ -584,12 +586,14 @@ static void CG_Mover( centity_t *cent ) {
 	}
 
 	// add to refresh list
+	ent.id = cent->id;
 	trap_R_AddRefEntityToScene(&ent);
 
 	// add the secondary model
 	if ( s1->modelindex2 ) {
 		ent.skinNum = 0;
 		ent.hModel = cgs.gameModels[s1->modelindex2];
+		ent.id = cent->id+1;
 		trap_R_AddRefEntityToScene(&ent);
 	}
 
@@ -635,6 +639,7 @@ static void CG_Portal( centity_t *cent ) {
 
 	// create the render entity
 	memset (&ent, 0, sizeof(ent));
+	ent.id = cent->id;
 	VectorCopy( cent->lerpOrigin, ent.origin );
 	VectorCopy( s1->origin2, ent.oldorigin );
 	ByteToDir( s1->eventParm, ent.axis[0] );
@@ -1031,6 +1036,7 @@ void CG_AddPacketEntities( void ) {
 	// add each entity sent over by the server
 	for ( num = 0 ; num < cg.snap->numEntities ; num++ ) {
 		cent = &cg_entities[ cg.snap->entities[ num ].number ];
+		cent->id = 10 + ((cg.snap->entities[num].number+1) * 100);
 		CG_AddCEntity( cent );
 	}
 }

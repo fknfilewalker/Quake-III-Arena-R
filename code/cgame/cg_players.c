@@ -2275,6 +2275,9 @@ void CG_Player( centity_t *cent ) {
 	memset( &legs, 0, sizeof(legs) );
 	memset( &torso, 0, sizeof(torso) );
 	memset( &head, 0, sizeof(head) );
+	legs.id = cent->id;
+	torso.id = cent->id+10;
+	head.id = cent->id+30;
 
 	// get the rotation information
 	CG_PlayerAngles( cent, legs.axis, torso.axis, head.axis );

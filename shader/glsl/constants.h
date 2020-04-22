@@ -177,6 +177,7 @@
 // holds material/offset/etc data for each AS Instance
 STRUCT (
     MAT4    (modelmat)
+    UINT    (prevInstanceID)
     UINT    (world)
 	UINT    (offsetIDX)
 	UINT    (offsetXYZ)
@@ -185,10 +186,9 @@ STRUCT (
 	BOOL    (isBrushModel)
 	BOOL    (isPlayer)
 	UINT    (cluster)
-    UINT    (currentInstance)
-    UINT    (prevInstance)
     UINT    (buff0)
     UINT    (buff1)
+    UINT    (buff2)
 ,ASInstanceData)
 
 // holds all vertex data
