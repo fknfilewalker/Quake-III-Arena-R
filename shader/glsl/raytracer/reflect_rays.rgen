@@ -295,7 +295,7 @@ void main()
 
 	vec4 temp;
 	uvec4 utemp;
-	utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
+	//utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
 	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	material = uint(imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
@@ -323,7 +323,7 @@ void main()
 		imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), color);
 		imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.normal.xyz,rrp.material));
 		imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.pos.xyz, rrp.cluster));
-		imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(rrp.material, rrp.cluster, 0,0));
+		//imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(rrp.material, rrp.cluster, 0,0));
 	}
 	if (isGlass(material)){
 		// if texture (alpha) not see through enough then do not trace further
@@ -356,7 +356,7 @@ void main()
 		imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(color.xyz,1));
 		imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.normal.xyz, rrp.material));
 		imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.pos.xyz, rrp.cluster));
-		imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(rrp.material, rrp.cluster, 0,0));
+		//imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(rrp.material, rrp.cluster, 0,0));
 	}
 }
 

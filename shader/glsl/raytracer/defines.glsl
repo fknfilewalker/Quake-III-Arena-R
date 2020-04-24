@@ -11,8 +11,6 @@
 #define PAYLOAD_REFLECT 1
 #define PAYLOAD_SHADOW 2
 
-#define M_PI 3.14159265358979323846264338327950288f
-
 #define ALBEDO_MULT 1.3
 
 #define RNG_C(bounce)                (1 + 0 + 7 * bounce)
@@ -22,6 +20,10 @@
 #define RNG_BOUNCE_Y(bounce)         (6 + 0 + 7 * bounce)
 #define RNG_FRESNEL(bounce)        (7 + 0 + 7 * bounce)
 
+#define STORAGE_SCALE_LF 1024
+#define STORAGE_SCALE_HF 32
+#define STORAGE_SCALE_SPEC 32
+#define STORAGE_SCALE_HDR 128
 
 struct RayPayload {
 	vec2 barycentric;

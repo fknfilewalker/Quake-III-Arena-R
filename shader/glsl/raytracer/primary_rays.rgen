@@ -11,6 +11,7 @@
 #include "globalTexture.glsl"
 #include "vertexData.glsl"
 #include "gbuffer.glsl"
+#include "../compute/asvgf.glsl"
 
 // Bindings
 layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
@@ -23,6 +24,8 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO_PREV, set = 0) uniform global_ubo_pre
 };
 #include "traceRay.glsl"
 #include "lights.glsl"
+
+bool forward;
 
 struct PrimaryRayHit{
 	vec4 albedo;
@@ -81,6 +84,16 @@ getPrimaryRay(vec2 pos_cs)
 		}
 		ray.direction = normalize(focalPoint.xyz - ray.origin);
 	}
+
+	if(forward)
+	{
+		vec3 pos_ws    = imageLoad(posFwd, ivec2(gl_LaunchIDNV.xy) / GRAD_DWN).xyz; 
+		ray.origin     = ubo.camPos.xyz;
+		ray.direction  = pos_ws - ray.origin;
+		float len      = length(ray.direction);
+		ray.direction /= len;
+		ray.t_max      = len + 0.001;
+	}
 	return ray;
 }
 
@@ -101,6 +114,12 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 	tex_coord_y -= tex_coord;
 	tex_coord_x *= 0.5;
 	tex_coord_y *= 0.5;
+	if(forward){
+			vec4 fwd_gradients = imageLoad(texGradFwd0, ivec2(gl_LaunchIDNV.xy) / GRAD_DWN);
+			tex_coord_x = fwd_gradients.xy;
+			tex_coord_y = fwd_gradients.zw;
+		}
+	imageStore(texGrad0GBuffer, ivec2(gl_LaunchIDNV.xy), vec4(tex_coord_x, tex_coord_y));
 
 	TextureData d = unpackTextureData(hp.tex0);
 	vec4 color = vec4(0);
@@ -121,6 +140,12 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 		tex_coord_y -= tex_coord;
 		tex_coord_x *= 0.5;
 		tex_coord_y *= 0.5;
+		if(forward){
+			vec4 fwd_gradients = imageLoad(texGradFwd1, ivec2(gl_LaunchIDNV.xy) / GRAD_DWN);
+			tex_coord_x = fwd_gradients.xy;
+			tex_coord_y = fwd_gradients.zw;
+		}
+		imageStore(texGrad1GBuffer, ivec2(gl_LaunchIDNV.xy), vec4(tex_coord_x, tex_coord_y));
 		vec4 tex1 = global_textureGrad(d.tex1, hp.uv1, tex_coord_x, tex_coord_y);
 		if(d.tex1Color) tex1 *= (hp.color1/255);
 
@@ -139,6 +164,12 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 		tex_coord_y -= tex_coord;
 		tex_coord_x *= 0.5;
 		tex_coord_y *= 0.5;
+		if(forward){
+			vec4 fwd_gradients = imageLoad(texGradFwd2, ivec2(gl_LaunchIDNV.xy) / GRAD_DWN);
+			tex_coord_x = fwd_gradients.xy;
+			tex_coord_y = fwd_gradients.zw;
+		}
+		imageStore(texGrad2GBuffer, ivec2(gl_LaunchIDNV.xy), vec4(tex_coord_x, tex_coord_y));
 		vec4 tex2 = global_textureGrad(d2.tex0, hp.uv2, tex_coord_x, tex_coord_y);
 		if(d2.tex0Color) tex2 *= (hp.color2/255);
 
@@ -155,6 +186,12 @@ vec4 getTextureLod(vec2 screen_coord_cs, Triangle triangle, HitPoint hp){
 		tex_coord_y -= tex_coord;
 		tex_coord_x *= 0.5;
 		tex_coord_y *= 0.5;
+		if(forward){
+			vec4 fwd_gradients = imageLoad(texGradFwd3, ivec2(gl_LaunchIDNV.xy) / GRAD_DWN);
+			tex_coord_x = fwd_gradients.xy;
+			tex_coord_y = fwd_gradients.zw;
+		}
+		imageStore(texGrad3GBuffer, ivec2(gl_LaunchIDNV.xy), vec4(tex_coord_x, tex_coord_y));
 		vec4 tex3 = global_textureGrad(d2.tex1, hp.uv3, tex_coord_x, tex_coord_y);
 		if(d2.tex1Color) tex3 *= (hp.color3/255);
 
@@ -211,25 +248,32 @@ void shootPrimaryRay(Ray ray, vec2 sccs){
 	vec4 pointPrev = uboPrev.projMat * uboPrev.viewMat * vec4(getPrevPos(rp),1.0);
 	vec3 ndc = point.xyz / point.w;
 	vec3 ndcPrev = pointPrev.xyz / pointPrev.w;
-	if(found_intersection(rp)) hitData.motion = ndc.xy - ndcPrev.xy;
+	if(found_intersection(rp)) hitData.motion = abs(ndc.xy - ndcPrev.xy);
 	else hitData.motion = vec2(0);
+
 }
 
 void main() 
 {
+	forward = get_is_gradient(ivec2(gl_LaunchIDNV.xy));
 	vec2 sccs = getScreenCoordinates(); // screen coordinates in clip space
 	Ray ray = getPrimaryRay(sccs);
 	// get distance to first opaque object
-	traceRayOpaque(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE);
-	if(found_intersection(rp)) ray.t_max = rp.hit_distance + 0.001;
+	if(!forward) {
+		traceRayOpaque(ray, RAY_FIRST_PERSON_OPAQUE_VISIBLE);
+		if(found_intersection(rp)) ray.t_max = rp.hit_distance + 0.001;
+	}
 	shootPrimaryRay(ray, sccs);
 
+	if(get_is_gradient(ivec2(gl_LaunchIDNV.xy))){
+		//hitData.albedo = vec4(1,0,0,1);
+	}
 	// store data in g buffer
+	imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rp.barycentric, uintBitsToFloat(rp.instanceID), uintBitsToFloat(rp.primitiveID)));
 	imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.albedo));
 	imageStore(transparentGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.transparent));
 	imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.normal.xyz,hitData.material));
 	imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.pos.xyz, hitData.cluster));
-	imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(hitData.material, hitData.cluster, rp.instanceID,0));
 	imageStore(viewGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(ray.direction.xyz, 0));
 	imageStore(motionGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(hitData.motion*130, 0, 1));
 }

@@ -5,6 +5,21 @@ luminance(in vec3 color)
 {
     return dot(color, vec3(0.299, 0.587, 0.114));
 }
+float
+clamped_luminance(vec3 c)
+{
+    float l = luminance(c);
+    return min(l, 150.0);
+}
+vec3
+clamp_color(vec3 color, float max_val)
+{
+    float m = max(color.r, max(color.g, color.b));
+    if(m < max_val)
+        return color;
+
+    return color * (max_val / m);
+}
 
 vec2
 sample_disk(vec2 uv)
@@ -21,16 +36,6 @@ sample_cos_hemisphere(vec2 uv)
 	vec2 disk = sample_disk(uv);
 
 	return vec3(disk.x, sqrt(max(0.0, 1.0 - dot(disk, disk))), disk.y);
-}
-
-vec3
-clamp_color(vec3 color, float max_val)
-{
-    float m = max(color.r, max(color.g, color.b));
-    if(m < max_val)
-        return color;
-
-    return color * (max_val / m);
 }
 
 float
@@ -54,6 +59,25 @@ float fresnel(float F0, float NdotV)
     return F0 + (1 - F0) * pow(1 - NdotV, 5);
 }
 
+
+#define MAX_OUTPUT_VALUE 1000
+vec3 clamp_output(vec3 c)
+{
+	if(any(isnan(c)) || any(isinf(c)))
+		return vec3(0);
+	else 
+		return clamp(c, vec3(0), vec3(MAX_OUTPUT_VALUE));
+}
+
+uvec2 packHalf4x16(vec4 v)
+{
+    return uvec2(packHalf2x16(v.xy), packHalf2x16(v.zw));
+}
+
+vec4 unpackHalf4x16(uvec2 v)
+{
+    return vec4(unpackHalf2x16(v.x), unpackHalf2x16(v.y));
+}
 
 vec3
 compute_barycentric(mat3 v, vec3 ray_origin, vec3 ray_direction)
@@ -163,4 +187,38 @@ vec3 getUniformHemisphereSample(inout uint randSeed, vec3 hitNorm)
 
 	// Get our cosine-weighted hemisphere lobe sample direction
 	return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * randVal.x;
+}
+
+uint packRGBE(vec3 v)
+{
+    vec3 va = max(vec3(0), v);
+    float max_abs = max(va.r, max(va.g, va.b));
+    if(max_abs == 0)
+        return 0;
+
+    float exponent = floor(log2(max_abs));
+
+    uint result;
+    result = uint(clamp(exponent + 20, 0, 31)) << 27;
+
+    float scale = pow(2, -exponent) * 256.0;
+    uvec3 vu = min(uvec3(511), uvec3(round(va * scale)));
+    result |= vu.r;
+    result |= vu.g << 9;
+    result |= vu.b << 18;
+
+    return result;
+}
+
+vec3 unpackRGBE(uint x)
+{
+    int exponent = int(x >> 27) - 20;
+    float scale = pow(2, exponent) / 256.0;
+
+    vec3 v;
+    v.r = float(x & 0x1ff) * scale;
+    v.g = float((x >> 9) & 0x1ff) * scale;
+    v.b = float((x >> 18) & 0x1ff) * scale;
+
+    return v;
 }

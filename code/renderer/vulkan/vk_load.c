@@ -93,6 +93,7 @@ qboolean VK_LoadDeviceFunctions(void)
     vkCmdBindIndexBuffer = VK_DEVICE_LEVEL_FUNCTION("vkCmdBindIndexBuffer");
     vkCmdPushConstants = VK_DEVICE_LEVEL_FUNCTION("vkCmdPushConstants");
     vkCmdClearAttachments = VK_DEVICE_LEVEL_FUNCTION("vkCmdClearAttachments");
+	vkCmdClearColorImage = VK_DEVICE_LEVEL_FUNCTION("vkCmdClearColorImage");
     vkCmdPushConstants = VK_DEVICE_LEVEL_FUNCTION("vkCmdPushConstants");
 
 	vkCreateImage = VK_DEVICE_LEVEL_FUNCTION("vkCreateImage");

@@ -124,6 +124,7 @@ PFN_vkCmdBindVertexBuffers                      vkCmdBindVertexBuffers;
 PFN_vkCmdBindIndexBuffer                        vkCmdBindIndexBuffer;
 PFN_vkCmdPushConstants                          vkCmdPushConstants;
 PFN_vkCmdClearAttachments                       vkCmdClearAttachments;
+PFN_vkCmdClearColorImage						vkCmdClearColorImage;
 
 PFN_vkCreateImage								vkCreateImage;
 PFN_vkGetImageMemoryRequirements				vkGetImageMemoryRequirements;

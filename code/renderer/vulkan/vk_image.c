@@ -571,3 +571,16 @@ void VK_CopyImageToSwapchain(vkimage_t *image) {
 		0, 0, NULL, 0, NULL,
 		1, &barrier);
 }
+
+void VK_ClearImage(vkimage_t* image, VkClearColorValue cv, VkImageLayout layout) {
+	VkCommandBuffer commandBuffer = vk.swapchain.commandBuffers[vk.swapchain.currentImage];
+	VkImageSubresourceRange subresource_range = {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1
+	};
+	vkCmdClearColorImage(commandBuffer, image->handle,
+		layout, &cv, 1, &subresource_range);
+}

@@ -62,7 +62,7 @@ DirectionalLight getLight2(in Light l, ivec2 rng, bool random){
 // }
 
 vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, in uint material){
-	if(!ubo.illumination) return primary_albedo.xyz;
+	//if(!ubo.illumination) return primary_albedo.xyz;if(!ubo.illumination) return primary_albedo.xyz;
 	vec3 shadeColor = vec3(0);
 
 	float amplification = 1;
@@ -117,8 +117,8 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 		float LdotN2 = clamp(dot(-light.normal, -L), 0.0, 1.0);
 		shadeColor += shadowMult * LdotN * lightIntensity;
 	}
-
+	return shadeColor / M_PI;
 	//shadeColor *= primary_albedo.rgb / M_PI;
-	return (shadeColor * primary_albedo.rgb / M_PI) + primary_albedo.rgb * 0.25f;
+	//return (shadeColor * primary_albedo.rgb / M_PI);// + primary_albedo.rgb * 0.25f;
 	//return primary_albedo.rgb;
 }

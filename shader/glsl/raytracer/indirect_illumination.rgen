@@ -35,7 +35,7 @@ vec3 directIllumination(){
 	vec3 motion;
 
 	uvec4 utemp;
-	utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
+	//utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
 	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	material = uint(imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).w);

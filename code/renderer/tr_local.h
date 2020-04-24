@@ -1276,6 +1276,9 @@ typedef struct {
 
 typedef struct {
 	vkcpipeline_t				rngPipeline;
+	vkcpipeline_t				asvgfFwdPipeline;
+	vkcpipeline_t				asvgfGradImgPipeline;
+	vkcpipeline_t				asvgfTemporalPipeline;
 	vkimage_t					rngImage;
 
 	vkimage_t					resultImage[VK_MAX_SWAPCHAIN_SIZE];
@@ -1397,9 +1400,26 @@ typedef struct {
 	vkimage_t			viewDir;
 	vkimage_t			transparent;
 	vkimage_t			reflection;
+	vkimage_t			directIllumination;
 	vkimage_t			objectInfo;
 	vkimage_t			motion;
+	vkimage_t			texGradients0;
+	vkimage_t			texGradients1;
+	vkimage_t			texGradients2;
+	vkimage_t			texGradients3;
 } vkgbuffer;
+
+typedef struct {
+	vkimage_t			gradSamplePos;
+	vkimage_t			texGradientsFwd0;
+	vkimage_t			texGradientsFwd1;
+	vkimage_t			texGradientsFwd2;
+	vkimage_t			texGradientsFwd3;
+	vkimage_t			positionFwd;
+	vkimage_t			objectFwd;
+	vkimage_t			gradHFPing;
+	vkimage_t			gradHFPong;
+} vkasvgfbuffer;
 
 typedef enum {
 	PROFILER_BUILD_AS_BEGIN,
@@ -1479,6 +1499,7 @@ typedef struct {
 	vkdescriptor_t		computeDescriptor[VK_MAX_SWAPCHAIN_SIZE];
 
 	vkgbuffer			gBuffer[VK_MAX_SWAPCHAIN_SIZE];
+	vkasvgfbuffer		asvgf[VK_MAX_SWAPCHAIN_SIZE];
 	vkrtpipeline_t		primaryRaysPipeline;
 	vkrtpipeline_t		reflectRaysPipeline;
 	vkrtpipeline_t		directIlluminationPipeline;
@@ -1561,6 +1582,8 @@ typedef struct {
 
 	GlobalUbo			uboGlobal[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t			uboBuffer[VK_MAX_SWAPCHAIN_SIZE];
+	int					prevToCurrInstance[100];
+	vkbuffer_t			prevToCurrInstanceBuffer;
 	vkbuffer_t			uboLightList[VK_MAX_SWAPCHAIN_SIZE];
 	LightList_s			lightList;
 	/*vec4_t				lightList[RTX_MAX_LIGHTS];
