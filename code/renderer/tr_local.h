@@ -756,6 +756,7 @@ typedef struct {
 	int			numClusters;
 	int			clusterBytes;
 	const byte	*vis;			// may be passed in by CM_LoadMap to save space
+	const byte	*vis2;			// for q3 rtx
 
 	byte		*novis;			// clusterBytes of 0xff
 
@@ -1288,6 +1289,7 @@ typedef struct {
 	vkimage_t					accumulationImage[VK_MAX_SWAPCHAIN_SIZE];
 	vkimage_t					visData;
 	vkimage_t					lightVisData;
+	vkimage_t					lightVisData2;
 	vkimage_t					envmap;
 } vkaccelerationStructures_t;
 
@@ -1412,36 +1414,46 @@ typedef struct {
 } vkgbuffer;
 
 typedef struct {
+	// debug
 	vkimage_t			debug;
-	vkimage_t			gradSamplePos;
+	// forward
 	vkimage_t			positionFwd;
 	vkimage_t			objectFwd;
+
+	vkimage_t			rngSeed;
+	vkimage_t			gradSamplePos;
 	vkimage_t			gradA;
 	vkimage_t			gradB;
 
 	vkimage_t			color;
+	vkimage_t			histColor;
+	vkimage_t			histMoments;
 
 	vkimage_t			atrousA;
 	vkimage_t			atrousB;
 
 	vkimage_t			taa;
-	//vkimage_t			taaB;
-
-	vkimage_t			rngSeed;
-
-	vkimage_t			histColor;
-	vkimage_t			histMoments;
 } vkasvgfbuffer;
 
 typedef enum {
 	PROFILER_BUILD_AS_BEGIN,
 	PROFILER_BUILD_AS_END,
+	PROFILER_ASVGF_RNG_BEGIN,
+	PROFILER_ASVGF_RNG_END,
+	PROFILER_ASVGF_FORWARD_BEGIN,
+	PROFILER_ASVGF_FORWARD_END,
 	PROFILER_PRIMARY_RAYS_BEGIN,
 	PROFILER_PRIMARY_RAYS_END,
 	PROFILER_REFLECTION_REFRACTION_BEGIN,
 	PROFILER_REFLECTION_REFRACTION_END,
 	PROFILER_DIRECT_ILLUMINATION_BEGIN,
 	PROFILER_DIRECT_ILLUMINATION_END,
+	PROFILER_ASVGF_TEMPORAL_BEGIN,
+	PROFILER_ASVGF_TEMPORAL_END,
+	PROFILER_ASVGF_ATROUS_BEGIN,
+	PROFILER_ASVGF_ATROUS_END,
+	PROFILER_ASVGF_TAA_BEGIN,
+	PROFILER_ASVGF_TAA_END,
 	PROFILER_IN_FLIGHT
 } vkprofiler_e;
 
@@ -1755,6 +1767,7 @@ extern	cvar_t  *rt_numRandomDL;
 extern	cvar_t	*pt_numRandomIL;
 extern	cvar_t  *rt_illumination;
 extern	cvar_t  *rt_softshadows;
+extern	cvar_t  *rt_denoiser;
 
 extern  cvar_t* rt_printPerformanceStatistic;
 extern  cvar_t* rt_accumulate;

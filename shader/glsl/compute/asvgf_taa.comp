@@ -60,9 +60,6 @@ sample_texture_catmull_rom(sampler2D tex, vec2 uv)
 
 vec4
 temporal_filter()
-//		sampler2D tex_color_curr,
-//		sampler2D tex_color_prev,
-//		sampler2D tex_motion)
 {
 	ivec2 ipos = ivec2(gl_GlobalInvocationID);
 
@@ -115,7 +112,6 @@ temporal_filter()
                     len = l;
                     motion = m;
                 }
-
             }
         }
     }
@@ -141,13 +137,12 @@ temporal_filter()
     color_prev = clamp(color_prev, mi, ma);
 
     return vec4(mix(color_prev, color_center.rgb, 0.1), color_center.a);
-
 }
 
 void
 main()
 {
 	ivec2 ipos = ivec2(gl_GlobalInvocationID);
-    vec4 v = temporal_filter();//TEX_ASVGF_COLOR, TEX_ASVGF_TAA_B, TEX_PT_MOTION);
+    vec4 v = temporal_filter();
     imageStore(imgtaaASVGF, ipos, v);
 }

@@ -88,14 +88,6 @@ float fresnel(float F0, float NdotV)
 }
 
 
-#define MAX_OUTPUT_VALUE 1000
-vec3 clamp_output(vec3 c)
-{
-	if(any(isnan(c)) || any(isinf(c)))
-		return vec3(0);
-	else 
-		return clamp(c, vec3(0), vec3(MAX_OUTPUT_VALUE));
-}
 
 uvec2 packHalf4x16(vec4 v)
 {

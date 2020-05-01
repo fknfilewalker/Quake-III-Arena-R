@@ -8,6 +8,7 @@ layout(binding = BINDING_OFFSET_UBO_LIGHTS, set = 0) buffer LightList { LightLis
 // vis data
 layout(binding = BINDING_OFFSET_VIS_DATA, set = 0, r8ui) uniform uimage2D vis_data;
 layout(binding = BINDING_OFFSET_LIGHT_VIS_DATA, set = 0, r32ui) uniform uimage2D lightVis_data;
+layout(binding = BINDING_OFFSET_LIGHT_VIS_DATA2, set = 0, r32ui) uniform uimage2D lightVis_data2;
 
 vec3
 getLight(uint i){

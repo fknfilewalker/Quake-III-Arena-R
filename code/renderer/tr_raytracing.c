@@ -45,6 +45,7 @@ void RB_UploadCluster(vkbuffer_t* buffer, uint32_t offsetIDX, int defaultC) {
 			// use default cluster as last resort
 			c = defaultC;
 		}
+		//c = defaultC;
 		clusterData[i] = c;
 	}
 	VK_UploadBufferDataOffset(buffer, offsetIDX * sizeof(uint32_t), (tess.numIndexes/3) * sizeof(uint32_t), (void*)clusterData);
@@ -643,6 +644,7 @@ static void RB_TraceRays() {
 	ubo->numRandomDL = rt_numRandomDL->integer;
 	ubo->numRandomIL = pt_numRandomIL->integer;
 	ubo->randSampleLight = rt_softshadows->integer;
+	ubo->denoiser = rt_denoiser->integer;
 
 	ubo->width = vk.swapchain.extent.width;
 	ubo->height = vk.swapchain.extent.height;
@@ -720,15 +722,21 @@ static void RB_TraceRays() {
 	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].gradSamplePos.handle);
 	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].debug.handle);
 
+	// ASVGF RNG
+	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_RNG_BEGIN);
 	VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfRngPipeline);
 	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfRngPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 	VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
+	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_RNG_END);
 
 	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].rngSeed.handle);
 
+	// ASVGF FORWARD
+	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_FORWARD_BEGIN);
 	VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfFwdPipeline);
 	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfFwdPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 	VK_Dispatch((vk.swapchain.extent.width / GRAD_DWN + 31) / 32, (vk.swapchain.extent.height / GRAD_DWN + 31) / 32, 1);
+	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_FORWARD_END);
 
 	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].rngSeed.handle);
 	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].positionFwd.handle);
@@ -761,48 +769,57 @@ static void RB_TraceRays() {
 	VK_TraceRays(&vk_d.directIlluminationPipeline);
 	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_DIRECT_ILLUMINATION_END);
 
-	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].color.handle);
+	if (rt_denoiser->integer) {
+		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].color.handle);
 
-	VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfGradImgPipeline);
-	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfGradImgPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-	VK_Dispatch((vk.swapchain.extent.width / GRAD_DWN + 31) / 32, (vk.swapchain.extent.height / GRAD_DWN + 31) / 32, 1);
-	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].gradA.handle);
-
-	VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfGradAtrousPipeline);
-	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfGradAtrousPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-	const int num_atrous_iterations_gradient = 5;
-	for (uint32_t i = 0; i < num_atrous_iterations_gradient; i++) {
-		VK_SetComputePushConstant(&vk_d.accelerationStructures.asvgfGradAtrousPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &i);
+		VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfGradImgPipeline);
+		VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfGradImgPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 		VK_Dispatch((vk.swapchain.extent.width / GRAD_DWN + 31) / 32, (vk.swapchain.extent.height / GRAD_DWN + 31) / 32, 1);
 		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].gradA.handle);
-		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].gradB.handle);
-	}
-	
-	
-	VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfTemporalPipeline);
-	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfTemporalPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-	VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
 
-	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].atrousA.handle);
-	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].atrousB.handle);
-	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].histColor.handle);
-	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].histMoments.handle);
-	//
-	VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfAtrousPipeline);
-	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfAtrousPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-	const int num_atrous_iterations = 5;
-	for (uint32_t i = 0; i < 5; i++) {
-		VK_SetComputePushConstant(&vk_d.accelerationStructures.asvgfAtrousPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &i);
+		VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfGradAtrousPipeline);
+		VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfGradAtrousPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+		const int num_atrous_iterations_gradient = 5;
+		for (uint32_t i = 0; i < num_atrous_iterations_gradient; i++) {
+			VK_SetComputePushConstant(&vk_d.accelerationStructures.asvgfGradAtrousPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &i);
+			VK_Dispatch((vk.swapchain.extent.width / GRAD_DWN + 31) / 32, (vk.swapchain.extent.height / GRAD_DWN + 31) / 32, 1);
+			BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].gradA.handle);
+			BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].gradB.handle);
+		}
+
+		// ASVGF TEMPORAL
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_TEMPORAL_BEGIN);
+		VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfTemporalPipeline);
+		VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfTemporalPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 		VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_TEMPORAL_END);
+
 		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].atrousA.handle);
 		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].atrousB.handle);
 		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].histColor.handle);
-	}
-	
-	VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfTaaPipeline);
-	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfTaaPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-	VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
+		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].histMoments.handle);
 
+		// ASVGF ATROUS
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_ATROUS_BEGIN);
+		VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfAtrousPipeline);
+		VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfAtrousPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+		const int num_atrous_iterations = 5;
+		for (uint32_t i = 0; i < 5; i++) {
+			VK_SetComputePushConstant(&vk_d.accelerationStructures.asvgfAtrousPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &i);
+			VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
+			BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].atrousA.handle);
+			BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].atrousB.handle);
+			BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].histColor.handle);
+		}
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_ATROUS_END);
+
+		// ASVGF TAA
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_TAA_BEGIN);
+		VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfTaaPipeline);
+		VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfTaaPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+		VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_TAA_END);
+	}
 }
 
 static void
@@ -916,13 +933,16 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	VK_BeginRenderClear();
 
 	// create descriptor
+	vkimage_t* drawImage;
+	if(rt_denoiser->integer) drawImage = &vk_d.asvgf[vk.swapchain.currentImage].taa;
+	else drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];
 	//vkimage_t* drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];
 	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].objectInfo;
 	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].color;
 	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].reflection;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].debug;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].atrousA;
-	vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].taa;
+	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].taa;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].color;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].gradSamplePos;
 	{
@@ -939,15 +959,25 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	
 	if (rt_printPerformanceStatistic->integer > 0) {
 		VK_PerformanceQueryPoolResults();
-		double build, prim, refref, direct;
+		double build, rng, fwd, prim, refref, direct, temporal, atrous, taa;
 		VK_TimeBetweenMarkers(&build, PROFILER_BUILD_AS_BEGIN, PROFILER_BUILD_AS_END);
+		VK_TimeBetweenMarkers(&rng, PROFILER_ASVGF_RNG_BEGIN, PROFILER_ASVGF_RNG_END);
+		VK_TimeBetweenMarkers(&fwd, PROFILER_ASVGF_FORWARD_BEGIN, PROFILER_ASVGF_FORWARD_END);
 		VK_TimeBetweenMarkers(&prim, PROFILER_PRIMARY_RAYS_BEGIN, PROFILER_PRIMARY_RAYS_END);
 		VK_TimeBetweenMarkers(&refref, PROFILER_REFLECTION_REFRACTION_BEGIN, PROFILER_REFLECTION_REFRACTION_END);
 		VK_TimeBetweenMarkers(&direct, PROFILER_DIRECT_ILLUMINATION_BEGIN, PROFILER_DIRECT_ILLUMINATION_END);
+		VK_TimeBetweenMarkers(&temporal, PROFILER_ASVGF_TEMPORAL_BEGIN, PROFILER_ASVGF_TEMPORAL_END);
+		VK_TimeBetweenMarkers(&atrous, PROFILER_ASVGF_ATROUS_BEGIN, PROFILER_ASVGF_ATROUS_END);
+		VK_TimeBetweenMarkers(&taa, PROFILER_ASVGF_TAA_BEGIN, PROFILER_ASVGF_TAA_END);
 		ri.Printf(PRINT_ALL, "Build/Update AS           %f ms\n", build);
+		ri.Printf(PRINT_ALL, "ASVGF RNG                 %f ms\n", rng);
+		ri.Printf(PRINT_ALL, "ASVGF Forward             %f ms\n", fwd);
 		ri.Printf(PRINT_ALL, "Primary Ray Stage         %f ms\n", prim);
 		ri.Printf(PRINT_ALL, "Reflect/Refract Stage     %f ms\n", refref);
 		ri.Printf(PRINT_ALL, "Direct Illumination Stage %f ms\n", direct);
+		ri.Printf(PRINT_ALL, "ASVGF Temporal            %f ms\n", temporal);
+		ri.Printf(PRINT_ALL, "ASVGF Atrous              %f ms\n", atrous);
+		ri.Printf(PRINT_ALL, "ASVGF Taa                 %f ms\n", taa);
 		ri.Printf(PRINT_ALL, "Accumulated Images        %d\n", vk_d.uboGlobal[vk.swapchain.currentImage].numSamples);
 		ri.Cvar_Set("rt_printPerfStats", 0);
 	}

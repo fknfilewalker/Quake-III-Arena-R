@@ -2215,6 +2215,8 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_VIS_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.visData.view);
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_LIGHT_VIS_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_LIGHT_VIS_DATA, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.lightVisData.view);
+		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_LIGHT_VIS_DATA2, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_LIGHT_VIS_DATA2, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.lightVisData2.view);
 
 		
 		// global ubo
@@ -2222,10 +2224,8 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_SetUniformBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GLOBAL_UBO, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.uboBuffer[i].buffer);
 
 
-		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].color.view);
-		/*VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR_B, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR_B, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].color_B.view);*/
+		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_ILLUMINATION, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_ILLUMINATION, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].color.view);
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_ALBEDO, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_ALBEDO, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].albedo.view);
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_NORMAL, VK_SHADER_STAGE_RAYGEN_BIT_NV);
@@ -2242,9 +2242,6 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_VIEW_DIR, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].viewDir.view);
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_TRANSPARENT, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_TRANSPARENT, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].transparent.view);
-		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_DIRECT_ILLUMINATION, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_DIRECT_ILLUMINATION, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].directIllumination.view);
-
 		// result
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_OUTPUT, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_OUTPUT, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultImage[i].view);
@@ -2341,10 +2338,10 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_OBJECT, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[i].objectInfo.view);
 		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_OBJECT_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_OBJECT_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[prevIndex].objectInfo.view);
-		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_DIRECT_ILLUMINATION, VK_SHADER_STAGE_COMPUTE_BIT);
+		/*VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_DIRECT_ILLUMINATION, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_DIRECT_ILLUMINATION, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[i].directIllumination.view);
 		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_DIRECT_ILLUMINATION_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_DIRECT_ILLUMINATION_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[prevIndex].directIllumination.view);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_DIRECT_ILLUMINATION_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[prevIndex].directIllumination.view);*/
 
 		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_POS_FWD, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_POS_FWD, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].positionFwd.view);
@@ -2440,10 +2437,10 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_COLOR, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_COLOR, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].color.view);
 
-		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[i].color.view);
-		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[prevIndex].color.view);
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_ILLUMINATION, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_ILLUMINATION, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[i].color.view);
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_ILLUMINATION_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_ILLUMINATION_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[prevIndex].color.view);
 
 		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_DEBUG, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_DEBUG, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].debug.view);
@@ -2537,6 +2534,7 @@ void R_CreatePrimaryRaysPipeline() {
 void R_PreparePT() {
 	int i;
 	//tr.world->numClusters
+	build_pvs2(&s_worldData);
 
 	vk_d.numFixedCluster = s_worldData.numClusters;
 	vk_d.numClusters = s_worldData.numClusters;
@@ -2996,6 +2994,30 @@ void R_PreparePT() {
 	VK_CreateImage(&vk_d.accelerationStructures.lightVisData, RTX_MAX_LIGHTS, vk_d.numMaxClusters, VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 1);
 	VK_UploadMipImageData(&vk_d.accelerationStructures.lightVisData, RTX_MAX_LIGHTS, vk_d.numClusters, &lightVisibility[0], 4, 0);
 	VK_TransitionImage(&vk_d.accelerationStructures.lightVisData, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	free(lightVisibility);
+
+	// 2
+	lightVisibility = calloc(s_worldData.numClusters * RTX_MAX_LIGHTS, sizeof(uint32_t));
+	for (int cluster = 0; cluster < s_worldData.numClusters; cluster++) {
+		const byte* clusterVis = s_worldData.vis2 + cluster * s_worldData.clusterBytes;
+		uint32_t lightCount = 0;
+		for (uint32_t l = 0; l < vk_d.lightList.numLights; l++) {
+			//lightVisibility[cluster * RTX_MAX_LIGHTS] = 0;
+
+			int lightCluster = vk_d.lightList.lights[l].cluster;
+			if (lightCluster == -1) ri.Error(ERR_FATAL, "PT: Light cluster -1!");
+			if ((clusterVis[lightCluster >> 3] & (1 << (lightCluster & 7))) > 0) {
+				lightCount++;
+				lightVisibility[cluster * RTX_MAX_LIGHTS + lightCount] = l;
+			}
+		}
+		lightVisibility[cluster * RTX_MAX_LIGHTS] = lightCount;
+		if (lightCount > RTX_MAX_LIGHTS) ri.Error(ERR_FATAL, "PT: To many lights!");
+	}
+
+	VK_CreateImage(&vk_d.accelerationStructures.lightVisData2, RTX_MAX_LIGHTS, s_worldData.numClusters, VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 1);
+	VK_UploadMipImageData(&vk_d.accelerationStructures.lightVisData2, RTX_MAX_LIGHTS, s_worldData.numClusters, &lightVisibility[0], 4, 0);
+	VK_TransitionImage(&vk_d.accelerationStructures.lightVisData2, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 	free(lightVisibility);
 
 	R_CreatePrimaryRaysPipeline();

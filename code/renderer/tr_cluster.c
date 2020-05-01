@@ -133,3 +133,63 @@ int RB_GetCluster() {
 	vk_d.numClusters++;
 	return c;
 }
+
+// another try for the pvs
+//int BSP_PointLeaf(vec3_t p)
+//{
+//	mnode_t* node;
+//	float		d;
+//	cplane_t* plane;
+//
+//	node = s_worldData.nodes;
+//
+//	while (node->plane) {
+//		plane = node->plane;
+//		d = DotProduct(p, plane->normal) - plane->dist;
+//		if (d < 0)
+//			node = node->children[1];
+//		else
+//			node = node->children[0];
+//	}
+//
+//	return node->cluster;
+//}
+
+#define Q_IsBitSet(data, bit)   (((data)[(bit) >> 3] & (1 << ((bit) & 7))) != 0)
+#define Q_SetBit(data, bit)     ((data)[(bit) >> 3] |= (1 << ((bit) & 7)))
+#define Q_ClearBit(data, bit)   ((data)[(bit) >> 3] &= ~(1 << ((bit) & 7)))
+
+#define FOREACH_BIT_BEGIN(SET,ROWSIZE,VAR) \
+	for (int _byte_idx = 0; _byte_idx < ROWSIZE; _byte_idx++) { \
+	if (SET[_byte_idx]) { \
+		for (int _bit_idx = 0; _bit_idx < 8; _bit_idx++) { \
+			if (SET[_byte_idx] & (1 << _bit_idx)) { \
+				int VAR = (_byte_idx << 3) | _bit_idx;
+
+#define FOREACH_BIT_END  } } } }
+static void merge_pvs_rows(world_t* world, char* src, char* dst)
+{
+	for (int i = 0; i < world->clusterBytes; i++)
+	{
+		dst[i] |= src[i];
+	}
+}
+void build_pvs2(world_t* world)
+{
+	size_t matrix_size = world->clusterBytes * world->numClusters;
+
+	world->vis2 = Z_Malloc(matrix_size);
+
+	for (int cluster = 0; cluster < world->numClusters; cluster++)
+	{
+		char* pvs = world->vis + cluster * world->clusterBytes;
+		char* dest_pvs = world->vis2 + cluster * world->clusterBytes;
+		memcpy(dest_pvs, pvs, world->clusterBytes);
+
+		FOREACH_BIT_BEGIN(pvs, world->clusterBytes, vis_cluster)
+			char* pvs2 = world->vis + vis_cluster * world->clusterBytes;
+		merge_pvs_rows(world, pvs2, dest_pvs);
+		FOREACH_BIT_END
+	}
+
+}
