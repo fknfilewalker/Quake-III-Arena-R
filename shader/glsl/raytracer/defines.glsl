@@ -13,12 +13,21 @@
 
 #define ALBEDO_MULT 1.3
 
+
+#define NUM_BOUNCES 2
+#define RNG_NEE_STATIC_DYNAMIC(bounce)    (2 + 3 + 7 * bounce)
+
+#define RNG_NEE_LH(bounce)                (2 + 0 + 7 * bounce)
+#define RNG_NEE_TRI_X(bounce)             (2 + 1 + 7 * bounce)
+#define RNG_NEE_TRI_Y(bounce)             (2 + 2 + 7 * bounce)
+
 #define RNG_C(bounce)                (1 + 0 + 7 * bounce)
 #define RNG_LP_X(bounce)             (3 + 0 + 7 * bounce)
 #define RNG_LP_Y(bounce)             (4 + 0 + 7 * bounce)
 #define RNG_BOUNCE_X(bounce)         (5 + 0 + 7 * bounce)
 #define RNG_BOUNCE_Y(bounce)         (6 + 0 + 7 * bounce)
 #define RNG_FRESNEL(bounce)        (7 + 0 + 7 * bounce)
+#define NUM_RNG_PER_FRAME (RNG_NEE_STATIC_DYNAMIC(NUM_BOUNCES - 1) + 1)
 
 #define STORAGE_SCALE_LF 1024
 #define STORAGE_SCALE_HF 32

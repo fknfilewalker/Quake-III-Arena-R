@@ -2221,6 +2221,11 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_AddUniformBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GLOBAL_UBO, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetUniformBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GLOBAL_UBO, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.uboBuffer[i].buffer);
 
+
+		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].color.view);
+		/*VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR_B, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR_B, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].color_B.view);*/
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_ALBEDO, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_ALBEDO, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].albedo.view);
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_NORMAL, VK_SHADER_STAGE_RAYGEN_BIT_NV);
@@ -2240,23 +2245,6 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_DIRECT_ILLUMINATION, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_DIRECT_ILLUMINATION, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].directIllumination.view);
 
-		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_0, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_0, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.asvgf[i].texGradientsFwd0.view);
-		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_1, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_1, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.asvgf[i].texGradientsFwd1.view);
-		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_2, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_2, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.asvgf[i].texGradientsFwd2.view);
-		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_3, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_3, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.asvgf[i].texGradientsFwd3.view);
-
-		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_0, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_0, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].texGradients0.view);
-		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_1, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_1, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].texGradients1.view);
-		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_2, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_2, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].texGradients2.view);
-		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_3, VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_3, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].texGradients3.view);
 		// result
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_OUTPUT, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_OUTPUT, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.resultImage[i].view);
@@ -2265,6 +2253,10 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_RESULT_ACCUMULATION, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.accelerationStructures.accumulationImage[i].view);
 
 		// asvgf
+		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_ASVGF_RNG, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_ASVGF_RNG, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.asvgf[i].rngSeed.view);
+		//VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_ASVGF_RNG_B, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		//VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_ASVGF_RNG_B, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.asvgf[i].rngSeedB.view);
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_ASVGF_GRAD_SMPL_POS, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_ASVGF_GRAD_SMPL_POS, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.asvgf[i].gradSamplePos.view);
 
@@ -2277,6 +2269,11 @@ void R_CreatePrimaryRaysPipeline() {
 		
 		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_POS_FWD, VK_SHADER_STAGE_RAYGEN_BIT_NV);
 		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_POS_FWD, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.asvgf[i].positionFwd.view);
+		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_OBJECT_FWD, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_OBJECT_FWD, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.asvgf[i].objectFwd.view);
+
+		VK_AddStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_DEPTH_NORMAL, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		VK_SetStorageImage(&vk_d.rtxDescriptor[i], BINDING_OFFSET_GBUFFER_DEPTH_NORMAL, VK_SHADER_STAGE_RAYGEN_BIT_NV, vk_d.gBuffer[i].depthNormal.view);
 
 		VK_AddStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_INSTANCE_DATA_PREV, flags);
 		VK_SetStorageBuffer(&vk_d.rtxDescriptor[i], BINDING_OFFSET_INSTANCE_DATA_PREV, flags, vk_d.instanceDataBuffer[prevIndex].buffer);
@@ -2296,15 +2293,6 @@ void R_CreatePrimaryRaysPipeline() {
 
 		VK_AddStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_INSTANCE_DATA, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_INSTANCE_DATA, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.instanceDataBuffer[i].buffer);
-
-		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_0, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_0, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[prevIndex].texGradients0.view);
-		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_1, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_1, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[prevIndex].texGradients1.view);
-		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_2, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_2, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[prevIndex].texGradients2.view);
-		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_3, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_TEX_GRAD_3, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[prevIndex].texGradients3.view);
 
 		VK_AddStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_XYZ_WORLD_STATIC, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_XYZ_WORLD_STATIC, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.geometry.xyz_world_static.buffer);
@@ -2332,6 +2320,23 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_AddUniformBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_GLOBAL_UBO_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetUniformBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_GLOBAL_UBO_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.uboBuffer[prevIndex].buffer);
 
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_VIEW_DIR_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_VIEW_DIR_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[prevIndex].viewDir.view);
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_NORMAL_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_NORMAL_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[prevIndex].normals.view);
+
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_ALBEDO, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_ALBEDO, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[i].albedo.view);
+
+		VK_AddSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_BLUE_NOISE, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_BLUE_NOISE, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.blueNoiseTex.sampler, vk_d.blueNoiseTex.view);
+
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_MOTION, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_MOTION, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[i].motion.view);
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_VIEW_DIR, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_VIEW_DIR, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[i].viewDir.view);
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_NORMAL, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_NORMAL, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[i].normals.view);
 		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_OBJECT, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_OBJECT, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[i].objectInfo.view);
 		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_OBJECT_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
@@ -2345,17 +2350,9 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_POS_FWD, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].positionFwd.view);
 		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_OBJECT_FWD, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_OBJECT_FWD, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].objectFwd.view);
-		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_0, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_0, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].texGradientsFwd0.view);
-		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_1, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_1, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].texGradientsFwd1.view);
-		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_2, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_2, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].texGradientsFwd2.view);
-		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_3, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_TEX_GRAD_FWD_3, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].texGradientsFwd3.view);
 
 		VK_AddStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_INSTANCE_PREV_TO_CURR, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_INSTANCE_PREV_TO_CURR, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.prevToCurrInstanceBuffer.buffer);
+		VK_SetStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_INSTANCE_PREV_TO_CURR, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.prevToCurrInstanceBuffer[i].buffer);
 
 		// result
 		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_RESULT_OUTPUT, VK_SHADER_STAGE_COMPUTE_BIT);
@@ -2386,15 +2383,70 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_SetStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_CLUSTER_ENTITY_STATIC, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.geometry.cluster_entity_static.buffer);
 
 		// asvgf
-		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GRAD_HF_PING, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GRAD_HF_PING, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].gradHFPing.view);
-		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GRAD_HF_PONG, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GRAD_HF_PONG, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].gradHFPong.view);
+
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_RNG, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_RNG, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].rngSeed.view);
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_RNG_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_RNG_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[prevIndex].rngSeed.view);
+		/*VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_RNG_B, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_RNG_B, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].rngSeedB.view);*/
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_GRAD_A, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_GRAD_A, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].gradA.view);
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_GRAD_B, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_GRAD_B, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].gradB.view);
+		VK_AddSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_GRAD_A_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_GRAD_A_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].gradA.sampler, vk_d.asvgf[i].gradA.view);
+		VK_AddSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_GRAD_B_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_GRAD_B_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].gradB.sampler, vk_d.asvgf[i].gradB.view);
+
+
+
 		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_GRAD_SMPL_POS, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_GRAD_SMPL_POS, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].gradSamplePos.view);
 		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_GRAD_SMPL_POS_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_GRAD_SMPL_POS_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[prevIndex].gradSamplePos.view);
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_HIST_COLOR, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_HIST_COLOR, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].histColor.view);
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_HIST_COLOR_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_HIST_COLOR_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[prevIndex].histColor.view);
+		VK_AddSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_HIST_COLOR_S, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_HIST_COLOR_S, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].histColor.sampler, vk_d.asvgf[i].histColor.view);
 
+
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_HIST_MOMENTS, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_HIST_MOMENTS, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].histMoments.view);
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_HIST_MOMENTS_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_HIST_MOMENTS_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[prevIndex].histMoments.view);
+
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_ATROUS_A, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_ATROUS_A, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].atrousA.view);
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_ATROUS_B, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_ATROUS_B, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].atrousB.view);
+		VK_AddSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_ATROUS_A_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_ATROUS_A_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].atrousA.sampler, vk_d.asvgf[i].atrousA.view);
+		VK_AddSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_ATROUS_B_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_ATROUS_B_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].atrousB.sampler, vk_d.asvgf[i].atrousB.view);
+
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_TAA_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_TAA_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].taa.view);
+		/*VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_TAA_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_TAA_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[prevIndex].taa.view);*/
+
+		VK_AddSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_TAA, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_TAA, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].taa.sampler, vk_d.asvgf[i].taa.view);
+		VK_AddSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_TAA_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_TAA_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[prevIndex].taa.sampler, vk_d.asvgf[prevIndex].taa.view);
+
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_COLOR, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_COLOR, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].color.view);
+
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[i].color.view);
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_COLOR_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[prevIndex].color.view);
+
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_DEBUG, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_ASVGF_DEBUG, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.asvgf[i].debug.view);
 
 		VK_AddStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.uboLightList[i].buffer);
@@ -2402,15 +2454,15 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_FinishDescriptor(&vk_d.computeDescriptor[i]);
 	}
 
-	vkshader_t rngShader = { 0 };
-	VK_RngCompShader(&rngShader);
-	VK_SetComputeShader(&vk_d.accelerationStructures.rngPipeline, &rngShader);
-	VK_SetCompute2DescriptorSets(&vk_d.accelerationStructures.rngPipeline, &vk_d.computeDescriptor[0], &vk_d.imageDescriptor);
-	VK_FinishComputePipeline(&vk_d.accelerationStructures.rngPipeline);
+	vkshader_t asvgfRngShader = { 0 };
+	VK_AsvgfRngCompShader(&asvgfRngShader);
+	VK_SetComputeShader(&vk_d.accelerationStructures.asvgfRngPipeline, &asvgfRngShader);
+	VK_SetCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfRngPipeline, &vk_d.computeDescriptor[0], &vk_d.imageDescriptor);
+	VK_FinishComputePipeline(&vk_d.accelerationStructures.asvgfRngPipeline);
 
-	vkshader_t asvgfShader = { 0 };
-	VK_AsvgfFwdCompShader(&asvgfShader);
-	VK_SetComputeShader(&vk_d.accelerationStructures.asvgfFwdPipeline, &asvgfShader);
+	vkshader_t asvgfFwdShader = { 0 };
+	VK_AsvgfFwdCompShader(&asvgfFwdShader);
+	VK_SetComputeShader(&vk_d.accelerationStructures.asvgfFwdPipeline, &asvgfFwdShader);
 	VK_SetCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfFwdPipeline, &vk_d.computeDescriptor[0], &vk_d.imageDescriptor);
 	VK_FinishComputePipeline(&vk_d.accelerationStructures.asvgfFwdPipeline);
 
@@ -2420,11 +2472,31 @@ void R_CreatePrimaryRaysPipeline() {
 	VK_SetCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfGradImgPipeline, &vk_d.computeDescriptor[0], &vk_d.imageDescriptor);
 	VK_FinishComputePipeline(&vk_d.accelerationStructures.asvgfGradImgPipeline);
 
+	vkshader_t asvgfGradAtrousShader = { 0 };
+	VK_AsvgfGradAtrousCompShader(&asvgfGradAtrousShader);
+	VK_SetComputeShader(&vk_d.accelerationStructures.asvgfGradAtrousPipeline, &asvgfGradAtrousShader);
+	VK_SetCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfGradAtrousPipeline, &vk_d.computeDescriptor[0], &vk_d.imageDescriptor);
+	VK_AddComputePushConstant(&vk_d.accelerationStructures.asvgfGradAtrousPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t));
+	VK_FinishComputePipeline(&vk_d.accelerationStructures.asvgfGradAtrousPipeline);
+
 	vkshader_t asvgfTemporalShader = { 0 };
-	VK_AsvgfGradCompShader(&asvgfTemporalShader);
+	VK_AsvgfTemporalCompShader(&asvgfTemporalShader);
 	VK_SetComputeShader(&vk_d.accelerationStructures.asvgfTemporalPipeline, &asvgfTemporalShader);
 	VK_SetCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfTemporalPipeline, &vk_d.computeDescriptor[0], &vk_d.imageDescriptor);
 	VK_FinishComputePipeline(&vk_d.accelerationStructures.asvgfTemporalPipeline);
+
+	vkshader_t asvgfTaaShader = { 0 };
+	VK_AsvgfTaaCompShader(&asvgfTaaShader);
+	VK_SetComputeShader(&vk_d.accelerationStructures.asvgfTaaPipeline, &asvgfTaaShader);
+	VK_SetCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfTaaPipeline, &vk_d.computeDescriptor[0], &vk_d.imageDescriptor);
+	VK_FinishComputePipeline(&vk_d.accelerationStructures.asvgfTaaPipeline);
+
+	vkshader_t asvgfAtrousShader = { 0 };
+	VK_AsvgfAtrousCompShader(&asvgfAtrousShader);
+	VK_SetComputeShader(&vk_d.accelerationStructures.asvgfAtrousPipeline, &asvgfAtrousShader);
+	VK_SetCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfAtrousPipeline, &vk_d.computeDescriptor[0], &vk_d.imageDescriptor);
+	VK_AddComputePushConstant(&vk_d.accelerationStructures.asvgfAtrousPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t));
+	VK_FinishComputePipeline(&vk_d.accelerationStructures.asvgfAtrousPipeline);
 
 	/*vkshader_t s = { 0 };
 	VK_RayTracingShaderWithAny(&s);

@@ -32,8 +32,10 @@ sample_triangle(vec2 xi)
 }
 
 DirectionalLight getLight2(in Light l, ivec2 rng, bool random){
-	float rng_x = get_rng(RNG_LP_X(rng.x), rng.y);
-	float rng_y = get_rng(RNG_LP_Y(rng.x), rng.y);
+	//float rng_x = get_rng(RNG_LP_X(rng.x), rng.y);
+	//float rng_y = get_rng(RNG_LP_Y(rng.x), rng.y);
+	float rng_x = get_rng2(RNG_NEE_TRI_X(0));
+	float rng_y = get_rng2(RNG_NEE_TRI_Y(0));
 
 	DirectionalLight light;
 	light.normal = l.normal;
@@ -81,7 +83,8 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 		//uint rand = int(round(get_rng(RNG_C(0), int(ubo.frameIndex)) * (numLight))) ;
 		if(ubo.cullLights) {
 			if(ubo.numRandomDL > 0) {
-				uint rand = int(round(get_rng(RNG_C(i), int(ubo.frameIndex)) * (totalNumLights)));
+				//uint rand = int(round(get_rng(RNG_C(i), int(ubo.frameIndex)) * (totalNumLights)));
+				uint rand = int(round(get_rng2(RNG_NEE_LH(0)) * (totalNumLights)));
 				lightIndex = imageLoad(lightVis_data, ivec2( rand + 1, cluster)).r;
 			}
 			else lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
@@ -96,7 +99,8 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 			// }
 			// else continue;
 			if(ubo.numRandomDL > 0) {
-				lightIndex = int(round(get_rng(RNG_C(i), int(ubo.frameIndex)) * (totalNumLights)));
+				//lightIndex = int(round(get_rng(RNG_C(i), int(ubo.frameIndex)) * (totalNumLights)));
+				lightIndex = int(round(get_rng2(RNG_NEE_LH(0)) * (totalNumLights)));
 			}
 			else lightIndex = i;
 		}
@@ -114,7 +118,7 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 		vec3 lightIntensity = light.color * lightStrength;
 
 		float LdotN = clamp(dot(N, L), 0.0, 1.0);
-		float LdotN2 = clamp(dot(-light.normal, -L), 0.0, 1.0);
+		//float LdotN2 = clamp(dot(-light.normal, -L), 0.0, 1.0);
 		shadeColor += shadowMult * LdotN * lightIntensity;
 	}
 	return shadeColor / M_PI;

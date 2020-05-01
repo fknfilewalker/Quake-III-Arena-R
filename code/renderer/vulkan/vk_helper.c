@@ -136,6 +136,15 @@ void VK_DrawFullscreenRect(vkimage_t *image) {
 		vkshader_t s = { 0 };
 		VK_FullscreenRectShader(&s);
 		
+		vk_d.state.colorBlend.blendEnable = VK_TRUE;
+		vk_d.state.colorBlend.colorBlendOp = VK_BLEND_OP_ADD;
+		vk_d.state.colorBlend.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+		vk_d.state.colorBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		vk_d.state.colorBlend.alphaBlendOp = VK_BLEND_OP_ADD;
+		vk_d.state.colorBlend.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		vk_d.state.colorBlend.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		vk_d.state.dsBlend.depthTestEnable = VK_FALSE;
+
 		VK_SetDescriptorSet(&vk_d.fullscreenRectPipeline, &vk_d.images[0].descriptor_set);
 		VK_SetShader(&vk_d.fullscreenRectPipeline, &s);
 		VK_AddBindingDescription(&vk_d.fullscreenRectPipeline, 0, sizeof(vec4_t), VK_VERTEX_INPUT_RATE_VERTEX);

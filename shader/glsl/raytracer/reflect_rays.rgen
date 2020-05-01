@@ -296,11 +296,12 @@ void main()
 	vec4 temp;
 	uvec4 utemp;
 	//utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
+	material = uint(imageLoad(viewGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
+	if (!isGlass(material) && !isMirror(material) && !isWater(material)) return;
+	
 	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
-	material = uint(imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
 	cluster = uint(imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
-	if (!isGlass(material) && !isMirror(material) && !isWater(material)) return;
 
 	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
 	originalDir = imageLoad(viewGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;

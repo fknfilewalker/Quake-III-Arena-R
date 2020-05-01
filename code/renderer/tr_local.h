@@ -1275,10 +1275,13 @@ typedef struct {
 
 
 typedef struct {
-	vkcpipeline_t				rngPipeline;
+	vkcpipeline_t				asvgfRngPipeline;
 	vkcpipeline_t				asvgfFwdPipeline;
 	vkcpipeline_t				asvgfGradImgPipeline;
+	vkcpipeline_t				asvgfGradAtrousPipeline;
 	vkcpipeline_t				asvgfTemporalPipeline;
+	vkcpipeline_t				asvgfAtrousPipeline;
+	vkcpipeline_t				asvgfTaaPipeline;
 	vkimage_t					rngImage;
 
 	vkimage_t					resultImage[VK_MAX_SWAPCHAIN_SIZE];
@@ -1396,6 +1399,7 @@ typedef struct {
 typedef struct {
 	vkimage_t			position;
 	vkimage_t			albedo;
+	vkimage_t			color;
 	vkimage_t			normals;
 	vkimage_t			viewDir;
 	vkimage_t			transparent;
@@ -1403,22 +1407,30 @@ typedef struct {
 	vkimage_t			directIllumination;
 	vkimage_t			objectInfo;
 	vkimage_t			motion;
-	vkimage_t			texGradients0;
-	vkimage_t			texGradients1;
-	vkimage_t			texGradients2;
-	vkimage_t			texGradients3;
+
+	vkimage_t			depthNormal;
 } vkgbuffer;
 
 typedef struct {
+	vkimage_t			debug;
 	vkimage_t			gradSamplePos;
-	vkimage_t			texGradientsFwd0;
-	vkimage_t			texGradientsFwd1;
-	vkimage_t			texGradientsFwd2;
-	vkimage_t			texGradientsFwd3;
 	vkimage_t			positionFwd;
 	vkimage_t			objectFwd;
-	vkimage_t			gradHFPing;
-	vkimage_t			gradHFPong;
+	vkimage_t			gradA;
+	vkimage_t			gradB;
+
+	vkimage_t			color;
+
+	vkimage_t			atrousA;
+	vkimage_t			atrousB;
+
+	vkimage_t			taa;
+	//vkimage_t			taaB;
+
+	vkimage_t			rngSeed;
+
+	vkimage_t			histColor;
+	vkimage_t			histMoments;
 } vkasvgfbuffer;
 
 typedef enum {
@@ -1582,8 +1594,8 @@ typedef struct {
 
 	GlobalUbo			uboGlobal[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t			uboBuffer[VK_MAX_SWAPCHAIN_SIZE];
-	int					prevToCurrInstance[100];
-	vkbuffer_t			prevToCurrInstanceBuffer;
+	int					prevToCurrInstance[300];
+	vkbuffer_t			prevToCurrInstanceBuffer[VK_MAX_SWAPCHAIN_SIZE];
 	vkbuffer_t			uboLightList[VK_MAX_SWAPCHAIN_SIZE];
 	LightList_s			lightList;
 	/*vec4_t				lightList[RTX_MAX_LIGHTS];

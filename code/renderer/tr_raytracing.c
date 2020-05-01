@@ -238,7 +238,7 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&bAS->geometryInstance);
 }
 
-uint32_t preInstanceIDs[21500];
+uint32_t preInstanceIDs[41500];
 static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	shader_t*		shader;
 	int				fogNum;
@@ -250,7 +250,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	qboolean		dynamic, forceUpdate;
 
 	
-	Com_Memset(vk_d.prevToCurrInstance, -1, 100 * sizeof(vk_d.prevToCurrInstance[0]));
+	Com_Memset(vk_d.prevToCurrInstance, -1, 300 * sizeof(vk_d.prevToCurrInstance[0]));
 
 	// save original time for entity shader offsets
 	originalTime = backEnd.refdef.floatTime;
@@ -265,14 +265,14 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldStatic, sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
 	// add static world trans
-	vk_d.bottomASWorldStaticTrans.data.currInstanceID = vk_d.bottomASTraceListCount;
+	/*vk_d.bottomASWorldStaticTrans.data.currInstanceID = vk_d.bottomASTraceListCount;
 	vk_d.bottomASWorldStaticTrans.data.prevInstanceID = vk_d.bottomASTraceListCount;
 	vk_d.prevToCurrInstance[vk_d.bottomASTraceListCount] = vk_d.bottomASTraceListCount;
 
 	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldStaticTrans.data);
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldStaticTrans.geometryInstance);
 	memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldStaticTrans, sizeof(vkbottomAS_t));
-	vk_d.bottomASTraceListCount++;
+	vk_d.bottomASTraceListCount++;*/
 	// add world with dynamic data
 	vk_d.bottomASWorldDynamicData.data.currInstanceID = vk_d.bottomASTraceListCount;
 	vk_d.bottomASWorldDynamicData.data.prevInstanceID = vk_d.bottomASTraceListCount;
@@ -282,13 +282,13 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicData, sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
 	// add world with dynamic data trans
-	vk_d.bottomASWorldDynamicDataTrans.data.currInstanceID = vk_d.bottomASTraceListCount;
-	vk_d.bottomASWorldDynamicDataTrans.data.prevInstanceID = vk_d.bottomASTraceListCount;
-	vk_d.prevToCurrInstance[vk_d.bottomASTraceListCount] = vk_d.bottomASTraceListCount;
-	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldDynamicDataTrans.data);
-	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldDynamicDataTrans.geometryInstance);
-	Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicDataTrans, sizeof(vkbottomAS_t));
-	vk_d.bottomASTraceListCount++;
+	//vk_d.bottomASWorldDynamicDataTrans.data.currInstanceID = vk_d.bottomASTraceListCount;
+	//vk_d.bottomASWorldDynamicDataTrans.data.prevInstanceID = vk_d.bottomASTraceListCount;
+	//vk_d.prevToCurrInstance[vk_d.bottomASTraceListCount] = vk_d.bottomASTraceListCount;
+	//VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldDynamicDataTrans.data);
+	//VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldDynamicDataTrans.geometryInstance);
+	//Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicDataTrans, sizeof(vkbottomAS_t));
+	//vk_d.bottomASTraceListCount++;
 	// update world with dynamic data
 	for (int i = 0; i < vk_d.updateDataOffsetXYZCount; i++) {
 		shader_t* shader = vk_d.updateDataOffsetXYZ[i].shader;
@@ -355,17 +355,17 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicAS[vk.swapchain.currentImage], sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
 	// trans
-	vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage].data.currInstanceID = vk_d.bottomASTraceListCount;
-	vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage].data.prevInstanceID = vk_d.bottomASTraceListCount;
-	vk_d.prevToCurrInstance[vk_d.bottomASTraceListCount] = vk_d.bottomASTraceListCount;
-	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage].data);
-	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage].geometryInstance);
-	VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), &vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage],
-		&vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage],
-		&vk_d.basBufferWorldDynamicAS, NULL, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
-	backEnd.refdef.floatTime = originalTime;
-	Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage], sizeof(vkbottomAS_t));
-	vk_d.bottomASTraceListCount++;
+	//vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage].data.currInstanceID = vk_d.bottomASTraceListCount;
+	//vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage].data.prevInstanceID = vk_d.bottomASTraceListCount;
+	//vk_d.prevToCurrInstance[vk_d.bottomASTraceListCount] = vk_d.bottomASTraceListCount;
+	//VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage].data);
+	//VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage].geometryInstance);
+	//VK_UpdateBottomAS(vk.swapchain.CurrentCommandBuffer(), &vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage],
+	//	&vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage],
+	//	&vk_d.basBufferWorldDynamicAS, NULL, VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV);
+	//backEnd.refdef.floatTime = originalTime;
+	//Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicASTrans[vk.swapchain.currentImage], sizeof(vkbottomAS_t));
+	//vk_d.bottomASTraceListCount++;
 
 	for (i = 0, drawSurf = drawSurfs; i < numDrawSurfs; i++, drawSurf++) {
 
@@ -570,7 +570,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 	}
 	backEnd.refdef.floatTime = originalTime;
-	VK_UploadBufferDataOffset(&vk_d.prevToCurrInstanceBuffer, 0, sizeof(vk_d.prevToCurrInstance), (void*)vk_d.prevToCurrInstance);
+	VK_UploadBufferDataOffset(&vk_d.prevToCurrInstanceBuffer[vk.swapchain.currentImage], 0, sizeof(vk_d.prevToCurrInstance), (void*)vk_d.prevToCurrInstance);
 
 	VK_DestroyTopAccelerationStructure(&vk_d.topAS[vk.swapchain.currentImage]);
 	VK_MakeTopAS(vk.swapchain.CurrentCommandBuffer(), &vk_d.topAS[vk.swapchain.currentImage], &vk_d.topASBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceList, vk_d.bottomASTraceListCount, vk_d.instanceBuffer[vk.swapchain.currentImage], RTX_TOP_AS_FLAG);
@@ -714,12 +714,24 @@ static void RB_TraceRays() {
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_grd_smpl_pos, 1, &subresource_range);*/
 
 	VK_ClearImage(&vk_d.asvgf[vk.swapchain.currentImage].gradSamplePos, (VkClearColorValue) { .uint32 = { 0, 0, 0, 0 } }, VK_IMAGE_LAYOUT_GENERAL);// VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	VK_ClearImage(&vk_d.asvgf[vk.swapchain.currentImage].debug, (VkClearColorValue) { .uint32 = { 0, 0, 0, 0 } }, VK_IMAGE_LAYOUT_GENERAL);// VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	VK_ClearImage(&vk_d.gBuffer[vk.swapchain.currentImage].reflection, (VkClearColorValue) { .uint32 = { 0, 0, 0, 0 } }, VK_IMAGE_LAYOUT_GENERAL);// VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].gradSamplePos.handle);
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].debug.handle);
+
+	VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfRngPipeline);
+	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfRngPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+	VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
+
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].rngSeed.handle);
 
 	VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfFwdPipeline);
 	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfFwdPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-	VK_Dispatch((vk.swapchain.extent.width / GRAD_DWN + 15) / 16, (vk.swapchain.extent.height / GRAD_DWN + 15) / 16, 1);
+	VK_Dispatch((vk.swapchain.extent.width / GRAD_DWN + 31) / 32, (vk.swapchain.extent.height / GRAD_DWN + 31) / 32, 1);
 
-
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].rngSeed.handle);
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].positionFwd.handle);
 	// primary rays
 	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_PRIMARY_RAYS_BEGIN);
 	VK_BindRayTracingPipeline(&vk_d.primaryRaysPipeline);
@@ -749,13 +761,48 @@ static void RB_TraceRays() {
 	VK_TraceRays(&vk_d.directIlluminationPipeline);
 	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_DIRECT_ILLUMINATION_END);
 
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].color.handle);
+
 	VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfGradImgPipeline);
 	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfGradImgPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-	VK_Dispatch((vk.swapchain.extent.width / GRAD_DWN + 15) / 16, (vk.swapchain.extent.height / GRAD_DWN + 15) / 16, 1);
+	VK_Dispatch((vk.swapchain.extent.width / GRAD_DWN + 31) / 32, (vk.swapchain.extent.height / GRAD_DWN + 31) / 32, 1);
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].gradA.handle);
 
+	VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfGradAtrousPipeline);
+	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfGradAtrousPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+	const int num_atrous_iterations_gradient = 5;
+	for (uint32_t i = 0; i < num_atrous_iterations_gradient; i++) {
+		VK_SetComputePushConstant(&vk_d.accelerationStructures.asvgfGradAtrousPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &i);
+		VK_Dispatch((vk.swapchain.extent.width / GRAD_DWN + 31) / 32, (vk.swapchain.extent.height / GRAD_DWN + 31) / 32, 1);
+		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].gradA.handle);
+		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].gradB.handle);
+	}
+	
+	
 	VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfTemporalPipeline);
 	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfTemporalPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-	VK_Dispatch((vk.swapchain.extent.width + 14) / 15, (vk.swapchain.extent.height + 14) / 15, 1);
+	VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
+
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].atrousA.handle);
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].atrousB.handle);
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].histColor.handle);
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].histMoments.handle);
+	//
+	VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfAtrousPipeline);
+	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfAtrousPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+	const int num_atrous_iterations = 5;
+	for (uint32_t i = 0; i < 5; i++) {
+		VK_SetComputePushConstant(&vk_d.accelerationStructures.asvgfAtrousPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &i);
+		VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
+		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].atrousA.handle);
+		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].atrousB.handle);
+		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].histColor.handle);
+	}
+	
+	VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfTaaPipeline);
+	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfTaaPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+	VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
+
 }
 
 static void
@@ -869,9 +916,15 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	VK_BeginRenderClear();
 
 	// create descriptor
-	vkimage_t* drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];
-	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].motion;
-	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].directIllumination;
+	//vkimage_t* drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];
+	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].objectInfo;
+	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].color;
+	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].reflection;
+	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].debug;
+	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].atrousA;
+	vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].taa;
+	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].color;
+	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].gradSamplePos;
 	{
 		if (drawImage->descriptor_set.set == NULL) {
 			VK_AddSampler(&drawImage->descriptor_set, 0, VK_SHADER_STAGE_FRAGMENT_BIT);

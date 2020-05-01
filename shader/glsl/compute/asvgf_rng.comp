@@ -1,0 +1,34 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#pragma optionNV (unroll all)
+#include "../constants.h"
+#include "asvgf.glsl"
+#include "../raytracer/gbuffer.glsl"
+#include "../raytracer/rt_Helper.glsl"
+#include "../raytracer/defines.glsl"
+
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+
+layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
+{
+	GlobalUbo ubo;
+};
+
+void
+main()
+{
+    ivec2 ipos = ivec2(gl_GlobalInvocationID);
+	int frame_num = int(ubo.frameIndex);
+	
+	uint rng_seed = 0;
+
+	rng_seed |= (uint(ipos.x) % BLUE_NOISE_RES)  <<  0u;
+	rng_seed |= (uint(ipos.y) % BLUE_NOISE_RES)  << 10u;
+	rng_seed |= uint(frame_num) << 20;
+
+    imageStore(IMG_ASVGF_RNG_SEED, ipos, uvec4(rng_seed));
+	// if((ubo.frameIndex & 1) == 0)
+	// 	imageStore(rngASVGF_A, ipos, uvec4(rng_seed));
+	// else
+	// 	imageStore(rngASVGF_B, ipos, uvec4(rng_seed));
+}

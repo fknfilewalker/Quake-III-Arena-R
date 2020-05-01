@@ -10,10 +10,13 @@
 #include "../../../shader/header/texture.vert.h"
 #include "../../../shader/header/texture.frag.h"
 
-#include "../../../shader/header/rng.comp.h"
+#include "../../../shader/header/asvgf_rng.comp.h"
 #include "../../../shader/header/asvgf_forward.comp.h"
 #include "../../../shader/header/asvgf_grad.comp.h"
+#include "../../../shader/header/asvgf_grad_atrous.comp.h"
 #include "../../../shader/header/asvgf_temporal.comp.h"
+#include "../../../shader/header/asvgf_atrous.comp.h"
+#include "../../../shader/header/asvgf_taa.comp.h"
 
 // RTX
 #include "../../../shader/header/primary_rays.rgen.h"
@@ -37,10 +40,13 @@
 static vkshader_t *texture;
 static vkshader_t *clearAttachment;
 static vkshader_t *fullscreenRect;
-static vkshader_t* rngCompShader;
+static vkshader_t* asvgfRngCompShader;
 static vkshader_t* asvgfFwdCompShader;
 static vkshader_t* asvgfGradCompShader;
+static vkshader_t* asvgfGradAtrousCompShader;
 static vkshader_t* asvgfTemporalCompShader;
+static vkshader_t* asvgfAtrousCompShader;
+static vkshader_t* asvgfTaaCompShader;
 // rtx
 static vkshader_t* rayTracingAny;
 static vkshader_t* primaryRays;
@@ -83,12 +89,12 @@ void VK_FullscreenRectShader(vkshader_t* shader) {
 	Com_Memcpy(shader, fullscreenRect, sizeof(vkshader_t));
 }
 
-void VK_RngCompShader(vkshader_t* shader) {
-	if (rngCompShader == NULL) {
-		rngCompShader = malloc(sizeof(vkshader_t));
-		VK_LoadCompShaderFromVariable(rngCompShader, &rngComp, sizeof(rngComp));
+void VK_AsvgfRngCompShader(vkshader_t* shader) {
+	if (asvgfRngCompShader == NULL) {
+		asvgfRngCompShader = malloc(sizeof(vkshader_t));
+		VK_LoadCompShaderFromVariable(asvgfRngCompShader, &asvgf_rngComp, sizeof(asvgf_rngComp));
 	}
-	Com_Memcpy(shader, rngCompShader, sizeof(vkshader_t));
+	Com_Memcpy(shader, asvgfRngCompShader, sizeof(vkshader_t));
 }
 
 void VK_AsvgfFwdCompShader(vkshader_t* shader) {
@@ -105,12 +111,34 @@ void VK_AsvgfGradCompShader(vkshader_t* shader) {
 	}
 	Com_Memcpy(shader, asvgfGradCompShader, sizeof(vkshader_t));
 }
+void VK_AsvgfGradAtrousCompShader(vkshader_t* shader) {
+	if (asvgfGradAtrousCompShader == NULL) {
+		asvgfGradAtrousCompShader = malloc(sizeof(vkshader_t));
+		VK_LoadCompShaderFromVariable(asvgfGradAtrousCompShader, &asvgf_grad_atrousComp, sizeof(asvgf_grad_atrousComp));
+	}
+	Com_Memcpy(shader, asvgfGradAtrousCompShader, sizeof(vkshader_t));
+}
 void VK_AsvgfTemporalCompShader(vkshader_t* shader) {
 	if (asvgfTemporalCompShader == NULL) {
 		asvgfTemporalCompShader = malloc(sizeof(vkshader_t));
 		VK_LoadCompShaderFromVariable(asvgfTemporalCompShader, &asvgf_temporalComp, sizeof(asvgf_temporalComp));
 	}
 	Com_Memcpy(shader, asvgfTemporalCompShader, sizeof(vkshader_t));
+}
+
+void VK_AsvgfTaaCompShader(vkshader_t* shader) {
+	if (asvgfTaaCompShader == NULL) {
+		asvgfTaaCompShader = malloc(sizeof(vkshader_t));
+		VK_LoadCompShaderFromVariable(asvgfTaaCompShader, &asvgf_taaComp, sizeof(asvgf_taaComp));
+	}
+	Com_Memcpy(shader, asvgfTaaCompShader, sizeof(vkshader_t));
+}
+void VK_AsvgfAtrousCompShader(vkshader_t* shader) {
+	if (asvgfAtrousCompShader == NULL) {
+		asvgfAtrousCompShader = malloc(sizeof(vkshader_t));
+		VK_LoadCompShaderFromVariable(asvgfAtrousCompShader, &asvgf_atrousComp, sizeof(asvgf_atrousComp));
+	}
+	Com_Memcpy(shader, asvgfAtrousCompShader, sizeof(vkshader_t));
 }
 
 // rtx
@@ -142,10 +170,10 @@ void VK_DestroyAllShaders() {
 		fullscreenRect = NULL;
 	}
 	// compute
-	if (rngCompShader != NULL) {
-		VK_DestroyShader(rngCompShader);
-		free(rngCompShader);
-		rngCompShader = NULL;
+	if (asvgfRngCompShader != NULL) {
+		VK_DestroyShader(asvgfRngCompShader);
+		free(asvgfRngCompShader);
+		asvgfRngCompShader = NULL;
 	}
 	if (asvgfFwdCompShader != NULL) {
 		VK_DestroyShader(asvgfFwdCompShader);
@@ -157,10 +185,25 @@ void VK_DestroyAllShaders() {
 		free(asvgfGradCompShader);
 		asvgfGradCompShader = NULL;
 	}
+	if (asvgfGradAtrousCompShader != NULL) {
+		VK_DestroyShader(asvgfGradAtrousCompShader);
+		free(asvgfGradAtrousCompShader);
+		asvgfGradAtrousCompShader = NULL;
+	}
 	if (asvgfTemporalCompShader != NULL) {
 		VK_DestroyShader(asvgfTemporalCompShader);
 		free(asvgfTemporalCompShader);
 		asvgfTemporalCompShader = NULL;
+	}
+	if (asvgfTaaCompShader != NULL) {
+		VK_DestroyShader(asvgfTaaCompShader);
+		free(asvgfTaaCompShader);
+		asvgfTaaCompShader = NULL;
+	}
+	if (asvgfAtrousCompShader != NULL) {
+		VK_DestroyShader(asvgfAtrousCompShader);
+		free(asvgfAtrousCompShader);
+		asvgfAtrousCompShader = NULL;
 	}
 	// RTX
 	if (rayTracingAny != NULL) {

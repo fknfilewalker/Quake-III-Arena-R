@@ -38,6 +38,34 @@ sample_cos_hemisphere(vec2 uv)
 	return vec3(disk.x, sqrt(max(0.0, 1.0 - dot(disk, disk))), disk.y);
 }
 
+uint
+encode_normal(vec3 normal)
+{
+    uint projected0, projected1;
+    const float invL1Norm = 1.0f / dot(abs(normal), vec3(1));
+
+    // first find floating point values of octahedral map in [-1,1]:
+    float enc0, enc1;
+    if (normal[2] < 0.0f) {
+        enc0 = (1.0f - abs(normal[1] * invL1Norm)) * ((normal[0] < 0.0f) ? -1.0f : 1.0f);
+        enc1 = (1.0f - abs(normal[0] * invL1Norm)) * ((normal[1] < 0.0f) ? -1.0f : 1.0f);
+    }
+    else {
+        enc0 = normal[0] * invL1Norm;
+        enc1 = normal[1] * invL1Norm;
+    }
+    // then encode:
+    uint enci0 = floatBitsToUint((abs(enc0) + 2.0f)/2.0f);
+    uint enci1 = floatBitsToUint((abs(enc1) + 2.0f)/2.0f);
+    // copy over sign bit and truncated mantissa. could use rounding for increased precision here.
+    projected0 = ((floatBitsToUint(enc0) & 0x80000000u)>>16) | ((enci0 & 0x7fffffu)>>8);
+    projected1 = ((floatBitsToUint(enc1) & 0x80000000u)>>16) | ((enci1 & 0x7fffffu)>>8);
+    // avoid -0 cases:
+    if((projected0 & 0x7fffu) == 0) projected0 = 0;
+    if((projected1 & 0x7fffu) == 0) projected1 = 0;
+    return (projected1 << 16) | projected0;
+}
+
 float
 blinn_phong_based_brdf(vec3 V, vec3 L, vec3 N, float phong_exp)
 {
