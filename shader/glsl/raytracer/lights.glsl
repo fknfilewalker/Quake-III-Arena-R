@@ -33,10 +33,12 @@ sample_triangle(vec2 xi)
 }
 
 DirectionalLight getLight2(in Light l, ivec2 rng, bool random){
+	float rng_x = getRNG(ubo.denoiser, RNG_LP_X(rng.x), rng.y);
+	float rng_y = getRNG(ubo.denoiser, RNG_LP_Y(rng.x), rng.y);
 	//float rng_x = get_rng(RNG_LP_X(rng.x), rng.y);
 	//float rng_y = get_rng(RNG_LP_Y(rng.x), rng.y);
-	float rng_x = get_rng2(RNG_NEE_TRI_X(0));
-	float rng_y = get_rng2(RNG_NEE_TRI_Y(0));
+	// float rng_x = get_rng2(RNG_NEE_TRI_X(0));
+	// float rng_y = get_rng2(RNG_NEE_TRI_Y(0));
 
 	DirectionalLight light;
 	light.normal = l.normal;
@@ -76,8 +78,10 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 
 	if(ubo.numRandomDL > 0) {
 		numLights = min(numLights, ubo.numRandomDL);
-		amplification = totalNumLights / numLights;
+		amplification = float(totalNumLights) / float(numLights);
 	}
+	//amplification = uboLights.lightList.numLights;
+	//if(!ubo.cullLights) amplification *= 14;
 
 	for(int i = 0; i < numLights; i++){
 		uint lightIndex;
@@ -85,7 +89,8 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 		if(ubo.cullLights) {
 			if(ubo.numRandomDL > 0) {
 				//uint rand = int(round(get_rng(RNG_C(i), int(ubo.frameIndex)) * (totalNumLights)));
-				uint rand = int(round(get_rng2(RNG_NEE_LH(0)) * (totalNumLights)));
+				//uint rand = int(round(get_rng2(RNG_NEE_LH(0)) * (totalNumLights)));
+				uint rand = int(round(getRNG(ubo.denoiser, RNG_NEE_LH(i), int(ubo.frameIndex)) * (totalNumLights)));
 				lightIndex = imageLoad(lightVis_data, ivec2( rand + 1, cluster)).r;
 			}
 			else lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
@@ -101,7 +106,8 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 			// else continue;
 			if(ubo.numRandomDL > 0) {
 				//lightIndex = int(round(get_rng(RNG_C(i), int(ubo.frameIndex)) * (totalNumLights)));
-				lightIndex = int(round(get_rng2(RNG_NEE_LH(0)) * (totalNumLights)));
+				//lightIndex = int(round(get_rng2(RNG_NEE_LH(0)) * (totalNumLights)));
+				lightIndex = int(round(getRNG(ubo.denoiser, RNG_NEE_LH(i), int(ubo.frameIndex)) * (totalNumLights)));
 			}
 			else lightIndex = i;
 		}

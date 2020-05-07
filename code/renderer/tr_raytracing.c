@@ -126,22 +126,38 @@ void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ, int cluster) {
 	free(vData);
 }
 
-void RB_CreateEntityBottomAS(vkbottomAS_t** bAS) {
+void RB_CreateEntityBottomAS(vkbottomAS_t** bAS, qboolean dynamic) {
 	// set offsets and 
-	uint32_t* idxOffset = &vk_d.geometry.idx_entity_static_offset;
-	uint32_t* xyzOffset = &vk_d.geometry.xyz_entity_static_offset;
+	uint32_t* idxOffset;
+	uint32_t* xyzOffset;
+	if (!dynamic) {
+		idxOffset = &vk_d.geometry.idx_entity_static_offset;
+		xyzOffset = &vk_d.geometry.xyz_entity_static_offset;
+	}
+	else {
+		idxOffset = &vk_d.geometry.idx_entity_dynamic_offset;
+		xyzOffset = &vk_d.geometry.xyz_entity_dynamic_offset;
+	}
 	// save bas in static or dynamic list
-	vkbottomAS_t* bASList = &vk_d.bottomASList[vk_d.bottomASCount];
+	vkbottomAS_t* bASList;
+	if (!dynamic) bASList = &vk_d.bottomASList[vk_d.bottomASCount];
+	else bASList = &vk_d.bottomASDynamicList[vk.swapchain.currentImage][vk_d.bottomASDynamicCount[vk.swapchain.currentImage]];
 	//define AS geometry
 	Com_Memset(&bASList->geometries, 0, sizeof(VkGeometryNV));
 	bASList->geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
 	bASList->geometries.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_NV;
 	bASList->geometries.geometry.triangles.sType = VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV;
-	bASList->geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_entity_static.buffer;
 	bASList->geometries.geometry.triangles.vertexOffset = (*xyzOffset) * sizeof(VertexBuffer);
 	bASList->geometries.geometry.triangles.vertexCount = tess.numVertexes;
 	bASList->geometries.geometry.triangles.vertexStride = sizeof(VertexBuffer);
-	bASList->geometries.geometry.triangles.indexData = vk_d.geometry.idx_entity_static.buffer;
+	if (!dynamic) {
+		bASList->geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_entity_static.buffer;
+		bASList->geometries.geometry.triangles.indexData = vk_d.geometry.idx_entity_static.buffer;
+	}
+	else {
+		bASList->geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_entity_dynamic[vk.swapchain.currentImage].buffer;
+		bASList->geometries.geometry.triangles.indexData = vk_d.geometry.idx_entity_dynamic[vk.swapchain.currentImage].buffer;
+	}
 	bASList->geometries.geometry.triangles.indexOffset = (*idxOffset) * sizeof(uint32_t);
 	bASList->geometries.geometry.triangles.indexCount = tess.numIndexes;
 	bASList->geometries.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
@@ -170,17 +186,25 @@ void RB_CreateEntityBottomAS(vkbottomAS_t** bAS) {
 
 	bASList->data.offsetIDX = (*idxOffset);
 	bASList->data.offsetXYZ = (*xyzOffset);
-	// write idx
-	RB_UploadIDX(&vk_d.geometry.idx_entity_static, bASList->data.offsetIDX, 0);
-	// write xyz and other vertex attribs
-	RB_UploadXYZ(&vk_d.geometry.xyz_entity_static, bASList->data.offsetXYZ, -1);
+	if (!dynamic) {
+		RB_UploadIDX(&vk_d.geometry.idx_entity_static, bASList->data.offsetIDX, 0);
+		RB_UploadXYZ(&vk_d.geometry.xyz_entity_static, bASList->data.offsetXYZ, -1);
+	}
+	else {
+		RB_UploadIDX(&vk_d.geometry.idx_entity_dynamic, bASList->data.offsetIDX, 0);
+		RB_UploadXYZ(&vk_d.geometry.xyz_entity_dynamic, bASList->data.offsetXYZ, -1);
+	}
 
-	VkCommandBuffer commandBuffer = { 0 };
-	VK_BeginSingleTimeCommands(&commandBuffer);
-	VK_CreateBottomAS(commandBuffer, bASList, &vk_d.basBufferEntityStatic, &vk_d.basBufferEntityStaticOffset, RTX_BOTTOM_AS_FLAG);
-	VK_EndSingleTimeCommands(&commandBuffer);
+	if (!dynamic) {
+		VkCommandBuffer commandBuffer = { 0 };
+		VK_BeginSingleTimeCommands(&commandBuffer);
+		VK_CreateBottomAS(commandBuffer, bASList, &vk_d.basBufferEntityStatic, &vk_d.basBufferEntityStaticOffset, RTX_BOTTOM_AS_FLAG);
+		VK_EndSingleTimeCommands(&commandBuffer);
+	}
+	else VK_CreateBottomAS(vk.swapchain.CurrentCommandBuffer(), bASList, &vk_d.basBufferEntityDynamic[vk.swapchain.currentImage], &vk_d.basBufferEntityDynamicOffset, RTX_BOTTOM_AS_FLAG);
 
-	vk_d.bottomASCount++;
+	if (!dynamic) vk_d.bottomASCount++;
+	else vk_d.bottomASDynamicCount[vk.swapchain.currentImage]++;
 	(*idxOffset) += tess.numIndexes;
 	(*xyzOffset) += tess.numVertexes;
 	if (bAS != NULL) (*bAS) = bASList;
@@ -283,13 +307,13 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicData, sizeof(vkbottomAS_t));
 	vk_d.bottomASTraceListCount++;
 	// add world with dynamic data trans
-	//vk_d.bottomASWorldDynamicDataTrans.data.currInstanceID = vk_d.bottomASTraceListCount;
-	//vk_d.bottomASWorldDynamicDataTrans.data.prevInstanceID = vk_d.bottomASTraceListCount;
-	//vk_d.prevToCurrInstance[vk_d.bottomASTraceListCount] = vk_d.bottomASTraceListCount;
-	//VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldDynamicDataTrans.data);
-	//VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldDynamicDataTrans.geometryInstance);
-	//Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicDataTrans, sizeof(vkbottomAS_t));
-	//vk_d.bottomASTraceListCount++;
+	vk_d.bottomASWorldDynamicDataTrans.data.currInstanceID = vk_d.bottomASTraceListCount;
+	vk_d.bottomASWorldDynamicDataTrans.data.prevInstanceID = vk_d.bottomASTraceListCount;
+	vk_d.prevToCurrInstance[vk_d.bottomASTraceListCount] = vk_d.bottomASTraceListCount;
+	VK_UploadBufferDataOffset(&vk_d.instanceDataBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(ASInstanceData), sizeof(ASInstanceData), (void*)&vk_d.bottomASWorldDynamicDataTrans.data);
+	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&vk_d.bottomASWorldDynamicDataTrans.geometryInstance);
+	Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], &vk_d.bottomASWorldDynamicDataTrans, sizeof(vkbottomAS_t));
+	vk_d.bottomASTraceListCount++;
 	// update world with dynamic data
 	for (int i = 0; i < vk_d.updateDataOffsetXYZCount; i++) {
 		shader_t* shader = vk_d.updateDataOffsetXYZ[i].shader;
@@ -386,7 +410,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		if (strstr(shader->name, "bloodExplosion")) {// bloodExplotion
 			int i = 2;
 			//rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
-			continue;
+			//continue;
 		}
 		if (shader->rtstages[0] == NULL || drawSurf->bAS == NULL) if (!strstr(shader->name, "bloodExplosion"))  continue;
 		if (drawSurf->bAS == NULL) {
@@ -417,7 +441,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			dynamic = qtrue;
 
 			int cluster = -1; 
-			if (!drawSurf->bAS->isWorldSurface) {
+			if (drawSurf->bAS == NULL || !drawSurf->bAS->isWorldSurface) {
 				//if(cluster == -1)cluster = R_FindClusterForPos((vec3_t) { backEnd.currentEntity->e.origin[0], backEnd.currentEntity->e.origin[1], backEnd.currentEntity->e.origin[2] });
 				//if (cluster == -1)cluster = R_FindClusterForPos2((vec3_t) { backEnd.currentEntity->e.origin[0], backEnd.currentEntity->e.origin[1], backEnd.currentEntity->e.origin[2] });
 				if (cluster == -1)cluster = R_FindClusterForPos3((vec3_t) { backEnd.currentEntity->e.origin[0], backEnd.currentEntity->e.origin[1], backEnd.currentEntity->e.origin[2] });
@@ -437,8 +461,29 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				tM[4] = 0; tM[5] = 1; tM[6] = 0; tM[7] = 0;
 				tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
 			}
-			//continue;
-			if (RB_ASDataDynamic(tess.shader) && !RB_ASDynamic(tess.shader)) {
+			if (strstr(shader->name, "bloodExplosion")) {// bloodExplotion
+				int i = 2;
+			}
+			if (strstr(shader->name, "bitch")) {
+				continue;
+			}
+			if (drawSurf->bAS == NULL) {
+				rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
+				RB_DeformTessGeometry();
+				RB_CreateEntityBottomAS(&drawSurf->bAS, qtrue);
+				drawSurf->bAS->data.type = BAS_ENTITY_DYNAMIC;
+				drawSurf->bAS->data.cluster = cluster;
+				drawSurf->bAS->geometryInstance.instanceOffset = 1;
+
+				Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
+				Com_Memcpy(&drawSurf->bAS->data.modelmat, &tM, sizeof(float[12]));
+
+				RB_UpdateInstanceDataBuffer(drawSurf->bAS);
+				RB_UpdateInstanceBuffer(drawSurf->bAS);
+
+				Com_Memcpy(&vk_d.bottomASTraceList[vk_d.bottomASTraceListCount], drawSurf->bAS, sizeof(vkbottomAS_t));
+				vk_d.bottomASTraceListCount++;
+			}else if (RB_ASDataDynamic(tess.shader) && !RB_ASDynamic(tess.shader)) {
 				//continue;
 				drawSurf->bAS->data.type = BAS_ENTITY_DYNAMIC;
 				drawSurf->bAS->data.cluster = cluster;
@@ -545,6 +590,12 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
 
 			dynamic = qfalse;
+		}
+
+		if (strstr(shader->name, "bloodExplosion")) {// bloodExplotion
+			int i = 2;
+			//rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
+			//continue;
 		}
 
 		if (drawSurf->bAS == NULL && tess.numIndexes == 6 && tess.numVertexes == 4) {
@@ -656,10 +707,10 @@ static void RB_TraceRays() {
 	ubo->randomPixelOffset = rt_antialiasing->integer;
 	ubo->accumulate = rt_accumulate->integer;
 
-	if (rt_accumulate->integer) {
+	if (rt_accumulate->integer || rt_pause->integer) {
 		Cvar_Set("cl_paused", "1");
 		Cvar_Set("sv_paused", "1");
-		ubo->numSamples = vk_d.uboGlobal[(vk.swapchain.currentImage + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount].numSamples + 1;
+		if(rt_accumulate->integer) ubo->numSamples = vk_d.uboGlobal[(vk.swapchain.currentImage + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount].numSamples + 1;
 	}
 	else {
 		Cvar_Set("cl_paused", "0");
@@ -772,11 +823,15 @@ static void RB_TraceRays() {
 	if (rt_denoiser->integer) {
 		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].color.handle);
 
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_GRADIENT_BEGIN);
 		VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfGradImgPipeline);
 		VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfGradImgPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 		VK_Dispatch((vk.swapchain.extent.width / GRAD_DWN + 31) / 32, (vk.swapchain.extent.height / GRAD_DWN + 31) / 32, 1);
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_GRADIENT_END);
+
 		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].gradA.handle);
 
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_GRADIENT_ATROUS_BEGIN);
 		VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfGradAtrousPipeline);
 		VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfGradAtrousPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 		const int num_atrous_iterations_gradient = 5;
@@ -786,6 +841,7 @@ static void RB_TraceRays() {
 			BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].gradA.handle);
 			BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].gradB.handle);
 		}
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_GRADIENT_ATROUS_END);
 
 		// ASVGF TEMPORAL
 		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_TEMPORAL_BEGIN);
@@ -819,7 +875,12 @@ static void RB_TraceRays() {
 		VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfTaaPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 		VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
 		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_TAA_END);
+
 	}
+	// compositing
+	VK_BindComputePipeline(&vk_d.accelerationStructures.compositingPipeline);
+	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.compositingPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+	VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
 }
 
 static void
@@ -933,13 +994,14 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	VK_BeginRenderClear();
 
 	// create descriptor
-	vkimage_t* drawImage;
-	if(rt_denoiser->integer) drawImage = &vk_d.asvgf[vk.swapchain.currentImage].taa;
-	else drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];
+	//vkimage_t* drawImage;
+	/*if(rt_denoiser->integer) drawImage = &vk_d.asvgf[vk.swapchain.currentImage].taa;
+	else */
+	vkimage_t* drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];
 	//vkimage_t* drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];
 	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].objectInfo;
 	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].color;
-	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].reflection;
+	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].motion;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].debug;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].atrousA;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].taa;
@@ -959,13 +1021,15 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	
 	if (rt_printPerformanceStatistic->integer > 0) {
 		VK_PerformanceQueryPoolResults();
-		double build, rng, fwd, prim, refref, direct, temporal, atrous, taa;
+		double build, rng, fwd, prim, refref, direct, gradient, grad_atrous, temporal, atrous, taa;
 		VK_TimeBetweenMarkers(&build, PROFILER_BUILD_AS_BEGIN, PROFILER_BUILD_AS_END);
 		VK_TimeBetweenMarkers(&rng, PROFILER_ASVGF_RNG_BEGIN, PROFILER_ASVGF_RNG_END);
 		VK_TimeBetweenMarkers(&fwd, PROFILER_ASVGF_FORWARD_BEGIN, PROFILER_ASVGF_FORWARD_END);
 		VK_TimeBetweenMarkers(&prim, PROFILER_PRIMARY_RAYS_BEGIN, PROFILER_PRIMARY_RAYS_END);
 		VK_TimeBetweenMarkers(&refref, PROFILER_REFLECTION_REFRACTION_BEGIN, PROFILER_REFLECTION_REFRACTION_END);
 		VK_TimeBetweenMarkers(&direct, PROFILER_DIRECT_ILLUMINATION_BEGIN, PROFILER_DIRECT_ILLUMINATION_END);
+		VK_TimeBetweenMarkers(&gradient, PROFILER_ASVGF_GRADIENT_BEGIN, PROFILER_ASVGF_GRADIENT_END);
+		VK_TimeBetweenMarkers(&grad_atrous, PROFILER_ASVGF_GRADIENT_ATROUS_BEGIN, PROFILER_ASVGF_GRADIENT_ATROUS_END);
 		VK_TimeBetweenMarkers(&temporal, PROFILER_ASVGF_TEMPORAL_BEGIN, PROFILER_ASVGF_TEMPORAL_END);
 		VK_TimeBetweenMarkers(&atrous, PROFILER_ASVGF_ATROUS_BEGIN, PROFILER_ASVGF_ATROUS_END);
 		VK_TimeBetweenMarkers(&taa, PROFILER_ASVGF_TAA_BEGIN, PROFILER_ASVGF_TAA_END);
@@ -975,10 +1039,13 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		ri.Printf(PRINT_ALL, "Primary Ray Stage         %f ms\n", prim);
 		ri.Printf(PRINT_ALL, "Reflect/Refract Stage     %f ms\n", refref);
 		ri.Printf(PRINT_ALL, "Direct Illumination Stage %f ms\n", direct);
+		ri.Printf(PRINT_ALL, "ASVGF Gradient            %f ms\n", gradient);
+		ri.Printf(PRINT_ALL, "ASVGF Gradient Atrous     %f ms\n", grad_atrous);
 		ri.Printf(PRINT_ALL, "ASVGF Temporal            %f ms\n", temporal);
 		ri.Printf(PRINT_ALL, "ASVGF Atrous              %f ms\n", atrous);
 		ri.Printf(PRINT_ALL, "ASVGF Taa                 %f ms\n", taa);
 		ri.Printf(PRINT_ALL, "Accumulated Images        %d\n", vk_d.uboGlobal[vk.swapchain.currentImage].numSamples);
+		ri.Printf(PRINT_ALL, "ASVGF SUM                 %f ms\n", rng + fwd + gradient + grad_atrous + temporal + atrous + taa);
 		ri.Cvar_Set("rt_printPerfStats", 0);
 	}
 

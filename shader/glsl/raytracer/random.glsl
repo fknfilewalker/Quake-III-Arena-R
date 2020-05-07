@@ -37,3 +37,9 @@ get_rng2(uint idx)
 	return min(texelFetch(blue_noise, ivec3(p), 0).r, 0.9999999999999);
 	//return fract(vec2(get_rng_uint(idx)) / vec2(0xffffffffu));
 }
+
+// We use a non repeating random generator if we do not use a denoiser
+float getRNG(bool repeate, uint idx, uint frame_num){
+	if(repeate) return get_rng2(idx);
+	else return get_rng(idx, frame_num);
+}

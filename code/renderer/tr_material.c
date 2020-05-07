@@ -45,16 +45,56 @@ qboolean RB_StageNeedsColor(int stage) {
 	return qfalse;
 }
 
+qboolean RB_SkipObject(shader_t* shader) {
+	if (strstr(shader->name, "glass") || strstr(shader->name, "console/jacobs") || strstr(shader->name, "kmlamp_white") || strstr(shader->name, "slamp/slamp2")
+		|| strstr(shader->name, "timlamp/timlamp") || strstr(shader->name, "lamplight_y") || strstr(shader->name, "textures/liquids/calm_poollight")) {
+		return qfalse;
+	}
+
+	if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
+		|| strstr(shader->name, "Shadow") || shader->isSky
+		|| shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP
+		|| shader->rtstages[0] == NULL || !shader->rtstages[0]->active
+		|| strstr(shader->name, "slamp/slamp3")
+		|| strstr(shader->name, "gratelamp_flare")) return qtrue;
+	return qfalse;
+}
+
+qboolean RB_IsTransparent(shader_t* shader) {
+	// skip certain objects that are transparent but should be handled like opaque objects
+	if (strstr(shader->name, "glass") || strstr(shader->name, "console/jacobs") || strstr(shader->name, "kmlamp_white") || strstr(shader->name, "slamp/slamp2")
+		|| strstr(shader->name, "lamplight_y") || strstr(shader->name, "textures/liquids/calm_poollight") ) {
+		return qfalse;
+	}
+	// check if transparent
+	//shader	0x000001fec843ece8 {name=0x000001fec843ece8 "textures/base_floor/proto_grate4" lightmapIndex=-3 index=...}	shader_s *
+
+	if ((shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT && shader->sort == SS_OPAQUE) {
+		return qfalse;
+	}
+	if ((shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->sort > SS_OPAQUE) {
+		return qtrue;
+	}
+	return qfalse;
+}
+
 uint32_t RB_GetMaterial() {
 	uint32_t material = 0;
 	material = MATERIAL_KIND_REGULAR;
 	if (RB_IsLight(tess.shader)) {
 		material |= MATERIAL_FLAG_LIGHT;
 	}
+	//+		tess.shader	0x0000023576446ce8 {name=0x0000023576446ce8 "textures/base_floor/rusty_pentagrate" lightmapIndex=-3 ...}	shader_s *
+	//proto_rustygrate gratetorch2b 0x00000206adcea548 {name=0x00000206adcea548 "models/mapobjects/gratelamp/gratetorch2b" lightmapIndex=...}
+	if (strstr(tess.shader->name, "timlamp/timlamp") || strstr(tess.shader->name, "gratelamp/gratelamp") || strstr(tess.shader->name, "proto_grate")
+		|| strstr(tess.shader->name, "base_floor/rusty_pentagrate") || strstr(tess.shader->name, "base_floor/proto_rustygrate") || strstr(tess.shader->name, "gratelamp/gratetorch2b")) {
+		material = MATERIAL_FLAG_SEE_THROUGH;
+	}
 
 	if (strstr(tess.shader->name, "glass") || strstr(tess.shader->name, "console/jacobs") || strstr(tess.shader->name, "kmlamp_white") || strstr(tess.shader->name, "slamp/slamp2") 
-		|| strstr(tess.shader->name, "timlamp/timlamp") || strstr(tess.shader->name, "lamplight_y") || strstr(tess.shader->name, "green_sphere") 
-		|| strstr(tess.shader->name, "yellow_sphere") || strstr(tess.shader->name, "red_sphere") || strstr(tess.shader->name, "plasma_glass")) {
+		|| strstr(tess.shader->name, "lamplight_y") || strstr(tess.shader->name, "green_sphere") 
+		|| strstr(tess.shader->name, "yellow_sphere") || strstr(tess.shader->name, "red_sphere") || strstr(tess.shader->name, "plasma_glass")
+		) {
 		material = MATERIAL_KIND_GLASS;
 	}
 	if (strstr(tess.shader->name, "textures/liquids/calm_poollight")) {
@@ -96,13 +136,16 @@ uint32_t RB_GetMaterial() {
 	//	){
 	//	material |= MATERIAL_FLAG_SEE_THROUGH_ADD;
 	//}
+	else if (strstr(tess.shader->name, "bloodExplosion")) {
+		material  = MATERIAL_FLAG_SEE_THROUGH;
+	}
 	else if (strstr(tess.shader->name, "models/players/hunter/hunter_f")) {
 		material |= MATERIAL_FLAG_SEE_THROUGH_ADD;
 	}
 	else if (tess.shader->sort == SS_BLEND0) {
 		material |= MATERIAL_FLAG_SEE_THROUGH_ADD;
 	}
-	else if (tess.shader->sort == SS_UNDERWATER || tess.shader->sort == SS_BANNER) {
+	/*else if (tess.shader->sort == SS_UNDERWATER || tess.shader->sort == SS_BANNER) {
 		material |= MATERIAL_FLAG_SEE_THROUGH;
 	}
 	else if (tess.shader->sort == SS_DECAL && ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT)) {
@@ -110,7 +153,7 @@ uint32_t RB_GetMaterial() {
 	}
 	else if ((tess.shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT) {
 		material |= MATERIAL_FLAG_SEE_THROUGH;
-	}
+	}*/
 
 	if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) {
 		material |= MATERIAL_FLAG_PLAYER_OR_WEAPON;
@@ -147,6 +190,7 @@ uint32_t RB_GetNextTexEncoded(int stage) {
 
 		uint32_t nextidx = (uint32_t)indexAnim;
 		uint32_t idx = (uint32_t)tess.shader->rtstages[stage]->bundle[0].image[nextidx]->index;
+		//if(strstr(tess.shader->name, "bloodExplosion")) idx = (uint32_t)tess.shader->rtstages[stage]->bundle[0].image[0]->index;
 		tess.shader->rtstages[stage]->bundle[0].image[nextidx]->frameUsed = tr.frameCount;
 		return (idx) | (blend) | (color ? TEX0_COLOR_MASK : 0);
 	}

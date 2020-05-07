@@ -17,6 +17,7 @@
 #include "../../../shader/header/asvgf_temporal.comp.h"
 #include "../../../shader/header/asvgf_atrous.comp.h"
 #include "../../../shader/header/asvgf_taa.comp.h"
+#include "../../../shader/header/compositing.comp.h"
 
 // RTX
 #include "../../../shader/header/primary_rays.rgen.h"
@@ -47,6 +48,7 @@ static vkshader_t* asvgfGradAtrousCompShader;
 static vkshader_t* asvgfTemporalCompShader;
 static vkshader_t* asvgfAtrousCompShader;
 static vkshader_t* asvgfTaaCompShader;
+static vkshader_t* compositingCompShader;
 // rtx
 static vkshader_t* rayTracingAny;
 static vkshader_t* primaryRays;
@@ -141,6 +143,14 @@ void VK_AsvgfAtrousCompShader(vkshader_t* shader) {
 	Com_Memcpy(shader, asvgfAtrousCompShader, sizeof(vkshader_t));
 }
 
+void VK_CompositingCompShader(vkshader_t* shader) {
+	if (compositingCompShader == NULL) {
+		compositingCompShader = malloc(sizeof(vkshader_t));
+		VK_LoadCompShaderFromVariable(compositingCompShader, &compositingComp, sizeof(compositingComp));
+	}
+	Com_Memcpy(shader, compositingCompShader, sizeof(vkshader_t));
+}
+
 // rtx
 void VK_DestroyShader(vkshader_t* shader) {
 	for (int i = 0; i < shader->size; ++i) {
@@ -204,6 +214,11 @@ void VK_DestroyAllShaders() {
 		VK_DestroyShader(asvgfAtrousCompShader);
 		free(asvgfAtrousCompShader);
 		asvgfAtrousCompShader = NULL;
+	}
+	if (compositingCompShader != NULL) {
+		VK_DestroyShader(compositingCompShader);
+		free(compositingCompShader);
+		compositingCompShader = NULL;
 	}
 	// RTX
 	if (rayTracingAny != NULL) {

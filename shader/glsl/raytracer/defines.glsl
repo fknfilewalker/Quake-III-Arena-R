@@ -47,10 +47,16 @@ struct RayPayload {
 struct RayPayloadReflect {
 	vec4 color;
 	vec3 pos;
+	vec3 prevPos;
 	uint cluster;
 	vec3 normal;
 	uint depth;
 	uint material;
+	vec4 object;
+	vec2 sccs;
+	uint addCount;
+	vec4 transparent;
+	float max_transparent_distance;
 };
 struct ShadowRayPayload
 {

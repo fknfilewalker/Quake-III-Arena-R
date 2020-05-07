@@ -1873,6 +1873,7 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 1;
 			}
 			vk_d.lightList.lights[vk_d.lightList.numLights].color[3] = 0;
+			if(vk_d.lightList.lights[vk_d.lightList.numLights].size > 200)vk_d.lightList.lights[vk_d.lightList.numLights].size /= 4;
 			vk_d.lightList.numLights++;
 		}
 	}
@@ -1995,28 +1996,36 @@ void R_RecursiveCreateAS(mnode_t* node, uint32_t* countIDXstatic, uint32_t* coun
 
 			shader_t* shader = tr.shaders[surf->shader->index];
 			
-			if (strstr(shader->name, "conduit")) {
-				int x = 2; //continue;
+			if (RB_IsTransparent(shader) != transparent) continue;
+			if (RB_SkipObject(shader)
+				|| *surf->data == SF_BAD || *surf->data == SF_SKIP) {
+				surf->skip = qtrue;
+				continue;
 			}
-			if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
-				|| strstr(shader->name, "Shadow") || shader->isSky
-				|| *surf->data == SF_BAD || *surf->data == SF_SKIP
-				|| shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP
-				|| shader->rtstages[0] == NULL || !shader->rtstages[0]->active
-				|| strstr(shader->name, "slamp/slamp3")
-				|| strstr(shader->name, "gratelamp_flare")) {
 
+			if (strstr(shader->name, "bitch")) {
+				int x = 2; //continue;
 				//continue;
-				if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white") && !strstr(shader->name, "slamp/slamp2")
-					&& !strstr(shader->name, "timlamp/timlamp") && !strstr(shader->name, "lamplight_y") && !strstr(shader->name, "textures/liquids/calm_poollight")){// && !strstr(shader->name, "flame")) {
-					surf->skip = qtrue;
-					continue;
-				}
 			}
-			if (!transparent && ((shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->sort > SS_OPAQUE)) {
-				if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white") && !strstr(shader->name, "slamp/slamp2")
-					 && !strstr(shader->name, "lamplight_y") && !strstr(shader->name, "textures/liquids/calm_poollight"))continue;
-			}
+			//if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
+			//	|| strstr(shader->name, "Shadow") || shader->isSky
+			//	|| *surf->data == SF_BAD || *surf->data == SF_SKIP
+			//	|| shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP
+			//	|| shader->rtstages[0] == NULL || !shader->rtstages[0]->active
+			//	|| strstr(shader->name, "slamp/slamp3")
+			//	|| strstr(shader->name, "gratelamp_flare")) {
+
+			//	//continue;
+			//	if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white") && !strstr(shader->name, "slamp/slamp2")
+			//		&& !strstr(shader->name, "timlamp/timlamp") && !strstr(shader->name, "lamplight_y") && !strstr(shader->name, "textures/liquids/calm_poollight")){// && !strstr(shader->name, "flame")) {
+			//		surf->skip = qtrue;
+			//		continue;
+			//	}
+			//}
+			//if (!transparent && ((shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->sort > SS_OPAQUE)) {
+			//	if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white") && !strstr(shader->name, "slamp/slamp2")
+			//		 && !strstr(shader->name, "lamplight_y") && !strstr(shader->name, "textures/liquids/calm_poollight"))continue;
+			//}
 
 			
 			//grate1_3
@@ -2328,6 +2337,8 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_AddSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_BLUE_NOISE, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_BLUE_NOISE, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.blueNoiseTex.sampler, vk_d.blueNoiseTex.view);
 
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_TRANSPARENT, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_TRANSPARENT, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[i].transparent.view);
 		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_MOTION, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_MOTION, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[i].motion.view);
 		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_GBUFFER_VIEW_DIR, VK_SHADER_STAGE_COMPUTE_BIT);
@@ -2351,9 +2362,7 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_AddStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_INSTANCE_PREV_TO_CURR, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_INSTANCE_PREV_TO_CURR, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.prevToCurrInstanceBuffer[i].buffer);
 
-		// result
-		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_RESULT_OUTPUT, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_RESULT_OUTPUT, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.accelerationStructures.resultImage[i].view);
+		
 		// cluster prev
 		VK_AddStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_INSTANCE_DATA_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_INSTANCE_DATA_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.instanceDataBuffer[prevIndex].buffer);
@@ -2378,6 +2387,16 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_SetStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_CLUSTER_WORLD_DYNAMIC_AS, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.geometry.cluster_world_dynamic_as.buffer);
 		VK_AddStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_CLUSTER_ENTITY_STATIC, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_CLUSTER_ENTITY_STATIC, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.geometry.cluster_entity_static.buffer);
+
+		// result
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_RESULT_OUTPUT, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_RESULT_OUTPUT, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.accelerationStructures.resultImage[i].view);
+		// accumulation
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_RESULT_ACCUMULATION, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_RESULT_ACCUMULATION, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.accelerationStructures.accumulationImage[i].view);
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_RESULT_ACCUMULATION_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_RESULT_ACCUMULATION_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.accelerationStructures.accumulationImage[prevIndex].view);
+
 
 		// asvgf
 
@@ -2494,6 +2513,13 @@ void R_CreatePrimaryRaysPipeline() {
 	VK_SetCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfAtrousPipeline, &vk_d.computeDescriptor[0], &vk_d.imageDescriptor);
 	VK_AddComputePushConstant(&vk_d.accelerationStructures.asvgfAtrousPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t));
 	VK_FinishComputePipeline(&vk_d.accelerationStructures.asvgfAtrousPipeline);
+
+	vkshader_t compositingShader = { 0 };
+	VK_CompositingCompShader(&compositingShader);
+	VK_SetComputeShader(&vk_d.accelerationStructures.compositingPipeline, &compositingShader);
+	VK_SetCompute2DescriptorSets(&vk_d.accelerationStructures.compositingPipeline, &vk_d.computeDescriptor[0], &vk_d.imageDescriptor);
+	VK_AddComputePushConstant(&vk_d.accelerationStructures.compositingPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t));
+	VK_FinishComputePipeline(&vk_d.accelerationStructures.compositingPipeline);
 
 	/*vkshader_t s = { 0 };
 	VK_RayTracingShaderWithAny(&s);
@@ -2916,7 +2942,7 @@ void R_PreparePT() {
 
 			// create bas
 			rb_surfaceTable[*((surfaceType_t*)s_worldData.surfaces[i].data)]((surfaceType_t*)s_worldData.surfaces[i].data);
-			RB_CreateEntityBottomAS(&s_worldData.surfaces[i].bAS);
+			RB_CreateEntityBottomAS(&s_worldData.surfaces[i].bAS, qfalse);
 			s_worldData.surfaces[i].bAS->isWorldSurface = qtrue;
 			s_worldData.surfaces[i].bAS->data.isBrushModel = qtrue;
 			s_worldData.surfaces[i].added = qtrue;

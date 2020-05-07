@@ -156,15 +156,6 @@ main()
 		return;
 	}
 
-	/* forward-project the rng seed */
-	// if((ubo.frameIndex & 1) == 0) {
-	// 	uint rng_prev = imageLoad(rngASVGF_B, ipos).x;
-	// 	imageStore(rngASVGF_A, ipos_curr, rng_prev.xxxx);
-	// }
-	// else {
-	// 	uint rng_prev = imageLoad(rngASVGF_A, ipos).x;
-	// 	imageStore(rngASVGF_B, ipos_curr, rng_prev.xxxx);
-	// }
 	uint rng_prev = imageLoad(IMG_ASVGF_RNG_SEED_PREV, ipos).x;
 	imageStore(IMG_ASVGF_RNG_SEED, ipos_curr, rng_prev.xxxx);
 

@@ -1,0 +1,51 @@
+#version 460
+#extension GL_GOOGLE_include_directive    : enable
+#extension GL_EXT_nonuniform_qualifier    : enable
+#include "../constants.h"
+#include "../raytracer/defines.glsl"
+#include "asvgf.glsl"
+#include "../raytracer/gbuffer.glsl"
+#include "../raytracer/globalTexture.glsl"
+
+layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
+{
+	GlobalUbo ubo;
+};
+layout(binding = BINDING_OFFSET_RESULT_OUTPUT, set = 0, rgba8) uniform image2D image;
+layout(binding = BINDING_OFFSET_RESULT_ACCUMULATION, set = 0, rgba8) uniform image2D imageAccumulation;
+layout(binding = BINDING_OFFSET_RESULT_ACCUMULATION_PREV, set = 0, rgba8) uniform image2D imageAccumulationPrev;
+
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+
+void main() {
+	vec4 result = vec4(0);
+
+	ivec2 ipos = ivec2(gl_GlobalInvocationID);
+    vec4 color = imageLoad(imgtaaASVGF, ipos);
+	vec4 albedo = imageLoad(albedoGBuffer, ipos);
+	vec4 trans = imageLoad(transparentGBuffer, ipos);
+	vec4 cout = alpha_blend( trans, vec4(color.xyz,1));
+	vec4 directIll = imageLoad(IMG_GBUFFER_ILLUMINATION, ipos);
+	//if(trans.a > 0) imageStore(imgtaaASVGF, ipos, trans);
+
+	result += albedo;
+	if(ubo.illumination){
+		result.xyz *= directIll.xyz;
+		//result.xyz += albedo.rgb * 0.25f;
+		result = alpha_blend( trans, vec4(result.xyz,1));
+
+		if(ubo.denoiser) result = alpha_blend( trans, vec4(color.xyz,1));//result = alpha_blend( trans, vec4(color.xyz,1));
+		else result.xyz *= 3.2;
+	} else result = alpha_blend( trans, vec4(result.xyz,1));
+
+	if(ubo.accumulate == 1) {
+		vec3 outPrev = imageLoad(imageAccumulationPrev, ipos).xyz;
+		result.xyz = (result.xyz + outPrev);
+		imageStore(imageAccumulation, ipos, vec4( result.xyz ,1));
+		result.xyz /= float(ubo.numSamples);
+	} else{
+		imageStore(imageAccumulation, ipos, vec4( result.xyz ,1));	
+	}
+
+	imageStore(image, ipos, vec4(result.xyz, 1));
+}

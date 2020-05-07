@@ -55,6 +55,12 @@ void VK_CreateBottomAS(VkCommandBuffer commandBuffer,
 	buildInfo.geometryCount = 1;
 	buildInfo.pGeometries = &bas->geometries;
 
+	VkMemoryBarrier memoryBarrier = { 0 };
+	memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+	memoryBarrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
+	memoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
+
+
 	vkCmdBuildAccelerationStructureNV(
 		commandBuffer,
 		&buildInfo,
@@ -66,6 +72,7 @@ void VK_CreateBottomAS(VkCommandBuffer commandBuffer,
 		vk_d.scratchBuffer.buffer,
 		vk_d.scratchBufferOffset);
 	vk_d.scratchBufferOffset += memoryRequirements2Scratch.memoryRequirements.size;
+	vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
 }
 void VK_UpdateBottomAS(VkCommandBuffer commandBuffer, 
 						vkbottomAS_t* oldBas, vkbottomAS_t* newBas, 

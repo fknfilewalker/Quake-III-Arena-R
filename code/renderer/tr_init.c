@@ -160,6 +160,7 @@ cvar_t* rt_cullLights;
 cvar_t* rt_numRandomDL;
 cvar_t* rt_printPerformanceStatistic;
 cvar_t* rt_accumulate;
+cvar_t* rt_pause;
 cvar_t* rt_antialiasing;
 cvar_t* rt_softshadows;
 cvar_t* rt_aperture;
@@ -1382,6 +1383,7 @@ void R_Register( void )
 	rt_cullLights = ri.Cvar_Get("rt_cullLights", "1", 0);
 	rt_numRandomDL = ri.Cvar_Get("rt_numRandomDL", "1", 0);
 	rt_accumulate = ri.Cvar_Get("rt_accumulate", "0", 0);
+	rt_pause = ri.Cvar_Get("rt_pause", "0", 0);
 	rt_antialiasing = ri.Cvar_Get("rt_antialiasing", "0", 0);
 	rt_softshadows = ri.Cvar_Get("rt_softshadows", "1", 0);
 	rt_aperture = ri.Cvar_Get("rt_aperture", "0.05", 0);

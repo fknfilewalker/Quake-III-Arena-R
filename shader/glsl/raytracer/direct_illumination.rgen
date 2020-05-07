@@ -41,6 +41,7 @@ vec3 directIllumination(){
 	// material = utemp.x;
 	// cluster = utemp.y;
 	transparent = imageLoad(transparentGBuffer, ivec2(gl_LaunchIDNV.xy));
+	material = uint(imageLoad(viewGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
 	if(isWater(material)){
 		vec4 reflectAlbedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
 		return alpha_blend( transparent, reflectAlbedo).xyz;
@@ -51,7 +52,6 @@ vec3 directIllumination(){
 	// }
 	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
-	material = uint(imageLoad(viewGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
 	cluster = uint(imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
 
 	if (isSky(material)) {
@@ -60,11 +60,12 @@ vec3 directIllumination(){
 	}
 	//if (isLight(material)) return vec3(1,0,0);
 	
-	vec3 directIllumination = calcShading(primary_albedo, pos, normal, cluster, material);
+	vec3 directIllumination = calcShading(primary_albedo, pos, normal, cluster, material) + 0.1;
+	//directIllumination += transparent.xyz;
 	vec3 shadeColor = primary_albedo.xyz;
 	if(ubo.illumination){
 		shadeColor *= directIllumination;
-		shadeColor += primary_albedo.rgb * 0.25f;
+		//shadeColor += primary_albedo.rgb * 0.25f;
 	}
 	shadeColor = alpha_blend( transparent, vec4(shadeColor.rgb,1) ).xyz;
 	imageStore(IMG_GBUFFER_ILLUMINATION, ivec2(gl_LaunchIDNV.xy), vec4( clamp_color(directIllumination, 3) ,1));
@@ -80,15 +81,15 @@ void main()
 	rng_seed = imageLoad(IMG_ASVGF_RNG_SEED, ipos).r;
 
 	vec3 color = directIllumination();
-	if(ubo.accumulate == 1) {
-		vec3 outPrev = imageLoad(imageAccumulationPrev, ivec2(gl_LaunchIDNV.xy)).xyz;
-		color = (color + outPrev);
-		imageStore(imageAccumulation, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));
-		color /= float(ubo.numSamples);
-	} else{
-		imageStore(imageAccumulation, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));	
-	}
-	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));
+	// if(ubo.accumulate == 1) {
+	// 	vec3 outPrev = imageLoad(imageAccumulationPrev, ivec2(gl_LaunchIDNV.xy)).xyz;
+	// 	color = (color + outPrev);
+	// 	imageStore(imageAccumulation, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));
+	// 	color /= float(ubo.numSamples);
+	// } else{
+	// 	imageStore(imageAccumulation, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));	
+	// }
+	// imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));
 
 }
 

@@ -381,7 +381,7 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 
 				// create bas
 				rb_surfaceTable[*((surfaceType_t*)surface)]((surfaceType_t*)surface);
-				RB_CreateEntityBottomAS(&tr.currentModel->bAS[lod][i]);
+				RB_CreateEntityBottomAS(&tr.currentModel->bAS[lod][i], qfalse);
 
 				backEnd.refdef.floatTime = originalTime;
 				tess.numVertexes = 0;
@@ -389,8 +389,8 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 				vk_d.scratchBufferOffset = 0;
 			}
 		
+			tr.currentModel->bAS[lod][i]->surfcount = i;
 		}
-		tr.currentModel->bAS[lod][i]->surfcount = i;
 
 		// we will add shadows even if the main object isn't visible in the view
 

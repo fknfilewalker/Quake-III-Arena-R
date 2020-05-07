@@ -1283,6 +1283,7 @@ typedef struct {
 	vkcpipeline_t				asvgfTemporalPipeline;
 	vkcpipeline_t				asvgfAtrousPipeline;
 	vkcpipeline_t				asvgfTaaPipeline;
+	vkcpipeline_t				compositingPipeline;
 	vkimage_t					rngImage;
 
 	vkimage_t					resultImage[VK_MAX_SWAPCHAIN_SIZE];
@@ -1448,6 +1449,10 @@ typedef enum {
 	PROFILER_REFLECTION_REFRACTION_END,
 	PROFILER_DIRECT_ILLUMINATION_BEGIN,
 	PROFILER_DIRECT_ILLUMINATION_END,
+	PROFILER_ASVGF_GRADIENT_BEGIN,
+	PROFILER_ASVGF_GRADIENT_END,
+	PROFILER_ASVGF_GRADIENT_ATROUS_BEGIN,
+	PROFILER_ASVGF_GRADIENT_ATROUS_END,
 	PROFILER_ASVGF_TEMPORAL_BEGIN,
 	PROFILER_ASVGF_TEMPORAL_END,
 	PROFILER_ASVGF_ATROUS_BEGIN,
@@ -1771,6 +1776,7 @@ extern	cvar_t  *rt_denoiser;
 
 extern  cvar_t* rt_printPerformanceStatistic;
 extern  cvar_t* rt_accumulate;
+extern  cvar_t* rt_pause;
 extern  cvar_t* rt_aperture;
 extern  cvar_t* rt_focalLength;
 extern  cvar_t* rt_dof;

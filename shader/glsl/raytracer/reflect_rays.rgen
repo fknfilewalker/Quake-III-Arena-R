@@ -24,6 +24,15 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO_PREV, set = 0) uniform global_ubo_pre
 #include "traceRay.glsl"
 #include "lights.glsl"
 
+vec3 reflect_point_vs_plane(vec3 plane_pt, vec3 plane_normal, vec3 point)
+{
+	return point - 2 * plane_normal * dot(plane_normal, point - plane_pt);
+}
+
+float ray_distance_to_plane(vec3 plane_pt, vec3 plane_normal, vec3 ray_origin, vec3 ray_direction)
+{
+	return dot(plane_pt - ray_origin, plane_normal) / dot(ray_direction, plane_normal);
+}
 
 
 // vec4 calculateReflection(inout vec3 pos, inout vec3 direction, inout vec3 N){
@@ -282,6 +291,24 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO_PREV, set = 0) uniform global_ubo_pre
 
 layout(location = PAYLOAD_REFLECT) rayPayloadNV RayPayloadReflect rrp;
 
+#define PRIMARY_RAY_T_MAX (10000.0)
+Ray
+getPrimaryRay(vec2 pos_cs)
+{
+	vec4 v_near = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs, -1, 1.0);
+	vec4 v_far  = ubo.inverseViewMat * ubo.inverseProjMat * vec4(pos_cs,  1, 1.0);
+	v_near /= v_near.w;
+	v_far  /= v_far.w;
+
+	Ray ray;
+	ray.origin = v_near.xyz;
+	ray.direction = normalize(v_far.xyz - v_near.xyz);
+	ray.t_min = 0.01;
+	ray.t_max = PRIMARY_RAY_T_MAX;
+
+	return ray;
+}
+
 void main() 
 {
 	vec4 primary_albedo;
@@ -297,7 +324,7 @@ void main()
 	uvec4 utemp;
 	//utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
 	material = uint(imageLoad(viewGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
-	if (!isGlass(material) && !isMirror(material) && !isWater(material)) return;
+	if (!isGlass(material) && !isMirror(material) && !isWater(material) && !isSeeThrough(material)) return;
 	
 	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
@@ -312,6 +339,11 @@ void main()
 	vec3 viewDir = normalize(P - ubo.camPos.xyz);
 	vec4 color = vec4(0);
 
+	const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + vec2(0.5);
+	const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeNV.xy);
+	const vec2 screenCoordClipSpace  = inUV * 2.0 - 1.0;
+	rrp.sccs = screenCoordClipSpace;
+
 	if (isMirror(material)){
 		vec4 albedoReflection;
 		rrp.color = vec4(0);
@@ -321,16 +353,49 @@ void main()
 		vec4 mirrorColor = primary_albedo;
 		mirrorColor = 1 - vec4(mirrorColor/1);
 		vec4 color = vec4(mirrorColor.xyz * rrp.color.xyz,1);
+
+
+		vec3 new_position = rrp.pos;
+		vec3 new_pos_prev = rrp.prevPos;
+
+		vec3 ref_pos_curr, ref_pos_prev;
+		vec3 ref_geo_normal;
+		// compute the apparent position of the reflected or refracted object
+		ref_pos_curr = reflect_point_vs_plane(P, N, new_position);
+		ref_pos_prev = reflect_point_vs_plane(P, N, new_pos_prev);
+		ref_geo_normal = reflect(rrp.normal.xyz, N);
+		
+		Ray ray_0 = getPrimaryRay(screenCoordClipSpace);
+		Ray ray_x = getPrimaryRay(screenCoordClipSpace + vec2(1.0 / float(ubo.width), 0));
+		Ray ray_y = getPrimaryRay(screenCoordClipSpace + vec2(0, 1.0 / float(ubo.height)));
+
+		float depth_vs_0 = ray_distance_to_plane(ref_pos_curr, ref_geo_normal, ubo.camPos.xyz, ray_0.direction);
+		float depth_vs_x = ray_distance_to_plane(ref_pos_curr, ref_geo_normal, ubo.camPos.xyz, ray_x.direction);
+		float depth_vs_y = ray_distance_to_plane(ref_pos_curr, ref_geo_normal, ubo.camPos.xyz, ray_y.direction);
+
+		vec4 point = ubo.projMat * ubo.viewMat * vec4(ref_pos_curr.xyz, 1.0);
+		vec4 pointPrev = uboPrev.projMat * uboPrev.viewMat * vec4(ref_pos_prev.xyz,1.0);
+		vec3 ndc = point.xyw;
+		vec3 ndcPrev = pointPrev.xyw;
+		ndc.xy /= ndc.z;
+		ndcPrev.xy /= ndcPrev.z;
+		float fwidth_depth = 1.0 / max(1e-4, (abs(depth_vs_x - ndc.z) + abs(depth_vs_y - ndc.z)));
+
+		vec4 motion = vec4((ndcPrev.xy - ndc.xy), -(ndcPrev.z - ndc.z), fwidth_depth);
+
 		imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), color);
-		imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.normal.xyz,rrp.material));
+		imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.normal.xyz, -ndc.z));//rrp.depth));
 		imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.pos.xyz, rrp.cluster));
-		//imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(rrp.material, rrp.cluster, 0,0));
+		imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), rrp.object);
+		imageStore(viewGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(originalDir, rrp.material));
+		imageStore(motionGBuffer, ivec2(gl_LaunchIDNV.xy), motion);
+
 	}
-	if (isGlass(material)){
+	if (isGlass(material) || isWater(material)){
 		// if texture (alpha) not see through enough then do not trace further
 		if(primary_albedo.w > 0.5) return;
 
-		float n1 = 1.3, n2 = 1.0, ndotr = dot(originalDir, N);  
+		float n1 = 1.5, n2 = 1.0, ndotr = dot(originalDir, N);  
 		if( ndotr > 0.0f ) {
 			N = -N;
 		}
@@ -358,6 +423,28 @@ void main()
 		imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.normal.xyz, rrp.material));
 		imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.pos.xyz, rrp.cluster));
 		//imageStore(objectGBuffer, ivec2(gl_LaunchIDNV.xy), uvec4(rrp.material, rrp.cluster, 0,0));
+	}
+	if (isSeeThrough(material)){
+		if(primary_albedo.w > 0.5) return;
+
+		vec4 albedo;
+		rrp.color = vec4(0);
+		rrp.depth = 0;
+		rrp.addCount = 0;
+		rrp.transparent = vec4(0);
+		rrp.max_transparent_distance = 0;
+		traceStraight(pos, originalDir, N);
+		albedo = rrp.color;
+
+		vec4 color = primary_albedo * primary_albedo.w + albedo * (1-primary_albedo.w);
+
+		// vec4 trans = imageLoad(transparentGBuffer, ivec2(gl_LaunchIDNV.xy));
+		// 	vec4 cout = alpha_blend( trans, vec4(color.xyz,1));
+		// imageStore(transparentGBuffer, ivec2(gl_LaunchIDNV.xy), trans + color);
+		
+		imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), color);
+		imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.normal.xyz,rrp.material));
+		imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.pos.xyz, rrp.cluster));
 	}
 }
 

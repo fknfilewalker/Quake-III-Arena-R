@@ -14,4 +14,5 @@ void main()
     rrp.normal = vec3(0);
     rrp.material = MATERIAL_KIND_SKY;
     rrp.color = sampleSky(gl_WorldRayDirectionNV);
+    rrp.object = vec4(-1, -1, uintBitsToFloat(uvec2(~0u)));
 }
