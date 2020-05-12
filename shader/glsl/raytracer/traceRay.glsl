@@ -44,7 +44,7 @@ void traceRay(Ray ray, uint cullMask)
 
 float trace_shadow_ray(vec3 pos, vec3 dir, float t_min, float t_max, bool is_player)
 {
-	const uint rayFlags = gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsSkipClosestHitShaderNV;
+	const uint rayFlags = gl_RayFlagsNoOpaqueNV ;//gl_RayFlagsTerminateOnFirstHitNV | gl_RayFlagsSkipClosestHitShaderNV;
 	uint cullMask = RAY_MIRROR_OPAQUE_VISIBLE;
 	if(is_player) {
 		cullMask = RAY_FIRST_PERSON_OPAQUE_VISIBLE;

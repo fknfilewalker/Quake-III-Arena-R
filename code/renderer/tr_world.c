@@ -346,7 +346,7 @@ void R_AddBrushModelSurfaces ( trRefEntity_t *ent ) {
 		msurface_t* surf = (bmodel->firstSurface + i);
 		// create bas for world entity if not yet done
 		if (glConfig.driverType == VULKAN && r_vertexLight->value == 2 && surf->bAS == NULL) continue;
-		surf->bAS->surfcount = i;
+		if (surf->bAS != NULL) surf->bAS->surfcount = i;
 		//if (surf->bAS == NULL && !surf->added && !surf->skip
 		//	&& glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
 		//	vk_d.scratchBufferOffset = 0;

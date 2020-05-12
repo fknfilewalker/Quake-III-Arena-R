@@ -20,13 +20,19 @@ void main()
     rpb.primitiveID = gl_PrimitiveID;
     rpb.hit_distance = gl_RayTmaxNV;
     uint material = get_material(rpb);
-    
-    if(isLight(material)) ignoreIntersectionNV();
-    if(isGlass(material)) ignoreIntersectionNV();
-    if(isWater(material)) ignoreIntersectionNV();
 
+    //ignoreIntersectionNV();
+    //HitPoint hp = getHitPoint(rpb);
+    //if(isGlass(hp.material)) ignoreIntersectionNV();
+    //rp.visFactor = 1.0f;
+    // if(isLight(material)) ignoreIntersectionNV();
+    if(isGlass(material)) ignoreIntersectionNV();
     if(isSeeThrough(material)) ignoreIntersectionNV();
     if(isSeeThroughAdd(material)) ignoreIntersectionNV();
+    // if(isWater(material)) ignoreIntersectionNV();
+//ignoreIntersectionNV();
+    // if(isSeeThrough(material)) ignoreIntersectionNV();
+    // if(isSeeThroughAdd(material)) ignoreIntersectionNV();
 
     // HitPoint hp = getHitPoint(rpb);
 	// vec4 tex = getTextureWithLod(hp,0);

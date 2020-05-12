@@ -136,7 +136,11 @@ uint32_t RB_GetMaterial() {
 	//	){
 	//	material |= MATERIAL_FLAG_SEE_THROUGH_ADD;
 	//}
-	else if (strstr(tess.shader->name, "bloodExplosion")) {
+	else if (strstr(tess.shader->name, "bitch")) {
+		material = MATERIAL_FLAG_SEE_THROUGH;
+		if(tess.shader->rtstages[1] != NULL )tess.shader->rtstages[1]->active = qfalse;
+	}
+	else if (strstr(tess.shader->name, "bloodExplosion") || strstr(tess.shader->name, "base_trim/wires02")) {
 		material  = MATERIAL_FLAG_SEE_THROUGH;
 	}
 	else if (strstr(tess.shader->name, "models/players/hunter/hunter_f")) {
@@ -145,6 +149,8 @@ uint32_t RB_GetMaterial() {
 	else if (tess.shader->sort == SS_BLEND0) {
 		material |= MATERIAL_FLAG_SEE_THROUGH_ADD;
 	}
+
+	//0x000002c0bebbae48 {name=0x000002c0bebbae48 "textures/base_trim/wires02" lightmapIndex=-3 index=87 ...}
 	/*else if (tess.shader->sort == SS_UNDERWATER || tess.shader->sort == SS_BANNER) {
 		material |= MATERIAL_FLAG_SEE_THROUGH;
 	}

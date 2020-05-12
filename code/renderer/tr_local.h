@@ -1772,6 +1772,7 @@ extern	cvar_t  *rt_numRandomDL;
 extern	cvar_t	*pt_numRandomIL;
 extern	cvar_t  *rt_illumination;
 extern	cvar_t  *rt_softshadows;
+extern  cvar_t  *rt_taa;
 extern	cvar_t  *rt_denoiser;
 
 extern  cvar_t* rt_printPerformanceStatistic;

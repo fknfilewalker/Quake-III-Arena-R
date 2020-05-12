@@ -124,14 +124,14 @@ main()
 	case 3: filtered = _filter_image(atrousASVGF_B_S, 3); break;
 	case 4: filtered = _filter_image(atrousASVGF_A_S, 4); break;
 	}
-	if(iteration == 4) {
-		filtered.rgb *= imageLoad(albedoGBuffer, ipos).rgb;
-		filtered.rgb *= 4.0;
-		filtered.rgb -= 0.5;
-		filtered.rgb *= 1.010;
-		filtered.rgb += 0.5;
-		filtered.rgb = clamp(filtered.rgb, vec3(0), vec3(1));
-	}
+	// if(iteration == 4) {
+	// 	filtered.rgb *= imageLoad(albedoGBuffer, ipos).rgb;
+	// 	filtered.rgb *= 4.0;
+	// 	filtered.rgb -= 0.5;
+	// 	filtered.rgb *= 1.010;
+	// 	filtered.rgb += 0.5;
+	// 	filtered.rgb = clamp(filtered.rgb, vec3(0), vec3(1));
+	// }
 	//if(push.iteration == 4)
 	//	filtered = filtered.aaaa;
 

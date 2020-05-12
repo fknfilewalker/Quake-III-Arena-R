@@ -49,7 +49,7 @@ getRay(vec2 pos_cs)
 void main()
 {
 	//if(rrp.depth == 1) return;
-	if(rrp.depth > 3) return;
+	if(rrp.depth > 4) return;
 	
 	RayPayload rp;
 	rp.barycentric = hitAttribute;
@@ -100,7 +100,7 @@ void main()
 		
 		float r0 = (n1-n2)/(n1+n2); r0 *= r0;
 		float fresnel = r0 + (1.-r0) * pow(1.0-abs(ndotr),5.);
-		float ratio = 0.2;//0.2;
+		float ratio = fresnel*2;//0.2;
 		vec4 albedo = ratio * albedoReflection + (1 - ratio) * albedoRefraction;
 		
 		vec4 color = tex * tex.w + albedo * (1-tex.w);

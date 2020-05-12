@@ -465,7 +465,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				int i = 2;
 			}
 			if (strstr(shader->name, "bitch")) {
-				continue;
+				//continue;
 			}
 			if (drawSurf->bAS == NULL) {
 				rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
@@ -696,6 +696,7 @@ static void RB_TraceRays() {
 	ubo->numRandomIL = pt_numRandomIL->integer;
 	ubo->randSampleLight = rt_softshadows->integer;
 	ubo->denoiser = rt_denoiser->integer;
+	ubo->taa = rt_taa->integer;
 
 	ubo->width = vk.swapchain.extent.width;
 	ubo->height = vk.swapchain.extent.height;
@@ -711,6 +712,7 @@ static void RB_TraceRays() {
 		Cvar_Set("cl_paused", "1");
 		Cvar_Set("sv_paused", "1");
 		if(rt_accumulate->integer) ubo->numSamples = vk_d.uboGlobal[(vk.swapchain.currentImage + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount].numSamples + 1;
+		else ubo->numSamples = 1;
 	}
 	else {
 		Cvar_Set("cl_paused", "0");
@@ -869,18 +871,21 @@ static void RB_TraceRays() {
 		}
 		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_ATROUS_END);
 
-		// ASVGF TAA
-		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_TAA_BEGIN);
-		VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfTaaPipeline);
-		VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfTaaPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-		VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
-		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_TAA_END);
 
 	}
 	// compositing
 	VK_BindComputePipeline(&vk_d.accelerationStructures.compositingPipeline);
 	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.compositingPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 	VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].color.handle);
+	// ASVGF TAA
+	if (rt_taa->integer) {
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_TAA_BEGIN);
+		VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfTaaPipeline);
+		VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfTaaPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+		VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_TAA_END);
+	}
 }
 
 static void
@@ -997,14 +1002,14 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	//vkimage_t* drawImage;
 	/*if(rt_denoiser->integer) drawImage = &vk_d.asvgf[vk.swapchain.currentImage].taa;
 	else */
-	vkimage_t* drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];
+	//vkimage_t* drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];
 	//vkimage_t* drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];
 	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].objectInfo;
 	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].color;
 	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].motion;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].debug;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].atrousA;
-	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].taa;
+	vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].taa;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].color;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].gradSamplePos;
 	{

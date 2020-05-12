@@ -163,6 +163,7 @@ cvar_t* rt_accumulate;
 cvar_t* rt_pause;
 cvar_t* rt_antialiasing;
 cvar_t* rt_softshadows;
+cvar_t* rt_taa;
 cvar_t* rt_aperture;
 cvar_t* rt_focalLength;
 cvar_t* rt_dof;
@@ -1384,8 +1385,9 @@ void R_Register( void )
 	rt_numRandomDL = ri.Cvar_Get("rt_numRandomDL", "1", 0);
 	rt_accumulate = ri.Cvar_Get("rt_accumulate", "0", 0);
 	rt_pause = ri.Cvar_Get("rt_pause", "0", 0);
-	rt_antialiasing = ri.Cvar_Get("rt_antialiasing", "0", 0);
+	rt_antialiasing = ri.Cvar_Get("rt_antialiasing", "1", 0);
 	rt_softshadows = ri.Cvar_Get("rt_softshadows", "1", 0);
+	rt_taa = ri.Cvar_Get("rt_taa", "1", 0);
 	rt_aperture = ri.Cvar_Get("rt_aperture", "0.05", 0);
 	rt_focalLength = ri.Cvar_Get("rt_focallength", "15", 0);
 	rt_dof = ri.Cvar_Get("rt_dof", "0", 0);
@@ -1543,6 +1545,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			VK_DestroyRayTracingPipeline(&vk_d.primaryRaysPipeline);
 			VK_DestroyRayTracingPipeline(&vk_d.reflectRaysPipeline);
 			VK_DestroyRayTracingPipeline(&vk_d.directIlluminationPipeline);
+			VK_DestroyCPipeline(&vk_d.accelerationStructures.compositingPipeline);
 
 			VK_DestroyCPipeline(&vk_d.accelerationStructures.asvgfAtrousPipeline);
 			VK_DestroyCPipeline(&vk_d.accelerationStructures.asvgfFwdPipeline);

@@ -289,6 +289,7 @@ STRUCT (
     BOOL    (illumination)
     BOOL    (randSampleLight)
     UINT    (accumulate)
+    BOOL    (taa)
     // dof
     FLOAT   (aperture)
     FLOAT   (focalLength)

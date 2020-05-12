@@ -20,8 +20,38 @@ layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 void main() {
 	vec4 result = vec4(0);
 
-	ivec2 ipos = ivec2(gl_GlobalInvocationID);
-    vec4 color = imageLoad(imgtaaASVGF, ipos);
+// 	ivec2 ipos = ivec2(gl_GlobalInvocationID);
+//     vec4 color = imageLoad(imgtaaASVGF, ipos);
+// 	vec4 albedo = imageLoad(albedoGBuffer, ipos);
+// 	vec4 trans = imageLoad(transparentGBuffer, ipos);
+// 	vec4 cout = alpha_blend( trans, vec4(color.xyz,1));
+// 	vec4 directIll = imageLoad(IMG_GBUFFER_ILLUMINATION, ipos);
+// 	//if(trans.a > 0) imageStore(imgtaaASVGF, ipos, trans);
+
+// 	result += albedo;
+// 	if(ubo.illumination){
+// 		result.xyz *= directIll.xyz;
+// 		//result.xyz += albedo.rgb * 0.25f;
+// 		result = alpha_blend( trans, vec4(result.xyz,1));
+
+// 		if(ubo.denoiser) result = alpha_blend( trans, vec4(color.xyz,1));//result = alpha_blend( trans, vec4(color.xyz,1));
+// 		else result.xyz *= 3.2;
+// 	} else result = alpha_blend( trans, vec4(result.xyz,1));
+
+// 	if(ubo.accumulate == 1) {
+// 		vec3 outPrev = imageLoad(imageAccumulationPrev, ipos).xyz;
+// 		result.xyz = (result.xyz + outPrev);
+// 		imageStore(imageAccumulation, ipos, vec4( result.xyz ,1));
+// 		result.xyz /= float(ubo.numSamples);
+// 	} else{
+// 		imageStore(imageAccumulation, ipos, vec4( result.xyz ,1));	
+// 	}
+
+// 	imageStore(image, ipos, vec4(result.xyz, 1));
+// }
+
+ivec2 ipos = ivec2(gl_GlobalInvocationID);
+    vec4 color = imageLoad(IMG_ASVGF_COLOR, ipos);//IMG_ASVGF_COLOR
 	vec4 albedo = imageLoad(albedoGBuffer, ipos);
 	vec4 trans = imageLoad(transparentGBuffer, ipos);
 	vec4 cout = alpha_blend( trans, vec4(color.xyz,1));
@@ -34,7 +64,15 @@ void main() {
 		//result.xyz += albedo.rgb * 0.25f;
 		result = alpha_blend( trans, vec4(result.xyz,1));
 
-		if(ubo.denoiser) result = alpha_blend( trans, vec4(color.xyz,1));//result = alpha_blend( trans, vec4(color.xyz,1));
+		if(ubo.denoiser) {
+			color.rgb *= albedo.rgb;
+			color.rgb *= 4.0;
+			color.rgb -= 0.5;
+			color.rgb *= 1.010;
+			color.rgb += 0.5;
+			color.rgb = clamp(color.rgb, vec3(0), vec3(1));
+			result = alpha_blend( trans, vec4(color.xyz,1));//result = alpha_blend( trans, vec4(color.xyz,1));
+		}
 		else result.xyz *= 3.2;
 	} else result = alpha_blend( trans, vec4(result.xyz,1));
 
@@ -47,5 +85,7 @@ void main() {
 		imageStore(imageAccumulation, ipos, vec4( result.xyz ,1));	
 	}
 
-	imageStore(image, ipos, vec4(result.xyz, 1));
+	if(ubo.taa) imageStore(IMG_ASVGF_COLOR, ipos, vec4(result.xyz, 1));
+	else imageStore(imgtaaASVGF, ipos, vec4(result.xyz, 1));
+	//imageStore(imgtaaASVGF, ipos, vec4(result.xyz, 1));
 }
