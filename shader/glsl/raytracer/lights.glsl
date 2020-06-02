@@ -124,11 +124,13 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 		float lightStrength =  min(light.mag / distToLight, 5);
 		vec3 lightIntensity = light.color * lightStrength;
 
-		float LdotN = clamp(dot(N, L), 0.0, 1.0);
+		float LdotN = clamp(dot(normalize(N), L), 0.0, 1.0);
 		//float LdotN2 = clamp(dot(-light.normal, -L), 0.0, 1.0);
 		shadeColor += shadowMult * LdotN * lightIntensity;
 	}
-	return shadeColor / M_PI;
+
+	vec3 ret = shadeColor / M_PI;
+	return clamp_color(ret, 2 * (totalNumLights/imageLoad(lightVis_data, ivec2(0, cluster)).r));
 	//shadeColor *= primary_albedo.rgb / M_PI;
 	//return (shadeColor * primary_albedo.rgb / M_PI);// + primary_albedo.rgb * 0.25f;
 	//return primary_albedo.rgb;
