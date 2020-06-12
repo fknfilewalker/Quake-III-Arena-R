@@ -697,6 +697,7 @@ static void RB_TraceRays() {
 	ubo->randSampleLight = rt_softshadows->integer;
 	ubo->denoiser = rt_denoiser->integer;
 	ubo->taa = rt_taa->integer;
+	ubo->debugLights = rt_debug_lights->integer;
 
 	ubo->width = vk.swapchain.extent.width;
 	ubo->height = vk.swapchain.extent.height;

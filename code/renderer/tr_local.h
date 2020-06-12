@@ -1772,6 +1772,7 @@ extern	cvar_t  *rt_numRandomDL;
 extern	cvar_t	*pt_numRandomIL;
 extern	cvar_t  *rt_illumination;
 extern	cvar_t  *rt_softshadows;
+extern	cvar_t  *rt_numSamples;
 extern  cvar_t  *rt_taa;
 extern	cvar_t  *rt_denoiser;
 
@@ -1781,6 +1782,7 @@ extern  cvar_t* rt_pause;
 extern  cvar_t* rt_aperture;
 extern  cvar_t* rt_focalLength;
 extern  cvar_t* rt_dof;
+extern  cvar_t* rt_debug_lights;
 extern	cvar_t	*rt_antialiasing;
 
 //====================================================================

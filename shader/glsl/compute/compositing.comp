@@ -17,6 +17,11 @@ layout(binding = BINDING_OFFSET_RESULT_ACCUMULATION_PREV, set = 0, rgba8) unifor
 
 layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
+bool
+isLight(in uint material) {
+	return ((material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT);
+}
+
 void main() {
 	vec4 result = vec4(0);
 
@@ -56,6 +61,7 @@ ivec2 ipos = ivec2(gl_GlobalInvocationID);
 	vec4 trans = imageLoad(transparentGBuffer, ipos);
 	vec4 cout = alpha_blend( trans, vec4(color.xyz,1));
 	vec4 directIll = imageLoad(IMG_GBUFFER_ILLUMINATION, ipos);
+	uint material = uint(imageLoad(viewGBuffer, ipos).w);
 	//if(trans.a > 0) imageStore(imgtaaASVGF, ipos, trans);
 
 	result += albedo;
@@ -83,6 +89,10 @@ ivec2 ipos = ivec2(gl_GlobalInvocationID);
 		result.xyz /= float(ubo.numSamples);
 	} else{
 		imageStore(imageAccumulation, ipos, vec4( result.xyz ,1));	
+	}
+
+	if(ubo.debugLights){
+		if (isLight(material)) result.xyz = vec3(1,0,0);
 	}
 
 	if(ubo.taa) imageStore(IMG_ASVGF_COLOR, ipos, vec4(result.xyz, 1));
