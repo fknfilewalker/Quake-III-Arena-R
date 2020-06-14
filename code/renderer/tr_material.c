@@ -2,12 +2,16 @@
 
 qboolean RB_IsLight(shader_t
 	* shader) {
+	//if (strstr(tess.shader->name, "lamplight_y")) return qtrue;
 	if (tess.numIndexes > 12) {
-		return qfalse;
+		if(!strstr(shader->name, "proto_light_2k") && !strstr(shader->name, "gothic_light3_2K")) return qfalse;
 	}
 	if (strstr(shader->name, "wsupprt1_12") || strstr(shader->name, "scrolllight") || strstr(shader->name, "runway")) return qfalse;
 
 	if (strstr(shader->name, "base_light") || strstr(shader->name, "gothic_light") || strstr(shader->name, "lamplight_y") /*|| strstr(tess.shader->name, "eye")*/) { // all lamp textures
+		if (tess.numIndexes > 12) {
+			//int a = 2;
+		}
 		return qtrue;
 	}
 	

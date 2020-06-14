@@ -130,7 +130,7 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 	}
 
 	vec3 ret = shadeColor / M_PI;
-	return clamp_color(ret, 2 * (totalNumLights/imageLoad(lightVis_data, ivec2(0, cluster)).r));
+	return ret;//clamp_color(ret, 2 * (totalNumLights/imageLoad(lightVis_data, ivec2(0, cluster)).r));
 	//shadeColor *= primary_albedo.rgb / M_PI;
 	//return (shadeColor * primary_albedo.rgb / M_PI);// + primary_albedo.rgb * 0.25f;
 	//return primary_albedo.rgb;

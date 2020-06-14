@@ -1804,12 +1804,14 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 			float size = VectorLength(normal);
 			VectorScale(normal, 1.0f / size, normal);
 
+			
+
 			VectorCopy(tess.xyz[tess.indexes[i + 0]], vk_d.lightList.lights[vk_d.lightList.numLights].pos);
 			vk_d.lightList.lights[vk_d.lightList.numLights].cluster = cluster;
 			vk_d.lightList.lights[vk_d.lightList.numLights].type = type;
 			vk_d.lightList.lights[vk_d.lightList.numLights].offsetIDX = offsetidx;
 			vk_d.lightList.lights[vk_d.lightList.numLights].offsetXYZ = offsetxyz;
-			vk_d.lightList.lights[vk_d.lightList.numLights].size = size;
+			vk_d.lightList.lights[vk_d.lightList.numLights].size = size/2;
 			memcpy(vk_d.lightList.lights[vk_d.lightList.numLights].normal, normal, sizeof(vec3_t));
 			memcpy(vk_d.lightList.lights[vk_d.lightList.numLights].AB, AB, sizeof(vec4_t));
 			memcpy(vk_d.lightList.lights[vk_d.lightList.numLights].AC, AC, sizeof(vec4_t));
@@ -1827,17 +1829,23 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 245.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 205.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 139.0f / 255.0f;
+				if (strstr(tess.shader->name, "proto_light_2k")) vk_d.lightList.lights[vk_d.lightList.numLights].size /= 3;
+				else vk_d.lightList.lights[vk_d.lightList.numLights].size /= 3;
+				//vk_d.lightList.lights[vk_d.lightList.numLights].size /= 3;
 			}
 			else if (strstr(tess.shader->name, "gothic_light")) {
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 245.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 205.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 139.0f / 255.0f;
 				if (strstr(tess.shader->name, "pentagram")) vk_d.lightList.lights[vk_d.lightList.numLights].size /= 2;
+				else if(strstr(tess.shader->name, "gothic_light3_2K")) vk_d.lightList.lights[vk_d.lightList.numLights].size /= 6;
+				//else vk_d.lightList.lights[vk_d.lightList.numLights].size = 0;
 			}
 			else if (strstr(tess.shader->name, "baslt4_1")) {
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 245.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 205.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 139.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].size /= 5;
 			}
 			else if (strstr(tess.shader->name, "flame")) {
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 226.0f / 255.0f;
@@ -1874,6 +1882,20 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 			}
 			vk_d.lightList.lights[vk_d.lightList.numLights].color[3] = 0;
 			if(vk_d.lightList.lights[vk_d.lightList.numLights].size > 200)vk_d.lightList.lights[vk_d.lightList.numLights].size /= 4;
+
+
+			if (strstr(tess.shader->name, "lamplight_y")) {
+				vec3_t pos = { 0,0,0 };
+				for (int u = 0; u < tess.numIndexes; u++) {
+					VectorAdd(tess.xyz[tess.indexes[u + 0]], pos, pos);
+				}
+				VectorScale(pos, 1.0f / tess.numIndexes, pos);
+				VectorCopy(pos, vk_d.lightList.lights[vk_d.lightList.numLights].pos);
+				vk_d.lightList.lights[vk_d.lightList.numLights].size *= 5;
+				vk_d.lightList.numLights++;
+				return;
+			}
+
 			vk_d.lightList.numLights++;
 		}
 	}
