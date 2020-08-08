@@ -290,7 +290,7 @@ STRUCT (
     BOOL    (illumination)
     BOOL    (randSampleLight)
     UINT    (accumulate)
-    BOOL    (taa)
+    UINT    (taa)
     BOOL    (debugLights)
     // dof
     FLOAT   (aperture)
