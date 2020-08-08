@@ -279,6 +279,7 @@ STRUCT (
     INT		(numClusters)
  	INT		(clusterBytes)
     UINT    (numSamples)
+    UINT    (maxSamples)
     UINT    (width)
     UINT    (height)
     // settings

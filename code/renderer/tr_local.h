@@ -1773,6 +1773,7 @@ extern	cvar_t	*pt_numRandomIL;
 extern	cvar_t  *rt_illumination;
 extern	cvar_t  *rt_softshadows;
 extern	cvar_t  *rt_numSamples;
+extern	cvar_t  *rt_maxSamples;
 extern  cvar_t  *rt_taa;
 extern	cvar_t  *rt_denoiser;
 

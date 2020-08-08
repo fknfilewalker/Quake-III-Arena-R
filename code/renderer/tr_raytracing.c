@@ -709,16 +709,19 @@ static void RB_TraceRays() {
 	ubo->randomPixelOffset = rt_antialiasing->integer;
 	ubo->accumulate = rt_accumulate->integer;
 
+	ubo->maxSamples = rt_maxSamples->integer;
 	if (rt_accumulate->integer || rt_pause->integer) {
 		Cvar_Set("cl_paused", "1");
 		Cvar_Set("sv_paused", "1");
-		if(rt_accumulate->integer) ubo->numSamples = vk_d.uboGlobal[(vk.swapchain.currentImage + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount].numSamples + 1;
-		else ubo->numSamples = 1;
+		int prevNumSamples = vk_d.uboGlobal[(vk.swapchain.currentImage + (vk.swapchain.imageCount - 1)) % vk.swapchain.imageCount].numSamples;
+		if (rt_accumulate->integer && (ubo->maxSamples == 0 || prevNumSamples < ubo->maxSamples)) ubo->numSamples = prevNumSamples + 1;
+		else if (!rt_accumulate->integer) ubo->numSamples = 0;
+		else ubo->numSamples = prevNumSamples;
 	}
 	else {
 		Cvar_Set("cl_paused", "0");
 		Cvar_Set("sv_paused", "0");
-		ubo->numSamples = 1;
+		ubo->numSamples = 0;
 	}
 
 	float viewMatrix[16];

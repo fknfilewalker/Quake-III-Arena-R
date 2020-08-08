@@ -84,9 +84,10 @@ ivec2 ipos = ivec2(gl_GlobalInvocationID);
 
 	if(ubo.accumulate == 1) {
 		vec3 outPrev = imageLoad(imageAccumulationPrev, ipos).xyz;
-		result.xyz = (result.xyz + outPrev);
+		if (ubo.maxSamples == 0 || ubo.numSamples < ubo.maxSamples) result.xyz = (result.xyz + outPrev);
+		else result.xyz = outPrev;
 		imageStore(imageAccumulation, ipos, vec4( result.xyz ,1));
-		result.xyz /= float(ubo.numSamples);
+		result.xyz /= float( ubo.numSamples != ubo.maxSamples ? ubo.numSamples + 1 : ubo.numSamples);
 	} else{
 		imageStore(imageAccumulation, ipos, vec4( result.xyz ,1));	
 	}

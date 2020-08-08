@@ -165,6 +165,7 @@ cvar_t* rt_debug_lights;
 cvar_t* rt_antialiasing;
 cvar_t* rt_softshadows;
 cvar_t* rt_numSamples;
+cvar_t* rt_maxSamples;
 cvar_t* rt_taa;
 cvar_t* rt_aperture;
 cvar_t* rt_focalLength;
@@ -1390,6 +1391,7 @@ void R_Register( void )
 	rt_antialiasing = ri.Cvar_Get("rt_antialiasing", "1", 0);
 	rt_debug_lights = ri.Cvar_Get("rt_debug_lights", "0", 0);
 	rt_numSamples = ri.Cvar_Get("rt_numSamples", "1", 0);
+	rt_maxSamples = ri.Cvar_Get("rt_maxSamples", "0", 0);
 	rt_softshadows = ri.Cvar_Get("rt_softshadows", "1", 0);
 	rt_taa = ri.Cvar_Get("rt_taa", "1", 0);
 	rt_aperture = ri.Cvar_Get("rt_aperture", "0.05", 0);
