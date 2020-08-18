@@ -1893,6 +1893,12 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 24.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].size /= 4;
 			}
+			else if (strstr(tess.shader->name, "base_light/ceil1_37")) {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 128.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 71.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 142.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].size /= 1;
+			}
 			else {
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 0;
