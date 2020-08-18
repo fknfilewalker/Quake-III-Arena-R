@@ -107,6 +107,39 @@ void main()
 		rrp.color = color;	
 	} 
 	else 
+	if(isWater(hp.material)){
+		// if texture (alpha) not see through enough then do not trace further
+	
+
+		vec3 originalDir = normalize(gl_WorldRayDirectionNV);
+		vec3 N = normalize(hp.normal);
+		float n1 = 1.3, n2 = 1.0, ndotr = dot(originalDir, N);  
+		if( ndotr > 0.0f ) {
+			N = -N;
+		}
+
+		vec4 albedoReflection;
+		vec4 albedoRefraction;
+		rrp.color = vec4(0);
+		rrp.depth = depth;
+		traceReflect(hp.pos, originalDir, N);
+		albedoReflection = rrp.color;
+
+		rrp.color = vec4(0);
+		rrp.depth = depth;
+		traceRefract(hp.pos, originalDir, N, n1, n2);
+		albedoRefraction = rrp.color;
+		
+		float r0 = (n1-n2)/(n1+n2); r0 *= r0;
+		float fresnel = r0 + (1.-r0) * pow(1.0-abs(ndotr),5.);
+		float ratio = fresnel*2;//0.2;
+		vec4 albedo = ratio * albedoReflection + (1 - ratio) * albedoRefraction;
+		
+		//vec4 color = tex * tex.w + albedo * (1-tex.w);
+		vec4 color = albedo * tex;
+		rrp.color = color;	
+	} 
+	else
 	if (isSeeThrough(hp.material)){
 		if(tex.w > 0.5) {
 			rrp.pos = hp.pos;
