@@ -1875,6 +1875,24 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 100.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].size /= 1.75;
 			}
+			else if (strstr(tess.shader->name, "base_light/ceil1_39")) {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 140.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 123.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 69.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].size /= 4;
+			}
+			else if (strstr(tess.shader->name, "base_light/ceil_white5k")) {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 173.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 169.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 140.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].size /= 4;
+			}
+			else if (strstr(tess.shader->name, "base_light/ceil1_22a")) {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 254.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 86.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 24.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].size /= 4;
+			}
 			else {
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 0;
