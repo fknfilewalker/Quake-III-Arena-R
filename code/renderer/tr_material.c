@@ -91,7 +91,8 @@ uint32_t RB_GetMaterial() {
 	//+		tess.shader	0x0000023576446ce8 {name=0x0000023576446ce8 "textures/base_floor/rusty_pentagrate" lightmapIndex=-3 ...}	shader_s *
 	//proto_rustygrate gratetorch2b 0x00000206adcea548 {name=0x00000206adcea548 "models/mapobjects/gratelamp/gratetorch2b" lightmapIndex=...}
 	if (strstr(tess.shader->name, "timlamp/timlamp") || strstr(tess.shader->name, "gratelamp/gratelamp") || strstr(tess.shader->name, "proto_grate")
-		|| strstr(tess.shader->name, "base_floor/rusty_pentagrate") || strstr(tess.shader->name, "base_floor/proto_rustygrate") || strstr(tess.shader->name, "gratelamp/gratetorch2b") || (strstr(tess.shader->name, "base_floor") && strstr(tess.shader->name, "grate")) ) {
+		|| strstr(tess.shader->name, "base_floor/rusty_pentagrate") || strstr(tess.shader->name, "base_floor/proto_rustygrate") || strstr(tess.shader->name, "gratelamp/gratetorch2b") || (strstr(tess.shader->name, "base_floor") && strstr(tess.shader->name, "grate") ||
+			strstr(tess.shader->name, "flag") || strstr(tess.shader->name, "protobanner")) ) {
 		material = MATERIAL_FLAG_SEE_THROUGH;
 	}
 
@@ -101,9 +102,10 @@ uint32_t RB_GetMaterial() {
 		) {
 		material = MATERIAL_KIND_GLASS;
 	}
-	if (strstr(tess.shader->name, "flag")) {
+	if (strstr(tess.shader->name, "banner")) {
 		int x = 2;//material = MATERIAL_KIND_WATER;
 	}
+
 	//+		tess.shader	0x0000027dd20c1da8 {name=0x0000027dd20c1da8 "textures/sfx/portal_sfx_ring" lightmapIndex=-3 index=118 ...}	shader_s *
 	//+		name	0x0000020228d63a68 "textures/liquids/calm_poollight"	char[64]
 
