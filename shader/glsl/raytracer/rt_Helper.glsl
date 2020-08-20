@@ -154,10 +154,10 @@ float nextRand(inout uint s)
 }
 
 // Get a cosine-weighted random vector centered around a specified normal direction.
-vec3 getCosHemisphereSample(inout uint randSeed, vec3 hitNorm)
+vec3 getCosHemisphereSample(vec2 randVal, /*inout uint randSeed,*/ vec3 hitNorm)
 {
 	// Get 2 random numbers to select our sample with
-	vec2 randVal = vec2(nextRand(randSeed), nextRand(randSeed));
+	//vec2 randVal = vec2(nextRand(randSeed), nextRand(randSeed));
 
 	// Cosine weighted hemisphere sample from RNG
 	vec3 bitangent = getPerpendicularVector(hitNorm);
@@ -168,10 +168,10 @@ vec3 getCosHemisphereSample(inout uint randSeed, vec3 hitNorm)
 	// Get our cosine-weighted hemisphere lobe sample direction
 	return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * sqrt(max(0.0,1.0f - randVal.x));
 }
-vec3 getCosHemisphereSample2(vec2 rand, vec3 hitNorm)
+vec3 getCosHemisphereSample2(vec2 randVal, /*vec2 rand,*/ vec3 hitNorm)
 {
 	// Get 2 random numbers to select our sample with
-	vec2 randVal = rand;
+	//vec2 randVal = rand;
 
 	// Cosine weighted hemisphere sample from RNG
 	vec3 bitangent = getPerpendicularVector(hitNorm);
@@ -194,10 +194,10 @@ sample_sphere(vec2 uv)
 
 
 // Get a uniform weighted random vector centered around a specified normal direction.
-vec3 getUniformHemisphereSample(inout uint randSeed, vec3 hitNorm)
+vec3 getUniformHemisphereSample(vec2 randVal,/*inout uint randSeed,*/ vec3 hitNorm)
 {
 	// Get 2 random numbers to select our sample with
-	vec2 randVal = vec2(nextRand(randSeed), nextRand(randSeed));
+	//vec2 randVal = vec2(nextRand(randSeed), nextRand(randSeed));
 
 	// Cosine weighted hemisphere sample from RNG
 	vec3 bitangent = getPerpendicularVector(hitNorm);

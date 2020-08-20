@@ -13,10 +13,6 @@
 #include "gbuffer.glsl"
 #include "../compute/asvgf.glsl"
 
-layout(binding = BINDING_OFFSET_RESULT_OUTPUT, set = 0, rgba8) uniform image2D image;
-
-layout(binding = BINDING_OFFSET_RESULT_ACCUMULATION, set = 0, rgba8) uniform image2D imageAccumulation;
-layout(binding = BINDING_OFFSET_RESULT_ACCUMULATION_PREV, set = 0, rgba8) uniform image2D imageAccumulationPrev;
 // Bindings
 layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 {
@@ -55,7 +51,7 @@ vec3 directIllumination(){
 	cluster = uint(imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
 
 	if (isSky(material)) {
-		imageStore(IMG_GBUFFER_ILLUMINATION, ivec2(gl_LaunchIDNV.xy), vec4(1,1,1,0));
+		imageStore(IMG_GBUFFER_DIRECT_ILLUMINATION, ivec2(gl_LaunchIDNV.xy), vec4(1,1,1,0));
 		return alpha_blend( transparent, vec4(primary_albedo.xyz,1)).xyz;
 	}
 	
@@ -68,9 +64,9 @@ vec3 directIllumination(){
 		//shadeColor += primary_albedo.rgb * 0.25f;
 	}
 	shadeColor = alpha_blend( transparent, vec4(shadeColor.rgb,1) ).xyz;
-	imageStore(IMG_GBUFFER_ILLUMINATION, ivec2(gl_LaunchIDNV.xy), vec4( directIllumination ,1));
+	imageStore(IMG_GBUFFER_DIRECT_ILLUMINATION, ivec2(gl_LaunchIDNV.xy), vec4( directIllumination ,1));
 	if (isLight(material)) {
-		imageStore(IMG_GBUFFER_ILLUMINATION, ivec2(gl_LaunchIDNV.xy), vec4(vec3(0.3),1));
+		imageStore(IMG_GBUFFER_DIRECT_ILLUMINATION, ivec2(gl_LaunchIDNV.xy), vec4(vec3(0.3),1));
 	}
 	return shadeColor;
 }

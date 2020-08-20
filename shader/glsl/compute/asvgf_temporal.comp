@@ -82,7 +82,7 @@ temporal_filter()
 {
 	ivec2 ipos = ivec2(gl_GlobalInvocationID);
 	vec4 motion = imageLoad(motionGBuffer, ipos);
-	vec4  color_curr = imageLoad(IMG_GBUFFER_ILLUMINATION, ipos);
+	vec4  color_curr = imageLoad(IMG_GBUFFER_DIRECT_ILLUMINATION, ipos);
 	float lum_curr   = luminance(color_curr.rgb);
 
 	/* env map */
@@ -185,7 +185,7 @@ temporal_filter()
  				vec3  normal  = imageLoad(normalGBuffer, p).xyz;
 				float dist_z = abs(depth_curr - depth) * motion.a;
 				if(dist_z < 2.0) {
-					vec4 col_p  = imageLoad(IMG_GBUFFER_ILLUMINATION, p);
+					vec4 col_p  = imageLoad(IMG_GBUFFER_DIRECT_ILLUMINATION, p);
 					float lum_p = luminance(col_p.rgb);
 
 					float w = pow(max(0.0, dot(normal, normal_curr)), 128.0);

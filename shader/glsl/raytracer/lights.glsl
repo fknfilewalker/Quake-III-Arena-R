@@ -135,3 +135,75 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 	//return (shadeColor * primary_albedo.rgb / M_PI);// + primary_albedo.rgb * 0.25f;
 	//return primary_albedo.rgb;
 }
+
+vec3 calcShadingIndirect(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, in uint material){
+	//if(!ubo.illumination) return primary_albedo.xyz;if(!ubo.illumination) return primary_albedo.xyz;
+	vec3 shadeColor = vec3(0);
+
+	float amplification = 1;
+	uint numLights; 
+	if(ubo.cullLights) numLights = imageLoad(lightVis_data, ivec2(0, cluster)).r;
+	else numLights = uboLights.lightList.numLights;
+	uint totalNumLights = numLights;
+
+	if(ubo.numRandomIL > 0) {
+		numLights = min(numLights, ubo.numRandomIL);
+		amplification = float(totalNumLights) / float(numLights);
+	}
+	//amplification = uboLights.lightList.numLights;
+	//if(!ubo.cullLights) amplification *= 14;
+
+	for(int i = 0; i < numLights; i++){
+		uint lightIndex;
+		//uint rand = int(round(get_rng(RNG_C(0), int(ubo.frameIndex)) * (numLight))) ;
+		if(ubo.cullLights) {
+			if(ubo.numRandomIL > 0) {
+				//uint rand = int(round(get_rng(RNG_C(i), int(ubo.frameIndex)) * (totalNumLights)));
+				//uint rand = int(round(get_rng2(RNG_NEE_LL(0)) * (totalNumLights)));
+				uint rand = int(round(getRNG(ubo.denoiser, RNG_NEE_LL(i), int(ubo.frameIndex)) * (totalNumLights)));
+				lightIndex = imageLoad(lightVis_data, ivec2( rand + 1, cluster)).r;
+			}
+			else lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
+			// if(lightVisible(i, cluster)){
+			// 	lightIndex = i;
+			// }
+			// else continue;
+		}
+		else {
+			// if(lightVisible(i, cluster)){
+			// 	lightIndex = i;
+			// }
+			// else continue;
+			if(ubo.numRandomIL > 0) {
+				//lightIndex = int(round(get_rng(RNG_C(i), int(ubo.frameIndex)) * (totalNumLights)));
+				//lightIndex = int(round(get_rng2(RNG_NEE_LL(0)) * (totalNumLights)));
+				lightIndex = int(round(getRNG(ubo.denoiser, RNG_NEE_LL(i), int(ubo.frameIndex)) * (totalNumLights)));
+			}
+			else lightIndex = i;
+		}
+		
+	
+		DirectionalLight light = getLight2(uboLights.lightList.lights[lightIndex], ivec2(i, ubo.frameIndex), ubo.randSampleLight);
+		vec3 posLight = light.pos;
+		vec3 toLight = posLight - P;
+		vec3 L = normalize(toLight);
+		float distToLight =	length(toLight);
+	 	float shadowMult = trace_shadow_ray(P, L, 0.01f, distToLight, isPlayer(material));
+		if(shadowMult == 0) continue;
+		shadowMult *= amplification; // if we only would use one light it would need to be multiplied with numLights
+		float lightStrength =  min(light.mag / distToLight, 5);
+		vec3 lightIntensity = light.color * lightStrength;
+
+		float LdotN = clamp(dot(normalize(N), L), 0.0, 1.0);
+		//float LdotN2 = clamp(dot(-light.normal, -L), 0.0, 1.0);
+		bool gCosSampling = false;
+		float sampleProb = gCosSampling ? (LdotN / M_PI) : (1.0f / (2.0f * M_PI));
+		shadeColor += shadowMult * LdotN * lightIntensity;
+		//shadeColor /= sampleProb;
+	}
+	vec3 ret = shadeColor / M_PI;
+	return ret;//clamp_color(ret, 2 * (totalNumLights/imageLoad(lightVis_data, ivec2(0, cluster)).r));
+	//shadeColor *= primary_albedo.rgb / M_PI;
+	//return (shadeColor * primary_albedo.rgb / M_PI);// + primary_albedo.rgb * 0.25f;
+	//return primary_albedo.rgb;
+}

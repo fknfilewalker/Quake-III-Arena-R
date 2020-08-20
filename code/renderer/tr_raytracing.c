@@ -693,7 +693,8 @@ static void RB_TraceRays() {
 	ubo->showIntermediateResults = pt_showIntermediateResults->integer;
 	ubo->cullLights = rt_cullLights->integer;
 	ubo->numRandomDL = rt_numRandomDL->integer;
-	ubo->numRandomIL = pt_numRandomIL->integer;
+	ubo->numRandomIL = rt_numRandomIL->integer;
+	ubo->numBounces = rt_numBounces->integer;
 	ubo->randSampleLight = rt_softshadows->integer;
 	ubo->denoiser = rt_denoiser->integer;
 	ubo->taa = rt_taa->integer;
@@ -826,8 +827,17 @@ static void RB_TraceRays() {
 	VK_TraceRays(&vk_d.directIlluminationPipeline);
 	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_DIRECT_ILLUMINATION_END);
 
+	// indirect Ill
+	if (ubo->numBounces > 0) {
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_INDIRECT_ILLUMINATION_BEGIN);
+		VK_BindRayTracingPipeline(&vk_d.indirectIlluminationPipeline);
+		VK_Bind2RayTracingDescriptorSets(&vk_d.indirectIlluminationPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+		VK_TraceRays(&vk_d.indirectIlluminationPipeline);
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_INDIRECT_ILLUMINATION_END);
+	}
+
 	if (rt_denoiser->integer) {
-		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].color.handle);
+		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].directIllumination.handle);
 
 		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_GRADIENT_BEGIN);
 		VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfGradImgPipeline);

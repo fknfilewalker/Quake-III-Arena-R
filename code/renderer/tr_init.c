@@ -158,6 +158,8 @@ cvar_t* rt_illumination;
 
 cvar_t* rt_cullLights;
 cvar_t* rt_numRandomDL;
+cvar_t* rt_numRandomIL;
+cvar_t* rt_numBounces;
 cvar_t* rt_printPerformanceStatistic;
 cvar_t* rt_accumulate;
 cvar_t* rt_pause;
@@ -292,9 +294,9 @@ static void InitVulkan(void)
 				VK_CreateSampler(&vk_d.gBuffer[i].albedo, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 				VK_TransitionImage(&vk_d.gBuffer[i].albedo, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-				VK_CreateImage(&vk_d.gBuffer[i].color, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+				/*VK_CreateImage(&vk_d.gBuffer[i].color, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
 				VK_CreateSampler(&vk_d.gBuffer[i].color, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-				VK_TransitionImage(&vk_d.gBuffer[i].color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+				VK_TransitionImage(&vk_d.gBuffer[i].color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);*/
 
 				VK_CreateImage(&vk_d.gBuffer[i].normals, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
 				VK_CreateSampler(&vk_d.gBuffer[i].normals, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
@@ -315,6 +317,10 @@ static void InitVulkan(void)
 				VK_CreateImage(&vk_d.gBuffer[i].directIllumination, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
 				VK_CreateSampler(&vk_d.gBuffer[i].directIllumination, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 				VK_TransitionImage(&vk_d.gBuffer[i].directIllumination, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+				VK_CreateImage(&vk_d.gBuffer[i].indirectIllumination, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+				VK_CreateSampler(&vk_d.gBuffer[i].indirectIllumination, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+				VK_TransitionImage(&vk_d.gBuffer[i].indirectIllumination, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
 				VK_CreateImage(&vk_d.gBuffer[i].objectInfo, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
 				VK_CreateSampler(&vk_d.gBuffer[i].objectInfo, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
@@ -1386,6 +1392,8 @@ void R_Register( void )
 	rt_printPerformanceStatistic = ri.Cvar_Get("rt_printPerfStats", "0", CVAR_TEMP);
 	rt_cullLights = ri.Cvar_Get("rt_cullLights", "1", 0);
 	rt_numRandomDL = ri.Cvar_Get("rt_numRandomDL", "1", 0);
+	rt_numRandomIL = ri.Cvar_Get("rt_numRandomIL", "1", 0);
+	rt_numBounces = ri.Cvar_Get("rt_numBounces", "0", 0);
 	rt_accumulate = ri.Cvar_Get("rt_accumulate", "0", 0);
 	rt_pause = ri.Cvar_Get("rt_pause", "0", 0);
 	rt_antialiasing = ri.Cvar_Get("rt_antialiasing", "1", 0);

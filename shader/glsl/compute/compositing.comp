@@ -64,7 +64,7 @@ ivec2 ipos = ivec2(gl_GlobalInvocationID);
 	vec4 albedo = imageLoad(albedoGBuffer, ipos);
 	vec4 trans = imageLoad(transparentGBuffer, ipos);
 	vec4 cout = alpha_blend( trans, vec4(color.xyz,1));
-	vec4 directIll = imageLoad(IMG_GBUFFER_ILLUMINATION, ipos);
+	vec4 directIll = imageLoad(IMG_GBUFFER_DIRECT_ILLUMINATION, ipos);
 	uint material = uint(imageLoad(viewGBuffer, ipos).w);
 	//if(trans.a > 0) imageStore(imgtaaASVGF, ipos, trans);
 

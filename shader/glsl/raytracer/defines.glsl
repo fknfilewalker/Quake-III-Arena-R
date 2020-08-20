@@ -20,6 +20,9 @@
 #define RNG_NEE_LH(bounce)                (2 + 0 + 7 * bounce)
 #define RNG_NEE_TRI_X(bounce)             (2 + 1 + 7 * bounce)
 #define RNG_NEE_TRI_Y(bounce)             (2 + 2 + 7 * bounce)
+#define RNG_NEE_LL(bounce)                (2 + 3 + 7 * bounce)
+#define RNG_NEE_BOUNCE_X(bounce)                (2 + 4 + 7 * bounce)
+#define RNG_NEE_BOUNCE_Y(bounce)                (2 + 5 + 7 * bounce)
 
 #define RNG_C(bounce)                (1 + 0 + 7 * bounce)
 #define RNG_LP_X(bounce)             (3 + 0 + 7 * bounce)

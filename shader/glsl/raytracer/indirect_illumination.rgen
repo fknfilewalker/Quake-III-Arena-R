@@ -11,11 +11,8 @@
 #include "globalTexture.glsl"
 #include "vertexData.glsl"
 #include "gbuffer.glsl"
+#include "../compute/asvgf.glsl"
 
-layout(binding = BINDING_OFFSET_RESULT_OUTPUT, set = 0, rgba8) uniform image2D image;
-
-layout(binding = BINDING_OFFSET_RESULT_ACCUMULATION, set = 0, rgba8) uniform image2D imageAccumulation;
-layout(binding = BINDING_OFFSET_RESULT_ACCUMULATION_PREV, set = 0, rgba8) uniform image2D imageAccumulationPrev;
 // Bindings
 layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 {
@@ -24,7 +21,7 @@ layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 #include "traceRay.glsl"
 #include "lights.glsl"
 
-vec3 directIllumination(){
+vec3 indirectIllumination(){
 	vec4 primary_albedo;
 	vec4 transparent;
 	vec3 normal;
@@ -33,46 +30,79 @@ vec3 directIllumination(){
 	uint material;
 	float depth;
 	vec3 motion;
+	vec3 illumination;
 
 	uvec4 utemp;
-	//utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
+	bool temporal_accum = true;
+	transparent = imageLoad(transparentGBuffer, ivec2(gl_LaunchIDNV.xy));
+	material = uint(imageLoad(viewGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
+	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
 	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
-	material = uint(imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
 	cluster = uint(imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
-	
-	transparent = imageLoad(transparentGBuffer, ivec2(gl_LaunchIDNV.xy));
-	if( isGlass(material) || isWater(material)){
-		vec4 reflectAlbedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
-		return alpha_blend( transparent, reflectAlbedo).xyz;
-	}
-
-	primary_albedo = imageLoad(albedoGBuffer, ivec2(gl_LaunchIDNV.xy));
-	if(isMirror(material)){
-		primary_albedo = imageLoad(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy));
-	}
-
-	if (isSky(material)) return alpha_blend( transparent, vec4(primary_albedo.xyz,1)).xyz;
-	if (isLight(material)) return vec3(1,0,0);
+	illumination = imageLoad(IMG_GBUFFER_DIRECT_ILLUMINATION, ivec2(gl_LaunchIDNV.xy)).xyz;
 	
 
+		for (uint b = 0; b < ubo.numBounces; ++b)
+		{
+			// Select a random direction for our diffuse interreflection ray.
+			vec3 bounceDir;
+			
+			bool gCosSampling = false;
+			if (gCosSampling)
+				bounceDir = getCosHemisphereSample(vec2(getRNG(ubo.denoiser, RNG_NEE_BOUNCE_X(b), int(ubo.frameIndex)), 
+													getRNG(ubo.denoiser, RNG_NEE_BOUNCE_Y(b), int(ubo.frameIndex)))
+													, normal);      // Use cosine sampling
+			else
+				bounceDir = getUniformHemisphereSample(vec2(getRNG(ubo.denoiser, RNG_NEE_BOUNCE_X(b), int(ubo.frameIndex)), 
+													getRNG(ubo.denoiser, RNG_NEE_BOUNCE_Y(b), int(ubo.frameIndex)))
+													, normal);  // Use uniform random samples
 
-	vec3 shadeColor = calcShading(primary_albedo, pos, normal, cluster, material);
-	shadeColor = alpha_blend( transparent, vec4(shadeColor.rgb,1) ).xyz;
-	return shadeColor;
+			// Get NdotL for our selected ray direction
+			float NdotL = clamp(dot(normal, bounceDir), 0.0, 1.0);
+
+			// Shoot our indirect global illumination ray
+			Ray indirectRay = {
+				pos, bounceDir, 0.01, 10000
+			};
+
+			trace_ray(indirectRay, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE);
+			vec3 bounceColor;
+			bool miss = false;
+			if(!found_intersection(rp)){
+				bounceColor = sampleSky(indirectRay.direction).xyz;
+				miss = true;
+			} else {
+				HitPoint hp = getHitPoint(rp);
+				Triangle triangle = getTriangle(rp);
+				vec4 texture = getTextureWithLod(hp, 2);
+
+				vec3 indirectIllumination = calcShadingIndirect(texture, hp.pos, hp.normal, hp.cluster, hp.material) + 0.05;
+				illumination += indirectIllumination;
+			}
+		}
+
+	imageStore(IMG_GBUFFER_DIRECT_ILLUMINATION, ivec2(gl_LaunchIDNV.xy), vec4(illumination,1));
+	//vec3 shadeColor = calcShading(primary_albedo, pos, normal, cluster, material);
+	//shadeColor = alpha_blend( transparent, vec4(shadeColor.rgb,1) ).xyz;
+	return illumination.xyz;
 }
 
 void main() 
 {
-	vec3 color = directIllumination();
-	if(ubo.accumulate == 1) {
-		vec3 outPrev = imageLoad(imageAccumulationPrev, ivec2(gl_LaunchIDNV.xy)).xyz;
-		color = (color + outPrev);
-		imageStore(imageAccumulation, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));
-		color /= float(ubo.numSamples);
-	} else{
-		imageStore(imageAccumulation, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));	
-	}
-	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));
+	ivec2 ipos = ivec2(gl_LaunchIDNV);
+	rng_seed = imageLoad(IMG_ASVGF_RNG_SEED, ipos).r;
+
+	vec3 color = indirectIllumination();
+	// vec3 color = directIllumination();
+	// if(ubo.accumulate == 1) {
+	// 	vec3 outPrev = imageLoad(imageAccumulationPrev, ivec2(gl_LaunchIDNV.xy)).xyz;
+	// 	color = (color + outPrev);
+	// 	imageStore(imageAccumulation, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));
+	// 	color /= float(ubo.numSamples);
+	// } else{
+	// 	imageStore(imageAccumulation, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));	
+	// }
+	// imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4( color ,1));
 }
 

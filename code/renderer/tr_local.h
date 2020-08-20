@@ -1402,12 +1402,13 @@ typedef struct {
 typedef struct {
 	vkimage_t			position;
 	vkimage_t			albedo;
-	vkimage_t			color;
+	//vkimage_t			color;
 	vkimage_t			normals;
 	vkimage_t			viewDir;
 	vkimage_t			transparent;
 	vkimage_t			reflection;
 	vkimage_t			directIllumination;
+	vkimage_t			indirectIllumination;
 	vkimage_t			objectInfo;
 	vkimage_t			motion;
 
@@ -1449,6 +1450,8 @@ typedef enum {
 	PROFILER_REFLECTION_REFRACTION_END,
 	PROFILER_DIRECT_ILLUMINATION_BEGIN,
 	PROFILER_DIRECT_ILLUMINATION_END,
+	PROFILER_INDIRECT_ILLUMINATION_BEGIN,
+	PROFILER_INDIRECT_ILLUMINATION_END,
 	PROFILER_ASVGF_GRADIENT_BEGIN,
 	PROFILER_ASVGF_GRADIENT_END,
 	PROFILER_ASVGF_GRADIENT_ATROUS_BEGIN,
@@ -1769,6 +1772,8 @@ extern	cvar_t	*r_saveFontData;
 extern  cvar_t  *pt_showIntermediateResults;
 extern	cvar_t	*rt_cullLights;
 extern	cvar_t  *rt_numRandomDL;
+extern	cvar_t  *rt_numRandomIL;
+extern	cvar_t  *rt_numBounces;
 extern	cvar_t	*pt_numRandomIL;
 extern	cvar_t  *rt_illumination;
 extern	cvar_t  *rt_softshadows;

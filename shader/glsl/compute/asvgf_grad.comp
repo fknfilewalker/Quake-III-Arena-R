@@ -32,7 +32,7 @@ compute_gradient_image()
 			ivec2 p = ipos * GRAD_DWN + ivec2(xx, yy);
 
 			//vec3 c = imageLoad(tex_pt_curr, p).rgb;
-			vec3 c = imageLoad(IMG_GBUFFER_ILLUMINATION, p).rgb;
+			vec3 c = imageLoad(IMG_GBUFFER_DIRECT_ILLUMINATION, p).rgb;
 
 
 			float l = luminance(c);
@@ -60,8 +60,8 @@ compute_gradient_image()
 
 	// vec3 c_curr = imageLoad(tex_pt_curr, grad_sample_pos_curr).rgb;
 	// vec3 c_prev = imageLoad(tex_pt_prev, grad_sample_pos_prev).rgb;
-	vec3 c_curr = imageLoad(IMG_GBUFFER_ILLUMINATION, grad_sample_pos_curr).rgb;
-	vec3 c_prev = imageLoad(IMG_GBUFFER_ILLUMINATION_PREV, grad_sample_pos_prev).rgb;
+	vec3 c_curr = imageLoad(IMG_GBUFFER_DIRECT_ILLUMINATION, grad_sample_pos_curr).rgb;
+	vec3 c_prev = imageLoad(IMG_GBUFFER_DIRECT_ILLUMINATION_PREV, grad_sample_pos_prev).rgb;
 
 	float l_curr = luminance(c_curr);
 	float l_prev = luminance(c_prev);
