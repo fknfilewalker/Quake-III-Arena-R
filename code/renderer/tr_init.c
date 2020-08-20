@@ -1575,9 +1575,12 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			VK_DestroyImage(&vk_d.accelerationStructures.lightVisData);
 
 			VK_DestroyBottomAccelerationStructure(&vk_d.bottomASWorldStatic);
+			VK_DestroyBottomAccelerationStructure(&vk_d.bottomASWorldStaticTrans);
 			VK_DestroyBottomAccelerationStructure(&vk_d.bottomASWorldDynamicData);
+			VK_DestroyBottomAccelerationStructure(&vk_d.bottomASWorldDynamicDataTrans);
 			for (int i = 0; i < vk.swapchain.imageCount; i++) {
 				VK_DestroyBottomAccelerationStructure(&vk_d.bottomASWorldDynamicAS[i]);
+				VK_DestroyBottomAccelerationStructure(&vk_d.bottomASWorldDynamicASTrans[i]);
 				for (int j = 0; j < vk_d.bottomASDynamicCount[i]; j++) {
 					VK_DestroyBottomAccelerationStructure(&vk_d.bottomASDynamicList[i][j]);
 				}
@@ -1651,6 +1654,9 @@ void RE_Shutdown( qboolean destroyWindow ) {
 				VK_DestroyBuffer(&vk_d.geometry.xyz_entity_dynamic[i]);
 				VK_DestroyBuffer(&vk_d.geometry.idx_entity_dynamic[i]);
 			}
+			for (int i = 0; i < vk.swapchain.imageCount; i++) {
+				VK_DestroyBuffer(&vk_d.prevToCurrInstanceBuffer[i]);
+			}
 
 			// cluster buffer
 			VK_DestroyBuffer(&vk_d.geometry.cluster_world_static);
@@ -1682,7 +1688,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			VK_DestroyBuffer(&vk_d.scratchBuffer);
 			VK_DestroyImage(&vk_d.blueNoiseTex);
 
-			// g buffer 
+			// g buffer and asvgf
 			for (int i = 0; i < vk.swapchain.imageCount; i++) {
 				VK_DestroyImage(&vk_d.gBuffer[i].position);
 				VK_DestroyImage(&vk_d.gBuffer[i].albedo);
@@ -1692,6 +1698,23 @@ void RE_Shutdown( qboolean destroyWindow ) {
 				VK_DestroyImage(&vk_d.gBuffer[i].reflection);
 				VK_DestroyImage(&vk_d.gBuffer[i].objectInfo);
 				VK_DestroyImage(&vk_d.gBuffer[i].motion);
+				VK_DestroyImage(&vk_d.gBuffer[i].directIllumination);
+				VK_DestroyImage(&vk_d.gBuffer[i].indirectIllumination);
+				VK_DestroyImage(&vk_d.gBuffer[i].depthNormal);
+
+				VK_DestroyImage(&vk_d.asvgf[i].debug);
+				VK_DestroyImage(&vk_d.asvgf[i].positionFwd);
+				VK_DestroyImage(&vk_d.asvgf[i].objectFwd);
+				VK_DestroyImage(&vk_d.asvgf[i].rngSeed);
+				VK_DestroyImage(&vk_d.asvgf[i].gradSamplePos);
+				VK_DestroyImage(&vk_d.asvgf[i].gradA);
+				VK_DestroyImage(&vk_d.asvgf[i].gradB);
+				VK_DestroyImage(&vk_d.asvgf[i].color);
+				VK_DestroyImage(&vk_d.asvgf[i].histColor);
+				VK_DestroyImage(&vk_d.asvgf[i].histMoments);
+				VK_DestroyImage(&vk_d.asvgf[i].atrousA);
+				VK_DestroyImage(&vk_d.asvgf[i].atrousB);
+				VK_DestroyImage(&vk_d.asvgf[i].taa);
 			}
 
 			// lists

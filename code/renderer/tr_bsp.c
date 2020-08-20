@@ -2049,7 +2049,7 @@ void R_RecursiveCreateAS(mnode_t* node, uint32_t* countIDXstatic, uint32_t* coun
 				continue;
 			}
 
-			if (strstr(shader->name, "bitch")) {
+			if (strstr(shader->name, "fog")) {
 				int x = 2; //continue;
 				//continue;
 			}
