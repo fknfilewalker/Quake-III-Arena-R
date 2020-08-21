@@ -67,7 +67,8 @@ qboolean RB_SkipObject(shader_t* shader) {
 qboolean RB_IsTransparent(shader_t* shader) {
 	// skip certain objects that are transparent but should be handled like opaque objects
 	if (strstr(shader->name, "glass") || strstr(shader->name, "console/jacobs") || strstr(shader->name, "kmlamp_white") || strstr(shader->name, "slamp/slamp2")
-		|| strstr(shader->name, "lamplight_y") || strstr(shader->name, "textures/liquids/calm_poollight") || strstr(shader->name, "textures/liquids/clear_ripple1")) {
+		|| strstr(shader->name, "lamplight_y") || strstr(shader->name, "textures/liquids/calm_poollight") || strstr(shader->name, "textures/liquids/clear_ripple1") 
+		|| strstr(shader->name, "flag")) {
 		return qfalse;
 	}
 	// check if transparent
@@ -101,9 +102,6 @@ uint32_t RB_GetMaterial() {
 		|| strstr(tess.shader->name, "yellow_sphere") || strstr(tess.shader->name, "red_sphere") || strstr(tess.shader->name, "plasma_glass")
 		) {
 		material = MATERIAL_KIND_GLASS;
-	}
-	if (strstr(tess.shader->name, "banner")) {
-		int x = 2;//material = MATERIAL_KIND_WATER;
 	}
 
 	//+		tess.shader	0x0000027dd20c1da8 {name=0x0000027dd20c1da8 "textures/sfx/portal_sfx_ring" lightmapIndex=-3 index=118 ...}	shader_s *
@@ -147,6 +145,9 @@ uint32_t RB_GetMaterial() {
 	}
 	else if (tess.shader->sort == SS_BLEND0) {
 		material |= MATERIAL_FLAG_SEE_THROUGH_ADD;
+	}
+	if (strstr(tess.shader->name, "bitch/orb")) {
+		material = MATERIAL_FLAG_SEE_THROUGH_ADD;
 	}
 
 	if (strstr(tess.shader->name, "textures/liquids/calm_poollight") || strstr(tess.shader->name, "textures/liquids/clear_ripple1")) {
