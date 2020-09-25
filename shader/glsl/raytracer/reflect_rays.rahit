@@ -6,36 +6,48 @@
 #include "globalTexture.glsl"
 #include "vertexData.glsl"
 
-layout(location = PAYLOAD_REFLECT) rayPayloadNV RayPayloadReflect rrp;
+layout(location = PAYLOAD_REFLECT) rayPayloadInNV RayPayloadReflect rrp;
 
 hitAttributeNV vec2 hitAttribute;
 
-void blendSeeThrough(in HitPoint hp){
-  // vec4 tex = getTextureWithLod(hp,0);
-  // tex.xyz *= tex.w;
-  // if(rrp.max_transparent_distance < gl_HitTNV)
-  //   rrp.transparent = alpha_blend_premultiplied(rrp.transparent, tex);
-  // else
-  //   rrp.transparent = alpha_blend_premultiplied(tex, rrp.transparent);
+// void blendSeeThrough(in HitPoint hp){
+//   // vec4 tex = getTextureWithLod(hp,0);
+//   // tex.xyz *= tex.w;
+//   // if(rrp.max_transparent_distance < gl_HitTNV)
+//   //   rrp.transparent = alpha_blend_premultiplied(rrp.transparent, tex);
+//   // else
+//   //   rrp.transparent = alpha_blend_premultiplied(tex, rrp.transparent);
 
-    vec4 tex = getTextureWithLod(hp,0);
-      tex.xyz *= tex.w;
+//     vec4 tex = getTextureWithLod(hp,0);
+//       tex.xyz *= tex.w;
     
-    if(rrp.max_transparent_distance < gl_HitTNV)
-      rrp.transparent = alpha_blend_premultiplied(rrp.transparent, tex);
-    else
-      rrp.transparent = alpha_blend_premultiplied(tex, rrp.transparent);
-}
-void blendSeeThroughAdd(in HitPoint hp){
-  vec4 tex = getTextureWithLod(hp,0);
-  rrp.transparent.xyz += (tex.xyz * tex.w);
-  rrp.addCount += 1;
-  if(rrp.addCount > 1) rrp.transparent.xyz /= 2.0f;
-  //rrp.transparent.xyzw /= 2.0f;
-}
+//     if(rrp.max_transparent_distance < gl_HitTNV)
+//       rrp.transparent = alpha_blend_premultiplied(rrp.transparent, tex);
+//     else
+//       rrp.transparent = alpha_blend_premultiplied(tex, rrp.transparent);
+// }
+// void blendSeeThroughAdd(in HitPoint hp){
+//   vec4 tex = getTextureWithLod(hp,0);
+//   rrp.transparent.xyz += (tex.xyz * tex.w);
+//   rrp.addCount += 1;
+//   if(rrp.addCount > 1) rrp.transparent.xyz /= 2.0f;
+//   //rrp.transparent.xyzw /= 2.0f;
+// }
 
 void main()
 {
+
+  RayPayload rpb;
+  rpb.barycentric = hitAttribute;
+  rpb.instanceID = gl_InstanceID;
+	rpb.primitiveID = gl_PrimitiveID;
+	rpb.hit_distance = gl_RayTmaxNV;
+  uint material = get_material(rpb);
+
+  HitPoint hp = getHitPoint(rpb);
+
+    vec4 tex = getTextureWithLod(hp,0);
+    rrp.transparent += tex;
 //   RayPayload rpb;
 //   rpb.barycentric = hitAttribute;
 //   rpb.instanceID = gl_InstanceID;

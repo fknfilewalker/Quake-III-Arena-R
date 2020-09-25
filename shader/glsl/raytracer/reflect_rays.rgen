@@ -343,6 +343,7 @@ void main()
 	const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeNV.xy);
 	const vec2 screenCoordClipSpace  = inUV * 2.0 - 1.0;
 	rrp.sccs = screenCoordClipSpace;
+	rrp.transparent = vec4(0);
 
 	if (isMirror(material)){
 		vec4 albedoReflection;
@@ -468,7 +469,7 @@ void main()
 		rrp.color = vec4(0);
 		rrp.depth = 0;
 		rrp.addCount = 0;
-		rrp.transparent = vec4(0);
+		//rrp.transparent = vec4(0);
 		rrp.max_transparent_distance = 0;
 		traceStraight(pos, originalDir, N);
 		albedo = rrp.color;
@@ -478,6 +479,7 @@ void main()
 		// vec4 trans = imageLoad(transparentGBuffer, ivec2(gl_LaunchIDNV.xy));
 		// 	vec4 cout = alpha_blend( trans, vec4(color.xyz,1));
 		// imageStore(transparentGBuffer, ivec2(gl_LaunchIDNV.xy), trans + color);
+		color += rrp.transparent;
 		
 		imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), color);
 		imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.normal.xyz,rrp.material));

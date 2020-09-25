@@ -678,14 +678,14 @@ void VK_LoadReflectRaysShadersFromVariable(vkshader_t* shader) {
 			.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_NV,
 			.generalShader = VK_SHADER_UNUSED_NV,
 			.closestHitShader = 2,
-			.anyHitShader = VK_SHADER_UNUSED_NV,
+			.anyHitShader = 3,
 			.intersectionShader = VK_SHADER_UNUSED_NV
 		},
 		[SBT_RAHIT_PRIMARY_RAYS] = {
 			.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_NV,
 			.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_NV,
 			.generalShader = VK_SHADER_UNUSED_NV,
-			.closestHitShader = VK_SHADER_UNUSED_NV,
+			.closestHitShader = 2,
 			.anyHitShader = 3,
 			.intersectionShader = VK_SHADER_UNUSED_NV
 		},

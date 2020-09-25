@@ -72,7 +72,7 @@ void traceStraight(vec3 P, vec3 D, vec3 N){
 	// else
 	// 	P -= N * 0.001;
 
-	traceNV( topLevelAS, gl_RayFlagsNoneNV, RAY_MIRROR_OPAQUE_VISIBLE | RAY_MIRROR_PARTICLE_VISIBLE,
+	traceNV( topLevelAS, gl_RayFlagsNoneNV, RAY_FIRST_PERSON_OPAQUE_VISIBLE | RAY_FIRST_PERSON_PARTICLE_VISIBLE,
 			SBT_RCHIT_OPAQUE, 0, SBT_RMISS_PATH_TRACER,
 			P, 0.01, D, 10000.0, PAYLOAD_REFLECT);
 }
