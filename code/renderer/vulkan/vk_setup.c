@@ -3,7 +3,7 @@
 
 vkinstance_t vk;
 vkdata_t     vk_d;
-
+#define NDEBUG
 static const char* deviceExtensions[] = {
 #if defined( _WIN32 )
 		VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
@@ -116,7 +116,7 @@ static void VK_CreateInstance() {
 		}
 		free(extension_properties);
 	}
-#define NDEBUG
+
 #ifndef NDEBUG
 	if (!VK_CheckValidationLayerSupport()) {
 		ri.Error(ERR_FATAL, "Vulkan: validation layers requested, but not available!");
