@@ -116,7 +116,7 @@ static void VK_CreateInstance() {
 		}
 		free(extension_properties);
 	}
-
+#define NDEBUG
 #ifndef NDEBUG
 	if (!VK_CheckValidationLayerSupport()) {
 		ri.Error(ERR_FATAL, "Vulkan: validation layers requested, but not available!");
