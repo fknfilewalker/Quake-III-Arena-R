@@ -446,6 +446,10 @@ isSeeThroughAdd(in uint material) {
 	return ((material & MATERIAL_FLAG_SEE_THROUGH_ADD) == MATERIAL_FLAG_SEE_THROUGH_ADD);
 }
 bool
+isSeeThroughNoAlpha(in uint material) {
+	return ((material & MATERIAL_FLAG_SEE_THROUGH_NO_ALPHA) == MATERIAL_FLAG_SEE_THROUGH_NO_ALPHA);
+}
+bool
 isLight(in uint material) {
 	return ((material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT);
 }

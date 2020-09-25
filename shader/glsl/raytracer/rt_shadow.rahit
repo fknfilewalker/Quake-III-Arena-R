@@ -26,10 +26,14 @@ void main()
     //if(isGlass(hp.material)) ignoreIntersectionNV();
     //rp.visFactor = 1.0f;
     // if(isLight(material)) ignoreIntersectionNV();
+    HitPoint hp = getHitPoint(rpb);
+	vec4 tex = getTextureWithLod(hp,0);
+
     if(isGlass(material)) ignoreIntersectionNV();
     if(isWater(material)) ignoreIntersectionNV();
-    if(isSeeThrough(material)) ignoreIntersectionNV();
-    if(isSeeThroughAdd(material)) ignoreIntersectionNV();
+    if(isSeeThrough(material) && tex.w < 0.5) ignoreIntersectionNV();
+    if(isSeeThroughAdd(material) && tex.w < 0.5) ignoreIntersectionNV();
+    if(isSeeThroughNoAlpha(material)) ignoreIntersectionNV();
     // if(isWater(material)) ignoreIntersectionNV();
 //ignoreIntersectionNV();
     // if(isSeeThrough(material)) ignoreIntersectionNV();

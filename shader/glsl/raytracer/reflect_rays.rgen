@@ -324,7 +324,7 @@ void main()
 	uvec4 utemp;
 	//utemp = imageLoad(objectGBuffer, ivec2(gl_LaunchIDNV.xy));
 	material = uint(imageLoad(viewGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
-	if (!isGlass(material) && !isMirror(material) && !isWater(material) && !isSeeThrough(material)) return;
+	if (!isGlass(material) && !isMirror(material) && !isWater(material) && !isSeeThrough(material) && !isSeeThroughNoAlpha(material)) return;
 	
 	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
@@ -405,7 +405,7 @@ void main()
 		rrp.color = vec4(0);
 		rrp.depth = 0;
 		traceReflect(pos, originalDir, N);
-		albedoReflection = rrp.color;
+		albedoReflection = rrp.color * 0.5;
 
 		rrp.color = vec4(0);
 		rrp.depth = 0;
@@ -461,7 +461,7 @@ void main()
 		
 		
 	}
-	if (isSeeThrough(material)){
+	if (isSeeThrough(material) || isSeeThroughNoAlpha(material)){
 		if(primary_albedo.w > 0.5) return;
 
 		vec4 albedo;

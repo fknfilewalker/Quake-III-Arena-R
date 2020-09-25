@@ -55,6 +55,8 @@ qboolean RB_SkipObject(shader_t* shader) {
 		return qfalse;
 	}
 
+	if(strstr(shader->name, "portal_sfx_ring")) return qtrue;
+
 	if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
 		|| strstr(shader->name, "Shadow") || shader->isSky
 		|| shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP
@@ -71,6 +73,7 @@ qboolean RB_IsTransparent(shader_t* shader) {
 		|| strstr(shader->name, "flag")) {
 		return qfalse;
 	}
+	
 	// check if transparent
 	//shader	0x000001fec843ece8 {name=0x000001fec843ece8 "textures/base_floor/proto_grate4" lightmapIndex=-3 index=...}	shader_s *
 
@@ -97,12 +100,25 @@ uint32_t RB_GetMaterial() {
 		material = MATERIAL_FLAG_SEE_THROUGH;
 	}
 
+	if (strstr(tess.shader->name, "powerups/armor/energy_grn1")) {
+		material = MATERIAL_FLAG_SEE_THROUGH_NO_ALPHA;
+	}
+
+	if (strstr(tess.shader->name, "portal")) {
+		material = MATERIAL_FLAG_SEE_THROUGH_NO_ALPHA;
+	}
+	
 	if (strstr(tess.shader->name, "glass") || strstr(tess.shader->name, "console/jacobs") || strstr(tess.shader->name, "kmlamp_white") || strstr(tess.shader->name, "slamp/slamp2") 
 		|| strstr(tess.shader->name, "lamplight_y") || strstr(tess.shader->name, "green_sphere") 
 		|| strstr(tess.shader->name, "yellow_sphere") || strstr(tess.shader->name, "red_sphere") || strstr(tess.shader->name, "plasma_glass")
 		) {
 		material = MATERIAL_KIND_GLASS;
 	}
+
+	if (strstr(tess.shader->name, "effects/envmaprail")) {
+		int x = 2;
+	}
+
 
 	//+		tess.shader	0x0000027dd20c1da8 {name=0x0000027dd20c1da8 "textures/sfx/portal_sfx_ring" lightmapIndex=-3 index=118 ...}	shader_s *
 	//+		name	0x0000020228d63a68 "textures/liquids/calm_poollight"	char[64]
@@ -157,6 +173,8 @@ uint32_t RB_GetMaterial() {
 		//tess.shader->rtstages[2]->active = qfalse;
 		//tess.shader->rtstages[3]->active = qfalse;
 	}
+	
+
 	
 	//0x000002c0bebbae48 {name=0x000002c0bebbae48 "textures/base_trim/wires02" lightmapIndex=-3 index=87 ...}
 	/*else if (tess.shader->sort == SS_UNDERWATER || tess.shader->sort == SS_BANNER) {

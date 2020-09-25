@@ -464,9 +464,9 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			if (strstr(shader->name, "bloodExplosion")) {// bloodExplotion
 				int i = 2;
 			}
-			if (strstr(shader->name, "bitch")) {
-				//continue;
-			}
+			
+			//if (strstr(tess.shader->name, "portal"))
+			//if (strstr(shader->name, "powerups/armor/energy_grn1")) continue; //0x00000298be8ba1a8 {name=0x00000298be8ba1a8 "models/powerups/armor/energy_grn1" lightmapIndex=-1 index=...}
 			if (drawSurf->bAS == NULL) {
 				rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
 				RB_DeformTessGeometry();
