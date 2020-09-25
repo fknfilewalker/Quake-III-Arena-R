@@ -1920,6 +1920,15 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 				return;
 			}
 
+			if (strstr(tess.shader->name, "globalSun")) {
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0.5;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 0.25;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 0.25;
+				vk_d.lightList.lights[vk_d.lightList.numLights].size *= 5;
+				vk_d.lightList.numLights++;
+				return;
+			}
+
 			vk_d.lightList.numLights++;
 		}
 	}
@@ -2020,6 +2029,7 @@ int R_GetClusterFromSurface(surfaceType_t* surf) {
 }
 
 void R_RecursiveCreateAS(mnode_t* node, uint32_t* countIDXstatic, uint32_t* countXYZstatic, uint32_t* countIDXdynamicData, uint32_t* countXYZdynamicData, uint32_t* countIDXdynamicAS, uint32_t* countXYZdynamicAS, qboolean transparent) {
+	
 	do {
 		if (node->contents != -1) {
 			break;
@@ -2636,6 +2646,50 @@ void R_PreparePT() {
 	VkDeviceSize offsetDynamicDataWorld = 0;
 	VkDeviceSize offsetDynamicASWorld[VK_MAX_SWAPCHAIN_SIZE] = { 0 };
 
+	qboolean showSun = qfalse;
+	qboolean addSun = qtrue;
+
+	if (addSun) {
+		// world light
+		tess.numVertexes = 0;
+		tess.numIndexes = 0;
+		tess.shader = tr.defaultShader;
+		strcpy(tess.shader->name, "globalSun");
+		vec3_t origin = { 500,500,1500 };
+		vec3_t left = { 2500,0,0 };
+		vec3_t up = { 0,2500,0 };
+		tess.shader->sort = 10;
+		RB_AddQuadStampExt(origin, left, up, tess.vertexColors, 0, 0, 1, 1);
+
+		vkbuffer_t* idx_buffer;
+		vkbuffer_t* xyz_buffer;
+		uint32_t* idx_buffer_offset;
+		uint32_t* xyz_buffer_offset;
+		idx_buffer = &vk_d.geometry.idx_world_static;
+		xyz_buffer = &vk_d.geometry.xyz_world_static;
+		idx_buffer_offset = &vk_d.geometry.idx_world_static_offset;
+		xyz_buffer_offset = &vk_d.geometry.xyz_world_static_offset;
+
+		RB_AddLightToLightList(-2, BAS_WORLD_STATIC, (offsetIDX), 0);
+		RB_UploadCluster(&vk_d.geometry.cluster_world_static, vk_d.geometry.cluster_world_static_offset, 0);
+		vk_d.geometry.cluster_world_static_offset += (tess.numIndexes / 3);
+		// write idx
+		RB_UploadIDX(idx_buffer, (*idx_buffer_offset), (offsetXYZ));
+		// write xyz
+		RB_UploadXYZ(xyz_buffer, (*xyz_buffer_offset), 0);
+
+		(*idx_buffer_offset) += tess.numIndexes;
+		(*xyz_buffer_offset) += tess.numVertexes;
+		if (showSun) {
+			(offsetIDX) += tess.numIndexes;
+			(offsetXYZ) += tess.numVertexes;
+		}
+	}
+	else showSun = qtrue;
+
+	tess.numVertexes = 0;
+	tess.numIndexes = 0;
+
 	R_RecursiveCreateAS(s_worldData.nodes, &offsetIDX, &offsetXYZ, &offsetIDXdynamicData, &offsetXYZdynamicData, &offsetIDXdynamicAS, &offsetXYZdynamicAS, qfalse);
 	// world static
 	{
@@ -2645,8 +2699,8 @@ void R_PreparePT() {
 		vk_d.bottomASWorldStatic.geometries.geometry.triangles.vertexCount = offsetXYZ;
 		vk_d.bottomASWorldStatic.geometries.geometry.triangles.vertexStride = sizeof(VertexBuffer);
 		vk_d.bottomASWorldStatic.geometries.geometry.triangles.indexCount = offsetIDX;
-		vk_d.bottomASWorldStatic.geometries.geometry.triangles.vertexOffset = 0 * sizeof(VertexBuffer);
-		vk_d.bottomASWorldStatic.geometries.geometry.triangles.indexOffset = 0 * sizeof(uint32_t);
+		vk_d.bottomASWorldStatic.geometries.geometry.triangles.vertexOffset = (showSun ? 0 : 4) * sizeof(VertexBuffer);
+		vk_d.bottomASWorldStatic.geometries.geometry.triangles.indexOffset = (showSun ? 0 : 6) * sizeof(uint32_t);
 		{
 			vk_d.bottomASWorldStatic.geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_world_static.buffer;
 			vk_d.bottomASWorldStatic.geometries.geometry.triangles.indexData = vk_d.geometry.idx_world_static.buffer;
@@ -2656,8 +2710,8 @@ void R_PreparePT() {
 		vk_d.bottomASWorldStatic.geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
 		vk_d.bottomASWorldStatic.geometries.flags = 0;
 
-		vk_d.bottomASWorldStatic.data.offsetIDX = 0;
-		vk_d.bottomASWorldStatic.data.offsetXYZ = 0;
+		vk_d.bottomASWorldStatic.data.offsetIDX = (showSun ? 0 : 6);
+		vk_d.bottomASWorldStatic.data.offsetXYZ = (showSun ? 0 : 4);
 
 		VkCommandBuffer commandBuffer = { 0 };
 		VK_BeginSingleTimeCommands(&commandBuffer);
@@ -3058,6 +3112,10 @@ void R_PreparePT() {
 				lightCount++;
 				lightVisibility[cluster * RTX_MAX_LIGHTS + lightCount] = l;
 			}
+			else if (lightCluster == -2) {
+				lightCount++;
+				lightVisibility[cluster * RTX_MAX_LIGHTS + lightCount] = l;
+			}
 		}
 		lightVisibility[cluster * RTX_MAX_LIGHTS] = lightCount;
 		if (lightCount > RTX_MAX_LIGHTS) ri.Error(ERR_FATAL, "PT: To many lights!");
@@ -3079,6 +3137,10 @@ void R_PreparePT() {
 			int lightCluster = vk_d.lightList.lights[l].cluster;
 			if (lightCluster == -1) ri.Error(ERR_FATAL, "PT: Light cluster -1!");
 			if ((clusterVis[lightCluster >> 3] & (1 << (lightCluster & 7))) > 0) {
+				lightCount++;
+				lightVisibility[cluster * RTX_MAX_LIGHTS + lightCount] = l;
+			}
+			else if (lightCluster == -2) {
 				lightCount++;
 				lightVisibility[cluster * RTX_MAX_LIGHTS + lightCount] = l;
 			}
