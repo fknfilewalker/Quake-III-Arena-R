@@ -1024,6 +1024,7 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].debug;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].atrousA;
 	vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].taa;
+	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].transparent;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].color;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].gradSamplePos;
 	{

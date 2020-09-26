@@ -1921,10 +1921,29 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 			}
 
 			if (strstr(tess.shader->name, "globalSun")) {
-				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0.5;
-				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 0.25;
-				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 0.25;
-				vk_d.lightList.lights[vk_d.lightList.numLights].size *= 5;
+				if (strstr(s_worldData.name, "q3dm3")) {
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0.5;
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 0.25;
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 0.25;
+					//vk_d.lightList.lights[vk_d.lightList.numLights].size *= 5;
+				}
+				else if (strstr(s_worldData.name, "q3dm1")) {
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0.5;
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 0.23;
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 0.24;
+					vk_d.lightList.lights[vk_d.lightList.numLights].size *=15;
+				}
+				else if (strstr(s_worldData.name, "q3dm7")) {
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0.25;
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 0.125;
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 0.04;
+					vk_d.lightList.lights[vk_d.lightList.numLights].size /= 25;
+				}
+				else {
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0;
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 0;
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 1;
+				}
 				vk_d.lightList.numLights++;
 				return;
 			}
@@ -2646,9 +2665,14 @@ void R_PreparePT() {
 	VkDeviceSize offsetDynamicDataWorld = 0;
 	VkDeviceSize offsetDynamicASWorld[VK_MAX_SWAPCHAIN_SIZE] = { 0 };
 
+
+	tess.numVertexes = 0;
+	tess.numIndexes = 0;
+
+	R_RecursiveCreateAS(s_worldData.nodes, &offsetIDX, &offsetXYZ, &offsetIDXdynamicData, &offsetXYZdynamicData, &offsetIDXdynamicAS, &offsetXYZdynamicAS, qfalse);
+
 	qboolean showSun = qfalse;
 	qboolean addSun = qtrue;
-
 	if (addSun) {
 		// world light
 		tess.numVertexes = 0;
@@ -2656,8 +2680,8 @@ void R_PreparePT() {
 		tess.shader = tr.defaultShader;
 		strcpy(tess.shader->name, "globalSun");
 		vec3_t origin = { 500,500,1500 };
-		vec3_t left = { 2500,0,0 };
-		vec3_t up = { 0,2500,0 };
+		vec3_t left = { 3000,0,0 };
+		vec3_t up = { 0,3000,0 };
 		tess.shader->sort = 10;
 		RB_AddQuadStampExt(origin, left, up, tess.vertexColors, 0, 0, 1, 1);
 
@@ -2685,12 +2709,9 @@ void R_PreparePT() {
 			(offsetXYZ) += tess.numVertexes;
 		}
 	}
-	else showSun = qtrue;
-
 	tess.numVertexes = 0;
 	tess.numIndexes = 0;
 
-	R_RecursiveCreateAS(s_worldData.nodes, &offsetIDX, &offsetXYZ, &offsetIDXdynamicData, &offsetXYZdynamicData, &offsetIDXdynamicAS, &offsetXYZdynamicAS, qfalse);
 	// world static
 	{
 		vk_d.bottomASWorldStatic.geometries.sType = VK_STRUCTURE_TYPE_GEOMETRY_NV;
@@ -2699,8 +2720,8 @@ void R_PreparePT() {
 		vk_d.bottomASWorldStatic.geometries.geometry.triangles.vertexCount = offsetXYZ;
 		vk_d.bottomASWorldStatic.geometries.geometry.triangles.vertexStride = sizeof(VertexBuffer);
 		vk_d.bottomASWorldStatic.geometries.geometry.triangles.indexCount = offsetIDX;
-		vk_d.bottomASWorldStatic.geometries.geometry.triangles.vertexOffset = (showSun ? 0 : 4) * sizeof(VertexBuffer);
-		vk_d.bottomASWorldStatic.geometries.geometry.triangles.indexOffset = (showSun ? 0 : 6) * sizeof(uint32_t);
+		vk_d.bottomASWorldStatic.geometries.geometry.triangles.vertexOffset = 0 * sizeof(VertexBuffer);
+		vk_d.bottomASWorldStatic.geometries.geometry.triangles.indexOffset = 0 * sizeof(uint32_t);
 		{
 			vk_d.bottomASWorldStatic.geometries.geometry.triangles.vertexData = vk_d.geometry.xyz_world_static.buffer;
 			vk_d.bottomASWorldStatic.geometries.geometry.triangles.indexData = vk_d.geometry.idx_world_static.buffer;
@@ -2710,8 +2731,8 @@ void R_PreparePT() {
 		vk_d.bottomASWorldStatic.geometries.geometry.aabbs.sType = VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV;
 		vk_d.bottomASWorldStatic.geometries.flags = 0;
 
-		vk_d.bottomASWorldStatic.data.offsetIDX = (showSun ? 0 : 6);
-		vk_d.bottomASWorldStatic.data.offsetXYZ = (showSun ? 0 : 4);
+		vk_d.bottomASWorldStatic.data.offsetIDX = 0;
+		vk_d.bottomASWorldStatic.data.offsetXYZ = 0;
 
 		VkCommandBuffer commandBuffer = { 0 };
 		VK_BeginSingleTimeCommands(&commandBuffer);
@@ -3108,14 +3129,15 @@ void R_PreparePT() {
 
 			int lightCluster = vk_d.lightList.lights[l].cluster;
 			if (lightCluster == -1) ri.Error(ERR_FATAL, "PT: Light cluster -1!");
-			if ( (clusterVis[lightCluster >> 3] & (1 << (lightCluster & 7))) > 0) {
+			if (lightCluster == -2) {
 				lightCount++;
 				lightVisibility[cluster * RTX_MAX_LIGHTS + lightCount] = l;
 			}
-			else if (lightCluster == -2) {
+			else if ( (clusterVis[lightCluster >> 3] & (1 << (lightCluster & 7))) > 0) {
 				lightCount++;
 				lightVisibility[cluster * RTX_MAX_LIGHTS + lightCount] = l;
 			}
+			
 		}
 		lightVisibility[cluster * RTX_MAX_LIGHTS] = lightCount;
 		if (lightCount > RTX_MAX_LIGHTS) ri.Error(ERR_FATAL, "PT: To many lights!");
@@ -3136,14 +3158,15 @@ void R_PreparePT() {
 
 			int lightCluster = vk_d.lightList.lights[l].cluster;
 			if (lightCluster == -1) ri.Error(ERR_FATAL, "PT: Light cluster -1!");
-			if ((clusterVis[lightCluster >> 3] & (1 << (lightCluster & 7))) > 0) {
+			if (lightCluster == -2) {
 				lightCount++;
 				lightVisibility[cluster * RTX_MAX_LIGHTS + lightCount] = l;
 			}
-			else if (lightCluster == -2) {
+			else if ((clusterVis[lightCluster >> 3] & (1 << (lightCluster & 7))) > 0) {
 				lightCount++;
 				lightVisibility[cluster * RTX_MAX_LIGHTS + lightCount] = l;
 			}
+			
 		}
 		lightVisibility[cluster * RTX_MAX_LIGHTS] = lightCount;
 		if (lightCount > RTX_MAX_LIGHTS) ri.Error(ERR_FATAL, "PT: To many lights!");
