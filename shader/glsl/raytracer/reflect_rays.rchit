@@ -49,7 +49,7 @@ getRay(vec2 pos_cs)
 void main()
 {
 	//if(rrp.depth == 1) return;
-	if(rrp.depth > 4) return;
+	if(rrp.depth > 5) return;
 	
 	RayPayload rp;
 	rp.barycentric = hitAttribute;

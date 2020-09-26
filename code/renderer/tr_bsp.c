@@ -1927,11 +1927,23 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 					vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 0.25;
 					//vk_d.lightList.lights[vk_d.lightList.numLights].size *= 5;
 				}
+				else if (strstr(s_worldData.name, "q3dm0")) {
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0.25;
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 0.125;
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 0.04;
+					vk_d.lightList.lights[vk_d.lightList.numLights].size /= 25;
+				}
 				else if (strstr(s_worldData.name, "q3dm1")) {
 					vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0.5;
 					vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 0.23;
 					vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 0.24;
 					vk_d.lightList.lights[vk_d.lightList.numLights].size *=15;
+				}
+				else if (strstr(s_worldData.name, "q3dm2")) {
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0.25;
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 0.125;
+					vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 0.04;
+					vk_d.lightList.lights[vk_d.lightList.numLights].size /= 25;
 				}
 				else if (strstr(s_worldData.name, "q3dm7")) {
 					vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0.25;
