@@ -40,7 +40,7 @@ vec3 indirectIllumination(){
 	normal = imageLoad(normalGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	pos = imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).xyz;
 	cluster = uint(imageLoad(posGBuffer, ivec2(gl_LaunchIDNV.xy)).w);
-	illumination = imageLoad(IMG_GBUFFER_DIRECT_ILLUMINATION, ivec2(gl_LaunchIDNV.xy)).xyz;
+	illumination = vec3(0);//imageLoad(IMG_GBUFFER_INDIRECT_ILLUMINATION, ivec2(gl_LaunchIDNV.xy)).xyz;
 	
 
 		for (uint b = 0; b < ubo.numBounces; ++b)
@@ -77,12 +77,13 @@ vec3 indirectIllumination(){
 				Triangle triangle = getTriangle(rp);
 				vec4 texture = getTextureWithLod(hp, 2);
 
-				vec3 indirectIllumination = calcShadingIndirect(texture, hp.pos, hp.normal, hp.cluster, hp.material) + 0.05;
+				vec3 indirectIllumination = calcShadingIndirect(texture, hp.pos, hp.normal, hp.cluster, hp.material);
 				illumination += indirectIllumination;
+				//illumination += texture.xyz;
 			}
 		}
 
-	imageStore(IMG_GBUFFER_DIRECT_ILLUMINATION, ivec2(gl_LaunchIDNV.xy), vec4(illumination,1));
+	imageStore(IMG_GBUFFER_INDIRECT_ILLUMINATION, ivec2(gl_LaunchIDNV.xy), vec4(illumination,1));
 	//vec3 shadeColor = calcShading(primary_albedo, pos, normal, cluster, material);
 	//shadeColor = alpha_blend( transparent, vec4(shadeColor.rgb,1) ).xyz;
 	return illumination.xyz;

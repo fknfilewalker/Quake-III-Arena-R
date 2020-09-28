@@ -93,6 +93,10 @@ uint32_t RB_GetMaterial() {
 	if (RB_IsLight(tess.shader)) {
 		material |= MATERIAL_FLAG_LIGHT;
 	}
+
+	/*if (strstr(tess.shader->name, "lava")) {
+		material |= MATERIAL_FLAG_LIGHT;
+	}*/
 	//+		tess.shader	0x0000023576446ce8 {name=0x0000023576446ce8 "textures/base_floor/rusty_pentagrate" lightmapIndex=-3 ...}	shader_s *
 	//proto_rustygrate gratetorch2b 0x00000206adcea548 {name=0x00000206adcea548 "models/mapobjects/gratelamp/gratetorch2b" lightmapIndex=...}
 	if (strstr(tess.shader->name, "timlamp/timlamp") || strstr(tess.shader->name, "gratelamp/gratelamp") || strstr(tess.shader->name, "proto_grate")
