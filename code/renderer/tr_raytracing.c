@@ -258,6 +258,8 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 			bAS->geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV; break;
 	}
 	//bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+
+	bAS->geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
 	bAS->geometryInstance.accelerationStructureHandle = bAS->handle;
 
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&bAS->geometryInstance);
@@ -709,6 +711,21 @@ static void RB_TraceRays() {
 	ubo->dof = rt_dof->integer;
 	ubo->randomPixelOffset = rt_antialiasing->integer;
 	ubo->accumulate = rt_accumulate->integer;
+
+	ubo->ambient[0] = 0.07;
+	ubo->ambient[1] = 0.07;
+	ubo->ambient[2] = 0.03;
+
+	if (strstr(tr.world->name, "q3dm1")) {
+		ubo->ambient[0] = 0.06;
+		ubo->ambient[1] = 0.05;
+		ubo->ambient[2] = 0.05;
+	}else if (strstr(tr.world->name, "q3dm7")) {
+		ubo->ambient[0] = 0.07;
+		ubo->ambient[1] = 0.07;
+		ubo->ambient[2] = 0.03;
+	}
+
 
 	ubo->maxSamples = rt_maxSamples->integer;
 	if (rt_accumulate->integer || rt_pause->integer) {

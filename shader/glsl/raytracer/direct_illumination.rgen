@@ -56,7 +56,7 @@ vec3 directIllumination(){
 	}
 	
 	
-	vec3 directIllumination = calcShading(primary_albedo, pos, normal, cluster, material) + vec3(0.05,0.05,0.05);
+	vec3 directIllumination = calcShading(primary_albedo, pos, normal, cluster, material) + ubo.ambient.xyz;//vec3(0.12,0.10,0.05);
 	//directIllumination += transparent.xyz;
 	vec3 shadeColor = primary_albedo.xyz;
 	if(ubo.illumination){

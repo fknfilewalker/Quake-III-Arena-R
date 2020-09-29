@@ -6,6 +6,11 @@
 #include "globalTexture.glsl"
 #include "vertexData.glsl"
 
+layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
+{
+	GlobalUbo ubo;
+};
+
 hitAttributeNV vec2 hitAttribute;
 layout(location = 0) rayPayloadInNV RayPayload rp;
 
@@ -64,7 +69,9 @@ void main()
   //  }
   // }
   //rp.transparent += tex;
-  
+
+	if (isLight(material)) rp.transLight = true;
+	
 
 	ignoreIntersectionNV();
 }

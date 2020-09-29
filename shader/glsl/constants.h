@@ -271,6 +271,7 @@ STRUCT (
     MAT4    (viewMat)
     MAT4    (projMat)
     VEC4    (camPos)
+    VEC4    (ambient)
 	BOOL    (hasPortal)
 	UINT    (frameIndex)
     INT     (currentCluster)

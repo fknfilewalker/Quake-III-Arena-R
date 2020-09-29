@@ -45,6 +45,7 @@ struct RayPayload {
 	vec4 transparent;
 	uint addCount;
 	float max_transparent_distance;
+	bool transLight;
 	//mat4x3 modelmat;
 };
 struct RayPayloadReflect {

@@ -1937,7 +1937,7 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 					vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0.5;
 					vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 0.23;
 					vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 0.24;
-					vk_d.lightList.lights[vk_d.lightList.numLights].size *=15;
+					vk_d.lightList.lights[vk_d.lightList.numLights].size =150;
 				}
 				else if (strstr(s_worldData.name, "q3dm2")) {
 					vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 0.25;
@@ -2698,6 +2698,14 @@ void R_PreparePT() {
 		vec3_t origin = { 500,500,1500 };
 		vec3_t left = { 3000,0,0 };
 		vec3_t up = { 0,3000,0 };
+		if (strstr(s_worldData.name, "q3dm1")) {
+			origin[0] = 500;
+			origin[0] = 500;
+			origin[1] = 2000;
+			origin[2] = 1500;
+			left[0] = 500;
+			up[1] = 500;
+		}
 		tess.shader->sort = 10;
 		RB_AddQuadStampExt(origin, left, up, tess.vertexColors, 0, 0, 1, 1);
 
@@ -2761,7 +2769,7 @@ void R_PreparePT() {
 		vk_d.bottomASWorldStatic.geometryInstance.instanceCustomIndex = 0;
 		vk_d.bottomASWorldStatic.geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 		vk_d.bottomASWorldStatic.geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
-		vk_d.bottomASWorldStatic.geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+		//vk_d.bottomASWorldStatic.geometryInstance.flags |= VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
 		vk_d.bottomASWorldStatic.geometryInstance.accelerationStructureHandle = vk_d.bottomASWorldStatic.handle;
 
 		float tM[12];

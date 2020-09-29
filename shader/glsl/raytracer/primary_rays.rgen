@@ -238,7 +238,7 @@ void shootPrimaryRay(Ray ray, vec2 sccs){
 		hitData.transparent = rp.transparent;
 		hitData.normal.xyz = normalize(hp.normal);
 		hitData.cluster = int(hp.cluster);
-		hitData.material = get_material(rp);
+		hitData.material = get_material(rp) | (ubo.debugLights && rp.transLight ? MATERIAL_FLAG_LIGHT : 0);
 		if(is_player(rp)) hitData.material |= MATERIAL_FLAG_PLAYER_OR_WEAPON;
 		hitData.depth = rp.hit_distance;
 		//if(is_light(rp)) hitData.albedo += vec4(1,0,0,0);
