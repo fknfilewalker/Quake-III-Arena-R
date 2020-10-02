@@ -95,8 +95,8 @@ getPrimaryRay(vec2 pos_cs)
 		ray.origin     = ubo.camPos.xyz;
 		ray.direction  = pos_ws - ray.origin;
 		float len      = length(ray.direction);
-		ray.direction /= len;
-		ray.t_max      = len + 0.1;
+		//ray.direction /= len;
+		ray.t_max      = len + 15;
 	}
 	return ray;
 }
@@ -276,6 +276,7 @@ void shootPrimaryRay(Ray ray, vec2 sccs){
 void main() 
 {
 	forward = is_gradient(ivec2(gl_LaunchIDNV.xy));
+	forward = false;
 	vec2 sccs = getScreenCoordinates(); // screen coordinates in clip space
 	Ray ray = getPrimaryRay(sccs);
 	// get distance to first opaque object

@@ -292,6 +292,7 @@ STRUCT (
     UINT    (accumulate)
     UINT    (taa)
     BOOL    (debugLights)
+    FLOAT   (brightness)
     // dof
     FLOAT   (aperture)
     FLOAT   (focalLength)

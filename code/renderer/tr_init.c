@@ -173,6 +173,7 @@ cvar_t* rt_aperture;
 cvar_t* rt_focalLength;
 cvar_t* rt_dof;
 cvar_t* rt_denoiser;
+cvar_t* rt_brightness;
 
 void ( APIENTRY * qglMultiTexCoord2fARB )( GLenum texture, GLfloat s, GLfloat t );
 void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
@@ -1406,6 +1407,7 @@ void R_Register( void )
 	rt_focalLength = ri.Cvar_Get("rt_focallength", "15", 0);
 	rt_dof = ri.Cvar_Get("rt_dof", "0", 0);
 	rt_denoiser = ri.Cvar_Get("rt_denoiser", "1", 0);
+	rt_brightness = ri.Cvar_Get("rt_brightness", "0", 0);
 
 	// make sure all the commands added here are also
 	// removed in R_Shutdown

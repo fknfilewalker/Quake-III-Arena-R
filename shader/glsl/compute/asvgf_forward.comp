@@ -167,5 +167,5 @@ main()
 
 	imageStore(posFwd, pos_grad, vec4(hp.pos, 0.0));
 	imageStore(objectFwd, pos_grad, vec4(rp.barycentric, uintBitsToFloat(rp.instanceID), uintBitsToFloat(rp.primitiveID)));
-	//imageStore(debugASVGFBuffer, ipos_curr, vec4(0, v.y, 0, 0));
+	//imageStore(IMG_ASVGF_DEBUG, ipos_curr, vec4(0, 1, 0, 0));
 }

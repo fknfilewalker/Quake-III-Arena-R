@@ -105,8 +105,10 @@ ivec2 ipos = ivec2(gl_GlobalInvocationID);
 	if(ubo.debugLights){
 		if (isLight(material)) result.xyz = vec3(1,0,0);
 	}
+	result.xyz += ubo.brightness;
 
 	if(ubo.taa == 1) imageStore(IMG_ASVGF_COLOR, ipos, vec4(result.xyz, 1));
 	else imageStore(imgtaaASVGF, ipos, vec4(result.xyz, 1));
 	//imageStore(imgtaaASVGF, ipos, vec4(result.xyz, 1));
+	
 }

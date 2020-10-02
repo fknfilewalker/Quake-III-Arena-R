@@ -1781,6 +1781,7 @@ extern	cvar_t  *rt_numSamples;
 extern	cvar_t  *rt_maxSamples;
 extern  cvar_t  *rt_taa;
 extern	cvar_t  *rt_denoiser;
+extern  cvar_t  *rt_brightness;
 
 extern  cvar_t* rt_printPerformanceStatistic;
 extern  cvar_t* rt_accumulate;

@@ -701,6 +701,7 @@ static void RB_TraceRays() {
 	ubo->denoiser = rt_denoiser->integer;
 	ubo->taa = rt_taa->integer;
 	ubo->debugLights = rt_debug_lights->integer;
+	ubo->brightness = rt_brightness->value;
 
 	ubo->width = vk.swapchain.extent.width;
 	ubo->height = vk.swapchain.extent.height;
@@ -909,6 +910,8 @@ static void RB_TraceRays() {
 	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.compositingPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 	VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
 	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].color.handle);
+
+
 	// ASVGF TAA
 	if (rt_taa->integer == 1) {
 		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_TAA_BEGIN);
