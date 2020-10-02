@@ -242,3 +242,13 @@ vec3 unpackRGBE(uint x)
 
     return v;
 }
+
+vec3 reinhard_extended(vec3 v, float max_white)
+{
+    vec3 numerator = v * (1.0f + (v / vec3(max_white * max_white)));
+    return numerator / (1.0f + v);
+}
+vec3 reinhard(vec3 v)
+{
+    return v / (1.0f + v);
+}

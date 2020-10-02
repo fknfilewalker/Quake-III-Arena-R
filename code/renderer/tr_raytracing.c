@@ -702,6 +702,7 @@ static void RB_TraceRays() {
 	ubo->taa = rt_taa->integer;
 	ubo->debugLights = rt_debug_lights->integer;
 	ubo->brightness = rt_brightness->value;
+	ubo->tonemappingReinhard = rt_tonemapping_reinhard->value;
 
 	ubo->width = vk.swapchain.extent.width;
 	ubo->height = vk.swapchain.extent.height;
@@ -726,7 +727,7 @@ static void RB_TraceRays() {
 		ubo->ambient[1] = 0.07;
 		ubo->ambient[2] = 0.03;
 	}
-
+	
 
 	ubo->maxSamples = rt_maxSamples->integer;
 	if (rt_accumulate->integer || rt_pause->integer) {

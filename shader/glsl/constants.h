@@ -293,6 +293,7 @@ STRUCT (
     UINT    (taa)
     BOOL    (debugLights)
     FLOAT   (brightness)
+    FLOAT   (tonemappingReinhard)
     // dof
     FLOAT   (aperture)
     FLOAT   (focalLength)

@@ -1845,7 +1845,7 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 245.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 205.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 139.0f / 255.0f;
-				vk_d.lightList.lights[vk_d.lightList.numLights].size /= 5;
+				vk_d.lightList.lights[vk_d.lightList.numLights].size /= 10;
 			}
 			else if (strstr(tess.shader->name, "flame")) {
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 226.0f / 255.0f;
@@ -1863,6 +1863,7 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 216.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 216.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 208.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].size /= 4;
 			}
 			else if (strstr(tess.shader->name, "lamplight_y")) {
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 248.0f / 255.0f;
