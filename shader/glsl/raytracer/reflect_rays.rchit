@@ -65,6 +65,7 @@ void main()
 	rrp.prevPos = getPrevPos(rp);
 	rrp.depth = depth;
 	rrp.object = vec4(rp.barycentric, uintBitsToFloat(rp.instanceID), uintBitsToFloat(rp.primitiveID));
+	rrp.hit_distance = gl_RayTmaxNV;
 	
 	//rrp.color += vec4(0.2, 0.2, 0.2, 1);
 

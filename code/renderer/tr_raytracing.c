@@ -242,7 +242,10 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	else {
 		bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_NV;
 	}
-
+	if (strstr(tess.shader->name, "skel")) {
+		int x = 2;
+		bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV;
+	}
 	if (strstr(tess.shader->name, "energy_grn1") || strstr(tess.shader->name, "teleportEffect") || strstr(tess.shader->name, "shotgun_laser") || strstr(tess.shader->name, "models/players/hunter/hunter_f")) {
 		bAS->geometryInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_NV;
 		bAS->geometryInstance.instanceOffset = 1;
@@ -398,11 +401,14 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
 		// skip stuff
+		if (strstr(shader->name, "skel")) {
+			int x = 2;
+		}
 		if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
 			|| strstr(shader->name, "Shadow") || shader->isSky ||
 			(shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->sort > SS_OPAQUE) {
 			if(!strstr(shader->name, "green_sphere") && !strstr(shader->name, "yellow_sphere") && !strstr(shader->name, "red_sphere") && !strstr(shader->name, "energy_grn1")
-				&& !strstr(shader->name, "teleportEffect") && !strstr(shader->name, "bloodExplosion")) continue;
+				&& !strstr(shader->name, "teleportEffect") && !strstr(shader->name, "bloodExplosion") && !strstr(shader->name, "skel")) continue;
 		}
 
 		if (strstr(shader->name, "green_sphere") || strstr(shader->name, "yellow_sphere") || strstr(shader->name, "red_sphere") || strstr(shader->name, "plasma_glass")) {
@@ -848,11 +854,11 @@ static void RB_TraceRays() {
 
 	// indirect Ill
 	if (ubo->numBounces > 0) {
-		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_INDIRECT_ILLUMINATION_BEGIN);
+		/*PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_INDIRECT_ILLUMINATION_BEGIN);
 		VK_BindRayTracingPipeline(&vk_d.indirectIlluminationPipeline);
 		VK_Bind2RayTracingDescriptorSets(&vk_d.indirectIlluminationPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 		VK_TraceRays(&vk_d.indirectIlluminationPipeline);
-		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_INDIRECT_ILLUMINATION_END);
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_INDIRECT_ILLUMINATION_END);*/
 	}
 
 	if (rt_denoiser->integer) {

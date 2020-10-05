@@ -384,6 +384,12 @@ void main()
 
 		vec4 motion = vec4((ndcPrev.xy - ndc.xy), -(ndcPrev.z - ndc.z), fwidth_depth);
 
+		if(rrp.hit_distance > rrp.max_transparent_distance){
+			vec4 trans = imageLoad(transparentGBuffer, ivec2(gl_LaunchIDNV.xy));
+			trans.xyz += rrp.transparent.xyz;
+			imageStore(transparentGBuffer, ivec2(gl_LaunchIDNV.xy), trans);
+		}
+
 		imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), color);
 		imageStore(normalGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.normal.xyz, -ndc.z));//rrp.depth));
 		imageStore(posGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(rrp.pos.xyz, rrp.cluster));

@@ -120,7 +120,7 @@ uint32_t RB_GetMaterial() {
 		material = MATERIAL_KIND_GLASS;
 	}
 
-	if (strstr(tess.shader->name, "effects/envmaprail")) {
+	if (strstr(tess.shader->name, "skel")) {
 		int x = 2;
 	}
 
@@ -157,6 +157,10 @@ uint32_t RB_GetMaterial() {
 	else if (strstr(tess.shader->name, "bitch")) {
 		material = MATERIAL_FLAG_SEE_THROUGH;
 		if(tess.shader->rtstages[1] != NULL )tess.shader->rtstages[1]->active = qfalse;
+	}
+	else if (strstr(tess.shader->name, "skel")) {
+		material = MATERIAL_FLAG_SEE_THROUGH;
+		if (tess.shader->rtstages[1] != NULL)tess.shader->rtstages[1]->active = qfalse;
 	}
 	else if (strstr(tess.shader->name, "bloodExplosion") || strstr(tess.shader->name, "base_trim/wires02")) {
 		material  = MATERIAL_FLAG_SEE_THROUGH;

@@ -77,7 +77,7 @@ void main()
 //   //  }
 //   // }
 //   //rrp.transparent += tex;
-  
+  rrp.max_transparent_distance = gl_HitTNV;
 
 	ignoreIntersectionNV();
 }

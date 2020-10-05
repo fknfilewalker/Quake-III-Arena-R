@@ -60,6 +60,7 @@ struct RayPayloadReflect {
 	vec2 sccs;
 	uint addCount;
 	vec4 transparent;
+	float hit_distance;
 	float max_transparent_distance;
 };
 struct ShadowRayPayload
