@@ -1871,7 +1871,7 @@ void RB_AddLightToLightList(int cluster, uint32_t type, uint32_t offsetidx, uint
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 104.0f / 255.0f;
 			}
 			else if (strstr(tess.shader->name, "base_light/light1_")) {
-				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 193.0f / 255.0f;
+				vk_d.lightList.lights[vk_d.lightList.numLights].color[0] = 120.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[1] = 100.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].color[2] = 100.0f / 255.0f;
 				vk_d.lightList.lights[vk_d.lightList.numLights].size /= 1.75;
@@ -2624,6 +2624,20 @@ void R_CreatePrimaryRaysPipeline() {
 	VK_SetCompute2DescriptorSets(&vk_d.accelerationStructures.compositingPipeline, &vk_d.computeDescriptor[0], &vk_d.imageDescriptor);
 	VK_AddComputePushConstant(&vk_d.accelerationStructures.compositingPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t));
 	VK_FinishComputePipeline(&vk_d.accelerationStructures.compositingPipeline);
+
+	vkshader_t maxmipmapShader = { 0 };
+	VK_MaxMipMapCompShader(&maxmipmapShader);
+	VK_SetComputeShader(&vk_d.accelerationStructures.maxmipmapPipeline, &maxmipmapShader);
+	VK_SetCompute2DescriptorSets(&vk_d.accelerationStructures.maxmipmapPipeline, &vk_d.computeDescriptor[0], &vk_d.imageDescriptor);
+	VK_AddComputePushConstant(&vk_d.accelerationStructures.maxmipmapPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t));
+	VK_FinishComputePipeline(&vk_d.accelerationStructures.maxmipmapPipeline);
+
+	vkshader_t tonemappingShader = { 0 };
+	VK_TonemappingCompShader(&tonemappingShader);
+	VK_SetComputeShader(&vk_d.accelerationStructures.tonemappingPipeline, &tonemappingShader);
+	VK_SetCompute2DescriptorSets(&vk_d.accelerationStructures.tonemappingPipeline, &vk_d.computeDescriptor[0], &vk_d.imageDescriptor);
+	VK_AddComputePushConstant(&vk_d.accelerationStructures.tonemappingPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t));
+	VK_FinishComputePipeline(&vk_d.accelerationStructures.tonemappingPipeline);
 
 	/*vkshader_t s = { 0 };
 	VK_RayTracingShaderWithAny(&s);

@@ -1,10 +1,21 @@
 
 
-float
-luminance(in vec3 color)
+float luminance(vec3 v)
 {
-    return dot(color, vec3(0.299, 0.587, 0.114));
+    return dot(v, vec3(0.2126f, 0.7152f, 0.0722f));
 }
+
+vec3 change_luminance(vec3 c_in, float l_out)
+{
+    float l_in = luminance(c_in);
+    return c_in * (l_out / l_in);
+}
+
+// float
+// luminance(in vec3 color)
+// {
+//     return dot(color, vec3(0.299, 0.587, 0.114));
+// }
 float
 clamped_luminance(vec3 c)
 {
@@ -251,4 +262,11 @@ vec3 reinhard_extended(vec3 v, float max_white)
 vec3 reinhard(vec3 v)
 {
     return v / (1.0f + v);
+}
+vec3 reinhard_extended_luminance(vec3 v, float max_white_l)
+{
+    float l_old = luminance(v);
+    float numerator = l_old * (1.0f + (l_old / (max_white_l * max_white_l)));
+    float l_new = numerator / (1.0f + l_old);
+    return change_luminance(v, l_new);
 }

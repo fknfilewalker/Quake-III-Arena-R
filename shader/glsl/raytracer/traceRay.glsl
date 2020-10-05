@@ -34,7 +34,7 @@ void traceRayOpaque(Ray ray, uint cullMask)
 }
 void traceRay(Ray ray, uint cullMask)
 {
-	const uint rayFlags = gl_RayFlagsCullFrontFacingTrianglesNV  ;
+	const uint rayFlags = gl_RayFlagsNoOpaqueNV  ;
 	rp.transparent = vec4(0);
 	rp.max_transparent_distance = 0;
 	rp.addCount = 0;

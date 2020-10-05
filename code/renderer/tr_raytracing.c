@@ -714,8 +714,8 @@ static void RB_TraceRays() {
 	ubo->randomPixelOffset = rt_antialiasing->integer;
 	ubo->accumulate = rt_accumulate->integer;
 
-	ubo->ambient[0] = 0.07;
-	ubo->ambient[1] = 0.07;
+	ubo->ambient[0] = 0.06;
+	ubo->ambient[1] = 0.06;
 	ubo->ambient[2] = 0.03;
 
 	if (strstr(tr.world->name, "q3dm1")) {
@@ -911,8 +911,15 @@ static void RB_TraceRays() {
 	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.compositingPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 	VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
 	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].color.handle);
+	/*
+	for (uint32_t i = 0; i < 1; i++) {
+		VK_BindComputePipeline(&vk_d.accelerationStructures.maxmipmapPipeline);
+		VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.maxmipmapPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+		VK_SetComputePushConstant(&vk_d.accelerationStructures.maxmipmapPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &i);
+		VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
+	}*/
 
-
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].color.handle);
 	// ASVGF TAA
 	if (rt_taa->integer == 1) {
 		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_TAA_BEGIN);
@@ -921,6 +928,7 @@ static void RB_TraceRays() {
 		VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
 		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_TAA_END);
 	}
+
 }
 
 static void

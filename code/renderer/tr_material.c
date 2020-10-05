@@ -2,7 +2,7 @@
 
 qboolean RB_IsLight(shader_t
 	* shader) {
-	//if (strstr(tess.shader->name, "lamplight_y")) return qtrue;
+	//if (strstr(tess.shader->name, "lava")) return qtrue;
 	if (tess.numIndexes > 12) {
 		if(!strstr(shader->name, "proto_light_2k") && !strstr(shader->name, "gothic_light3_2K")) return qfalse;
 	}

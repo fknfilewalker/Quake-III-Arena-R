@@ -1284,6 +1284,8 @@ typedef struct {
 	vkcpipeline_t				asvgfAtrousPipeline;
 	vkcpipeline_t				asvgfTaaPipeline;
 	vkcpipeline_t				compositingPipeline;
+	vkcpipeline_t				maxmipmapPipeline;
+	vkcpipeline_t				tonemappingPipeline;
 	vkimage_t					rngImage;
 
 	vkimage_t					resultImage[VK_MAX_SWAPCHAIN_SIZE];

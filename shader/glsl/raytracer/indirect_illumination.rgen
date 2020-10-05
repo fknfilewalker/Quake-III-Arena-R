@@ -75,11 +75,11 @@ vec3 indirectIllumination(){
 			} else {
 				HitPoint hp = getHitPoint(rp);
 				Triangle triangle = getTriangle(rp);
-				vec4 texture = getTextureWithLod(hp, 2);
+				vec4 texture = getTextureWithLod(hp, 2) ;
 
-				vec3 indirectIllumination = calcShadingIndirect(texture, hp.pos, hp.normal, hp.cluster, hp.material);
-				illumination += indirectIllumination;
-				//illumination += texture.xyz;
+				// vec3 indirectIllumination = calcShadingIndirect(texture, hp.pos, hp.normal, hp.cluster, hp.material);
+				// illumination += indirectIllumination;
+				illumination += texture.xyz;
 			}
 		}
 
