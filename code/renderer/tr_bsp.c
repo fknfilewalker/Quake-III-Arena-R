@@ -2571,6 +2571,14 @@ void R_CreatePrimaryRaysPipeline() {
 		VK_AddStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_SetStorageBuffer(&vk_d.computeDescriptor[i], BINDING_OFFSET_UBO_LIGHTS, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.uboLightList[i].buffer);
 
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_MAX_MIPMAP_IMG_ARRAY, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_MAX_MIPMAP_IMG_ARRAY, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[i].maxmipmap.view);
+		VK_AddStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_MAX_MIPMAP_IMG_ARRAY_PREV, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetStorageImage(&vk_d.computeDescriptor[i], BINDING_OFFSET_MAX_MIPMAP_IMG_ARRAY_PREV, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[prevIndex].maxmipmap.view);
+
+		VK_AddSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_RESULT, VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_SetSampler(&vk_d.computeDescriptor[i], BINDING_OFFSET_RESULT, VK_SHADER_STAGE_COMPUTE_BIT, vk_d.gBuffer[i].result.sampler, vk_d.gBuffer[i].result.view);
+
 		VK_FinishDescriptor(&vk_d.computeDescriptor[i]);
 	}
 

@@ -5,6 +5,7 @@
 #include "../constants.h"
 #include "../raytracer/defines.glsl"
 #include "asvgf.glsl"
+#include "../raytracer/gbuffer.glsl"
 #include "../raytracer/rt_Helper.glsl"
 
 layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
@@ -16,13 +17,96 @@ layout(push_constant) uniform push {
     layout(offset = 0) int iteration;
 };
 
-layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+layout(binding = BINDING_OFFSET_MAX_MIPMAP_IMG_ARRAY, set = 0, r16f) uniform image2DArray maxmipmap;
+layout(binding = BINDING_OFFSET_MAX_MIPMAP_IMG_ARRAY_PREV, set = 0, r16f) uniform image2DArray maxmipmapPrev;
 
-
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+bool
+isSky(in uint material) {
+	return (material == MATERIAL_KIND_SKY);
+}
+bool
+isLight(in uint material) {
+	return ((material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT);
+}
+bool
+isIgnoreLuminance(in uint material) {
+	return ((material & MATERIAL_FLAG_IGNORE_LUMINANCE) == MATERIAL_FLAG_IGNORE_LUMINANCE);
+}
 void main() {
     ivec2 ipos = ivec2(gl_GlobalInvocationID);
-    vec4 color = imageLoad(IMG_ASVGF_COLOR, ipos);
 
+    ivec2 iposA = ipos * 2 + ivec2(0, 0);
+    ivec2 iposB = ipos * 2 + ivec2(1, 0);
+    ivec2 iposC = ipos * 2 + ivec2(0, 1);
+    ivec2 iposD = ipos * 2 + ivec2(1, 1);
+
+    //ivec2 prevSize = ivec2(ubo.width,ubo.height);
+
+    float l_max = 0;
+    float l_A;
+    float l_B;
+    float l_C;
+    float l_D;
+    if(iteration == 0) {
+        // vec4 color = imageLoad(IMG_ASVGF_COLOR, ipos);
+        // float l_max = luminance(color.xyz)
+        // imageStore(maxmipmap, ivec3(ipos,0), vec4(luminance(color.xyz), 0,0,0));
+
+        uint materialA = uint(imageLoad(viewGBuffer, iposA).w);
+        uint materialB = uint(imageLoad(viewGBuffer, iposB).w);
+        uint materialC = uint(imageLoad(viewGBuffer, iposC).w);
+        uint materialD = uint(imageLoad(viewGBuffer, iposD).w);
+
+        l_A = luminance(imageLoad(IMG_ASVGF_COLOR, iposA).xyz);
+        if(isSky(materialA) || isLight(materialA) || isIgnoreLuminance(materialA)) l_A = 0;
+        l_B = luminance(imageLoad(IMG_ASVGF_COLOR, iposB).xyz);
+        if(isSky(materialB) || isLight(materialB) || isIgnoreLuminance(materialB)) l_B = 0;
+        l_C = luminance(imageLoad(IMG_ASVGF_COLOR, iposC).xyz);
+        if(isSky(materialC) || isLight(materialC) || isIgnoreLuminance(materialC)) l_C = 0;
+        l_D = luminance(imageLoad(IMG_ASVGF_COLOR, iposD).xyz);
+        if(isSky(materialD) || isLight(materialD) || isIgnoreLuminance(materialD)) l_D = 0;
+    } else {
+        //imageStore(imgtaaASVGF, ipos, vec4(luminance(color.xyz), 0, 0, 1));
+        //l_max = imageLoad(maxmipmap, ivec3(ipos,iteration - 1)).r;
+        l_A = imageLoad(maxmipmap, ivec3(iposA,iteration-1)).r;
+        l_B = imageLoad(maxmipmap, ivec3(iposB,iteration-1)).r;
+        l_C = imageLoad(maxmipmap, ivec3(iposC,iteration-1)).r;
+        l_D = imageLoad(maxmipmap, ivec3(iposD,iteration-1)).r;
+    }
+
+    if(l_A > l_max) l_max = l_A;
+    if(l_B > l_max) l_max = l_B;
+    if(l_C > l_max) l_max = l_C;
+    if(l_D > l_max) l_max = l_D;
+
+    if(iteration == (ubo.mipmapLevel - 1)){
+        float l_prev = imageLoad(maxmipmapPrev, ivec3(ipos,(ubo.mipmapLevel - 1))).x;
+        float alpha = 0.02;
+        //if(abs(l_prev - l_max) > 0.7) alpha = 0.001;
+        l_max = mix(l_prev, l_max, alpha);
+        if(l_max < 0.05) l_max = 1;
+    } 
+
+    imageStore(maxmipmap, ivec3(ipos,iteration), vec4(l_max, 0,0,1));
+//imageStore(imgtaaASVGF, ipos, vec4(1, 0, 0, 1));
+    //if(iteration == 0) imageStore(imgtaaASVGF, ipos, vec4(imageLoad(maxmipmap, ivec3(ipos,0)).r, 0, 0, 1));
+    
+
+
+
+    // vec4 colorMax;
+    // if(luminance(colorA.xyz) > luminance(colorB.xyz)){
+    //     colorMax = colorA;
+    // } else colorMax = colorB;
+    // if(luminance(colorMax.xyz) < luminance(colorC.xyz)){
+    //     colorMax = colorC;
+    // }
+    // if(luminance(colorMax.xyz) < luminance(colorD.xyz)){
+    //     colorMax = colorD;
+    // }
+
+    // imageStore(IMG_ASVGF_COLOR, ivec3(0,0,0), vec4(colorMax.xyz, 1));
     
 
     // if(ubo.tonemappingReinhard < 1) {
@@ -38,6 +122,6 @@ void main() {
     // }
 	//vec2(textureSize(tex, 0))
 
-    if(ubo.taa == 1) imageStore(IMG_ASVGF_COLOR, ipos, vec4(color.xyz, 1));
-	else imageStore(imgtaaASVGF, ipos, vec4(color.xyz, 1));
+   //imageStore(IMG_ASVGF_COLOR, ipos, vec4(color.xyz, 1));
+	//else imageStore(imgtaaASVGF, ipos, vec4(color.xyz, 1));
 }

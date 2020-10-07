@@ -71,6 +71,7 @@ void main()
   //rp.transparent += tex;
 
 	if (isLight(material)) rp.transLight = true;
+  rp.trans = true;
 	
 
 	ignoreIntersectionNV();

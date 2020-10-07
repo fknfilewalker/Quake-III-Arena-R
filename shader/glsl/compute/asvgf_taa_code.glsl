@@ -29,7 +29,7 @@ BicubicCatmullRom(vec2 UV, vec2 texSize, out vec2 Sample[3], out vec2 Weight[3])
 /* uv is in pixel coordinates */
 vec4
 sample_texture_catmull_rom(sampler2D tex, vec2 uv)
-{//taaASVGF_Prev
+{
     vec4 sum = vec4(0);
     vec2 sampleLoc[3], sampleWeight[3];
     BicubicCatmullRom(uv, vec2(textureSize(tex, 0)), sampleLoc, sampleWeight);

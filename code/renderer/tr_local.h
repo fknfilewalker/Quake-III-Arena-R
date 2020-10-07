@@ -1413,6 +1413,8 @@ typedef struct {
 	vkimage_t			indirectIllumination;
 	vkimage_t			objectInfo;
 	vkimage_t			motion;
+	vkimage_t			maxmipmap;
+	vkimage_t			result;
 
 	vkimage_t			depthNormal;
 } vkgbuffer;
@@ -1493,6 +1495,7 @@ typedef struct {
 	uint32_t            discardModeAlpha;
 	qboolean            clip;
 	float				clipPlane[4];
+	int					mipmapLevel;
     
     // texture
 	uint32_t            currentTexture[2];

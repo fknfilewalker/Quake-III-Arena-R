@@ -43,6 +43,9 @@ layout(binding = BINDING_OFFSET_ASVGF_ATROUS_B, set = 0, rgba16f) uniform image2
 
 layout(binding = BINDING_OFFSET_ASVGF_COLOR, set = 0, rgba16f) uniform image2D IMG_ASVGF_COLOR;
 
+
+layout(binding = BINDING_OFFSET_RESULT, set = 0, rgba32f) uniform image2D resultImg;
+
 #define STRATUM_OFFSET_SHIFT 3
 #define STRATUM_OFFSET_MASK ((1 << STRATUM_OFFSET_SHIFT) - 1)
 

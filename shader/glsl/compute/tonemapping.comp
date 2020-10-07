@@ -7,6 +7,8 @@
 #include "asvgf.glsl"
 #include "../raytracer/rt_Helper.glsl"
 
+#include "../raytracer/gbuffer.glsl"
+
 layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 {
 	GlobalUbo ubo;
@@ -16,28 +18,27 @@ layout(push_constant) uniform push {
     layout(offset = 0) int iteration;
 };
 
-layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+layout(binding = BINDING_OFFSET_MAX_MIPMAP_IMG_ARRAY, set = 0, r16f) uniform image2DArray maxmipmap;
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
-
+bool isSky(in uint material) {
+	return (material == MATERIAL_KIND_SKY);
+}
+bool
+isIgnoreLuminance(in uint material) {
+	return ((material & MATERIAL_FLAG_IGNORE_LUMINANCE) == MATERIAL_FLAG_IGNORE_LUMINANCE);
+}
 void main() {
     ivec2 ipos = ivec2(gl_GlobalInvocationID);
-    vec4 color = imageLoad(IMG_ASVGF_COLOR, ipos);
+    vec4 color = imageLoad(imgtaaASVGF, ipos);
+    float max_luminance = imageLoad(maxmipmap, ivec3(0, 0,iteration)).x;
 
-    
+    if(ubo.tonemappingReinhard == 1) {
+        color.xyz = reinhard_extended_luminance(color.xyz, max_luminance);
+    }
 
-    // if(ubo.tonemappingReinhard < 1) {
-    //     float maxL = 0;
-    //     ivec2 size = ivec2(ubo.width, ubo.height);
-    //     for(int x = 0; x< size.x; x++){
-    //         for(int y = 0; y< size.y; y++){
-    //         maxL = max(maxL, luminance(imageLoad(IMG_ASVGF_COLOR, ivec2(x, y)).xyz));
-    //     }
-    //     }
+    imageStore(resultImg, ipos, vec4(color.xyz, 1));
+    //imageStore(resultImg, ipos, vec4(imageLoad(maxmipmap, ivec3(ipos,0)).x, 0, 0, 1));
 
-    //     color.xyz = reinhard_extended_luminance(color.xyz, maxL);
-    // }
-	//vec2(textureSize(tex, 0))
-
-    if(ubo.taa == 1) imageStore(IMG_ASVGF_COLOR, ipos, vec4(color.xyz, 1));
-	else imageStore(imgtaaASVGF, ipos, vec4(color.xyz, 1));
+   // if(isIgnoreLuminance(uint(imageLoad(viewGBuffer, ipos).w))) imageStore(resultImg, ipos, vec4(1,0,0, 1));
 }

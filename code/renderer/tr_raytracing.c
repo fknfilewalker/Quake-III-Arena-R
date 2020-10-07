@@ -712,6 +712,7 @@ static void RB_TraceRays() {
 
 	ubo->width = vk.swapchain.extent.width;
 	ubo->height = vk.swapchain.extent.height;
+	ubo->mipmapLevel = vk_d.mipmapLevel;
 
 	ubo->illumination = rt_illumination->integer;
 	ubo->aperture = rt_aperture->value;
@@ -917,13 +918,8 @@ static void RB_TraceRays() {
 	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.compositingPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 	VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
 	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].color.handle);
-	/*
-	for (uint32_t i = 0; i < 1; i++) {
-		VK_BindComputePipeline(&vk_d.accelerationStructures.maxmipmapPipeline);
-		VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.maxmipmapPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
-		VK_SetComputePushConstant(&vk_d.accelerationStructures.maxmipmapPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &i);
-		VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
-	}*/
+	
+	
 
 	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].color.handle);
 	// ASVGF TAA
@@ -933,6 +929,32 @@ static void RB_TraceRays() {
 		VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfTaaPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 		VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
 		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_TAA_END);
+	}
+
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].viewDir.handle);
+	if (rt_tonemapping_reinhard->value == 1) {
+		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].taa.handle);
+		for (uint32_t i = 0; i < vk_d.mipmapLevel; i++) {
+			VK_BindComputePipeline(&vk_d.accelerationStructures.maxmipmapPipeline);
+			VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.maxmipmapPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+			VK_SetComputePushConstant(&vk_d.accelerationStructures.maxmipmapPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &i);
+			//if(i == 0) VK_Dispatch((vk.swapchain.extent.width), (vk.swapchain.extent.height ), 1);
+			//else
+			VK_Dispatch((vk.swapchain.extent.width) / (2 * (i + 1)), (vk.swapchain.extent.height) / (2 * (i + 1)), 1);
+			BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].maxmipmap.handle);
+		}
+
+		//VK_BindComputePipeline(&vk_d.accelerationStructures.maxmipmapPipeline);
+		//VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.maxmipmapPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+		//int a = 0;
+		//VK_SetComputePushConstant(&vk_d.accelerationStructures.maxmipmapPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &a);
+		//VK_Dispatch(vk.swapchain.extent.width, vk.swapchain.extent.height, 1);
+		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].taa.handle);
+		VK_BindComputePipeline(&vk_d.accelerationStructures.tonemappingPipeline);
+		VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.tonemappingPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+		int a = vk_d.mipmapLevel - 1;
+		VK_SetComputePushConstant(&vk_d.accelerationStructures.tonemappingPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &a);
+		VK_Dispatch((vk.swapchain.extent.width), (vk.swapchain.extent.height), 1);
 	}
 
 }
@@ -1048,7 +1070,7 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	VK_BeginRenderClear();
 
 	// create descriptor
-	//vkimage_t* drawImage;
+	vkimage_t* drawImage;
 	/*if(rt_denoiser->integer) drawImage = &vk_d.asvgf[vk.swapchain.currentImage].taa;
 	else */
 	//vkimage_t* drawImage = &vk_d.accelerationStructures.resultImage[vk.swapchain.currentImage];
@@ -1058,7 +1080,8 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].indirectIllumination;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].debug;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].atrousA;
-	vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].taa;
+	if(rt_tonemapping_reinhard->value == 1) drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].result;
+	else drawImage = &vk_d.asvgf[vk.swapchain.currentImage].taa;
 	//vkimage_t* drawImage = &vk_d.gBuffer[vk.swapchain.currentImage].transparent;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].color;
 	//vkimage_t* drawImage = &vk_d.asvgf[vk.swapchain.currentImage].gradSamplePos;

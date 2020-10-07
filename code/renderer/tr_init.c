@@ -284,6 +284,8 @@ static void InitVulkan(void)
         VK_CreateVertexBuffer(&vk_d.uvbuffer2, vk.swapchain.imageCount * VK_VERTEX_ATTRIBUTE_DATA_SIZE * sizeof(vec2_t));
 		VK_CreateVertexBuffer(&vk_d.colorbuffer, vk.swapchain.imageCount * VK_VERTEX_ATTRIBUTE_DATA_SIZE * sizeof(color4ub_t));
 
+		vk_d.mipmapLevel = 1 + floor(log2(max(vk.swapchain.extent.width, vk.swapchain.extent.height)));
+
 		// <RTX>
 		if (glConfig.driverType == VULKAN && r_vertexLight->value == 2) {
 			for (int i = 0; i < vk.swapchain.imageCount; i++) {
@@ -335,6 +337,16 @@ static void InitVulkan(void)
 				VK_CreateImage(&vk_d.gBuffer[i].motion, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
 				VK_CreateSampler(&vk_d.gBuffer[i].motion, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 				VK_TransitionImage(&vk_d.gBuffer[i].motion, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+				VK_CreateImageArray(&vk_d.gBuffer[i].maxmipmap, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R16_SFLOAT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1, vk_d.mipmapLevel);
+				//VK_CreateImage(&vk_d.gBuffer[i].maxmipmap, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+				VK_CreateSampler(&vk_d.gBuffer[i].maxmipmap, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+				VK_TransitionImage(&vk_d.gBuffer[i].maxmipmap, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+				VK_CreateImage(&vk_d.gBuffer[i].result, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+				VK_CreateSampler(&vk_d.gBuffer[i].result, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+				VK_TransitionImage(&vk_d.gBuffer[i].result, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
 				// asvgf
 				VK_CreateImage(&vk_d.asvgf[i].debug, vk.swapchain.extent.width, vk.swapchain.extent.height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
 				VK_CreateSampler(&vk_d.asvgf[i].debug, VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);

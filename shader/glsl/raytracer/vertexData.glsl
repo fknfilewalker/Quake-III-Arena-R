@@ -473,3 +473,7 @@ bool
 isSky(in uint material) {
 	return (material == MATERIAL_KIND_SKY);
 }
+bool
+isIgnoreLuminance(in uint material) {
+	return ((material & MATERIAL_FLAG_IGNORE_LUMINANCE) == MATERIAL_FLAG_IGNORE_LUMINANCE);
+}

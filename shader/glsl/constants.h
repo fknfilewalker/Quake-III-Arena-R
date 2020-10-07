@@ -53,6 +53,7 @@
 #define MATERIAL_FLAG_PLAYER_OR_WEAPON			    0x00001000
 #define MATERIAL_FLAG_SEE_THROUGH_ADD  				0x00002000
 #define MATERIAL_FLAG_SEE_THROUGH_NO_ALPHA  	    0x00004000
+#define MATERIAL_FLAG_IGNORE_LUMINANCE 				0x00008000
 
 // BINDING OFFSETS
 // ubo
@@ -150,6 +151,10 @@
 #define BINDING_OFFSET_IDX_WORLD_DYNAMIC_AS_PREV            0x00000063
 #define BINDING_OFFSET_XYZ_ENTITY_DYNAMIC_PREV              0x00000064
 #define BINDING_OFFSET_IDX_ENTITY_DYNAMIC_PREV              0x00000065
+
+#define BINDING_OFFSET_MAX_MIPMAP_IMG_ARRAY_PREV            0x00000100
+#define BINDING_OFFSET_MAX_MIPMAP_IMG_ARRAY                 0x00000110
+#define BINDING_OFFSET_RESULT                               0x00000111
 
 // shader offset
 #define SBT_RGEN_PRIMARY_RAYS						0x00000000
@@ -281,6 +286,7 @@ STRUCT (
     UINT    (maxSamples)
     UINT    (width)
     UINT    (height)
+    UINT    (mipmapLevel)
     // settings
     UINT    (showIntermediateResults)
     BOOL    (cullLights)

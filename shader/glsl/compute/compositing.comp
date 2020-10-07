@@ -111,7 +111,7 @@ ivec2 ipos = ivec2(gl_GlobalInvocationID);
 
 	
 
-	if(ubo.tonemappingReinhard > 0) result.xyz = reinhard_extended_luminance(result.xyz, ubo.tonemappingReinhard);
+	//if(ubo.tonemappingReinhard > 0) result.xyz = reinhard_extended_luminance(result.xyz, ubo.tonemappingReinhard);
 	//if(ubo.tonemappingReinhard > 0) result.xyz = reinhard(result.xyz);
 	//imageStore(IMG_ASVGF_COLOR, ipos, vec4(result.xyz, 1));
 	if(ubo.taa == 1) imageStore(IMG_ASVGF_COLOR, ipos, vec4(result.xyz, 1));
