@@ -150,7 +150,9 @@ void main()
 			rrp.color = tex;
 			return;
 		}
-
+		tex.w = 0;
+		//if(any(lessThan(tex.rgb, vec3(0.15))) tex.rgb = vec3(0);
+		
 		vec3 originalDir = normalize(gl_WorldRayDirectionNV);
 		vec3 N = normalize(hp.normal);
 		vec4 albedo;

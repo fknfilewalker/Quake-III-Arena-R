@@ -66,6 +66,7 @@ void main() {
         if(isSky(materialC) || isLight(materialC) || isIgnoreLuminance(materialC)) l_C = 0;
         l_D = luminance(imageLoad(IMG_ASVGF_COLOR, iposD).xyz);
         if(isSky(materialD) || isLight(materialD) || isIgnoreLuminance(materialD)) l_D = 0;
+        l_max = (l_A + l_B + l_C + l_D)/4;
     } else {
         //imageStore(imgtaaASVGF, ipos, vec4(luminance(color.xyz), 0, 0, 1));
         //l_max = imageLoad(maxmipmap, ivec3(ipos,iteration - 1)).r;
@@ -73,12 +74,18 @@ void main() {
         l_B = imageLoad(maxmipmap, ivec3(iposB,iteration-1)).r;
         l_C = imageLoad(maxmipmap, ivec3(iposC,iteration-1)).r;
         l_D = imageLoad(maxmipmap, ivec3(iposD,iteration-1)).r;
-    }
 
-    if(l_A > l_max) l_max = l_A;
-    if(l_B > l_max) l_max = l_B;
-    if(l_C > l_max) l_max = l_C;
-    if(l_D > l_max) l_max = l_D;
+        // if(iteration == 1) {
+        //      l_max = (l_A + l_B + l_C + l_D)/4;
+        // } else {
+
+            if(l_A > l_max) l_max = l_A;
+            if(l_B > l_max) l_max = l_B;
+            if(l_C > l_max) l_max = l_C;
+            if(l_D > l_max) l_max = l_D;
+        //}
+    }
+    
 
     if(iteration == (ubo.mipmapLevel - 1)){
         float l_prev = imageLoad(maxmipmapPrev, ivec3(ipos,(ubo.mipmapLevel - 1))).x;
@@ -86,6 +93,7 @@ void main() {
         //if(abs(l_prev - l_max) > 0.7) alpha = 0.001;
         l_max = mix(l_prev, l_max, alpha);
         if(l_max < 0.05) l_max = 1;
+        if(l_max < 0.3) l_max = 0.3;
     } 
 
     imageStore(maxmipmap, ivec3(ipos,iteration), vec4(l_max, 0,0,1));

@@ -855,11 +855,11 @@ static void RB_TraceRays() {
 
 	// indirect Ill
 	if (ubo->numBounces > 0) {
-		/*PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_INDIRECT_ILLUMINATION_BEGIN);
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_INDIRECT_ILLUMINATION_BEGIN);
 		VK_BindRayTracingPipeline(&vk_d.indirectIlluminationPipeline);
 		VK_Bind2RayTracingDescriptorSets(&vk_d.indirectIlluminationPipeline, &vk_d.rtxDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
 		VK_TraceRays(&vk_d.indirectIlluminationPipeline);
-		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_INDIRECT_ILLUMINATION_END);*/
+		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_INDIRECT_ILLUMINATION_END);
 	}
 
 	if (rt_denoiser->integer) {
@@ -931,6 +931,7 @@ static void RB_TraceRays() {
 		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_TAA_END);
 	}
 
+	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].transparent.handle);
 	BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.gBuffer[vk.swapchain.currentImage].viewDir.handle);
 	if (rt_tonemapping_reinhard->value == 1) {
 		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].taa.handle);

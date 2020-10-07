@@ -80,15 +80,19 @@ ivec2 ipos = ivec2(gl_GlobalInvocationID);
 
 		if(ubo.denoiser) {
 			color.rgb *= albedo.rgb;
+			if(ubo.numBounces > 0) color.xyz += albedo.xyz * indirectIll.xyz;
 			color.rgb *= 4.0;
 			color.rgb -= 0.5;
 			color.rgb *= 1.010;
 			color.rgb += 0.5;
 			color.rgb = clamp(color.rgb, vec3(0), vec3(1));
-			result = alpha_blend( trans, vec4(color.xyz,1));//result = alpha_blend( trans, vec4(color.xyz,1));
+			if(ubo.tonemappingReinhard == 0) result = alpha_blend( trans, vec4(color.xyz,1));//result = alpha_blend( trans, vec4(color.xyz,1));
+			else result = color;
 		}
 		
-	} else result = alpha_blend( trans, vec4(result.xyz,1));
+	} else {
+		if(ubo.tonemappingReinhard == 0) result = alpha_blend( trans, vec4(result.xyz,1));
+	}
 
 	if(ubo.taa == 2) {
 		imageStore(IMG_ASVGF_COLOR, ipos, vec4(result.xyz, 1));
@@ -115,7 +119,10 @@ ivec2 ipos = ivec2(gl_GlobalInvocationID);
 	//if(ubo.tonemappingReinhard > 0) result.xyz = reinhard(result.xyz);
 	//imageStore(IMG_ASVGF_COLOR, ipos, vec4(result.xyz, 1));
 	if(ubo.taa == 1) imageStore(IMG_ASVGF_COLOR, ipos, vec4(result.xyz, 1));
-	else imageStore(imgtaaASVGF, ipos, vec4(result.xyz, 1));
+	else {
+		imageStore(IMG_ASVGF_COLOR, ipos, vec4(result.xyz, 1));
+		imageStore(imgtaaASVGF, ipos, vec4(result.xyz, 1));
+	}
 	//imageStore(imgtaaASVGF, ipos, vec4(result.xyz, 1));
 	
 }

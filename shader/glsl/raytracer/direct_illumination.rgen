@@ -66,7 +66,7 @@ vec3 directIllumination(){
 	shadeColor = alpha_blend( transparent, vec4(shadeColor.rgb,1) ).xyz;
 	imageStore(IMG_GBUFFER_DIRECT_ILLUMINATION, ivec2(gl_LaunchIDNV.xy), vec4( directIllumination ,1));
 	if (isLight(material)) {
-		imageStore(IMG_GBUFFER_DIRECT_ILLUMINATION, ivec2(gl_LaunchIDNV.xy), vec4(vec3(0.3),1));
+		//imageStore(IMG_GBUFFER_DIRECT_ILLUMINATION, ivec2(gl_LaunchIDNV.xy), vec4(vec3(0.3),1));
 	}
 	return shadeColor;
 }

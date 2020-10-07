@@ -474,7 +474,7 @@ void main()
 	}
 	if (isSeeThrough(material) || isSeeThroughNoAlpha(material)){
 		if(primary_albedo.w > 0.5) return;
-
+		primary_albedo.w =0;
 		vec4 albedo;
 		rrp.color = vec4(0);
 		rrp.depth = 0;

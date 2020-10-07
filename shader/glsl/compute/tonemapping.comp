@@ -8,7 +8,7 @@
 #include "../raytracer/rt_Helper.glsl"
 
 #include "../raytracer/gbuffer.glsl"
-
+#include "../raytracer/globalTexture.glsl"
 layout(binding = BINDING_OFFSET_GLOBAL_UBO, set = 0) uniform global_ubo
 {
 	GlobalUbo ubo;
@@ -20,9 +20,13 @@ layout(push_constant) uniform push {
 
 layout(binding = BINDING_OFFSET_MAX_MIPMAP_IMG_ARRAY, set = 0, r16f) uniform image2DArray maxmipmap;
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
-
-bool isSky(in uint material) {
+bool
+isSky(in uint material) {
 	return (material == MATERIAL_KIND_SKY);
+}
+bool
+isLight(in uint material) {
+	return ((material & MATERIAL_FLAG_LIGHT) == MATERIAL_FLAG_LIGHT);
 }
 bool
 isIgnoreLuminance(in uint material) {
@@ -31,13 +35,22 @@ isIgnoreLuminance(in uint material) {
 void main() {
     ivec2 ipos = ivec2(gl_GlobalInvocationID);
     vec4 color = imageLoad(imgtaaASVGF, ipos);
+    vec4 trans = imageLoad(transparentGBuffer, ipos);
     float max_luminance = imageLoad(maxmipmap, ivec3(0, 0,iteration)).x;
 
-    if(ubo.tonemappingReinhard == 1) {
-        color.xyz = reinhard_extended_luminance(color.xyz, max_luminance);
-    }
+    uint material = uint(imageLoad(viewGBuffer, ipos).w);
 
+    if(ubo.tonemappingReinhard == 1 && (!isSky(material) )) {
+        vec3 color2 = color.xyz;
+        color.xyz = reinhard_extended_luminance(color.xyz, max_luminance);
+         if(isnan(color.x))color.x = 0;
+        if(isnan(color.y))color.y = 0;
+        if(isnan(color.z))color.z = 0;
+    }
+    
+    color = alpha_blend( trans, vec4(color.xyz,1));
     imageStore(resultImg, ipos, vec4(color.xyz, 1));
+    
     //imageStore(resultImg, ipos, vec4(imageLoad(maxmipmap, ivec3(ipos,0)).x, 0, 0, 1));
 
    // if(isIgnoreLuminance(uint(imageLoad(viewGBuffer, ipos).w))) imageStore(resultImg, ipos, vec4(1,0,0, 1));
