@@ -191,8 +191,8 @@ void RB_CreateEntityBottomAS(vkbottomAS_t** bAS, qboolean dynamic) {
 		RB_UploadXYZ(&vk_d.geometry.xyz_entity_static, bASList->data.offsetXYZ, -1);
 	}
 	else {
-		RB_UploadIDX(&vk_d.geometry.idx_entity_dynamic, bASList->data.offsetIDX, 0);
-		RB_UploadXYZ(&vk_d.geometry.xyz_entity_dynamic, bASList->data.offsetXYZ, -1);
+		RB_UploadIDX(&vk_d.geometry.idx_entity_dynamic[vk.swapchain.currentImage], bASList->data.offsetIDX, 0);
+		RB_UploadXYZ(&vk_d.geometry.xyz_entity_dynamic[vk.swapchain.currentImage], bASList->data.offsetXYZ, -1);
 	}
 
 	if (!dynamic) {
@@ -232,6 +232,8 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 	else if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) bAS->geometryInstance.mask = RAY_FIRST_PERSON_OPAQUE_VISIBLE;
 	else bAS->geometryInstance.mask = RAY_FIRST_PERSON_MIRROR_OPAQUE_VISIBLE;
 
+	
+
 	/*if (strstr(tess.shader->name, "glass")) {
 		bAS->geometryInstance.mask = RAY_GLASS_VISIBLE;
 	}*/
@@ -267,6 +269,8 @@ void RB_UpdateInstanceBuffer(vkbottomAS_t* bAS) {
 
 	VK_UploadBufferDataOffset(&vk_d.instanceBuffer[vk.swapchain.currentImage], vk_d.bottomASTraceListCount * sizeof(VkGeometryInstanceNV), sizeof(VkGeometryInstanceNV), (void*)&bAS->geometryInstance);
 }
+
+int pauseInFrames = 3;
 
 uint32_t preInstanceIDs[41500];
 static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
@@ -401,26 +405,32 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 		R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
 		// skip stuff
-		if (strstr(shader->name, "skel")) {
+		if (shader->sort == SS_BLEND0) {
 			int x = 2;
 		}
+		//+		shader	0x00000287bdd63188 {name=0x00000287bdd63188 "models/powerups/armor/energy_yel1" lightmapIndex=-1 index=...}	shader_s *
+		if (strstr(shader->name, "slashskate")) {// bloodExplotion
+			//continue;
+			//int i = 2; slashskate
+			
+			//if (pauseInFrames == 0) rt_pause->integer = 1;
+			//else pauseInFrames -= 1;
+			//rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
+			//continue;
+		}
+
 		if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
 			|| strstr(shader->name, "Shadow") || shader->isSky ||
 			(shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->sort > SS_OPAQUE) {
-			if(!strstr(shader->name, "green_sphere") && !strstr(shader->name, "yellow_sphere") && !strstr(shader->name, "red_sphere") && !strstr(shader->name, "energy_grn1")
-				&& !strstr(shader->name, "teleportEffect") && !strstr(shader->name, "bloodExplosion") && !strstr(shader->name, "skel")) continue;
+			/*if(!strstr(shader->name, "green_sphere") && !strstr(shader->name, "yellow_sphere") && !strstr(shader->name, "red_sphere") && !strstr(shader->name, "energy_grn1")
+				&& !strstr(shader->name, "teleportEffect") && !strstr(shader->name, "bloodExplosion") && !strstr(shader->name, "skel") && !strstr(shader->name, "armor/energy_yel1")) continue;*/
 		}
 
 		if (strstr(shader->name, "green_sphere") || strstr(shader->name, "yellow_sphere") || strstr(shader->name, "red_sphere") || strstr(shader->name, "plasma_glass")) {
 			shader->rtstages[0]->active = qfalse;
 		}
 	
-		if (strstr(shader->name, "bloodExplosion")) {// bloodExplotion
-			int i = 2;
-			//rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
-			//continue;
-		}
-		if (shader->rtstages[0] == NULL || drawSurf->bAS == NULL) if (!strstr(shader->name, "bloodExplosion"))  continue;
+		//if (shader->rtstages[0] == NULL || drawSurf->bAS == NULL) if (!strstr(shader->name, "bloodExplosion"))  continue;
 		if (drawSurf->bAS == NULL) {
 
 		}
@@ -469,13 +479,17 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				tM[4] = 0; tM[5] = 1; tM[6] = 0; tM[7] = 0;
 				tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
 			}
-			if (strstr(shader->name, "bloodExplosion")) {// bloodExplotion
-				int i = 2;
+			if (strstr(shader->name, "plasma_glo")) {// bloodExplotion
+				//continue;
 			}
 			
 			//if (strstr(tess.shader->name, "portal"))
 			//if (strstr(shader->name, "powerups/armor/energy_grn1")) continue; //0x00000298be8ba1a8 {name=0x00000298be8ba1a8 "models/powerups/armor/energy_grn1" lightmapIndex=-1 index=...}
 			if (drawSurf->bAS == NULL) {
+				//if (!strstr(shader->name, "bloodExplosion")) {// bloodExplotion
+				//	continue;
+				//}
+
 				rb_surfaceTable[*drawSurf->surface](drawSurf->surface);
 				RB_DeformTessGeometry();
 				RB_CreateEntityBottomAS(&drawSurf->bAS, qtrue);
@@ -485,6 +499,10 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 				Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
 				Com_Memcpy(&drawSurf->bAS->data.modelmat, &tM, sizeof(float[12]));
+
+				if (RB_IsTransparent(tess.shader)) {
+					drawSurf->bAS->geometryInstance.instanceOffset = 1;
+				}
 
 				RB_UpdateInstanceDataBuffer(drawSurf->bAS);
 				RB_UpdateInstanceBuffer(drawSurf->bAS);
@@ -505,6 +523,10 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 				vk_d.geometry.idx_entity_dynamic_offset += tess.numIndexes;
 				vk_d.geometry.xyz_entity_dynamic_offset += tess.numVertexes;
+
+				if (RB_IsTransparent(tess.shader)) {
+					drawSurf->bAS->geometryInstance.instanceOffset = 1;
+				}
 
 				Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));
 				Com_Memcpy(&drawSurf->bAS->data.modelmat, &tM, sizeof(float[12]));
@@ -538,6 +560,11 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				RB_UploadIDX(&vk_d.geometry.idx_entity_dynamic[vk.swapchain.currentImage], newAS->data.offsetIDX, 0);
 				RB_UploadXYZ(&vk_d.geometry.xyz_entity_dynamic[vk.swapchain.currentImage], newAS->data.offsetXYZ, cluster);
 
+
+				if (RB_IsTransparent(tess.shader)) {
+					newAS->geometryInstance.instanceOffset = 1;
+				}
+
 				newAS->geometries.geometry.triangles.indexOffset = newAS->data.offsetIDX * sizeof(uint32_t);
 				newAS->geometries.geometry.triangles.vertexOffset = newAS->data.offsetXYZ * sizeof(VertexBuffer);
 				newAS->geometries.geometry.triangles.indexData = vk_d.geometry.idx_entity_dynamic[vk.swapchain.currentImage].buffer;
@@ -562,6 +589,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				vk_d.bottomASTraceListCount++;
 			}
 			else {
+				//continue;
 				//if ((backEnd.currentEntity->e.renderfx & RF_THIRD_PERSON)) continue;
 				drawSurf->bAS->data.type = BAS_ENTITY_STATIC;
 				drawSurf->bAS->data.cluster = cluster;
@@ -573,6 +601,10 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 
 				Com_Memcpy(&drawSurf->bAS->geometryInstance.transform, &tM, sizeof(float[12]));	
 				Com_Memcpy(&drawSurf->bAS->data.modelmat, &tM, sizeof(float[12]));
+
+				if (RB_IsTransparent(tess.shader)) {
+					drawSurf->bAS->geometryInstance.instanceOffset = 1;
+				}
 		
 				drawSurf->bAS->data.currInstanceID = vk_d.bottomASTraceListCount;
 				drawSurf->bAS->data.prevInstanceID = preInstanceIDs[backEnd.currentEntity->e.id + drawSurf->bAS->surfcount];
@@ -1116,7 +1148,7 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		ri.Printf(PRINT_ALL, "ASVGF RNG                 %f ms\n", rng);
 		ri.Printf(PRINT_ALL, "ASVGF Forward             %f ms\n", fwd);
 		ri.Printf(PRINT_ALL, "Primary Ray Stage         %f ms\n", prim);
-		ri.Printf(PRINT_ALL, "Reflect/Refract Stage     %f ms\n", refref);
+		ri.Printf(PRINT_ALL, "Secondary Stage			%f ms\n", refref);
 		ri.Printf(PRINT_ALL, "Direct Illumination Stage %f ms\n", direct);
 		ri.Printf(PRINT_ALL, "ASVGF Gradient            %f ms\n", gradient);
 		ri.Printf(PRINT_ALL, "ASVGF Gradient Atrous     %f ms\n", grad_atrous);

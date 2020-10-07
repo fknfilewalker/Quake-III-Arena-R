@@ -1585,6 +1585,9 @@ void RE_Shutdown( qboolean destroyWindow ) {
 			VK_DestroyCPipeline(&vk_d.accelerationStructures.asvgfTaaPipeline);
 			VK_DestroyCPipeline(&vk_d.accelerationStructures.asvgfTemporalPipeline);
 
+			VK_DestroyCPipeline(&vk_d.accelerationStructures.maxmipmapPipeline);
+			VK_DestroyCPipeline(&vk_d.accelerationStructures.tonemappingPipeline);
+
 			VK_DestroyAllAccelerationStructures();
 			VK_DestroyImage(&vk_d.accelerationStructures.envmap);
 			VK_DestroyImage(&vk_d.accelerationStructures.visData);
@@ -1717,6 +1720,8 @@ void RE_Shutdown( qboolean destroyWindow ) {
 				VK_DestroyImage(&vk_d.gBuffer[i].directIllumination);
 				VK_DestroyImage(&vk_d.gBuffer[i].indirectIllumination);
 				VK_DestroyImage(&vk_d.gBuffer[i].depthNormal);
+				VK_DestroyImage(&vk_d.gBuffer[i].result);
+				VK_DestroyImage(&vk_d.gBuffer[i].maxmipmap);
 
 				VK_DestroyImage(&vk_d.asvgf[i].debug);
 				VK_DestroyImage(&vk_d.asvgf[i].positionFwd);

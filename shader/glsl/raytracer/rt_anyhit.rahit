@@ -34,7 +34,8 @@ void blendSeeThroughAdd(in HitPoint hp){
   vec4 tex = getTextureWithLod(hp,0);
   rp.transparent.xyz += (tex.xyz * tex.w);
   rp.addCount += 1;
-  if(rp.addCount > 1) rp.transparent.xyz /= 2.0f;
+  //if(rp.addCount > 1) rp.transparent.xyz /= 2.0f;
+  rp.transparent.w = 0;
   //rp.transparent.xyzw /= 2.0f;
 }
 

@@ -91,12 +91,12 @@ void main()
 		vec4 albedoRefraction;
 		rrp.color = vec4(0);
 		rrp.depth = depth;
-		traceReflect(hp.pos, originalDir, N);
+		traceReflect(hp.pos, originalDir, N, false);
 		albedoReflection = rrp.color;
 
 		rrp.color = vec4(0);
 		rrp.depth = depth;
-		traceRefract(hp.pos, originalDir, N, n1, n2);
+		traceRefract(hp.pos, originalDir, N, n1, n2, false);
 		albedoRefraction = rrp.color;
 		
 		float r0 = (n1-n2)/(n1+n2); r0 *= r0;
@@ -123,12 +123,12 @@ void main()
 		vec4 albedoRefraction;
 		rrp.color = vec4(0);
 		rrp.depth = depth;
-		traceReflect(hp.pos, originalDir, N);
+		traceReflect(hp.pos, originalDir, N, false);
 		albedoReflection = rrp.color;
 
 		rrp.color = vec4(0);
 		rrp.depth = depth;
-		traceRefract(hp.pos, originalDir, N, n1, n2);
+		traceRefract(hp.pos, originalDir, N, n1, n2, false);
 		albedoRefraction = rrp.color;
 		
 		float r0 = (n1-n2)/(n1+n2); r0 *= r0;
@@ -184,7 +184,7 @@ void main()
 		vec4 albedoReflection;
 		rrp.color = vec4(0);
 		rrp.depth = depth;
-		traceReflect(hp.pos, originalDir, N);
+		traceReflect(hp.pos, originalDir, N, false);
 		albedoReflection = rrp.color;
 
 		vec4 mirrorColor = tex;

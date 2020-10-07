@@ -349,7 +349,7 @@ void main()
 		vec4 albedoReflection;
 		rrp.color = vec4(0);
 		rrp.depth = 0;
-		traceReflect(pos, originalDir, N);
+		traceReflect(pos, originalDir, N, false);
 
 		vec4 mirrorColor = primary_albedo;
 		mirrorColor = 1 - vec4(mirrorColor/1);
@@ -407,16 +407,18 @@ void main()
 			N = -N;
 		}
 
+		bool ego = isPlayer(material);
+
 		vec4 albedoReflection;
 		vec4 albedoRefraction;
 		rrp.color = vec4(0);
 		rrp.depth = 0;
-		traceReflect(pos, originalDir, N);
+		traceReflect(pos, originalDir, N, ego);
 		albedoReflection = rrp.color;
 
 		rrp.color = vec4(0);
 		rrp.depth = 0;
-		traceRefract(pos, originalDir, N, n1, n2);
+		traceRefract(pos, originalDir, N, n1, n2, ego);
 		albedoRefraction = rrp.color;
 
 		float r0 = (n1-n2)/(n1+n2); r0 *= r0;
@@ -427,6 +429,8 @@ void main()
 			ratio = fresnel;
 		}
 		vec4 albedo = ratio * albedoReflection + (1 - ratio) * albedoRefraction;
+
+	
 
 		vec4 color = primary_albedo * primary_albedo.w + albedo * (1-primary_albedo.w);
 		imageStore(reflectionGBuffer, ivec2(gl_LaunchIDNV.xy), vec4(color.xyz,1));
@@ -449,12 +453,12 @@ void main()
 		vec4 albedoRefraction;
 		rrp.color = vec4(0);
 		rrp.depth = 0;
-		traceReflect(pos, originalDir, N);
+		traceReflect(pos, originalDir, N, false);
 		albedoReflection = rrp.color;
 
 		rrp.color = vec4(0);
 		rrp.depth = 0;
-		traceRefract(pos, originalDir, N, n1, n2);
+		traceRefract(pos, originalDir, N, n1, n2, false);
 		albedoRefraction = rrp.color;
 
 		float r0 = (n1-n2)/(n1+n2); r0 *= r0;
@@ -492,6 +496,7 @@ void main()
 		//color += rrp.transparent;
 		vec4 trans = imageLoad(transparentGBuffer, ivec2(gl_LaunchIDNV.xy));
 		trans.xyz += rrp.transparent.xyz;
+		trans.w =0;
 		imageStore(transparentGBuffer, ivec2(gl_LaunchIDNV.xy), trans);
 
 		imageStore(albedoGBuffer, ivec2(gl_LaunchIDNV.xy), color);

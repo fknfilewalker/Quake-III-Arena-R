@@ -71,10 +71,31 @@ qboolean RB_IsTransparent(shader_t* shader) {
 	// skip certain objects that are transparent but should be handled like opaque objects
 	if (strstr(shader->name, "glass") || strstr(shader->name, "console/jacobs") || strstr(shader->name, "kmlamp_white") || strstr(shader->name, "slamp/slamp2")
 		|| strstr(shader->name, "lamplight_y") || strstr(shader->name, "textures/liquids/calm_poollight") || strstr(shader->name, "textures/liquids/clear_ripple1") 
-		|| strstr(shader->name, "flag")) {
+		|| strstr(shader->name, "flag") || strstr(shader->name, "green_sphere") || strstr(shader->name, "yellow_sphere") || strstr(shader->name, "red_sphere")) {
 		return qfalse;
 	}
-	
+	if (strstr(shader->name, "armor/energy_yel1")) {
+		return qtrue;
+	}
+	if (strstr(shader->name, "f_plasma")) {
+		return qtrue;
+
+	}
+	if (strstr(shader->name, "slashskate")) {
+		return qtrue;
+	}
+	if (strstr(shader->name, "railCore")) {
+		return qtrue;
+	}
+	if (strstr(shader->name, "f_machine")) {// bloodExplotion
+		return qtrue;
+	}
+	if (strstr(shader->name, "shotgun_laser")) {// bloodExplotion
+		return qtrue;
+	}
+	if (strstr(shader->name, "plasma_glo")) {
+		return qfalse;
+	}
 	// check if transparent
 	//shader	0x000001fec843ece8 {name=0x000001fec843ece8 "textures/base_floor/proto_grate4" lightmapIndex=-3 index=...}	shader_s *
 
@@ -123,6 +144,7 @@ uint32_t RB_GetMaterial() {
 	if (strstr(tess.shader->name, "skel")) {
 		int x = 2;
 	}
+
 
 
 	//+		tess.shader	0x0000027dd20c1da8 {name=0x0000027dd20c1da8 "textures/sfx/portal_sfx_ring" lightmapIndex=-3 index=118 ...}	shader_s *
@@ -174,6 +196,21 @@ uint32_t RB_GetMaterial() {
 	if (strstr(tess.shader->name, "bitch/orb")) {
 		material = MATERIAL_FLAG_SEE_THROUGH_ADD;
 	}
+	if (strstr(tess.shader->name, "armor/energy_yel1")) {
+		material = MATERIAL_FLAG_SEE_THROUGH_ADD;
+	}
+
+	if (strstr(tess.shader->name, "f_plasma")) {
+		material = MATERIAL_FLAG_SEE_THROUGH_ADD;
+
+	}
+	if (strstr(tess.shader->name, "plasma_glo")) {
+		material = MATERIAL_FLAG_SEE_THROUGH_ADD;
+	}
+
+	if (strstr(tess.shader->name, "railCore")) {
+		material = MATERIAL_FLAG_SEE_THROUGH_ADD;
+	}
 
 	if (strstr(tess.shader->name, "textures/liquids/calm_poollight") || strstr(tess.shader->name, "textures/liquids/clear_ripple1")) {
 		material = MATERIAL_KIND_WATER;
@@ -182,7 +219,15 @@ uint32_t RB_GetMaterial() {
 		//tess.shader->rtstages[2]->active = qfalse;
 		//tess.shader->rtstages[3]->active = qfalse;
 	}
-	
+	if (strstr(tess.shader->name, "slashskate")) {
+		material = MATERIAL_FLAG_SEE_THROUGH_ADD;
+	}
+	if (strstr(tess.shader->name, "f_machine")) {// bloodExplotion
+		material = MATERIAL_FLAG_SEE_THROUGH_ADD;
+	}
+	if (strstr(tess.shader->name, "shotgun_laser")) {// bloodExplotion
+		material = MATERIAL_FLAG_SEE_THROUGH_ADD;
+	}
 
 	
 	//0x000002c0bebbae48 {name=0x000002c0bebbae48 "textures/base_trim/wires02" lightmapIndex=-3 index=87 ...}
@@ -196,7 +241,7 @@ uint32_t RB_GetMaterial() {
 		material |= MATERIAL_FLAG_SEE_THROUGH;
 	}*/
 
-	if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON)) {
+	if ((backEnd.currentEntity->e.renderfx & RF_FIRST_PERSON) || strstr(tess.shader->name, "plasma_glass")) {
 		material |= MATERIAL_FLAG_PLAYER_OR_WEAPON;
 	}
 	return material;
