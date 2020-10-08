@@ -193,3 +193,58 @@ void build_pvs2(world_t* world)
 	}
 
 }
+
+// Computes a point at a small distance above the center of the triangle.
+// Returns qfalse if the triangle is degenerate, qtrue otherwise.
+qboolean
+get_triangle_norm(const float* positions, float* normal)
+{
+	const float* v0 = positions + 0;
+	const float* v1 = positions + 3;
+	const float* v2 = positions + 6;
+
+
+	// Compute the normal
+
+	vec3_t e1, e2;
+	VectorSubtract(v1, v0, e1);
+	VectorSubtract(v2, v0, e2);
+	CrossProduct(e1, e2, normal);
+	VectorNormalize(normal);
+}
+// Computes a point at a small distance above the center of the triangle.
+// Returns qfalse if the triangle is degenerate, qtrue otherwise.
+qboolean
+get_triangle_off_center(const float* positions, float* center, float* anti_center)
+{
+	const float* v0 = positions + 0;
+	const float* v1 = positions + 3;
+	const float* v2 = positions + 6;
+
+	// Compute the triangle center
+
+	VectorCopy(v0, center);
+	VectorAdd(center, v1, center);
+	VectorAdd(center, v2, center);
+	VectorScale(center, 1.f / 3.f, center);
+
+	// Compute the normal
+
+	vec3_t e1, e2, normal;
+	VectorSubtract(v1, v0, e1);
+	VectorSubtract(v2, v0, e2);
+	CrossProduct(e1, e2, normal);
+	float length = VectorNormalize(normal);
+
+	// Offset the center by one normal to make sure that the point is
+	// inside a BSP leaf and not on a boundary plane.
+
+	VectorAdd(center, normal, center);
+
+	if (anti_center)
+	{
+		VectorMA(center, -2.f, normal, anti_center);
+	}
+
+	return (length > 0.f);
+}

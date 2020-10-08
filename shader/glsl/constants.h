@@ -289,7 +289,7 @@ STRUCT (
     UINT    (mipmapLevel)
     // settings
     UINT    (showIntermediateResults)
-    BOOL    (cullLights)
+    UINT    (cullLights)
     UINT    (numRandomDL)
     UINT    (numRandomIL)
     UINT    (numBounces)

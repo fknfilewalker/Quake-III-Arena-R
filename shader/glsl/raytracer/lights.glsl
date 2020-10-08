@@ -72,7 +72,8 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 
 	float amplification = 1;
 	uint numLights; 
-	if(ubo.cullLights) numLights = imageLoad(lightVis_data, ivec2(0, cluster)).r;
+	if(ubo.cullLights == 1) numLights = imageLoad(lightVis_data, ivec2(0, cluster)).r;
+	else if(ubo.cullLights == 2) numLights = imageLoad(lightVis_data2, ivec2(0, cluster)).r;
 	else numLights = uboLights.lightList.numLights;
 	uint totalNumLights = numLights;
 
@@ -86,14 +87,20 @@ vec3 calcShading(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint cluster, 
 	for(int i = 0; i < numLights; i++){
 		uint lightIndex;
 		//uint rand = int(round(get_rng(RNG_C(0), int(ubo.frameIndex)) * (numLight))) ;
-		if(ubo.cullLights) {
+		if(ubo.cullLights > 0) {
 			if(ubo.numRandomDL > 0) {
 				//uint rand = int(round(get_rng(RNG_C(i), int(ubo.frameIndex)) * (totalNumLights)));
 				//uint rand = int(round(get_rng2(RNG_NEE_LH(0)) * (totalNumLights)));
 				uint rand = int(round(getRNG(ubo.denoiser, RNG_NEE_LH(i), int(ubo.frameIndex)) * (totalNumLights)));
-				lightIndex = imageLoad(lightVis_data, ivec2( rand + 1, cluster)).r;
+				//lightIndex = imageLoad(lightVis_data, ivec2( rand + 1, cluster)).r;
+				if(ubo.cullLights == 1) lightIndex = imageLoad(lightVis_data, ivec2( rand + 1, cluster)).r;
+				else if(ubo.cullLights == 2) lightIndex = imageLoad(lightVis_data2, ivec2( rand + 1, cluster)).r;
 			}
-			else lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
+			else {
+				//lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
+				if(ubo.cullLights == 1) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r;
+				else if(ubo.cullLights == 2) lightIndex = imageLoad(lightVis_data2, ivec2( i + 1, cluster)).r;
+			}
 			// if(lightVisible(i, cluster)){
 			// 	lightIndex = i;
 			// }
@@ -139,7 +146,8 @@ vec3 calcShadingIndirect(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint c
 
 	float amplification = 1;
 	uint numLights; 
-	if(ubo.cullLights) numLights = imageLoad(lightVis_data, ivec2(0, cluster)).r;
+	if(ubo.cullLights == 1) numLights = imageLoad(lightVis_data, ivec2(0, cluster)).r;
+	else if(ubo.cullLights == 2) numLights = imageLoad(lightVis_data2, ivec2(0, cluster)).r;
 	else numLights = uboLights.lightList.numLights;
 	uint totalNumLights = numLights;
 
@@ -153,14 +161,20 @@ vec3 calcShadingIndirect(in vec4 primary_albedo, in vec3 P, in vec3 N, in uint c
 	for(int i = 0; i < numLights; i++){
 		uint lightIndex;
 		//uint rand = int(round(get_rng(RNG_C(0), int(ubo.frameIndex)) * (numLight))) ;
-		if(ubo.cullLights) {
+		if(ubo.cullLights > 0) {
 			if(ubo.numRandomIL > 0) {
 				//uint rand = int(round(get_rng(RNG_C(i), int(ubo.frameIndex)) * (totalNumLights)));
 				//uint rand = int(round(get_rng2(RNG_NEE_LL(0)) * (totalNumLights)));
 				uint rand = int(round(getRNG(ubo.denoiser, RNG_NEE_LL(i), int(ubo.frameIndex)) * (totalNumLights)));
-				lightIndex = imageLoad(lightVis_data, ivec2( rand + 1, cluster)).r;
+				//lightIndex = imageLoad(lightVis_data, ivec2( rand + 1, cluster)).r;
+				if(ubo.cullLights == 1) lightIndex = imageLoad(lightVis_data, ivec2( rand + 1, cluster)).r;
+				else if(ubo.cullLights == 2) lightIndex = imageLoad(lightVis_data2, ivec2( rand + 1, cluster)).r;
 			}
-			else lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
+			else {
+				//lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r; // first index is numLight so + 1
+				if(ubo.cullLights == 1) lightIndex = imageLoad(lightVis_data, ivec2( i + 1, cluster)).r;
+				else if(ubo.cullLights == 2) lightIndex = imageLoad(lightVis_data2, ivec2( i + 1, cluster)).r;
+			}
 			// if(lightVisible(i, cluster)){
 			// 	lightIndex = i;
 			// }

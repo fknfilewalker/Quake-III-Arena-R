@@ -8,6 +8,37 @@ glConfig.driverType == VULKAN && r_vertexLight->value == 2
 #define RTX_BOTTOM_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV | VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_NV)
 #define RTX_TOP_AS_FLAG (VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_NV)
 
+//void RB_UploadCluster(vkbuffer_t* buffer, uint32_t offsetIDX, int defaultC) {
+//	uint32_t* clusterData = calloc(tess.numIndexes / 3, sizeof(uint32_t));
+//	for (int i = 0; i < (tess.numIndexes / 3); i++) {
+//		vec4_t pos = { 0,0,0,0 };
+//		for (int j = 0; j < 3; j++) {
+//			VectorAdd(pos, tess.xyz[tess.indexes[(i * 3) + j]], pos);
+//			VectorAdd(pos, tess.normal[tess.indexes[(i * 3) + j]], pos);
+//		}
+//		VectorScale(pos, 1.0f / 3.0f, pos);
+//		int c = -1;//R_FindClusterForPos(pos);
+//
+//		vec3_t center, anti_center;
+//
+//		float posN[9];
+//		VectorCopy(tess.xyz[tess.indexes[(i * 3) + 0]], &posN[0]);
+//		VectorCopy(tess.xyz[tess.indexes[(i * 3) + 1]], &posN[3]);
+//		VectorCopy(tess.xyz[tess.indexes[(i * 3) + 2]], &posN[6]);
+//
+//		get_triangle_off_center(&posN, center, anti_center);
+//		c = R_FindClusterForPos(center);
+//		//if (c == -1) c = R_FindClusterForPos(anti_center);
+//		if (c == -1) {
+//			c = defaultC;
+//		}
+//
+//		clusterData[i] = c;
+//
+//	}
+//	VK_UploadBufferDataOffset(buffer, offsetIDX * sizeof(uint32_t), (tess.numIndexes / 3) * sizeof(uint32_t), (void*)clusterData);
+//	free(clusterData);
+//}
 
 void RB_UploadCluster(vkbuffer_t* buffer, uint32_t offsetIDX, int defaultC) {
 	uint32_t* clusterData = calloc(tess.numIndexes/3, sizeof(uint32_t));
