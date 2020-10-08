@@ -2108,6 +2108,17 @@ void R_RecursiveCreateAS(mnode_t* node, uint32_t* countIDXstatic, uint32_t* coun
 				shader->rtstages[1]->active = qfalse;
 				//continue;
 			}
+			if (strstr(shader->name, "console/sphere2")) {
+				//shader->rtstages[1]->active = qfalse;
+				//shader->rtstages[2]->active = qfalse;
+			}
+			if (strstr(shader->name, "console/sphere2")) {
+				memcpy(shader->rtstages[0], shader->rtstages[1], sizeof(shaderStage_t));
+				memcpy(shader->rtstages[1], shader->rtstages[2], sizeof(shaderStage_t));
+				//shader->rtstages[1]->active = qtrue;
+				shader->rtstages[2]->active = qfalse;
+				int x = 2;
+			}
 			//if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
 			//	|| strstr(shader->name, "Shadow") || shader->isSky
 			//	|| *surf->data == SF_BAD || *surf->data == SF_SKIP

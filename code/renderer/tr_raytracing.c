@@ -196,7 +196,6 @@ void RB_CreateEntityBottomAS(vkbottomAS_t** bAS, qboolean dynamic) {
 		tess.shader->rtstages[0]->bundle->image[0] = tr.whiteImage;
 	}
 	if (strstr(tess.shader->name, "models/powerups/health/green")) {
-		int x = 2;
 		tess.shader->rtstages[0]->constantColor[0] =101;
 		tess.shader->rtstages[0]->constantColor[1] = 176;
 		tess.shader->rtstages[0]->constantColor[2] = 73;
@@ -204,8 +203,13 @@ void RB_CreateEntityBottomAS(vkbottomAS_t** bAS, qboolean dynamic) {
 		tess.shader->rtstages[0]->rgbGen = CGEN_CONST;
 		tess.shader->rtstages[0]->bundle->image[0] = tr.whiteImage;
 	}
-	if (strstr(tess.shader->name, "models/powerups/health/mega")) {
-		int x = 2;
+	if (strstr(tess.shader->name, "health/mega2")) {
+		tess.shader->rtstages[0]->constantColor[0] = 1;
+		tess.shader->rtstages[0]->constantColor[1] = 62;
+		tess.shader->rtstages[0]->constantColor[2] = 240;
+		tess.shader->rtstages[0]->constantColor[3] = 0;
+		tess.shader->rtstages[0]->rgbGen = CGEN_CONST;
+		tess.shader->rtstages[0]->bundle->image[0] = tr.whiteImage;
 	}
 
 	bASList->data.offsetIDX = (*idxOffset);
@@ -459,7 +463,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				&& !strstr(shader->name, "teleportEffect") && !strstr(shader->name, "bloodExplosion") && !strstr(shader->name, "skel") && !strstr(shader->name, "armor/energy_yel1")) continue;*/
 		}
 
-		if (strstr(shader->name, "green_sphere") || strstr(shader->name, "yellow_sphere") || strstr(shader->name, "red_sphere") || strstr(shader->name, "plasma_glass")) {
+		if (strstr(shader->name, "green_sphere") || strstr(shader->name, "yellow_sphere") || strstr(shader->name, "red_sphere") || strstr(shader->name, "plasma_glass") || strstr(shader->name, "mega1")) {
 			shader->rtstages[0]->active = qfalse;
 		}
 	

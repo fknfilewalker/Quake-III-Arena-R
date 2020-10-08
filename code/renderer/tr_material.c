@@ -60,7 +60,7 @@ qboolean RB_SkipObject(shader_t* shader) {
 		return qfalse;
 	}
 
-	if(strstr(shader->name, "portal_sfx_ring")) return qtrue;
+	//if(strstr(shader->name, "portal_sfx_ring")) return qtrue;
 
 	if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
 		|| strstr(shader->name, "Shadow") || shader->isSky
@@ -76,6 +76,10 @@ qboolean RB_IsTransparent(shader_t* shader) {
 	if (strstr(shader->name, "glass") || strstr(shader->name, "console/jacobs") || strstr(shader->name, "kmlamp_white") || strstr(shader->name, "slamp/slamp2")
 		|| strstr(shader->name, "lamplight_y") || strstr(shader->name, "textures/liquids/calm_poollight") || strstr(shader->name, "textures/liquids/clear_ripple1") 
 		|| strstr(shader->name, "flag") || strstr(shader->name, "green_sphere") || strstr(shader->name, "yellow_sphere") || strstr(shader->name, "red_sphere")) {
+		return qfalse;
+	}
+
+	if (strstr(shader->name, "health/mega1")) {
 		return qfalse;
 	}
 	if (strstr(shader->name, "armor/energy_yel1")) {
@@ -110,6 +114,13 @@ qboolean RB_IsTransparent(shader_t* shader) {
 		return qtrue;
 	}
 	if (strstr(shader->name, "f_rocket")) {
+		return qtrue;
+	}
+
+	if (strstr(shader->name, "console/sphere2")) {
+		return qfalse;
+	}
+	if (strstr(shader->name, "portal") && !strstr(shader->name, "portal_2")) {
 		return qtrue;
 	}
 	// check if transparent
@@ -147,7 +158,7 @@ uint32_t RB_GetMaterial() {
 	}
 
 	if (strstr(tess.shader->name, "portal")) {
-		material = MATERIAL_FLAG_SEE_THROUGH_NO_ALPHA;
+		material = MATERIAL_FLAG_SEE_THROUGH_ADD;
 	}
 	
 	if (strstr(tess.shader->name, "glass") || strstr(tess.shader->name, "console/jacobs") || strstr(tess.shader->name, "kmlamp_white") || strstr(tess.shader->name, "slamp/slamp2") 
@@ -156,9 +167,12 @@ uint32_t RB_GetMaterial() {
 		) {
 		material = MATERIAL_KIND_GLASS;
 	}
+	if (strstr(tess.shader->name, "health/mega1")) {
+		material = MATERIAL_KIND_GLASS;
+	}
 
-	if (strstr(tess.shader->name, "skel")) {
-		int x = 2;
+	if (strstr(tess.shader->name, "console/sphere2")) {
+		material = MATERIAL_FLAG_SEE_THROUGH;
 	}
 
 
@@ -294,12 +308,16 @@ uint32_t RB_GetNextTexEncoded(int stage) {
 	if (tess.shader->rtstages[stage] != NULL && tess.shader->rtstages[stage]->active) {
 		int indexAnim = RB_GetNextTex(stage);
 
+
 		uint32_t blend = 0;
 		uint32_t stateBits = tess.shader->rtstages[stage]->stateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS);
 		if ((stateBits & GLS_SRCBLEND_BITS) > GLS_SRCBLEND_ONE && (stateBits & GLS_DSTBLEND_BITS) > GLS_DSTBLEND_ONE) blend = TEX0_NORMAL_BLEND_MASK;
 		if (stateBits == 19) blend = TEX0_MUL_BLEND_MASK;
 		if (stateBits == 34 || stateBits == 1073742080) blend = TEX0_ADD_BLEND_MASK;
 		if (stateBits == 101) blend = TEX0_NORMAL_BLEND_MASK;
+		if (strstr(tess.shader->name, "console/sphere2") && stage == 1) {
+			//int x = 2; blend = TEX0_NORMAL_BLEND_MASK;
+		}
 		// 34 one one
 		// 101 GLS_SRCBLEND_SRC_ALPHA GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA
 		qboolean color = RB_StageNeedsColor(stage);
