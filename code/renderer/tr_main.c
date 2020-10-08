@@ -1404,6 +1404,9 @@ void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader,
 				   int fogIndex, int dlightMap, vkbottomAS_t* bAS) {
 	int			index;
 
+	if (strstr(shader->name, "fog")) {
+		int x = 2;
+	}
 	// instead of checking for overflow, we just mask the index
 	// so it wraps around
 	index = tr.refdef.numDrawSurfs & DRAWSURF_MASK;

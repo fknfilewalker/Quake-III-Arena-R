@@ -87,6 +87,18 @@ void RB_UploadXYZ(vkbuffer_t* buffer, uint32_t offsetXYZ, int cluster) {
 	if (tess.shader->rtstages[0] != NULL && tess.shader->rtstages[0]->active) {
 		ComputeTexCoords(tess.shader->rtstages[0]);
 		ComputeColors(tess.shader->rtstages[0]);
+		if (tr.world != NULL) {
+			if (strstr(tess.shader->name, "fog")) {
+			int x = 2;
+			//if (tess.fogNum && tess.shader->fogPass) {
+				fog_t* fog;
+				fog = tr.world->fogs + 4;// tess.fogNum;
+				for (int i = 0; i < tess.numVertexes; i++) {
+					*(int*)&tess.svars.colors[i] = fog->colorInt;
+				}
+				//RB_CalcFogTexCoords((float*)tess.svars.texcoords[0]);
+			}
+		}
 		for (int j = 0; j < tess.numVertexes; j++) {
 			vData[j].color0 = tess.svars.colors[j][0] | tess.svars.colors[j][1] << 8 | tess.svars.colors[j][2] << 16 | tess.svars.colors[j][3] << 24;
 			vData[j].uv0[0] = tess.svars.texcoords[0][j][0];
@@ -167,8 +179,8 @@ void RB_CreateEntityBottomAS(vkbottomAS_t** bAS, qboolean dynamic) {
 
 	if (strstr(tess.shader->name, "models/powerups/health/red")) {
 		int x = 2;
-		tess.shader->rtstages[0]->constantColor[0] = 140;
-		tess.shader->rtstages[0]->constantColor[1] = 0;
+		tess.shader->rtstages[0]->constantColor[0] = 255;
+		tess.shader->rtstages[0]->constantColor[1] = 115;
 		tess.shader->rtstages[0]->constantColor[2] = 0;
 		tess.shader->rtstages[0]->constantColor[3] = 0;
 		tess.shader->rtstages[0]->rgbGen = CGEN_CONST;
@@ -176,12 +188,24 @@ void RB_CreateEntityBottomAS(vkbottomAS_t** bAS, qboolean dynamic) {
 	}
 	if (strstr(tess.shader->name, "models/powerups/health/yellow")) {
 		int x = 2;
-		tess.shader->rtstages[0]->constantColor[0] = 140;
-		tess.shader->rtstages[0]->constantColor[1] = 140;
+		tess.shader->rtstages[0]->constantColor[0] = 255;
+		tess.shader->rtstages[0]->constantColor[1] = 255;
 		tess.shader->rtstages[0]->constantColor[2] = 0;
 		tess.shader->rtstages[0]->constantColor[3] = 0;
 		tess.shader->rtstages[0]->rgbGen = CGEN_CONST;
 		tess.shader->rtstages[0]->bundle->image[0] = tr.whiteImage;
+	}
+	if (strstr(tess.shader->name, "models/powerups/health/green")) {
+		int x = 2;
+		tess.shader->rtstages[0]->constantColor[0] =101;
+		tess.shader->rtstages[0]->constantColor[1] = 176;
+		tess.shader->rtstages[0]->constantColor[2] = 73;
+		tess.shader->rtstages[0]->constantColor[3] = 0;
+		tess.shader->rtstages[0]->rgbGen = CGEN_CONST;
+		tess.shader->rtstages[0]->bundle->image[0] = tr.whiteImage;
+	}
+	if (strstr(tess.shader->name, "models/powerups/health/mega")) {
+		int x = 2;
 	}
 
 	bASList->data.offsetIDX = (*idxOffset);
@@ -333,6 +357,12 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		tess.numVertexes = 0;
 		tess.numIndexes = 0;
 		tess.shader = shader;
+		//if (strstr(tess.shader->name, "fog")) {
+			tess.fogNum = surf->fogIndex;
+			int a = 2;
+		//}
+		//R_DecomposeSort(drawSurf->sort, &entityNum, &shader, &fogNum, &dlighted);
+
 		backEnd.refdef.floatTime = originalTime;
 		tess.shaderTime = backEnd.refdef.floatTime - tess.shader->timeOffset;
 		rb_surfaceTable[*surf->data](surf->data);
@@ -409,7 +439,10 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 			int x = 2;
 		}
 		//+		shader	0x00000287bdd63188 {name=0x00000287bdd63188 "models/powerups/armor/energy_yel1" lightmapIndex=-1 index=...}	shader_s *
-		if (strstr(shader->name, "slashskate")) {// bloodExplotion
+		if (strstr(shader->name, "railgun2")) {// bloodExplotion
+			continue;
+		}
+		if (strstr(shader->name, "blood")) {// bloodExplotion
 			//continue;
 			//int i = 2; slashskate
 			
@@ -479,9 +512,7 @@ static void RB_UpdateRayTraceAS(drawSurf_t* drawSurfs, int numDrawSurfs) {
 				tM[4] = 0; tM[5] = 1; tM[6] = 0; tM[7] = 0;
 				tM[8] = 0; tM[9] = 0; tM[10] = 1; tM[11] = 0;
 			}
-			if (strstr(shader->name, "plasma_glo")) {// bloodExplotion
-				//continue;
-			}
+			
 			
 			//if (strstr(tess.shader->name, "portal"))
 			//if (strstr(shader->name, "powerups/armor/energy_grn1")) continue; //0x00000298be8ba1a8 {name=0x00000298be8ba1a8 "models/powerups/armor/energy_grn1" lightmapIndex=-1 index=...}

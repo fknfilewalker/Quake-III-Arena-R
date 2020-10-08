@@ -2103,8 +2103,9 @@ void R_RecursiveCreateAS(mnode_t* node, uint32_t* countIDXstatic, uint32_t* coun
 				continue;
 			}
 
-			if (strstr(shader->name, "flag")) {
-				int x = 2; //continue;
+			if (strstr(shader->name, "fog")) {
+				continue;
+				shader->rtstages[1]->active = qfalse;
 				//continue;
 			}
 			//if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")

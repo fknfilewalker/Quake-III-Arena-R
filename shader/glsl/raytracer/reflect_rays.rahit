@@ -49,8 +49,7 @@ void main()
   HitPoint hp = getHitPoint(rpb);
 
     vec4 tex = getTextureWithLod(hp,0);
-    rpb.transparent.xyz += (tex.xyz * tex.w);
-    rpb.transparent.w = 1;
+    rrp.transparent.xyz += (tex.xyz * tex.w);
 //   RayPayload rpb;
 //   rpb.barycentric = hitAttribute;
 //   rpb.instanceID = gl_InstanceID;

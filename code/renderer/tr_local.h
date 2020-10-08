@@ -1592,6 +1592,7 @@ typedef struct {
 		shader_t* shader;
 		msurface_t* surf;
 		int cluster;
+		int fogindex;
 	} updateDataOffsetXYZ[3500];
 	uint32_t			updateDataOffsetXYZCount;
 
