@@ -1009,6 +1009,20 @@ static void RB_TraceRays() {
 		}
 		PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_ATROUS_END);
 
+		//// ASVGF ATROUS LF
+		//if (ubo->numBounces > 0) {
+		//	//PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_ATROUS_BEGIN);
+		//	VK_BindComputePipeline(&vk_d.accelerationStructures.asvgfAtrousLFPipeline);
+		//	VK_BindCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfAtrousLFPipeline, &vk_d.computeDescriptor[vk.swapchain.currentImage], &vk_d.imageDescriptor);
+		//	for (uint32_t i = 0; i < 4; i++) {
+		//		VK_SetComputePushConstant(&vk_d.accelerationStructures.asvgfAtrousLFPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &i);
+		//		VK_Dispatch((vk.swapchain.extent.width + 31) / 32, (vk.swapchain.extent.height + 31) / 32, 1);
+		//		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].atrousA.handle);
+		//		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].atrousB.handle);
+		//		BARRIER_COMPUTE(vk.swapchain.CurrentCommandBuffer(), vk_d.asvgf[vk.swapchain.currentImage].histColor.handle);
+		//	}
+		//	PROFILER_SET_MARKER(vk.swapchain.CurrentCommandBuffer(), PROFILER_ASVGF_ATROUS_END);
+		//}
 
 	}
 	// compositing
@@ -1214,7 +1228,7 @@ void RB_RayTraceScene(drawSurf_t* drawSurfs, int numDrawSurfs) {
 		ri.Printf(PRINT_ALL, "ASVGF RNG                 %f ms\n", rng);
 		ri.Printf(PRINT_ALL, "ASVGF Forward             %f ms\n", fwd);
 		ri.Printf(PRINT_ALL, "Primary Ray Stage         %f ms\n", prim);
-		ri.Printf(PRINT_ALL, "Secondary Stage			%f ms\n", refref);
+		ri.Printf(PRINT_ALL, "Secondary Stage           %f ms\n", refref);
 		ri.Printf(PRINT_ALL, "Direct Illumination Stage %f ms\n", direct);
 		ri.Printf(PRINT_ALL, "ASVGF Gradient            %f ms\n", gradient);
 		ri.Printf(PRINT_ALL, "ASVGF Gradient Atrous     %f ms\n", grad_atrous);

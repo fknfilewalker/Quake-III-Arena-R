@@ -2638,6 +2638,13 @@ void R_CreatePrimaryRaysPipeline() {
 	VK_AddComputePushConstant(&vk_d.accelerationStructures.asvgfAtrousPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t));
 	VK_FinishComputePipeline(&vk_d.accelerationStructures.asvgfAtrousPipeline);
 
+	vkshader_t asvgfAtrousLFShader = { 0 };
+	VK_AsvgfAtrousCompShader(&asvgfAtrousLFShader);
+	VK_SetComputeShader(&vk_d.accelerationStructures.asvgfAtrousLFPipeline, &asvgfAtrousLFShader);
+	VK_SetCompute2DescriptorSets(&vk_d.accelerationStructures.asvgfAtrousLFPipeline, &vk_d.computeDescriptor[0], &vk_d.imageDescriptor);
+	VK_AddComputePushConstant(&vk_d.accelerationStructures.asvgfAtrousLFPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t));
+	VK_FinishComputePipeline(&vk_d.accelerationStructures.asvgfAtrousLFPipeline);
+
 	vkshader_t compositingShader = { 0 };
 	VK_CompositingCompShader(&compositingShader);
 	VK_SetComputeShader(&vk_d.accelerationStructures.compositingPipeline, &compositingShader);

@@ -16,6 +16,7 @@
 #include "../../../shader/header/asvgf_grad_atrous.comp.h"
 #include "../../../shader/header/asvgf_temporal.comp.h"
 #include "../../../shader/header/asvgf_atrous.comp.h"
+#include "../../../shader/header/asvgf_atrous_lf.comp.h"
 #include "../../../shader/header/asvgf_taa.comp.h"
 #include "../../../shader/header/compositing.comp.h"
 #include "../../../shader/header/maxmipmap.comp.h"
@@ -49,6 +50,7 @@ static vkshader_t* asvgfGradCompShader;
 static vkshader_t* asvgfGradAtrousCompShader;
 static vkshader_t* asvgfTemporalCompShader;
 static vkshader_t* asvgfAtrousCompShader;
+static vkshader_t* asvgfAtrousLFCompShader;
 static vkshader_t* asvgfTaaCompShader;
 static vkshader_t* compositingCompShader;
 static vkshader_t* maxmipmapCompShader;
@@ -147,6 +149,14 @@ void VK_AsvgfAtrousCompShader(vkshader_t* shader) {
 	Com_Memcpy(shader, asvgfAtrousCompShader, sizeof(vkshader_t));
 }
 
+void VK_AsvgfAtrousLFCompShader(vkshader_t* shader) {
+	if (asvgfAtrousLFCompShader == NULL) {
+		asvgfAtrousLFCompShader = malloc(sizeof(vkshader_t));
+		VK_LoadCompShaderFromVariable(asvgfAtrousLFCompShader, &asvgf_atrous_lfComp, sizeof(asvgf_atrous_lfComp));
+	}
+	Com_Memcpy(shader, asvgfAtrousLFCompShader, sizeof(vkshader_t));
+}
+
 void VK_CompositingCompShader(vkshader_t* shader) {
 	if (compositingCompShader == NULL) {
 		compositingCompShader = malloc(sizeof(vkshader_t));
@@ -234,6 +244,11 @@ void VK_DestroyAllShaders() {
 		VK_DestroyShader(asvgfAtrousCompShader);
 		free(asvgfAtrousCompShader);
 		asvgfAtrousCompShader = NULL;
+	}
+	if (asvgfAtrousLFCompShader != NULL) {
+		VK_DestroyShader(asvgfAtrousLFCompShader);
+		free(asvgfAtrousLFCompShader);
+		asvgfAtrousLFCompShader = NULL;
 	}
 	if (compositingCompShader != NULL) {
 		VK_DestroyShader(compositingCompShader);

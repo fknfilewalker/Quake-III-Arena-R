@@ -737,7 +737,7 @@ void GraphicsOptions_MenuInit( void )
 	{
 		"Lightmap",
 		"Vertex",
-		"Global Illumination",
+		"RTX",
 		0
 	};
 

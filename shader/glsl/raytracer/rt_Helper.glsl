@@ -270,3 +270,48 @@ vec3 reinhard_extended_luminance(vec3 v, float max_white_l)
     float l_new = numerator / (1.0f + l_old);
     return change_luminance(v, l_new);
 }
+
+struct SH
+{
+    vec4 shY;
+    vec2 CoCg;
+};
+
+SH init_SH()
+{
+    SH result;
+    result.shY = vec4(0);
+    result.CoCg = vec2(0);
+    return result;
+}
+
+void accumulate_SH(inout SH accum, SH b, float scale)
+{
+    accum.shY += b.shY * scale;
+    accum.CoCg += b.CoCg * scale;
+}
+
+SH mix_SH(SH a, SH b, float s)
+{
+    SH result;
+    result.shY = mix(a.shY, b.shY, vec4(s));
+    result.CoCg = mix(a.CoCg, b.CoCg, vec2(s));
+    return result;
+}
+
+SH load_SH(sampler2D img_shY, sampler2D img_CoCg, ivec2 p)
+{
+    SH result;
+    result.shY = texelFetch(img_shY, p, 0);
+    result.CoCg = texelFetch(img_CoCg, p, 0).xy;
+    return result;
+}
+
+// Use a macro to work around the glslangValidator errors about function argument type mismatch
+#define STORE_SH(img_shY, img_CoCg, p, sh) { imageStore(img_shY, p, sh.shY); imageStore(img_CoCg, p, vec4(sh.CoCg, 0, 0)); }
+
+void store_SH(image2D img_shY, image2D img_CoCg, ivec2 p, SH sh)
+{
+    imageStore(img_shY, p, sh.shY);
+    imageStore(img_CoCg, p, vec4(sh.CoCg, 0, 0));
+}

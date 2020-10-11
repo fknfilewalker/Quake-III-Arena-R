@@ -76,7 +76,7 @@ ivec2 ipos = ivec2(gl_GlobalInvocationID);
 		if(ubo.numBounces > 0) result.xyz += albedo.xyz * indirectIll.xyz;
 		result.xyz *= 3.2;
 		//result.xyz += albedo.rgb * 0.25f;
-		result = alpha_blend( trans, vec4(result.xyz,1));
+		if(ubo.tonemappingReinhard == 0) result = alpha_blend( trans, vec4(result.xyz,1));
 
 		if(ubo.denoiser) {
 			color.rgb *= albedo.rgb;

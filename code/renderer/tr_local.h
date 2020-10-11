@@ -1282,6 +1282,7 @@ typedef struct {
 	vkcpipeline_t				asvgfGradAtrousPipeline;
 	vkcpipeline_t				asvgfTemporalPipeline;
 	vkcpipeline_t				asvgfAtrousPipeline;
+	vkcpipeline_t				asvgfAtrousLFPipeline;
 	vkcpipeline_t				asvgfTaaPipeline;
 	vkcpipeline_t				compositingPipeline;
 	vkcpipeline_t				maxmipmapPipeline;

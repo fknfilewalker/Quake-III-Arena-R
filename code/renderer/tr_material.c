@@ -95,19 +95,22 @@ qboolean RB_IsTransparent(shader_t* shader) {
 	if (strstr(shader->name, "railCore")) {
 		return qtrue;
 	}
-	if (strstr(shader->name, "f_machine")) {// bloodExplotion
+	if (strstr(shader->name, "f_machine")) {
 		return qtrue;
 	}
-	if (strstr(shader->name, "f_railgun")) {// bloodExplotion
+	if (strstr(shader->name, "f_shotgun")) {
 		return qtrue;
 	}
-	if (strstr(shader->name, "shotgun_laser")) {// bloodExplotion
+	if (strstr(shader->name, "f_railgun")) {
+		return qtrue;
+	}
+	if (strstr(shader->name, "shotgun_laser")) {
 		return qtrue;
 	}
 	if (strstr(shader->name, "plasma_glo")) {
 		return qfalse;
 	}
-	if (strstr(shader->name, "viewBloodBlend")) {// bloodExplotion
+	if (strstr(shader->name, "viewBloodBlend")) {
 		return qtrue;
 	}
 	if (strstr(shader->name, "railgun2")) {
@@ -262,6 +265,9 @@ uint32_t RB_GetMaterial() {
 		material = MATERIAL_FLAG_SEE_THROUGH_ADD;
 	}
 	if (strstr(tess.shader->name, "shotgun_laser")) {// bloodExplotion
+		material = MATERIAL_FLAG_SEE_THROUGH_ADD;
+	}
+	if (strstr(tess.shader->name, "f_shotgun")) {// bloodExplotion
 		material = MATERIAL_FLAG_SEE_THROUGH_ADD;
 	}
 	if (strstr(tess.shader->name, "viewBloodBlend")) {// bloodExplotion
