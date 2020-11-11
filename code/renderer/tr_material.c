@@ -55,6 +55,7 @@ qboolean RB_StageNeedsColor(int stage) {
 }
 
 qboolean RB_SkipObject(shader_t* shader) {
+	
 	if (strstr(shader->name, "glass") || strstr(shader->name, "console/jacobs") || strstr(shader->name, "kmlamp_white") || strstr(shader->name, "slamp/slamp2")
 		|| strstr(shader->name, "timlamp/timlamp") || strstr(shader->name, "lamplight_y") || strstr(shader->name, "textures/liquids/calm_poollight")) {
 		return qfalse;

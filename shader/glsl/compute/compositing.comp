@@ -74,18 +74,24 @@ ivec2 ipos = ivec2(gl_GlobalInvocationID);
 	if(ubo.illumination){
 		result.xyz *= directIll.xyz;
 		if(ubo.numBounces > 0) result.xyz += albedo.xyz * indirectIll.xyz;
-		result.xyz *= 3.2;
+		result.xyz *= 4.5;
+		// result.rgb *= 4.0;
+		// 	result.rgb -= 0.5;
+		// 	result.rgb *= 1.010;
+		// 	result.rgb += 0.5;
+			//result.rgb = clamp(result.rgb, vec3(0), vec3(1));
 		//result.xyz += albedo.rgb * 0.25f;
 		if(ubo.tonemappingReinhard == 0) result = alpha_blend( trans, vec4(result.xyz,1));
 
 		if(ubo.denoiser) {
 			color.rgb *= albedo.rgb;
 			if(ubo.numBounces > 0) color.xyz += albedo.xyz * indirectIll.xyz;
-			color.rgb *= 4.0;
-			color.rgb -= 0.5;
-			color.rgb *= 1.010;
-			color.rgb += 0.5;
-			color.rgb = clamp(color.rgb, vec3(0), vec3(1));
+			color.xyz *= 4.5;
+			// color.rgb *= 4.0;
+			// color.rgb -= 0.5;
+			// color.rgb *= 1.010;
+			// color.rgb += 0.5;
+			// color.rgb = clamp(color.rgb, vec3(0), vec3(1));
 			if(ubo.tonemappingReinhard == 0) result = alpha_blend( trans, vec4(color.xyz,1));//result = alpha_blend( trans, vec4(color.xyz,1));
 			else result = color;
 		}
