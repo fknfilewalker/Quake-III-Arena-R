@@ -3,7 +3,7 @@
 
 vkinstance_t vk;
 vkdata_t     vk_d;
-#define NDEBUG
+
 static const char* deviceExtensions[] = {
 #if defined( _WIN32 )
 		VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
@@ -18,7 +18,7 @@ static const char* deviceExtensions[] = {
 };
 
 static const char* validationLayers[] = {
-		"VK_LAYER_LUNARG_standard_validation"
+		"VK_LAYER_KHRONOS_validation"
 };
 
 static const char* instanceExtensions[] = {
@@ -370,7 +370,7 @@ void VK_SetupDebugCallback() {
 	VkDebugUtilsMessengerCreateInfoEXT createInfo = { 0 };
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 	createInfo.pfnUserCallback = &VK_DebugCallback;
 
 #ifndef NDEBUG

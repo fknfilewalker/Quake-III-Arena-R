@@ -211,8 +211,13 @@ static void VK_CreateDescriptorPool(vkdescriptor_t *descriptor) {
 }
 
 void VK_CreateDescriptorSet(vkdescriptor_t *descriptor) {
+
+	uint32_t count = descriptor->bindings[descriptor->size - 1].descriptorCount;
+	VkDescriptorSetVariableDescriptorCountAllocateInfo varDescCountAllocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO, VK_NULL_HANDLE, 1, &count };
+
     VkDescriptorSetAllocateInfo descSetAllocInfo = {0};
     descSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	descSetAllocInfo.pNext = &varDescCountAllocInfo;
     descSetAllocInfo.descriptorSetCount = 1;
     descSetAllocInfo.descriptorPool = descriptor->pool;
     descSetAllocInfo.pSetLayouts = &descriptor->layout;
