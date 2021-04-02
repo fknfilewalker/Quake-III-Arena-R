@@ -2110,11 +2110,6 @@ void R_RecursiveCreateAS(mnode_t* node, uint32_t* countIDXstatic, uint32_t* coun
 			if (strstr(shader->name, "fog")) {
 				continue;
 				shader->rtstages[1]->active = qfalse;
-				//continue;
-			}
-			if (strstr(shader->name, "console/sphere2")) {
-				//shader->rtstages[1]->active = qfalse;
-				//shader->rtstages[2]->active = qfalse;
 			}
 			if (strstr(shader->name, "console/sphere2")) {
 				memcpy(shader->rtstages[0], shader->rtstages[1], sizeof(shaderStage_t));
@@ -2123,26 +2118,6 @@ void R_RecursiveCreateAS(mnode_t* node, uint32_t* countIDXstatic, uint32_t* coun
 				shader->rtstages[2]->active = qfalse;
 				int x = 2;
 			}
-			//if (strstr(shader->name, "models/mapobjects/console/under") || strstr(shader->name, "textures/sfx/beam") || strstr(shader->name, "models/mapobjects/lamps/flare03")
-			//	|| strstr(shader->name, "Shadow") || shader->isSky
-			//	|| *surf->data == SF_BAD || *surf->data == SF_SKIP
-			//	|| shader->surfaceFlags == SURF_NODRAW || shader->surfaceFlags == SURF_SKIP
-			//	|| shader->rtstages[0] == NULL || !shader->rtstages[0]->active
-			//	|| strstr(shader->name, "slamp/slamp3")
-			//	|| strstr(shader->name, "gratelamp_flare")) {
-
-			//	//continue;
-			//	if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white") && !strstr(shader->name, "slamp/slamp2")
-			//		&& !strstr(shader->name, "timlamp/timlamp") && !strstr(shader->name, "lamplight_y") && !strstr(shader->name, "textures/liquids/calm_poollight")){// && !strstr(shader->name, "flame")) {
-			//		surf->skip = qtrue;
-			//		continue;
-			//	}
-			//}
-			//if (!transparent && ((shader->contentFlags & CONTENTS_TRANSLUCENT) == CONTENTS_TRANSLUCENT || shader->sort > SS_OPAQUE)) {
-			//	if (!strstr(shader->name, "glass") && !strstr(shader->name, "console/jacobs") && !strstr(shader->name, "kmlamp_white") && !strstr(shader->name, "slamp/slamp2")
-			//		 && !strstr(shader->name, "lamplight_y") && !strstr(shader->name, "textures/liquids/calm_poollight"))continue;
-			//}
-
 			
 			//grate1_3
 			tess.shader = shader;
@@ -2670,12 +2645,6 @@ void R_CreatePrimaryRaysPipeline() {
 	VK_AddComputePushConstant(&vk_d.accelerationStructures.tonemappingPipeline, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t));
 	VK_FinishComputePipeline(&vk_d.accelerationStructures.tonemappingPipeline);
 
-	/*vkshader_t s = { 0 };
-	VK_RayTracingShaderWithAny(&s);
-	VK_Set2RayTracingDescriptorSets(&vk_d.accelerationStructures.pipeline, &vk_d.rtxDescriptor[0], &vk_d.imageDescriptor);
-	VK_SetRayTracingShader(&vk_d.accelerationStructures.pipeline, &s);
-	VK_FinishRayTracingPipeline(&vk_d.accelerationStructures.pipeline);*/
-
 	vkshader_t primaryRayShader = { 0 };
 	VK_RTX_PrimaryRayShader(&primaryRayShader);
 	VK_Set2RayTracingDescriptorSets(&vk_d.primaryRaysPipeline, &vk_d.rtxDescriptor[0], &vk_d.imageDescriptor);
@@ -2695,9 +2664,6 @@ void R_CreatePrimaryRaysPipeline() {
 	VK_Set2RayTracingDescriptorSets(&vk_d.directIlluminationPipeline, &vk_d.rtxDescriptor[0], &vk_d.imageDescriptor);
 	VK_SetRayTracingShader(&vk_d.directIlluminationPipeline, &directIlluminationShader);
 	VK_FinishRayTracingPipeline(&vk_d.directIlluminationPipeline);
-	//VK_AddRayTracingPushConstant(&vk_d.primaryRaysPipeline, VK_SHADER_STAGE_RAYGEN_BIT_NV, 0, 40 * sizeof(float));
-	//VK_AddRayTracingPushConstant(&vk_d.primaryRaysPipeline, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, 40 * sizeof(float), 16 * sizeof(float));
-	//VK_FinishRayTracingPipeline(&vk_d.indirectIlluminationPipeline);
 
 	vkshader_t indirectIlluminationShader = { 0 };
 	VK_RTX_IndirectIlluminationShader(&indirectIlluminationShader);
