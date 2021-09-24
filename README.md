@@ -3,7 +3,7 @@ Quake III Arena R
 
 ##### Branches:
 `original` : A refactor of the original Quake III source code, to make it compatible with modern computers. <br>
-`reforged` : A modified version of the original Quake III source code with certain enhancements (e.g. vulkan).
+`reforged` : A modified version of the original Quake III source code with certain enhancements (e.g. vulkan, rtx).
 
 GENERAL NOTES
 =============
