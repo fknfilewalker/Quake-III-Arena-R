@@ -12,6 +12,7 @@ Use the following arguments to run Quake III R. Use a `fs_basePath` that fits yo
 ```bash
 +set fs_basePath "C:\GOG Games\Quake III" +set sv_pure 0 +set vm_game 0 +set vm_cgame 0 +set vm_ui 0
 ```
+In order to run the game, blue noise textures are requiered. Copy the folder `blue_noise_textures` into your `"Quake III Arena\baseq3"` folder.
 ##### Changes:
 * `VMI_COMPILED` was removed
 
