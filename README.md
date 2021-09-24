@@ -34,15 +34,12 @@ Use the provided `bat` file to generate a Visual Studio project. In order to run
 IMAGES
 ==================
 
-<style>
-td, th {
-   border: none!important;
-}
-</style>
+
 | | |
 :-------------------------:|:-------------------------:|
 ![](images/scene_lava.png)  |  ![](images/scene_statue.png) |
 ![](images/q3rt.png)  |  ![](images/q3rt2.png) |
+![](images/glass.png)  |  ![](images/glass2.png) |
 
 Left: original Quake III; Right: RTX Version.
 ![](images/q3origvsrt.png)
