@@ -1,6 +1,8 @@
 Quake III Arena R
 ==================================
 
+![Comparison](images/start_scene.png)
+
 ##### Branches:
 `original` : A refactor of the original Quake III source code, to make it compatible with modern computers. Contains cmake files for easy building on win32/linux/macos <br>
 `reforged` : A modified version of the original Quake III source code with certain enhancements (e.g. vulkan, rtx).
